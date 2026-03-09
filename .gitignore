@@ -38,7 +38,9 @@ backend/.env.*
 # System/Misc
 .DS_Store
 Thumbs.db
-.gemini/settings.json
+.gemini/
+GEMINI.md
+.geminiignore
 
 # Build
 dist/
