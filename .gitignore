@@ -1,0 +1,45 @@
+# Node
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.lucid
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.pytest_cache/
+
+# Sensitive Data
+.env
+.env.*
+backend/.env
+backend/.env.*
+*.pem
+*.key
+
+# System/Misc
+.DS_Store
+Thumbs.db
+.gemini/settings.json
+
+# Build
+dist/
+build/

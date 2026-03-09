@@ -1,0 +1,52 @@
+# Sherpa MVP Backlog
+
+## Epic 1: Infrastructure & Architecture
+- [x] Task 1.1: Initialize monorepo structure (frontend, backend, infra, docs).
+- [x] Task 1.2: Setup Docker Compose (PostgreSQL 16, Redis 7).
+- [x] Task 1.3: Configure GitHub Actions CI/CD.
+- [x] Task 1.4: Setup Celery + Redis for background jobs.
+- [x] Task 1.5: Establish OpenAPI type generation loop for frontend.
+
+## Epic 2: Authentication & Business Profile
+- [x] Task 2.1: Implement JWT Auth (Register, Login).
+- [x] Task 2.2: Define BusinessProfile and AssistantConfig models.
+- [x] Task 2.3: Implement endpoints for BusinessProfile CRUD.
+- [x] Task 2.4: Implement endpoints for AssistantConfig CRUD.
+
+## Epic 3: Guided Onboarding Wizard
+- [x] Task 3.1: Create multi-step Onboarding UI in Next.js (5 steps).
+- [x] Task 3.2: Connect Onboarding steps to backend endpoints.
+- [x] Task 3.3: Implement "Activate Trial" (30-day) logic.
+
+## Epic 4: Google Calendar Integration
+- [x] Task 4.1: Implement OAuth2 flow for Google Calendar (Backend).
+- [x] Task 4.2: Implement read-only sync for availability (Backend).
+- [x] Task 4.3: Implement one-way sync (Backend).
+
+## Epic 5: Messaging Integrations (WhatsApp & Telegram)
+- [ ] Task 5.1: Setup Telegram Bot integration for model testing (Temporary).
+- [ ] Task 5.2: Setup Meta Cloud API webhook handler for WhatsApp.
+- [ ] Task 5.3: Implement common AI Assistant response logic.
+- [ ] Task 5.4: Implement auto-responses (Welcome + Menu).
+- [ ] Task 5.5: Implement appointment confirmation flow.
+
+## Epic 6: Calendar & Appointments
+- [ ] Task 6.1: Implement Appointment CRUD (Backend).
+- [ ] Task 6.2: Create Dashboard Calendar view (Next.js).
+- [ ] Task 6.3: Implement manual appointment creation via Dashboard.
+
+## Epic 7: CRM & Reminders
+- [ ] Task 7.1: Implement Client list with search (Backend + Frontend).
+- [ ] Task 7.2: Auto-create client on first booking.
+- [ ] Task 7.3: Implement 24h automatic reminder job (Celery).
+
+## Epic 8: Dashboard & Subscription
+- [ ] Task 8.1: Implement KPI display (Total Clients, Appointments, Reminders).
+- [ ] Task 8.2: Integrate Stripe Test Mode for manual upgrades.
+
+## Hard Constraints (Enforced)
+- No Form Builders.
+- No Advanced Conversational AI.
+- No Multi-branch setups.
+- No Segmented CRM.
+- No MercadoPago.
