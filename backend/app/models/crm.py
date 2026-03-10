@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -29,6 +29,7 @@ class Appointment(Base):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     status = Column(String, default="scheduled") # scheduled, confirmed, cancelled, completed
+    reminder_sent = Column(Boolean, default=False)
     
     # Link to Google Calendar event if synced
     google_event_id = Column(String, nullable=True)

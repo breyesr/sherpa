@@ -24,21 +24,21 @@
 - [x] Task 4.3: Implement one-way sync (Backend).
 
 ## Epic 5: Messaging Integrations (WhatsApp & Telegram)
-- [ ] Task 5.1: Setup Telegram Bot integration for model testing (Temporary).
-- [ ] Task 5.2: Setup Meta Cloud API webhook handler for WhatsApp.
-- [ ] Task 5.3: Implement common AI Assistant response logic.
-- [ ] Task 5.4: Implement auto-responses (Welcome + Menu).
-- [ ] Task 5.5: Implement appointment confirmation flow.
+- [x] Task 5.1: Setup Telegram Bot integration for model testing.
+- [x] Task 5.2: Setup Meta Cloud API webhook handler for WhatsApp.
+- [x] Task 5.3: Implement common AI Assistant response logic (OpenAI, Gemini, Claude).
+- [x] Task 5.4: Implement auto-responses (Welcome + Menu).
+- [x] Task 5.5: Implement appointment confirmation flow (AI Booking).
 
 ## Epic 6: Calendar & Appointments
-- [ ] Task 6.1: Implement Appointment CRUD (Backend).
-- [ ] Task 6.2: Create Dashboard Calendar view (Next.js).
-- [ ] Task 6.3: Implement manual appointment creation via Dashboard.
+- [x] Task 6.1: Implement Appointment CRUD (Backend + Frontend).
+- [x] Task 6.2: Create Dashboard Calendar view (Next.js).
+- [x] Task 6.3: Implement manual appointment creation via Dashboard.
 
 ## Epic 7: CRM & Reminders
-- [ ] Task 7.1: Implement Client list with search (Backend + Frontend).
-- [ ] Task 7.2: Auto-create client on first booking.
-- [ ] Task 7.3: Implement 24h automatic reminder job (Celery).
+- [x] Task 7.1: Implement Client list with search (Backend + Frontend).
+- [x] Task 7.2: Auto-create client on first booking.
+- [x] Task 7.3: Implement 24h automatic reminder job (Celery).
 
 ## Epic 8: Dashboard & Subscription
 - [ ] Task 8.1: Implement KPI display (Total Clients, Appointments, Reminders).
