@@ -94,7 +94,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
           <div className="space-y-6 text-left">
             <h3 className="font-bold text-lg text-gray-900">Step 2: WhatsApp Credentials</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Find these in the <b>WhatsApp > API Setup</b> section of your Meta App.
+              Find these in the <b>WhatsApp {'\u003E'} API Setup</b> section of your Meta App.
             </p>
             <div className="space-y-4">
               <div>
