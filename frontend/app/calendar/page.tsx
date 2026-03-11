@@ -70,7 +70,7 @@ export default function CalendarPage() {
     }
   };
 
-  const handleCancelAppointment = async (id: str) => {
+  const handleCancelAppointment = async (id: string) => {
     if (!confirm('Are you sure you want to cancel this appointment? It will also be removed from Google Calendar.')) return;
     
     try {
