@@ -22,16 +22,29 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "sherpa"
     POSTGRES_PASSWORD: str = "sherpa_password"
     POSTGRES_DB: str = "sherpa_dev"
+    DATABASE_URL: str | None = None
     SQLALCHEMY_DATABASE_URI: str | None = None
 
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: str | None, info) -> str:
         if isinstance(v, str):
+            # Railway uses postgres:// or postgresql://
+            if v.startswith("postgres://") or v.startswith("postgresql://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1).replace("postgresql://", "postgresql+asyncpg://", 1)
             return v
+        
+        # Priority: DATABASE_URL -> Explicit Components
+        db_url = info.data.get("DATABASE_URL")
+        if db_url:
+            if db_url.startswith("postgres://") or db_url.startswith("postgresql://"):
+                return db_url.replace("postgres://", "postgresql+asyncpg://", 1).replace("postgresql://", "postgresql+asyncpg://", 1)
+            return db_url
+
         return f"postgresql+asyncpg://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}@{info.data.get('POSTGRES_SERVER')}/{info.data.get('POSTGRES_DB')}"
 
     REDIS_HOST: str = "localhost"
+    REDIS_URL: str | None = None
     
     # EXTERNAL INTEGRATIONS - MUST BE IN .ENV FILE
     GOOGLE_CLIENT_ID: str = "PLACEHOLDER"

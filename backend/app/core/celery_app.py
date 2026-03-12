@@ -3,10 +3,13 @@ from app.core.config import settings
 
 from celery.schedules import crontab
 
+broker_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:6379/0"
+result_backend = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:6379/0"
+
 celery_app = Celery(
     "sherpa_worker",
-    broker=f"redis://{settings.REDIS_HOST}:6379/0",
-    backend=f"redis://{settings.REDIS_HOST}:6379/0"
+    broker=broker_url,
+    backend=result_backend
 )
 
 celery_app.conf.update(
