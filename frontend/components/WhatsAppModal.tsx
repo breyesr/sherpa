@@ -155,7 +155,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
               </div>
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                 <p className="text-blue-800 text-xs font-bold uppercase mb-1">Webhook Configuration</p>
-                <p className="text-blue-700 text-xs mb-2">Set these in the <b>WhatsApp > Configuration</b> tab:</p>
+                <p className="text-blue-700 text-xs mb-2">Set these in the <b>WhatsApp {'>'} Configuration</b> tab:</p>
                 <div className="space-y-1">
                   <p className="text-[10px] text-blue-900"><b>CALLBACK URL:</b> https://your-domain.com/api/v1/whatsapp/webhook</p>
                   <p className="text-[10px] text-blue-900"><b>VERIFY TOKEN:</b> {verifyToken}</p>
