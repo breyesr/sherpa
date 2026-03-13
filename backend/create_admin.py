@@ -15,17 +15,31 @@ async def create_admin(email, password):
     engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)
     SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
+    from sqlalchemy.future import select
+
     async with SessionLocal() as db:
-        hashed_password = get_password_hash(password)
-        admin_user = User(
-            email=email,
-            hashed_password=hashed_password,
-            is_active=True,
-            is_admin=True
-        )
-        db.add(admin_user)
+        # Check if user exists
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalars().first()
+        
+        if user:
+            print(f"User {email} already exists. Updating password...")
+            user.hashed_password = get_password_hash(password)
+            user.is_admin = True
+            user.is_active = True
+        else:
+            print(f"Creating new admin user {email}...")
+            hashed_password = get_password_hash(password)
+            user = User(
+                email=email,
+                hashed_password=hashed_password,
+                is_active=True,
+                is_admin=True
+            )
+            db.add(user)
+        
         await db.commit()
-        print(f"Admin user {email} created successfully!")
+        print(f"Admin user {email} ready!")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
