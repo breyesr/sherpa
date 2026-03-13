@@ -9,11 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.config import settings
 from app.models.user import User
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
+from app.api.auth import get_password_hash
 
 async def create_admin(email, password):
     engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)
