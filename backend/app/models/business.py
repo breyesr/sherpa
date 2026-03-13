@@ -16,10 +16,10 @@ class BusinessProfile(Base):
     is_active = Column(Boolean, default=True)
 
     user = relationship("User", back_populates="business_profile")
-    assistant_config = relationship("AssistantConfig", back_populates="business_profile", uselist=False)
+    assistant_config = relationship("AssistantConfig", back_populates="business_profile", uselist=False, cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="business_profile", cascade="all, delete-orphan")
-    clients = relationship("Client", back_populates="business_profile")
-    appointments = relationship("Appointment", back_populates="business_profile")
+    clients = relationship("Client", back_populates="business_profile", cascade="all, delete-orphan")
+    appointments = relationship("Appointment", back_populates="business_profile", cascade="all, delete-orphan")
 
 class AssistantConfig(Base):
     __tablename__ = "assistant_configs"

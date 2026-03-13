@@ -11,5 +11,6 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    role = Column(String, default="member") # roles: super_admin, admin, member
 
-    business_profile = relationship("BusinessProfile", back_populates="user", uselist=False)
+    business_profile = relationship("BusinessProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")

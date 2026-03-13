@@ -6,6 +6,7 @@
 - [x] Task 1.3: Configure GitHub Actions CI/CD.
 - [x] Task 1.4: Setup Celery + Redis for background jobs.
 - [x] Task 1.5: Establish OpenAPI type generation loop for frontend.
+- [x] Task 1.6: Deploy to Railway (API, Worker, Web) with automated migrations.
 
 ## Epic 2: Authentication & Business Profile
 - [x] Task 2.1: Implement JWT Auth (Register, Login).
@@ -16,7 +17,8 @@
 ## Epic 3: Guided Onboarding Wizard
 - [x] Task 3.1: Create multi-step Onboarding UI in Next.js (5 steps).
 - [x] Task 3.2: Connect Onboarding steps to backend endpoints.
-- [x] Task 3.3: Implement "Activate Trial" (30-day) logic.
+- [x] Task 3.3: Implement "Activate Trial" (30-day) logic and idempotent profile creation.
+- [x] Task 3.4: Make onboarding optional with a dashboard banner.
 
 ## Epic 4: Google Calendar Integration
 - [x] Task 4.1: Implement OAuth2 flow for Google Calendar (Backend).

@@ -10,9 +10,26 @@ app = FastAPI(
 )
 
 # Set all CORS enabled origins
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost",
+    "http://127.0.0.1",
+]
+
+# Add from settings if exists
+if settings.BACKEND_CORS_ORIGINS:
+    for origin in settings.BACKEND_CORS_ORIGINS:
+        origins.append(str(origin).rstrip("/"))
+
+# Remove duplicates
+origins = list(set(origins))
+
+print(f"INFO: CORS origins allowed: {origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/config';
+import { Info, Loader2 } from 'lucide-react';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
@@ -21,6 +22,9 @@ export default function OnboardingPage() {
   const [greeting, setGreeting] = useState('Hello! How can I help you today?');
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [busySlots, setBusySlots] = useState<any[]>([]);
+
+  // Validation: Step 1 is mandatory
+  const isStep1Complete = businessName.trim() !== '' && category.trim() !== '' && phone.trim() !== '';
 
   useEffect(() => {
     if (!token) {
@@ -67,7 +71,11 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleNext = () => setStep(step + 1);
+  const handleNext = () => {
+    if (step === 1 && !isStep1Complete) return;
+    setStep(step + 1);
+  };
+  
   const handleBack = () => setStep(step - 1);
 
   const handleSubmit = async () => {
@@ -116,7 +124,8 @@ export default function OnboardingPage() {
 
       router.push('/');
     } catch (err: any) {
-      setError(err.message);
+      console.error('Onboarding submission error:', err);
+      setError(err.message || 'An unexpected error occurred during onboarding');
     } finally {
       setLoading(false);
     }
@@ -126,133 +135,117 @@ export default function OnboardingPage() {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Step 1: Business Information</h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Business Name</label>
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                placeholder="My Business"
-              />
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-extrabold text-gray-900">Let's start with the basics</h2>
+              <p className="text-gray-500 text-sm font-medium">We need this to set up your business identity.</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Category</label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                placeholder="e.g. Health, Law, Beauty"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                placeholder="+123456789"
-              />
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Business Name *</label>
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="e.g. Acme Health"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Industry Category *</label>
+                <input
+                  type="text"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="e.g. Wellness Clinic"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Contact Phone *</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 italic">* Required to create your profile</p>
             </div>
           </div>
         );
       case 2:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Step 2: Assistant Setup</h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Assistant Name</label>
-              <input
-                type="text"
-                value={assistantName}
-                onChange={(e) => setAssistantName(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Tone</label>
-              <select
-                value={assistantTone}
-                onChange={(e) => setAssistantTone(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-              >
-                <option>Professional</option>
-                <option>Friendly</option>
-                <option>Formal</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Welcome Message</label>
-              <textarea
-                value={greeting}
-                onChange={(e) => setGreeting(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                rows={3}
-              />
-            </div>
-          </div>
-        );
       case 3:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Step 3: Connect Google Calendar</h2>
-            <p className="text-gray-600 italic">This will allow the assistant to check your availability.</p>
-            <div className={`p-6 border rounded-md text-center ${isGoogleConnected ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-              {isGoogleConnected ? (
-                <div className="space-y-4">
-                   <p className="text-green-700 font-bold text-lg">✅ Google Calendar Connected!</p>
-                   <button 
-                     onClick={handleCheckAvailability}
-                     className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
-                   >
-                     Test: Check Availability
-                   </button>
-                   {busySlots.length > 0 && (
-                     <div className="text-left text-xs bg-white p-2 rounded border max-h-32 overflow-y-auto">
-                       <p className="font-bold mb-1">Found {busySlots.length} busy slots:</p>
-                       {busySlots.map((slot, i) => (
-                         <div key={i}>{new Date(slot.start).toLocaleString()} - {new Date(slot.end).toLocaleTimeString()}</div>
-                       ))}
-                     </div>
-                   )}
-                </div>
-              ) : (
-                <button 
-                  onClick={handleGoogleConnect}
-                  className="w-full py-3 bg-white border-2 border-blue-600 text-blue-600 font-bold rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
-                >
-                  <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                  Connect Google Account
-                </button>
-              )}
-            </div>
-          </div>
-        );
       case 4:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Step 4: Connect WhatsApp</h2>
-            <p className="text-gray-600 italic">WhatsApp Meta Cloud API integration will be available in the next phase.</p>
-            <div className="p-4 bg-gray-50 border rounded-md text-sm">
-              <p>Manual integration guide will be provided here.</p>
+          <div className="space-y-6">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-extrabold text-gray-900">
+                  {step === 2 ? 'Customize your AI' : step === 3 ? 'Sync Calendar' : 'Connect WhatsApp'}
+                </h2>
+                <p className="text-gray-500 text-sm font-medium">
+                  {step === 2 ? 'Define how your assistant speaks to clients.' : 'Check availability automatically.'}
+                </p>
+              </div>
+              <button 
+                onClick={handleNext}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Skip for now
+              </button>
+            </div>
+            
+            {/* Step-specific content (Assistant, Google, WhatsApp) */}
+            <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 border-dashed">
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Assistant Name</label>
+                    <input type="text" value={assistantName} onChange={(e) => setAssistantName(e.target.value)} className="w-full p-3 bg-white border border-gray-100 rounded-2xl outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Greeting</label>
+                    <textarea value={greeting} onChange={(e) => setGreeting(e.target.value)} className="w-full p-3 bg-white border border-gray-100 rounded-2xl outline-none" rows={2} />
+                  </div>
+                </div>
+              )}
+              {step === 3 && (
+                <div className="text-center py-4">
+                   <button onClick={handleGoogleConnect} className="px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 font-bold rounded-2xl flex items-center gap-2 mx-auto hover:bg-blue-50 transition-all">
+                      Connect Google
+                   </button>
+                </div>
+              )}
+              {step === 4 && (
+                <div className="text-center py-4 text-gray-400 text-sm italic">
+                   Integration coming soon. You can skip this step.
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-blue-50 rounded-2xl flex gap-3 items-center">
+              <Info size={18} className="text-blue-500 shrink-0" />
+              <p className="text-[11px] text-blue-700 leading-tight">
+                Don't worry, you can always finish this later in <b>Settings > Integrations</b>.
+              </p>
             </div>
           </div>
         );
       case 5:
         return (
-          <div className="space-y-4 text-center">
-            <h2 className="text-xl font-bold">Step 5: Almost Ready!</h2>
-            <p className="text-gray-600">You are about to activate your 30-day free trial.</p>
-            <div className="p-6 bg-blue-50 rounded-lg border border-blue-100">
-              <ul className="text-left text-sm space-y-2 text-blue-800">
-                <li>✅ Unlimited clients</li>
-                <li>✅ WhatsApp Auto-responses</li>
-                <li>✅ Google Calendar Sync</li>
-              </ul>
+          <div className="space-y-6 text-center">
+            <div className="space-y-2">
+              <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight text-center">Everything set!</h2>
+              <p className="text-gray-500 font-medium">Ready to start your 30-day free trial.</p>
+            </div>
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-8 rounded-3xl text-white shadow-lg space-y-4">
+              <div className="text-left space-y-3">
+                <div className="flex items-center gap-2 text-sm font-bold"><span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px]">✓</span> Unlimited Appointments</div>
+                <div className="flex items-center gap-2 text-sm font-bold"><span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px]">✓</span> AI Smart Scheduling</div>
+                <div className="flex items-center gap-2 text-sm font-bold"><span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px]">✓</span> Automated Reminders</div>
+              </div>
             </div>
           </div>
         );
@@ -262,50 +255,53 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="max-w-xl w-full bg-white rounded-xl shadow-lg p-8">
-        <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-600">Onboarding</h1>
-            <p className="text-xs text-gray-500">Step {step} of 5</p>
-          </div>
-          <button 
-            onClick={() => router.push('/')}
-            className="text-sm text-gray-400 hover:text-gray-600 font-medium"
-          >
-            Skip for now
-          </button>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="max-w-xl w-full bg-white rounded-[40px] shadow-sm border border-gray-100 p-10 space-y-8 relative overflow-hidden">
+        {/* Progress Bar */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
+          <div 
+            className="h-full bg-blue-600 transition-all duration-500 ease-out"
+            style={{ width: `${(step / 5) * 100}%` }}
+          />
         </div>
 
-        {error && <p className="mb-4 text-red-600 text-center text-sm bg-red-50 p-2 rounded">{error}</p>}
+        {error && (
+          <div className="p-3 bg-red-50 text-red-600 rounded-xl text-center text-sm font-medium border border-red-100">
+            {error}
+          </div>
+        )}
 
-        <div className="mb-8 min-h-[300px]">
+        <div className="min-h-[380px] animate-in fade-in slide-in-from-bottom-2 duration-500">
           {renderStep()}
         </div>
 
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-between items-center pt-6 border-t border-gray-50">
           <button
             onClick={handleBack}
             disabled={step === 1 || loading}
-            className={`px-6 py-2 rounded-md ${step === 1 ? 'invisible' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`font-bold text-sm px-4 py-2 transition-all ${step === 1 ? 'invisible' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            Back
+            Go Back
           </button>
           
           {step < 5 ? (
             <button
               onClick={handleNext}
-              className="px-8 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+              disabled={step === 1 && !isStep1Complete}
+              className={`px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 ${
+                (step === 1 && !isStep1Complete) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
             >
-              Continue
+              Next Step
             </button>
           ) : (
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="px-8 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-bold disabled:opacity-50"
+              className="px-10 py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? 'Processing...' : 'Finish & Activate Trial'}
+              {loading ? <Loader2 className="animate-spin" /> : null}
+              Start My Free Trial
             </button>
           )}
         </div>

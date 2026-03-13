@@ -17,7 +17,7 @@ class Client(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile", back_populates="clients")
-    appointments = relationship("Appointment", back_populates="client")
+    appointments = relationship("Appointment", back_populates="client", cascade="all, delete-orphan")
 
 class Appointment(Base):
     __tablename__ = "appointments"

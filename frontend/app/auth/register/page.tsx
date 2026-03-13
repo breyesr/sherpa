@@ -2,20 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/config';
+import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const setToken = useAuthStore((state) => state.setToken);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      // 1. Register
+      const regResponse = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,50 +29,99 @@ export default function RegisterPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        throw new Error('User registration failed');
+      if (!regResponse.ok) {
+        const errorData = await regResponse.json();
+        throw new Error(errorData.detail || 'User registration failed');
       }
 
-      router.push('/auth/login');
+      // 2. Immediate Auto-Login
+      const formData = new FormData();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!loginResponse.ok) {
+        // If auto-login fails, redirect to login page with a success message
+        router.push('/auth/login?registered=true');
+        return;
+      }
+
+      const loginData = await loginResponse.json();
+      setToken(loginData.access_token);
+
+      // 3. Success! Redirect to Onboarding
+      router.push('/onboarding');
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 space-y-4 bg-white rounded shadow">
-        <h2 className="text-2xl font-bold text-center">Create an Account</h2>
-        {error && <p className="text-red-500 text-center">{error}</p>}
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-3xl shadow-sm border border-gray-100">
+        <div className="space-y-2 text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Join Sherpa</h2>
+          <p className="text-gray-500 font-medium italic text-sm">Create your assistant today.</p>
+        </div>
+
+        {error && (
+          <div className="p-3 bg-red-50 text-red-600 rounded-xl text-center text-sm font-medium border border-red-100 animate-in fade-in slide-in-from-top-1">
+            {error}
+          </div>
+        )}
+
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium">Email</label>
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded mt-1"
+              placeholder="name@company.com"
+              className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               required
+              disabled={loading}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium">Password</label>
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded mt-1"
+              placeholder="••••••••"
+              className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               required
+              disabled={loading}
             />
           </div>
-          <button type="submit" className="w-full py-2 text-white bg-blue-600 rounded hover:bg-blue-700">
-            Sign Up
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Setting up your account...
+              </>
+            ) : (
+              'Create Account'
+            )}
           </button>
         </form>
-        <p className="text-center text-sm">
-          Already have an account? <a href="/auth/login" className="text-blue-600">Login</a>
+
+        <p className="text-center text-sm text-gray-500 font-medium">
+          Already have an account? <a href="/auth/login" className="text-blue-600 font-bold hover:underline">Login</a>
         </p>
       </div>
     </div>
   );
 }
+

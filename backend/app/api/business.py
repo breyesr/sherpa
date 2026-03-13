@@ -1,9 +1,9 @@
-from typing import Any
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from jose import jwt, JWTError
+from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -17,20 +17,24 @@ from app.api.auth import get_current_user
 
 router = APIRouter()
 
-@router.get("/me", response_model=BusinessProfileResponse)
-async def get_business_me(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-) -> Any:
+async def get_full_business(db: AsyncSession, user_id: str) -> BusinessProfile:
+    """Helper to fetch a business by user_id with all relationships eagerly loaded."""
     result = await db.execute(
         select(BusinessProfile)
-        .where(BusinessProfile.user_id == current_user.id)
+        .where(BusinessProfile.user_id == user_id)
         .options(
             selectinload(BusinessProfile.assistant_config),
             selectinload(BusinessProfile.integrations)
         )
     )
-    business = result.scalars().first()
+    return result.scalars().first()
+
+@router.get("/me", response_model=BusinessProfileResponse)
+async def get_business_me(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    business = await get_full_business(db, current_user.id)
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
     return business
@@ -41,38 +45,38 @@ async def create_business_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    result = await db.execute(
-        select(BusinessProfile)
-        .where(BusinessProfile.user_id == current_user.id)
-        .options(selectinload(BusinessProfile.assistant_config))
-    )
-    business = result.scalars().first()
-    
-    if not business:
-        business = BusinessProfile(
-            user_id=current_user.id,
-            name=business_in.name,
-            category=business_in.category,
-            contact_phone=business_in.contact_phone
+    try:
+        # Check if exists
+        result = await db.execute(
+            select(BusinessProfile).where(BusinessProfile.user_id == current_user.id)
         )
-        db.add(business)
-        await db.commit()
-        await db.refresh(business)
+        business = result.scalars().first()
         
-        # Auto-create default assistant config if it doesn't exist
-        assistant = AssistantConfig(business_id=business.id)
-        db.add(assistant)
-        await db.commit()
-    else:
-        # Update existing business if needed
-        business.name = business_in.name
-        business.category = business_in.category
-        business.contact_phone = business_in.contact_phone
-        db.add(business)
-        await db.commit()
+        if not business:
+            business = BusinessProfile(
+                user_id=current_user.id,
+                name=business_in.name,
+                category=business_in.category,
+                contact_phone=business_in.contact_phone
+            )
+            db.add(business)
+            await db.flush() # Get the ID without committing yet
+            
+            # Auto-create default assistant config
+            assistant = AssistantConfig(business_id=business.id)
+            db.add(assistant)
+        else:
+            business.name = business_in.name
+            business.category = business_in.category
+            business.contact_phone = business_in.contact_phone
+            db.add(business)
 
-    await db.refresh(business, ["assistant_config", "integrations"])
-    return business
+        await db.commit()
+        # Return fully loaded business
+        return await get_full_business(db, current_user.id)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/me/activate-trial", response_model=BusinessProfileResponse)
 async def activate_trial(
@@ -80,21 +84,18 @@ async def activate_trial(
     current_user: User = Depends(get_current_user)
 ) -> Any:
     result = await db.execute(
-        select(BusinessProfile)
-        .where(BusinessProfile.user_id == current_user.id)
+        select(BusinessProfile).where(BusinessProfile.user_id == current_user.id)
     )
     business = result.scalars().first()
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
     
-    from datetime import datetime, timedelta
     business.trial_expires_at = datetime.utcnow() + timedelta(days=30)
     business.is_active = True
     
     db.add(business)
     await db.commit()
-    await db.refresh(business, ["assistant_config", "integrations"])
-    return business
+    return await get_full_business(db, current_user.id)
 
 @router.patch("/me", response_model=BusinessProfileResponse)
 async def update_business_me(
@@ -103,12 +104,7 @@ async def update_business_me(
     current_user: User = Depends(get_current_user)
 ) -> Any:
     result = await db.execute(
-        select(BusinessProfile)
-        .where(BusinessProfile.user_id == current_user.id)
-        .options(
-            selectinload(BusinessProfile.assistant_config),
-            selectinload(BusinessProfile.integrations)
-        )
+        select(BusinessProfile).where(BusinessProfile.user_id == current_user.id)
     )
     business = result.scalars().first()
     if not business:
@@ -120,8 +116,7 @@ async def update_business_me(
     
     db.add(business)
     await db.commit()
-    await db.refresh(business)
-    return business
+    return await get_full_business(db, current_user.id)
 
 @router.patch("/me/assistant", response_model=BusinessProfileResponse)
 async def update_assistant_me(
@@ -129,13 +124,11 @@ async def update_assistant_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
+    # Need to load assistant_config to update it
     result = await db.execute(
         select(BusinessProfile)
         .where(BusinessProfile.user_id == current_user.id)
-        .options(
-            selectinload(BusinessProfile.assistant_config),
-            selectinload(BusinessProfile.integrations)
-        )
+        .options(selectinload(BusinessProfile.assistant_config))
     )
     business = result.scalars().first()
     if not business or not business.assistant_config:
@@ -147,5 +140,4 @@ async def update_assistant_me(
     
     db.add(business.assistant_config)
     await db.commit()
-    await db.refresh(business)
-    return business
+    return await get_full_business(db, current_user.id)

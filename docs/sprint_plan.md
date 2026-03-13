@@ -15,10 +15,13 @@ Establish Business Profile, Assistant Config, and a functional Onboarding Wizard
 - **Task 3.2:** Connect Step 1 and 2 to the backend endpoints created in Phase 1.
 - **Task 3.3:** Implement a simple "Trial" status in the `BusinessProfile` to show trial expiration dates.
 
-## Phase 3: Validation
-- **GIVEN** a user completes Step 1 & 2
-- **WHEN** they submit the onboarding data
-- **THEN** their business profile is updated in the database and visible on a settings page.
+## Phase 3: Validation & Deployment
+- **Task 3.4:** Deploy complete stack to Railway.app.
+  - Success: API, Worker, and Web are connected via public domains and environment variables.
+- **Task 3.5:** Verify "Activate Trial" button on Step 5 correctly updates the database.
+  - Success: User's `trial_expires_at` is set to 30 days in the future.
+- **Task 3.6:** Ensure the Dashboard is accessible without completing onboarding.
+  - Success: Users see a banner instead of being forced to /onboarding.
 
 ## Out of Scope for this Sprint
 - Actual Google Calendar OAuth integration.
