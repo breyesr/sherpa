@@ -41,27 +41,37 @@ async def create_business_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
-    business = result.scalars().first()
-    if business:
-        raise HTTPException(status_code=400, detail="Business profile already exists")
-    
-    business = BusinessProfile(
-        user_id=current_user.id,
-        name=business_in.name,
-        category=business_in.category,
-        contact_phone=business_in.contact_phone
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.user_id == current_user.id)
+        .options(selectinload(BusinessProfile.assistant_config))
     )
-    db.add(business)
-    await db.commit()
-    await db.refresh(business)
+    business = result.scalars().first()
     
-    # Auto-create default assistant config
-    assistant = AssistantConfig(business_id=business.id)
-    db.add(assistant)
-    await db.commit()
-    await db.refresh(business, ["assistant_config"])
-    
+    if not business:
+        business = BusinessProfile(
+            user_id=current_user.id,
+            name=business_in.name,
+            category=business_in.category,
+            contact_phone=business_in.contact_phone
+        )
+        db.add(business)
+        await db.commit()
+        await db.refresh(business)
+        
+        # Auto-create default assistant config if it doesn't exist
+        assistant = AssistantConfig(business_id=business.id)
+        db.add(assistant)
+        await db.commit()
+    else:
+        # Update existing business if needed
+        business.name = business_in.name
+        business.category = business_in.category
+        business.contact_phone = business_in.contact_phone
+        db.add(business)
+        await db.commit()
+
+    await db.refresh(business, ["assistant_config", "integrations"])
     return business
 
 @router.patch("/me", response_model=BusinessProfileResponse)
