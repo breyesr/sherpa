@@ -34,9 +34,7 @@ export default function Home() {
           },
         });
 
-        if (res.status === 404) {
-          router.push('/onboarding');
-        } else if (res.ok) {
+        if (res.ok) {
           const data = await res.json();
           setBusiness(data);
         }
@@ -48,7 +46,7 @@ export default function Home() {
     }
 
     checkBusiness();
-  }, [token, router]);
+  }, [token]);
 
   if (loading) {
     return (
@@ -85,10 +83,26 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
+      {/* Onboarding Banner */}
+      {!business && (
+        <div className="bg-blue-600 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg">
+          <div>
+            <h2 className="text-xl font-bold">Complete your setup! 🚀</h2>
+            <p className="opacity-90">You haven't finished setting up your business profile and assistant.</p>
+          </div>
+          <Link 
+            href="/onboarding"
+            className="px-6 py-2 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
+          >
+            Go to Onboarding
+          </Link>
+        </div>
+      )}
+
       {/* Header Summary */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold">Good afternoon, {business?.name}</h1>
+          <h1 className="text-3xl font-bold">Good afternoon, {business?.name || 'there'}</h1>
           <p className="text-gray-500 mt-1">Here's what's happening with your appointments today.</p>
         </div>
         <div className="flex gap-3">

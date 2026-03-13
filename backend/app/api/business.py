@@ -74,6 +74,28 @@ async def create_business_me(
     await db.refresh(business, ["assistant_config", "integrations"])
     return business
 
+@router.post("/me/activate-trial", response_model=BusinessProfileResponse)
+async def activate_trial(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.user_id == current_user.id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+    
+    from datetime import datetime, timedelta
+    business.trial_expires_at = datetime.utcnow() + timedelta(days=30)
+    business.is_active = True
+    
+    db.add(business)
+    await db.commit()
+    await db.refresh(business, ["assistant_config", "integrations"])
+    return business
+
 @router.patch("/me", response_model=BusinessProfileResponse)
 async def update_business_me(
     business_in: BusinessProfileUpdate,

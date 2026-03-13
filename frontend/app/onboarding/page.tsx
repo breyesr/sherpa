@@ -105,6 +105,15 @@ export default function OnboardingPage() {
 
       if (!assistantRes.ok) throw new Error('Failed to update assistant configuration');
 
+      const trialRes = await fetch(`${API_BASE_URL}/business/me/activate-trial`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!trialRes.ok) throw new Error('Failed to activate trial');
+
       router.push('/');
     } catch (err: any) {
       setError(err.message);
@@ -256,8 +265,16 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="max-w-xl w-full bg-white rounded-xl shadow-lg p-8">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <h1 className="text-2xl font-bold text-blue-600">Onboarding</h1>
-          <span className="text-sm font-medium text-gray-500">Step {step} of 5</span>
+          <div>
+            <h1 className="text-2xl font-bold text-blue-600">Onboarding</h1>
+            <p className="text-xs text-gray-500">Step {step} of 5</p>
+          </div>
+          <button 
+            onClick={() => router.push('/')}
+            className="text-sm text-gray-400 hover:text-gray-600 font-medium"
+          >
+            Skip for now
+          </button>
         </div>
 
         {error && <p className="mb-4 text-red-600 text-center text-sm bg-red-50 p-2 rounded">{error}</p>}
