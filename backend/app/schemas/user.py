@@ -21,8 +21,8 @@ class UserCreateAdmin(UserBase):
 
 class UserResponse(UserBase):
     id: str
-    is_active: bool
-    is_admin: bool
+    is_active: Optional[bool] = True
+    is_admin: Optional[bool] = False
     role: Optional[str] = "member"
 
     class Config:
