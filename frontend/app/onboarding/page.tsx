@@ -228,7 +228,7 @@ export default function OnboardingPage() {
             <div className="p-4 bg-blue-50 rounded-2xl flex gap-3 items-center">
               <Info size={18} className="text-blue-500 shrink-0" />
               <p className="text-[11px] text-blue-700 leading-tight">
-                Don't worry, you can always finish this later in <b>Settings > Integrations</b>.
+                Don't worry, you can always finish this later in <b>Settings {'>'} Integrations</b>.
               </p>
             </div>
           </div>
