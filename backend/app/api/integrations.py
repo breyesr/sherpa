@@ -64,32 +64,33 @@ async def google_callback(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     import requests
+    import traceback
     from app.core.system_config import ConfigService
     
-    # Fetch credentials from database
-    client_id = await ConfigService.get(db, "GOOGLE_CLIENT_ID")
-    client_secret = await ConfigService.get(db, "GOOGLE_CLIENT_SECRET")
-    redirect_uri = await ConfigService.get(db, "GOOGLE_REDIRECT_URI", settings.GOOGLE_REDIRECT_URI)
-
-    if not client_id or not client_secret:
-        raise HTTPException(status_code=400, detail="Google credentials not found in database.")
-
-    # 1. Manual token exchange
-    token_url = "https://oauth2.googleapis.com/token"
-    data = {
-        "code": code,
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "redirect_uri": redirect_uri,
-        "grant_type": "authorization_code",
-    }
-    
     try:
+        # Fetch credentials from database
+        client_id = await ConfigService.get(db, "GOOGLE_CLIENT_ID")
+        client_secret = await ConfigService.get(db, "GOOGLE_CLIENT_SECRET")
+        redirect_uri = await ConfigService.get(db, "GOOGLE_REDIRECT_URI", settings.GOOGLE_REDIRECT_URI)
+
+        if not client_id or not client_secret:
+            raise HTTPException(status_code=400, detail="Google credentials not found in database.")
+
+        # 1. Manual token exchange
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }
+        
         response = requests.post(token_url, data=data)
         token_data = response.json()
         
         if "error" in token_data:
-            print(f"DEBUG: Google Token Exchange Response: {token_data}")
+            print(f"DEBUG: Google Token Exchange Error: {token_data}")
             raise HTTPException(status_code=400, detail=f"Google Error: {token_data.get('error_description', token_data['error'])}")
 
         # 2. Extract tokens
@@ -123,9 +124,8 @@ async def google_callback(
         
         await db.commit()
         
-        # Dynamic redirect based on where the request came from (Referer) or fallback to settings
+        # Dynamic redirect based on where the request came from (Referer) or fallback
         frontend_url = request.headers.get("referer") or "https://web-staging-794a.up.railway.app"
-        # Extract base domain from referer (e.g., https://web-staging.../)
         from urllib.parse import urlparse
         parsed_uri = urlparse(frontend_url)
         base_frontend = f"{parsed_uri.scheme}://{parsed_uri.netloc}"
@@ -133,8 +133,11 @@ async def google_callback(
         return RedirectResponse(url=f"{base_frontend}/integrations/google/success")
         
     except Exception as e:
-        print(f"CRITICAL Google OAuth Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
+        print("CRITICAL: Error in google_callback:")
+        traceback.print_exc()
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/google/availability")
 async def get_google_availability(
