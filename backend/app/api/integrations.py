@@ -73,6 +73,11 @@ async def google_callback(
         client_secret = await ConfigService.get(db, "GOOGLE_CLIENT_SECRET")
         redirect_uri = await ConfigService.get(db, "GOOGLE_REDIRECT_URI", settings.GOOGLE_REDIRECT_URI)
 
+        if client_id and client_secret:
+            print(f"DEBUG: Using Client ID: {client_id[:5]}...{client_id[-3:]}")
+            print(f"DEBUG: Using Client Secret: {client_secret[:3]}...{client_secret[-3:]}")
+            print(f"DEBUG: Using Redirect URI: {redirect_uri}")
+
         if not client_id or not client_secret:
             raise HTTPException(status_code=400, detail="Google credentials not found in database.")
 
