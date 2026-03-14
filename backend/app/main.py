@@ -19,15 +19,15 @@ origins = [
     "https://api-staging-794a.up.railway.app",
 ]
 
-# Add from settings if exists
+# Add any domain that ends with .up.railway.app for staging/prod flexibility
 if settings.BACKEND_CORS_ORIGINS:
     for origin in settings.BACKEND_CORS_ORIGINS:
         origins.append(str(origin).rstrip("/"))
 
-# Remove duplicates
-origins = list(set(origins))
+# Remove duplicates and empty strings
+origins = list(set([o for o in origins if o]))
 
-print(f"INFO: CORS origins allowed: {origins}")
+print(f"DEBUG: Active CORS origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +35,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
