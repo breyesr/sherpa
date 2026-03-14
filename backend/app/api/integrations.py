@@ -29,15 +29,22 @@ SCOPES = [
 
 @router.get("/google/authorize")
 async def authorize_google(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    # 1. Manually construct the URL to avoid the library's automatic PKCE injection
-    import urllib.parse
+    # Fetch from database instead of settings
+    from app.core.system_config import ConfigService
+    client_id = await ConfigService.get(db, "GOOGLE_CLIENT_ID")
+    redirect_uri = await ConfigService.get(db, "GOOGLE_REDIRECT_URI", settings.GOOGLE_REDIRECT_URI)
     
+    if not client_id:
+        raise HTTPException(status_code=400, detail="Google Client ID not configured in Admin settings.")
+
+    import urllib.parse
     base_url = "https://accounts.google.com/o/oauth2/v2/auth"
     params = {
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": " ".join(SCOPES),
         "access_type": "offline",
@@ -57,14 +64,23 @@ async def google_callback(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     import requests
+    from app.core.system_config import ConfigService
     
-    # 1. Manual token exchange to avoid stateless PKCE errors
+    # Fetch credentials from database
+    client_id = await ConfigService.get(db, "GOOGLE_CLIENT_ID")
+    client_secret = await ConfigService.get(db, "GOOGLE_CLIENT_SECRET")
+    redirect_uri = await ConfigService.get(db, "GOOGLE_REDIRECT_URI", settings.GOOGLE_REDIRECT_URI)
+
+    if not client_id or not client_secret:
+        raise HTTPException(status_code=400, detail="Google credentials not found in database.")
+
+    # 1. Manual token exchange
     token_url = "https://oauth2.googleapis.com/token"
     data = {
         "code": code,
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "client_secret": settings.GOOGLE_CLIENT_SECRET,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
         "grant_type": "authorization_code",
     }
     
