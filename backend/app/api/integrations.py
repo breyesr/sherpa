@@ -89,6 +89,7 @@ async def google_callback(
         token_data = response.json()
         
         if "error" in token_data:
+            print(f"DEBUG: Google Token Exchange Response: {token_data}")
             raise HTTPException(status_code=400, detail=f"Google Error: {token_data.get('error_description', token_data['error'])}")
 
         # 2. Extract tokens
