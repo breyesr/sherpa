@@ -12,6 +12,7 @@ export default function AdminSettingsPage() {
     GOOGLE_CLIENT_ID: '',
     GOOGLE_CLIENT_SECRET: '',
     GOOGLE_REDIRECT_URI: '',
+    FRONTEND_URL: '',
     OPENAI_API_KEY: '',
     GEMINI_API_KEY: '',
     CLAUDE_API_KEY: '',
@@ -223,6 +224,24 @@ export default function AdminSettingsPage() {
             <Info className="text-orange-500 shrink-0" size={24} />
             <p className="text-sm text-orange-800"><b>Security Notice:</b> Sensitive values are encrypted at rest.</p>
           </div>
+
+          {/* General App Settings */}
+          <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-6">
+            <h2 className="text-xl font-bold flex items-center gap-2"><Globe className="text-blue-600" /> General App Settings</h2>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Main Website URL (Frontend)</label>
+                <input 
+                  type="text" 
+                  value={settings.FRONTEND_URL} 
+                  onChange={e => setSettings({...settings, FRONTEND_URL: e.target.value})} 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none" 
+                  placeholder="https://web-staging-794a.up.railway.app" 
+                />
+                <p className="text-[10px] text-gray-400 italic mt-1">Used for OAuth redirects back to the frontend.</p>
+              </div>
+            </div>
+          </section>
           
           {/* AI Settings Section */}
           <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-6">

@@ -129,11 +129,10 @@ async def google_callback(
         
         await db.commit()
         
-        # Dynamic redirect based on where the request came from (Referer) or fallback
-        frontend_url = request.headers.get("referer") or "https://web-staging-794a.up.railway.app"
-        from urllib.parse import urlparse
-        parsed_uri = urlparse(frontend_url)
-        base_frontend = f"{parsed_uri.scheme}://{parsed_uri.netloc}"
+        # Fetch FRONTEND_URL from database
+        base_frontend = await ConfigService.get(db, "FRONTEND_URL", "https://web-staging-794a.up.railway.app")
+        # Ensure no trailing slash
+        base_frontend = base_frontend.rstrip("/")
         
         return RedirectResponse(url=f"{base_frontend}/integrations/google/success")
         
