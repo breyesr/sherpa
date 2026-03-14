@@ -15,23 +15,19 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost",
     "http://127.0.0.1",
-    "https://web-staging-794a.up.railway.app",
-    "https://api-staging-794a.up.railway.app",
 ]
 
-# Add any domain that ends with .up.railway.app for staging/prod flexibility
 if settings.BACKEND_CORS_ORIGINS:
     for origin in settings.BACKEND_CORS_ORIGINS:
         origins.append(str(origin).rstrip("/"))
 
-# Remove duplicates and empty strings
+# Universal Staging/Prod allow-list for Railway
 origins = list(set([o for o in origins if o]))
-
-print(f"DEBUG: Active CORS origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.up\.railway\.app", # This allows ALL railway subdomains
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
