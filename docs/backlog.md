@@ -25,12 +25,12 @@
 - [x] Task 4.2: Implement read-only sync for availability (Backend).
 - [x] Task 4.3: Implement one-way sync (Backend).
 
-## Epic 5: Messaging Integrations (WhatsApp & Telegram)
-- [x] Task 5.1: Setup Telegram Bot integration for model testing.
-- [x] Task 5.2: Setup Meta Cloud API webhook handler for WhatsApp.
-- [x] Task 5.3: Implement common AI Assistant response logic (OpenAI, Gemini, Claude).
-- [x] Task 5.4: Implement auto-responses (Welcome + Menu).
-- [x] Task 5.5: Implement appointment confirmation flow (AI Booking).
+## Epic 5: Messaging Integrations (Multi-Tenant)
+- [x] Task 5.1: Implement multi-tenant Telegram Bot logic (unique webhook_id).
+- [x] Task 5.2: Create TelegramService for bot validation and messaging.
+- [x] Task 5.3: Update Settings UI to allow connecting Telegram independently.
+- [ ] Task 5.4: Implement WhatsApp Meta Cloud API multi-tenant webhook.
+- [ ] Task 5.5: Connect Messaging handlers to AIService for automated booking.
 
 ## Epic 6: Calendar & Appointments
 - [x] Task 6.1: Implement Appointment CRUD (Backend + Frontend).

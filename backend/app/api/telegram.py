@@ -2,63 +2,95 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-import requests
+from sqlalchemy.orm import selectinload
+import uuid
 
 from app.core.database import get_db
 from app.models.business import BusinessProfile
 from app.models.integration import Integration
 from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
+from app.core.telegram_service import TelegramService
 
 router = APIRouter()
 
-@router.post("/webhook/{token}")
-async def telegram_webhook(token: str, request: Request, db: AsyncSession = Depends(get_db)):
-    """Receive messages from Telegram."""
+@router.post("/webhook/{webhook_id}")
+async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """Receive messages from Telegram via a unique webhook ID."""
     payload = await request.json()
-    print(f"DEBUG: Telegram Webhook received: {payload}")
     
-    # Simple logic to find the integration by bot_token (matches the path)
+    # Find the integration by webhook_id stored in settings JSON
+    # Note: For production, we should index this or use a cache
     result = await db.execute(
         select(Integration).where(Integration.provider == 'telegram')
     )
     all_tg = result.scalars().all()
-    integration = next((i for i in all_tg if decrypt_token(i.access_token) == token), None)
+    integration = next((i for i in all_tg if i.settings.get("webhook_id") == webhook_id), None)
     
     if not integration:
-        return {"status": "ignored", "reason": "invalid token"}
+        return {"status": "ignored", "reason": "invalid webhook_id"}
 
-    # Eager load assistant_config
-    from sqlalchemy.orm import selectinload
+    # Fetch business profile with assistant_config
     result = await db.execute(
         select(BusinessProfile)
         .where(BusinessProfile.id == integration.business_id)
         .options(selectinload(BusinessProfile.assistant_config))
     )
     business = result.scalars().first()
+    if not business:
+        return {"status": "ignored", "reason": "business not found"}
 
     message = payload.get("message", {})
     chat_id = message.get("chat", {}).get("id")
     text = message.get("text")
     first_name = message.get("from", {}).get("first_name")
+    last_name = message.get("from", {}).get("last_name")
+    username = message.get("from", {}).get("username")
 
     if chat_id and text:
+        # --- AUTO-CLIENT REGISTRATION ---
+        from app.models.crm import Client
+        chat_id_str = str(chat_id)
+        
+        # Check if client exists for this business
+        res = await db.execute(
+            select(Client).where(
+                Client.business_id == business.id, 
+                Client.telegram_id == chat_id_str
+            )
+        )
+        client_obj = res.scalars().first()
+        
+        if not client_obj:
+            # Create new client from Telegram info
+            name = f"{first_name or ''} {last_name or ''}".strip() or username or f"TG_{chat_id_str}"
+            client_obj = Client(
+                business_id=business.id,
+                name=name,
+                telegram_id=chat_id_str
+            )
+            db.add(client_obj)
+            await db.commit()
+            await db.refresh(client_obj)
+            print(f"DEBUG: Auto-registered new Telegram client: {name} ({chat_id_str})")
+        # --------------------------------
+
         from app.core.ai_service import AIService
         ai = AIService(business, db)
         
         user_message = text
         if first_name:
-            user_message = f"(User First Name: {first_name}) {text}"
+            user_message = f"(User Name: {first_name}) {text}"
             
         try:
-            response_text = await ai.get_response(str(chat_id), user_message)
+            response_text = await ai.get_response(chat_id_str, user_message)
         except Exception as e:
             print(f"ERROR: AI Service failed: {e}")
             response_text = "I'm having trouble thinking right now. Please try again in a moment."
         
-        # Use decrypted token to send
-        send_url = f"https://api.telegram.org/bot{token}/sendMessage"
-        requests.post(send_url, json={"chat_id": chat_id, "text": response_text})
+        # Send response back to Telegram
+        token = decrypt_token(integration.access_token)
+        await TelegramService.send_message(token, chat_id, response_text)
 
     return {"status": "ok"}
 
@@ -68,24 +100,31 @@ async def link_telegram(
     db: AsyncSession = Depends(get_db),
     current_user: Any = Depends(get_current_user)
 ):
-    """Save Telegram Bot Token for this business."""
+    """Link a Telegram Bot to the current user's business."""
+    # 1. Get user's business
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
     business = result.scalars().first()
-    
     if not business:
-        raise HTTPException(status_code=404, detail="Business profile not found")
+        raise HTTPException(status_code=404, detail="Business profile not found. Please complete onboarding.")
     
-    token = data.get("bot_token")
-    if not token:
+    bot_token = data.get("bot_token")
+    if not bot_token:
         raise HTTPException(status_code=400, detail="bot_token is required")
 
-    # 1. Uniqueness check
+    # 2. Validate token with Telegram
+    bot_info = await TelegramService.get_bot_info(bot_token)
+    if not bot_info:
+        raise HTTPException(status_code=400, detail="Invalid Telegram Bot Token. Please check with @BotFather.")
+
+    # 3. Check if this bot is already linked to ANOTHER business
+    # (Simplified check for MVP)
     result = await db.execute(select(Integration).where(Integration.provider == 'telegram'))
     all_tg = result.scalars().all()
-    if any(decrypt_token(i.access_token) == token and i.business_id != business.id for i in all_tg):
-        raise HTTPException(status_code=400, detail="This Telegram Bot is already connected to another account.")
+    for i in all_tg:
+        if i.business_id != business.id and decrypt_token(i.access_token) == bot_token:
+            raise HTTPException(status_code=400, detail="This bot is already linked to another Sherpa account.")
 
-    # 2. Upsert Integration (with encryption)
+    # 4. Get or create integration
     result = await db.execute(
         select(Integration)
         .where(Integration.business_id == business.id, Integration.provider == 'telegram')
@@ -93,18 +132,95 @@ async def link_telegram(
     integration = result.scalars().first()
     
     if not integration:
-        integration = Integration(business_id=business.id, provider='telegram')
+        integration = Integration(
+            business_id=business.id, 
+            provider='telegram',
+            settings={}
+        )
         db.add(integration)
     
-    integration.access_token = encrypt_token(token)
+    # 5. Update settings and set webhook
+    webhook_id = integration.settings.get("webhook_id") or str(uuid.uuid4())
     
-    from app.core.config import settings
-    # Set Webhook automatically
-    webhook_url = f"{settings.BASE_URL}{settings.API_V1_STR}/telegram/webhook/{token}"
-    set_webhook_url = f"https://api.telegram.org/bot{token}/setWebhook"
-    try:
-        requests.get(set_webhook_url, params={"url": webhook_url})
-    except: pass
+    webhook_res = await TelegramService.set_webhook(bot_token, webhook_id)
+    if not webhook_res.get("ok"):
+        error_msg = webhook_res.get("description", "Unknown error")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Telegram webhook registration failed: {error_msg}. "
+                   "Note: Telegram requires an HTTPS URL (not localhost). Use Ngrok for local testing."
+        )
+
+    integration.access_token = encrypt_token(bot_token)
+    integration.settings = {
+        "webhook_id": webhook_id,
+        "bot_username": bot_info.get("username"),
+        "bot_name": bot_info.get("first_name"),
+        "local_testing": webhook_res.get("local_skip", False)
+    }
     
     await db.commit()
+    return {
+        "status": "success", 
+        "bot_username": bot_info.get("username"),
+        "bot_name": bot_info.get("first_name"),
+        "warning": "Running in local mode. Webhooks are disabled until BASE_URL is a public HTTPS address." if webhook_res.get("local_skip") else None
+    }
+
+@router.get("/status")
+async def get_telegram_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Check if Telegram is connected for this business."""
+    result = await db.execute(
+        select(BusinessProfile).where(BusinessProfile.user_id == current_user.id)
+    )
+    business = result.scalars().first()
+    if not business:
+        return {"connected": False}
+
+    result = await db.execute(
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == 'telegram')
+    )
+    integration = result.scalars().first()
+    
+    if not integration:
+        return {"connected": False}
+    
+    return {
+        "connected": True,
+        "bot_username": integration.settings.get("bot_username"),
+        "bot_name": integration.settings.get("bot_name")
+    }
+
+@router.delete("/disconnect")
+async def disconnect_telegram(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Remove Telegram integration."""
+    result = await db.execute(
+        select(BusinessProfile).where(BusinessProfile.user_id == current_user.id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    result = await db.execute(
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == 'telegram')
+    )
+    integration = result.scalars().first()
+    
+    if integration:
+        # Try to delete webhook from Telegram before disconnecting
+        try:
+            token = decrypt_token(integration.access_token)
+            async with httpx.AsyncClient() as client:
+                await client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
+        except: pass
+        
+        await db.delete(integration)
+        await db.commit()
+    
     return {"status": "success"}

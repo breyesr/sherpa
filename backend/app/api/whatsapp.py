@@ -69,17 +69,48 @@ async def handle_whatsapp_message(
                     profile_name = contacts[0].get("profile", {}).get("name") if contacts else None
                     
                     if text:
+                        # --- AUTO-CLIENT REGISTRATION ---
+                        from app.models.crm import Client
+                        from sqlalchemy import or_
+                        
+                        # Check if client exists for this business
+                        res = await db.execute(
+                            select(Client).where(
+                                Client.business_id == business.id, 
+                                or_(
+                                    Client.phone == sender_phone,
+                                    Client.whatsapp_id == sender_phone
+                                )
+                            )
+                        )
+                        client_obj = res.scalars().first()
+                        
+                        if not client_obj:
+                            # Create new client from WhatsApp info
+                            client_obj = Client(
+                                business_id=business.id,
+                                name=profile_name or f"WA_{sender_phone}",
+                                phone=sender_phone,
+                                whatsapp_id=sender_phone
+                            )
+                            db.add(client_obj)
+                            await db.commit()
+                            await db.refresh(client_obj)
+                            print(f"DEBUG: Auto-registered new WhatsApp client: {client_obj.name} ({sender_phone})")
+                        # --------------------------------
+
                         from app.core.ai_service import AIService
                         ai = AIService(business, db)
                         
                         # If we have a profile name, we can hint it to the AI
                         user_message = text
                         if profile_name:
-                            user_message = f"(User Profile Name: {profile_name}) {text}"
+                            user_message = f"(User Name: {profile_name}) {text}"
                             
                         response_text = await ai.get_response(sender_phone, user_message)
                         
                         # Send back via WhatsApp (decrypted token)
+                        import httpx
                         access_token = decrypt_token(integration.access_token)
                         url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
                         headers = {"Authorization": f"Bearer {access_token}"}
@@ -89,8 +120,8 @@ async def handle_whatsapp_message(
                             "type": "text",
                             "text": {"body": response_text}
                         }
-                        import requests
-                        requests.post(url, json=body, headers=headers)
+                        async with httpx.AsyncClient() as client:
+                            await client.post(url, json=body, headers=headers)
                     
     except Exception as e:
         print(f"Error processing WhatsApp webhook: {str(e)}")

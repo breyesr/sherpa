@@ -366,7 +366,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Telegram Bot */}
-            <div className={`flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-100 gap-4 ${!isGoogleConnected ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-100 gap-4">
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center text-blue-500">
                   <Send size={28} />
@@ -377,8 +377,12 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {business?.integrations?.some((i: any) => i.provider === 'telegram') ? (
+                {business?.integrations?.find((i: any) => i.provider === 'telegram') ? (
                   <div className="flex items-center gap-3">
+                    <div className="text-right mr-2">
+                      <p className="text-sm font-bold text-gray-900">@{business.integrations.find((i: any) => i.provider === 'telegram').settings?.bot_username}</p>
+                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Active Bot</p>
+                    </div>
                     <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
                       <CheckCircle2 size={16} />
                       Connected
@@ -404,7 +408,7 @@ export default function SettingsPage() {
             </div>
 
             {/* WhatsApp */}
-            <div className={`flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-100 gap-4 ${!isGoogleConnected ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-100 gap-4">
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center text-green-500">
                   <MessageSquare size={28} />

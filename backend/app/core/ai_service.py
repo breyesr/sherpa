@@ -250,24 +250,50 @@ class AIService:
             except: pass
         return True
 
-    async def _create_appointment_tool(self, phone: str, name: str, start_iso: str, duration: int) -> str:
+    async def _create_appointment_tool(self, identifier: str, name: str, start_iso: str, duration: int) -> str:
+        from sqlalchemy import or_
         start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
         end = start + timedelta(minutes=duration)
-        res = await self.db.execute(select(Client).where(Client.business_id == self.business.id, Client.phone == phone))
+        
+        # Search by phone, telegram_id, or whatsapp_id
+        res = await self.db.execute(
+            select(Client).where(
+                Client.business_id == self.business.id,
+                or_(
+                    Client.phone == identifier,
+                    Client.telegram_id == identifier,
+                    Client.whatsapp_id == identifier
+                )
+            )
+        )
         client_obj = res.scalars().first()
+        
         if not client_obj:
-            client_obj = Client(business_id=self.business.id, name=name, phone=phone)
+            # If still not found, we don't know which platform this identifier is from, 
+            # but since AIService is generic, we'll try to guess or just use phone as fallback.
+            # However, in our flow, clients should be pre-registered by webhooks.
+            client_obj = Client(business_id=self.business.id, name=name, phone=identifier)
             self.db.add(client_obj)
             await self.db.flush()
+        
         apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start, end_time=end, status="scheduled")
         self.db.add(apt)
+        
+        # Sync with Google Calendar if connected
         res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
         integration = res.scalars().first()
         if integration:
             try:
                 service = GoogleCalendarService(integration, self.db)
-                google_id = await service.create_event(summary=f"Sherpa: {name}", description=f"Client: {name}\nPhone: {phone}\nBooked via AI Assistant", start_time=start, end_time=end)
+                google_id = await service.create_event(
+                    summary=f"Sherpa: {name}", 
+                    description=f"Client: {name}\nID: {identifier}\nBooked via AI Assistant", 
+                    start_time=start, 
+                    end_time=end
+                )
                 apt.google_event_id = google_id
-            except Exception as e: print(f"Google Sync Error: {e}")
+            except Exception as e: 
+                print(f"Google Sync Error: {e}")
+        
         await self.db.commit()
         return f"SUCCESS: Appointment booked for {name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."

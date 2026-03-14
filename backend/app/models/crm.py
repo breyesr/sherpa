@@ -10,8 +10,12 @@ class Client(Base):
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     name = Column(String, nullable=False)
-    phone = Column(String, nullable=False, index=True)
+    phone = Column(String, nullable=True, index=True)
     email = Column(String, nullable=True)
+    
+    # External Messaging IDs
+    telegram_id = Column(String, nullable=True, index=True)
+    whatsapp_id = Column(String, nullable=True, index=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
