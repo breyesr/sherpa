@@ -23,7 +23,7 @@ class UserResponse(UserBase):
     id: str
     is_active: bool
     is_admin: bool
-    role: str
+    role: Optional[str] = "member"
 
     class Config:
         from_attributes = True

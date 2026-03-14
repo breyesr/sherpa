@@ -17,20 +17,25 @@ class ConfigService:
     @staticmethod
     async def set(db: AsyncSession, key: str, value: str, description: str = None):
         """Encrypt and store a system configuration value."""
-        result = await db.execute(select(SystemConfiguration).where(SystemConfiguration.key == key))
-        config = result.scalars().first()
-        
-        encrypted_value = encrypt_token(value)
-        
-        if not config:
-            config = SystemConfiguration(key=key, value=encrypted_value, description=description)
-            db.add(config)
-        else:
-            config.value = encrypted_value
-            if description:
-                config.description = description
-        
-        await db.commit()
+        try:
+            result = await db.execute(select(SystemConfiguration).where(SystemConfiguration.key == key))
+            config = result.scalars().first()
+            
+            encrypted_value = encrypt_token(value)
+            
+            if not config:
+                config = SystemConfiguration(key=key, value=encrypted_value, description=description)
+                db.add(config)
+            else:
+                config.value = encrypted_value
+                if description:
+                    config.description = description
+            
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            print(f"ERROR: Failed to save system config '{key}': {e}")
+            raise e
 
     @staticmethod
     async def get_all(db: AsyncSession) -> Dict[str, str]:
