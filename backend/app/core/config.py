@@ -28,20 +28,20 @@ class Settings(BaseSettings):
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: str | None, info) -> str:
-        if isinstance(v, str):
-            # Railway uses postgres:// or postgresql://
-            if v.startswith("postgres://") or v.startswith("postgresql://"):
-                return v.replace("postgres://", "postgresql+asyncpg://", 1).replace("postgresql://", "postgresql+asyncpg://", 1)
+        if isinstance(v, str) and v.startswith("postgresql+asyncpg://"):
             return v
         
-        # Priority: DATABASE_URL -> Explicit Components
-        db_url = info.data.get("DATABASE_URL")
-        if db_url:
-            if db_url.startswith("postgres://") or db_url.startswith("postgresql://"):
-                return db_url.replace("postgres://", "postgresql+asyncpg://", 1).replace("postgresql://", "postgresql+asyncpg://", 1)
-            return db_url
-
-        return f"postgresql+asyncpg://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}@{info.data.get('POSTGRES_SERVER')}/{info.data.get('POSTGRES_DB')}"
+        db_url = v or info.data.get("DATABASE_URL")
+        if not db_url:
+            return f"postgresql+asyncpg://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}@{info.data.get('POSTGRES_SERVER')}/{info.data.get('POSTGRES_DB')}"
+        
+        # Clean Railway strings
+        if db_url.startswith("postgres://"):
+            return db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+        if db_url.startswith("postgresql://"):
+            return db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        return db_url
 
     REDIS_HOST: str = "localhost"
     REDIS_URL: str | None = None
