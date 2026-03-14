@@ -15,6 +15,8 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost",
     "http://127.0.0.1",
+    "https://web-staging-794a.up.railway.app",
+    "https://web-staging-ee436.up.railway.app", # Including both just in case
 ]
 
 if settings.BACKEND_CORS_ORIGINS:

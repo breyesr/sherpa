@@ -18,10 +18,13 @@ class ConfigService:
     async def set(db: AsyncSession, key: str, value: str, description: str = None):
         """Encrypt and store a system configuration value."""
         try:
+            # Defensive check: ensure value is a string
+            safe_value = str(value) if value is not None else ""
+            
             result = await db.execute(select(SystemConfiguration).where(SystemConfiguration.key == key))
             config = result.scalars().first()
             
-            encrypted_value = encrypt_token(value)
+            encrypted_value = encrypt_token(safe_value)
             
             if not config:
                 config = SystemConfiguration(key=key, value=encrypted_value, description=description)

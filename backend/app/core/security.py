@@ -16,24 +16,23 @@ def get_encryption_key():
 fernet = Fernet(get_encryption_key())
 
 def encrypt_token(token: str) -> str:
-    if not token:
-        return None
+    if token is None:
+        return ""
+    if token == "":
+        return ""
     return fernet.encrypt(token.encode()).decode()
 
 def decrypt_token(encrypted_token: str) -> str:
     if not encrypted_token:
-        return None
+        return ""
     try:
-        # Check if it's already plain text (simple heuristic: no fernet characters or very short)
-        # Fernet strings usually start with 'gAAAA'
+        # Check if it's already plain text
         if not encrypted_token.startswith("gAAAA"):
             return encrypted_token
             
         return fernet.decrypt(encrypted_token.encode()).decode()
     except Exception as e:
         print(f"CRITICAL: Failed to decrypt token! Error: {e}")
-        # If decryption fails, return the raw value ONLY if it's not a fernet string
-        # otherwise return None to prevent using garbage in API calls
         if encrypted_token.startswith("gAAAA"):
-            return None
+            return ""
         return encrypted_token
