@@ -121,7 +121,15 @@ async def google_callback(
         integration.token_expiry = token_expiry
         
         await db.commit()
-        return RedirectResponse(url="http://localhost:3000/integrations/google/success")
+        
+        # Dynamic redirect based on where the request came from (Referer) or fallback to settings
+        frontend_url = request.headers.get("referer") or "https://web-staging-794a.up.railway.app"
+        # Extract base domain from referer (e.g., https://web-staging.../)
+        from urllib.parse import urlparse
+        parsed_uri = urlparse(frontend_url)
+        base_frontend = f"{parsed_uri.scheme}://{parsed_uri.netloc}"
+        
+        return RedirectResponse(url=f"{base_frontend}/integrations/google/success")
         
     except Exception as e:
         print(f"CRITICAL Google OAuth Error: {str(e)}")
