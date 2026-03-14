@@ -11,6 +11,7 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<any>({
     GOOGLE_CLIENT_ID: '',
     GOOGLE_CLIENT_SECRET: '',
+    GOOGLE_REDIRECT_URI: '',
     OPENAI_API_KEY: '',
     GEMINI_API_KEY: '',
     CLAUDE_API_KEY: '',
@@ -251,8 +252,20 @@ export default function AdminSettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <section className="bg-white rounded-3xl border p-8 space-y-6">
               <h2 className="text-xl font-bold flex items-center gap-2"><Globe className="text-blue-600" /> Google Cloud</h2>
-              <input type="text" value={settings.GOOGLE_CLIENT_ID} onChange={e => setSettings({...settings, GOOGLE_CLIENT_ID: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl text-sm" placeholder="Client ID" />
-              <input type="password" value={settings.GOOGLE_CLIENT_SECRET} onChange={e => setSettings({...settings, GOOGLE_CLIENT_SECRET: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl text-sm" placeholder="Client Secret" />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Client ID</label>
+                  <input type="text" value={settings.GOOGLE_CLIENT_ID} onChange={e => setSettings({...settings, GOOGLE_CLIENT_ID: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl text-sm" placeholder="Client ID" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Client Secret</label>
+                  <input type="password" value={settings.GOOGLE_CLIENT_SECRET} onChange={e => setSettings({...settings, GOOGLE_CLIENT_SECRET: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl text-sm" placeholder="Client Secret" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Redirect URI</label>
+                  <input type="text" value={settings.GOOGLE_REDIRECT_URI} onChange={e => setSettings({...settings, GOOGLE_REDIRECT_URI: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl text-xs font-mono" placeholder="https://api.../api/v1/integrations/google/callback" />
+                </div>
+              </div>
             </section>
             <section className="bg-white rounded-3xl border p-8 space-y-6">
               <h2 className="text-xl font-bold flex items-center gap-2"><Key className="text-green-600" /> WhatsApp</h2>
