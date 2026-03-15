@@ -17,64 +17,16 @@ class AIService:
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
-    async def _get_openai_response(self, system_prompt: str, user_message: str, customer_phone: str) -> str:
+    async def _get_openai_response(self, system_prompt: str, user_message: str, phone: str) -> str:
         from openai import AsyncOpenAI
         api_key = await ConfigService.get(self.db, "OPENAI_API_KEY")
-        if not api_key: return "Assistant configuration error: API Key missing."
+        if not api_key: return "Assistant configuration error: OpenAI API Key missing."
+        
         client = AsyncOpenAI(api_key=api_key)
-        # ... rest of existing openai logic ...
-
-    async def _get_gemini_response(self, system_prompt: str, user_message: str, customer_phone: str) -> str:
-        import google.generativeai as genai
-        api_key = await ConfigService.get(self.db, "GEMINI_API_KEY")
-        if not api_key: return "Assistant configuration error: Gemini Key missing."
-        # ... rest of existing gemini logic ...
-
-    async def _get_claude_response(self, system_prompt: str, user_message: str, customer_phone: str) -> str:
-        from anthropic import AsyncAnthropic
-        api_key = await ConfigService.get(self.db, "CLAUDE_API_KEY")
-        if not api_key: return "Assistant configuration error: Claude Key missing."
-        # ... rest of existing claude logic ...
-
-    async def get_response(self, customer_phone: str, user_message: str) -> str:
-        provider = await self.get_active_provider()
-        
-        system_prompt = f"""
-        You are {self.assistant_config.name}, an AI assistant for '{self.business.name}'.
-        Your tone is {self.assistant_config.tone}.
-        
-        Business Context:
-        - Category: {self.business.category}
-        - Greeting: {self.assistant_config.greeting}
-        
-        Your Goal: Help clients book appointments.
-        
-        RULES:
-        1. ALWAYS check availability using 'check_availability' before suggesting or confirming a time.
-        2. If a slot is available and the user wants to book, use 'create_appointment'.
-        3. If you don't know the user's name, ask for it before finalizing a booking.
-        4. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
-        """
-
-        if provider == "openai":
-            return await self._get_openai_response(system_prompt, user_message, customer_phone)
-        elif provider == "gemini":
-            return await self._get_gemini_response(system_prompt, user_message, customer_phone)
-        elif provider == "claude":
-            return await self._get_claude_response(system_prompt, user_message, customer_phone)
-        else:
-            return await self._get_openai_response(system_prompt, user_message, customer_phone)
-
-    async def _get_openai_response(self, system_prompt: str, user_message: str, phone: str) -> str:
-        api_key = await ConfigService.get(self.db, "OPENAI_API_KEY")
-        if not api_key: raise Exception("OpenAI API Key missing")
-        client = AsyncOpenAI(api_key=api_key)
-
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
-
         tools = self._get_tools_definition()
 
         response = await client.chat.completions.create(
@@ -85,7 +37,6 @@ class AIService:
         )
 
         response_message = response.choices[0].message
-        
         if response_message.tool_calls:
             messages.append(response_message)
             for tool_call in response_message.tool_calls:
@@ -105,18 +56,18 @@ class AIService:
         return response_message.content
 
     async def _get_gemini_response(self, system_prompt: str, user_message: str, phone: str) -> str:
+        import google.generativeai as genai
+        import asyncio
         api_key = await ConfigService.get(self.db, "GEMINI_API_KEY")
-        if not api_key: raise Exception("Gemini API Key missing")
-        genai.configure(api_key=api_key)
+        if not api_key: return "Assistant configuration error: Gemini Key missing."
         
-        # Tools definition for Gemini
+        genai.configure(api_key=api_key)
+
         def check_availability(start_time: str, duration_minutes: int = 60):
-            import asyncio
-            # Gemini sync tool calling wrapper
+            # Gemini sync tool calling wrapper (needs to run in current loop or new loop)
             return asyncio.run(self._check_availability_tool(start_time, duration_minutes))
 
         def create_appointment(client_name: str, start_time: str, duration_minutes: int = 60):
-            import asyncio
             return asyncio.run(self._create_appointment_tool(phone, client_name, start_time, duration_minutes))
 
         model = genai.GenerativeModel(
@@ -130,10 +81,11 @@ class AIService:
         return response.text
 
     async def _get_claude_response(self, system_prompt: str, user_message: str, phone: str) -> str:
+        from anthropic import AsyncAnthropic
         api_key = await ConfigService.get(self.db, "CLAUDE_API_KEY")
-        if not api_key: raise Exception("Claude API Key missing")
+        if not api_key: return "Assistant configuration error: Claude Key missing."
+        
         client = AsyncAnthropic(api_key=api_key)
-
         tools = [
             {
                 "name": "check_availability",
@@ -171,8 +123,6 @@ class AIService:
         )
 
         if response.stop_reason == "tool_use":
-            # Handle tool use for Claude
-            # This is a bit more manual in Claude but follow the same logic
             tool_use = next(block for block in response.content if block.type == "tool_use")
             result = await self._dispatch_tool(tool_use.name, tool_use.input, phone)
             
@@ -198,6 +148,35 @@ class AIService:
             return final_response.content[0].text
 
         return response.content[0].text
+
+    async def get_response(self, customer_phone: str, user_message: str) -> str:
+        provider = await self.get_active_provider()
+        
+        system_prompt = f"""
+        You are {self.assistant_config.name}, an AI assistant for '{self.business.name}'.
+        Your tone is {self.assistant_config.tone}.
+        
+        Business Context:
+        - Category: {self.business.category}
+        - Greeting: {self.assistant_config.greeting}
+        
+        Your Goal: Help clients book appointments.
+        
+        RULES:
+        1. ALWAYS check availability using 'check_availability' before suggesting or confirming a time.
+        2. If a slot is available and the user wants to book, use 'create_appointment'.
+        3. If you don't know the user's name, ask for it before finalizing a booking.
+        4. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
+        """
+
+        if provider == "openai":
+            return await self._get_openai_response(system_prompt, user_message, customer_phone)
+        elif provider == "gemini":
+            return await self._get_gemini_response(system_prompt, user_message, customer_phone)
+        elif provider == "claude":
+            return await self._get_claude_response(system_prompt, user_message, customer_phone)
+        else:
+            return await self._get_openai_response(system_prompt, user_message, customer_phone)
 
     def _get_tools_definition(self):
         return [
@@ -285,9 +264,6 @@ class AIService:
         client_obj = res.scalars().first()
         
         if not client_obj:
-            # If still not found, we don't know which platform this identifier is from, 
-            # but since AIService is generic, we'll try to guess or just use phone as fallback.
-            # However, in our flow, clients should be pre-registered by webhooks.
             client_obj = Client(business_id=self.business.id, name=name, phone=identifier)
             self.db.add(client_obj)
             await self.db.flush()
@@ -295,7 +271,6 @@ class AIService:
         apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start, end_time=end, status="scheduled")
         self.db.add(apt)
         
-        # Sync with Google Calendar if connected
         res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
         integration = res.scalars().first()
         if integration:
