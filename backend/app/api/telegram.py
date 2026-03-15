@@ -5,6 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 import uuid
 import traceback
+import httpx
 
 from app.core.database import get_db
 from app.models.business import BusinessProfile
@@ -12,6 +13,7 @@ from app.models.integration import Integration
 from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
 from app.core.telegram_service import TelegramService
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -106,4 +108,96 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
 async def link_telegram(
     data: dict,
     db: AsyncSession = Depends(get_db),
-...
+    current_user: Any = Depends(get_current_user)
+):
+    """Link a Telegram Bot to the current user's business."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found. Please complete onboarding.")
+    
+    bot_token = data.get("bot_token")
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="bot_token is required")
+
+    bot_info = await TelegramService.get_bot_info(bot_token)
+    if not bot_info:
+        raise HTTPException(status_code=400, detail="Invalid Telegram Bot Token.")
+
+    result = await db.execute(
+        select(Integration)
+        .where(Integration.business_id == business.id, Integration.provider == 'telegram')
+    )
+    integration = result.scalars().first()
+    
+    if not integration:
+        integration = Integration(business_id=business.id, provider='telegram', settings={})
+        db.add(integration)
+    
+    webhook_id = integration.settings.get("webhook_id") or str(uuid.uuid4())
+    webhook_res = await TelegramService.set_webhook(bot_token, webhook_id)
+    
+    if not webhook_res.get("ok"):
+        raise HTTPException(status_code=400, detail=f"Telegram webhook error: {webhook_res.get('description')}")
+
+    integration.access_token = encrypt_token(bot_token)
+    integration.settings = {
+        "webhook_id": webhook_id,
+        "bot_username": bot_info.get("username"),
+        "bot_name": bot_info.get("first_name"),
+        "local_testing": webhook_res.get("local_skip", False)
+    }
+    
+    await db.commit()
+    return {"status": "success", "bot_username": bot_info.get("username")}
+
+@router.get("/status")
+async def get_telegram_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Check if Telegram is connected."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        return {"connected": False}
+
+    result = await db.execute(
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == 'telegram')
+    )
+    integration = result.scalars().first()
+    if not integration:
+        return {"connected": False}
+    
+    return {
+        "connected": True,
+        "bot_username": integration.settings.get("bot_username"),
+        "bot_name": integration.settings.get("bot_name")
+    }
+
+@router.delete("/disconnect")
+async def disconnect_telegram(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Remove Telegram integration."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    result = await db.execute(
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == 'telegram')
+    )
+    integration = result.scalars().first()
+    
+    if integration:
+        try:
+            token = decrypt_token(integration.access_token)
+            async with httpx.AsyncClient() as client:
+                await client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
+        except: pass
+        await db.delete(integration)
+        await db.commit()
+    
+    return {"status": "success"}
