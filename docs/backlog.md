@@ -46,6 +46,13 @@
 - [ ] Task 8.1: Implement KPI display (Total Clients, Appointments, Reminders).
 - [ ] Task 8.2: Integrate Stripe Test Mode for manual upgrades.
 
+## Epic 9: Lead Capture & Intelligent Scheduling
+- [ ] Task 9.1: Implement "Identity Gate" in AIService (check if client info is complete).
+- [ ] Task 9.2: Create `update_client_info` tool for AI to save Name/Email during chat.
+- [ ] Task 9.3: Refine WhatsApp multi-tenant webhook for full production parity.
+- [ ] Task 9.4: Implement Redis-based conversation state to handle multi-turn data collection.
+- [ ] Task 9.5: Automate "Booking Confirmation" message back to the messaging provider.
+
 ## Hard Constraints (Enforced)
 - No Form Builders.
 - No Advanced Conversational AI.
