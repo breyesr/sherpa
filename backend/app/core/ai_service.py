@@ -1,8 +1,5 @@
 import json
 from typing import List, Dict, Any, Optional
-from openai import AsyncOpenAI
-import google.generativeai as genai
-from anthropic import AsyncAnthropic
 from app.core.google_calendar import GoogleCalendarService
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.future import select
@@ -19,6 +16,25 @@ class AIService:
 
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+
+    async def _get_openai_response(self, system_prompt: str, user_message: str, customer_phone: str) -> str:
+        from openai import AsyncOpenAI
+        api_key = await ConfigService.get(self.db, "OPENAI_API_KEY")
+        if not api_key: return "Assistant configuration error: API Key missing."
+        client = AsyncOpenAI(api_key=api_key)
+        # ... rest of existing openai logic ...
+
+    async def _get_gemini_response(self, system_prompt: str, user_message: str, customer_phone: str) -> str:
+        import google.generativeai as genai
+        api_key = await ConfigService.get(self.db, "GEMINI_API_KEY")
+        if not api_key: return "Assistant configuration error: Gemini Key missing."
+        # ... rest of existing gemini logic ...
+
+    async def _get_claude_response(self, system_prompt: str, user_message: str, customer_phone: str) -> str:
+        from anthropic import AsyncAnthropic
+        api_key = await ConfigService.get(self.db, "CLAUDE_API_KEY")
+        if not api_key: return "Assistant configuration error: Claude Key missing."
+        # ... rest of existing claude logic ...
 
     async def get_response(self, customer_phone: str, user_message: str) -> str:
         provider = await self.get_active_provider()
