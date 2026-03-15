@@ -151,6 +151,7 @@ class AIService:
 
     async def get_response(self, customer_phone: str, user_message: str) -> str:
         provider = await self.get_active_provider()
+        print(f"DEBUG: AI Service triggered. Provider: {provider}")
         
         system_prompt = f"""
         You are {self.assistant_config.name}, an AI assistant for '{self.business.name}'.
@@ -169,14 +170,20 @@ class AIService:
         4. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
         """
 
-        if provider == "openai":
-            return await self._get_openai_response(system_prompt, user_message, customer_phone)
-        elif provider == "gemini":
-            return await self._get_gemini_response(system_prompt, user_message, customer_phone)
-        elif provider == "claude":
-            return await self._get_claude_response(system_prompt, user_message, customer_phone)
-        else:
-            return await self._get_openai_response(system_prompt, user_message, customer_phone)
+        try:
+            if provider == "openai":
+                return await self._get_openai_response(system_prompt, user_message, customer_phone)
+            elif provider == "gemini":
+                return await self._get_gemini_response(system_prompt, user_message, customer_phone)
+            elif provider == "claude":
+                return await self._get_claude_response(system_prompt, user_message, customer_phone)
+            else:
+                return await self._get_openai_response(system_prompt, user_message, customer_phone)
+        except Exception as e:
+            print(f"CRITICAL: {provider.upper()} Provider Failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
 
     def _get_tools_definition(self):
         return [
