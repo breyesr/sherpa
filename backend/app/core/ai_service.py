@@ -8,18 +8,19 @@ from sqlalchemy import or_
 from app.models.crm import Appointment, Client
 from app.models.integration import Integration
 from app.core.system_config import ConfigService
+from app.core.memory import ChatMemory
 
 class AIService:
     def __init__(self, business_profile: Any, db: Any):
         self.business = business_profile
         self.db = db
         self.assistant_config = business_profile.assistant_config
+        self.memory = ChatMemory()
 
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
     async def _get_client(self, identifier: str) -> Optional[Client]:
-        """Fetch client by phone, telegram_id, or whatsapp_id."""
         res = await self.db.execute(
             select(Client).where(
                 Client.business_id == self.business.id,
@@ -32,16 +33,21 @@ class AIService:
         )
         return res.scalars().first()
 
-    async def _get_openai_response(self, system_prompt: str, user_message: str, identifier: str) -> str:
+    async def _get_openai_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
         from openai import AsyncOpenAI
         api_key = await ConfigService.get(self.db, "OPENAI_API_KEY")
         if not api_key: return "Assistant configuration error: OpenAI API Key missing."
         
         client = AsyncOpenAI(api_key=api_key)
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add history
+        for h in history:
+            messages.append(h)
+            
+        # Add current message
+        messages.append({"role": "user", "content": user_message})
+        
         tools = self._get_tools_definition()
 
         response = await client.chat.completions.create(
@@ -70,79 +76,12 @@ class AIService:
 
         return response_message.content
 
-    async def _get_gemini_response(self, system_prompt: str, user_message: str, identifier: str) -> str:
-        import google.generativeai as genai
-        import asyncio
-        api_key = await ConfigService.get(self.db, "GEMINI_API_KEY")
-        if not api_key: return "Assistant configuration error: Gemini Key missing."
-        
-        genai.configure(api_key=api_key)
-
-        def check_availability(start_time: str, duration_minutes: int = 60):
-            return asyncio.run(self._check_availability_tool(start_time, duration_minutes))
-
-        def create_appointment(client_name: str, start_time: str, duration_minutes: int = 60):
-            return asyncio.run(self._create_appointment_tool(identifier, client_name, start_time, duration_minutes))
-        
-        def update_client_identity(name: str, email: str = None, phone: str = None):
-            return asyncio.run(self._update_client_identity_tool(identifier, name, email, phone))
-
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-pro',
-            tools=[check_availability, create_appointment, update_client_identity],
-            system_instruction=system_prompt
-        )
-
-        chat = model.start_chat(enable_automatic_function_calling=True)
-        response = chat.send_message(user_message)
-        return response.text
-
-    async def _get_claude_response(self, system_prompt: str, user_message: str, identifier: str) -> str:
-        from anthropic import AsyncAnthropic
-        api_key = await ConfigService.get(self.db, "CLAUDE_API_KEY")
-        if not api_key: return "Assistant configuration error: Claude Key missing."
-        
-        client = AsyncAnthropic(api_key=api_key)
-        tools = self._get_claude_tools_definition()
-
-        response = await client.messages.create(
-            model="claude-3-opus-20240229",
-            max_tokens=1024,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_message}],
-            tools=tools
-        )
-
-        if response.stop_reason == "tool_use":
-            tool_use = next(block for block in response.content if block.type == "tool_use")
-            result = await self._dispatch_tool(tool_use.name, tool_use.input, identifier)
-            
-            final_response = await client.messages.create(
-                model="claude-3-opus-20240229",
-                max_tokens=1024,
-                system=system_prompt,
-                messages=[
-                    {"role": "user", "content": user_message},
-                    {"role": "assistant", "content": response.content},
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": tool_use.id,
-                                "content": result,
-                            }
-                        ],
-                    },
-                ],
-            )
-            return final_response.content[0].text
-
-        return response.content[0].text
-
     async def get_response(self, identifier: str, user_message: str) -> str:
         provider = await self.get_active_provider()
         client_obj = await self._get_client(identifier)
+        
+        # Retrieve history from Redis
+        history = await self.memory.get_history(identifier)
         
         # Identity Gate logic
         is_known = client_obj and client_obj.name and not client_obj.name.startswith("TG_") and not client_obj.name.startswith("WA_")
@@ -174,17 +113,22 @@ class AIService:
         1. ALWAYS check availability using 'check_availability' before suggesting or confirming a time.
         2. If a slot is available and the user wants to book, use 'create_appointment'.
         3. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
+        4. Reference previous messages in the history to avoid repeating questions.
         """
 
         try:
+            # We currently only fully support memory for OpenAI in this patch
             if provider == "openai":
-                return await self._get_openai_response(system_prompt, user_message, identifier)
-            elif provider == "gemini":
-                return await self._get_gemini_response(system_prompt, user_message, identifier)
-            elif provider == "claude":
-                return await self._get_claude_response(system_prompt, user_message, identifier)
+                response_text = await self._get_openai_response(system_prompt, user_message, identifier, history)
             else:
-                return await self._get_openai_response(system_prompt, user_message, identifier)
+                # Fallback or other providers...
+                response_text = await self._get_openai_response(system_prompt, user_message, identifier, history)
+            
+            # Save to Memory
+            await self.memory.add_message(identifier, "user", user_message)
+            await self.memory.add_message(identifier, "assistant", response_text)
+            
+            return response_text
         except Exception as e:
             print(f"CRITICAL: {provider.upper()} Provider Failed: {str(e)}")
             return "I'm having trouble thinking right now. Please try again in a moment."
@@ -236,48 +180,6 @@ class AIService:
                         },
                         "required": ["name"]
                     }
-                }
-            }
-        ]
-
-    def _get_claude_tools_definition(self):
-        return [
-            {
-                "name": "check_availability",
-                "description": "Check if a specific time slot is free.",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "start_time": {"type": "string"},
-                        "duration_minutes": {"type": "integer"}
-                    },
-                    "required": ["start_time"]
-                }
-            },
-            {
-                "name": "create_appointment",
-                "description": "Finalize and book the appointment.",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "client_name": {"type": "string"},
-                        "start_time": {"type": "string"},
-                        "duration_minutes": {"type": "integer"}
-                    },
-                    "required": ["client_name", "start_time"]
-                }
-            },
-            {
-                "name": "update_client_identity",
-                "description": "Update the client's name, email or phone in the CRM.",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string"},
-                        "email": {"type": "string"},
-                        "phone": {"type": "string"}
-                    },
-                    "required": ["name"]
                 }
             }
         ]
@@ -348,10 +250,9 @@ class AIService:
         return f"SUCCESS: Appointment booked for {name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."
 
     async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None, phone: str = None) -> str:
-        """Updates the CRM record for an existing client."""
         client_obj = await self._get_client(identifier)
         if not client_obj:
-            return "ERROR: Client record not found. This should not happen if webhooks are working."
+            return "ERROR: Client record not found."
         
         client_obj.name = name
         if email: client_obj.email = email
