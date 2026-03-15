@@ -20,6 +20,7 @@ router = APIRouter()
 @router.post("/webhook/{webhook_id}")
 async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Receive messages from Telegram via a unique webhook ID."""
+    print("!!! TELEGRAM WEBHOOK PING RECEIVED !!!")
     try:
         payload = await request.json()
         print(f"DEBUG: Incoming Telegram Webhook for ID {webhook_id}")
