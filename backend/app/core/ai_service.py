@@ -22,20 +22,46 @@ class AIService:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
     async def _get_client(self, identifier: str) -> Optional[Client]:
-        # Identifier can be phone number or Telegram chat ID
-        # We search by phone, whatsapp_id_hash, or telegram_id_hash
+        # 1. Primary Search: Use the privacy-preserving hashes
         id_hash = Client.hash_id(identifier)
         res = await self.db.execute(
             select(Client).where(
                 Client.business_id == self.business.id,
                 or_(
-                    Client.phone == identifier,
                     Client.telegram_id_hash == id_hash,
-                    Client.whatsapp_id_hash == id_hash
+                    Client.whatsapp_id_hash == id_hash,
+                    Client.phone == identifier
                 )
             )
         )
-        return res.scalars().first()
+        client = res.scalars().first()
+
+        # 2. Self-Healing Fallback: Check for legacy plain-text IDs if hash fails
+        if not client:
+            res = await self.db.execute(
+                select(Client).where(
+                    Client.business_id == self.business.id,
+                    or_(
+                        Client.telegram_id == identifier,
+                        Client.whatsapp_id == identifier
+                    )
+                )
+            )
+            client = res.scalars().first()
+            
+            if client:
+                print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes.")
+                # If we found it by raw ID, it means the hash was missing. Populate it now.
+                if client.telegram_id == identifier:
+                    client.telegram_id_hash = id_hash
+                    client.telegram_id = encrypt_token(identifier)
+                if client.whatsapp_id == identifier:
+                    client.whatsapp_id_hash = id_hash
+                    client.whatsapp_id = encrypt_token(identifier)
+                
+                await self.db.commit()
+        
+        return client
 
     async def _get_openai_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
         from openai import AsyncOpenAI
