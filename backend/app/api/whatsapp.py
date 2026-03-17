@@ -69,49 +69,15 @@ async def handle_whatsapp_message(
                     profile_name = contacts[0].get("profile", {}).get("name") if contacts else None
                     
                     if text:
-                        # --- AUTO-CLIENT REGISTRATION ---
-                        from app.models.crm import Client
-                        from sqlalchemy import or_
-                        
-                        # Search by hash for privacy-preserving lookup
-                        sender_hash = Client.hash_id(sender_phone)
-                        
-                        # Check if client exists for this business
-                        res = await db.execute(
-                            select(Client).where(
-                                Client.business_id == business.id, 
-                                or_(
-                                    Client.phone == sender_phone,
-                                    Client.whatsapp_id_hash == sender_hash
-                                )
-                            )
-                        )
-                        client_obj = res.scalars().first()
-                        
-                        if not client_obj:
-                            # Create new client with encrypted IDs and searchable hash
-                            client_obj = Client(
-                                business_id=business.id,
-                                name=profile_name or f"WA_{sender_phone}",
-                                phone=sender_phone,
-                                whatsapp_id=encrypt_token(sender_phone),
-                                whatsapp_id_hash=sender_hash
-                            )
-                            db.add(client_obj)
-                            await db.commit()
-                            await db.refresh(client_obj)
-                            print(f"DEBUG: Auto-registered new WhatsApp client: {client_obj.name} ({sender_phone})")
-                        # --------------------------------
-
                         from app.core.ai_service import AIService
                         ai = AIService(business, db)
                         
-                        # If we have a profile name, we can hint it to the AI
-                        user_message = text
-                        if profile_name:
-                            user_message = f"(User Name: {profile_name}) {text}"
+                        meta = {
+                            "platform": "whatsapp",
+                            "name": profile_name
+                        }
                             
-                        response_text = await ai.get_response(sender_phone, user_message)
+                        response_text = await ai.get_response(sender_phone, text, meta)
                         
                         # Send back via WhatsApp (decrypted token)
                         import httpx

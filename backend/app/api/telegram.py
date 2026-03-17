@@ -57,43 +57,25 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         if chat_id and text:
             print(f"DEBUG: Processing message from {chat_id}: {text[:20]}...")
             chat_id_str = str(chat_id)
-            chat_hash = Client.hash_id(chat_id_str)
             
-            # --- AUTO-CLIENT REGISTRATION ---
-            from app.models.crm import Client
-            res = await db.execute(
-                select(Client).where(
-                    Client.business_id == business.id, 
-                    Client.telegram_id_hash == chat_hash
-                )
-            )
-            client_obj = res.scalars().first()
-            
-            if not client_obj:
-                name = f"{first_name or ''} {last_name or ''}".strip() or username or f"TG_{chat_id_str}"
-                client_obj = Client(
-                    business_id=business.id,
-                    name=name,
-                    telegram_id=encrypt_token(chat_id_str),
-                    telegram_id_hash=chat_hash
-                )
-                db.add(client_obj)
-                await db.commit()
-                print(f"DEBUG: Auto-registered new Telegram client: {name}")
-            # --------------------------------
-
             from app.core.ai_service import AIService
             ai = AIService(business, db)
             
-            user_message = text
-            if first_name:
-                user_message = f"(User Name: {first_name}) {text}"
-                
+            # Metadata for AIService to handle registration/lookup
+            meta = {
+                "platform": "telegram",
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username
+            }
+            
             try:
-                response_text = await ai.get_response(chat_id_str, user_message)
+                # get_response now handles auto-registration and healing internally
+                response_text = await ai.get_response(chat_id_str, text, meta)
                 print(f"DEBUG: AI Response generated: {response_text[:20]}...")
             except Exception as e:
                 print(f"ERROR: AI Service failed: {e}")
+                traceback.print_exc()
                 response_text = "I'm having trouble thinking right now. Please try again in a moment."
             
             # Send response back to Telegram

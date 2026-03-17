@@ -21,9 +21,14 @@ class AIService:
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
-    async def _get_client(self, identifier: str) -> Optional[Client]:
-        # 1. Primary Search: Use the privacy-preserving hashes
+    async def _get_client(self, identifier: str, metadata: Optional[Dict] = None) -> Client:
+        """
+        Find a client by identifier (phone, telegram_id, whatsapp_id) using hashes.
+        Includes self-healing for legacy plain-text IDs and auto-registration for new users.
+        """
         id_hash = Client.hash_id(identifier)
+        
+        # 1. Primary Search: Use the privacy-preserving hashes
         res = await self.db.execute(
             select(Client).where(
                 Client.business_id == self.business.id,
@@ -61,6 +66,32 @@ class AIService:
                 
                 await self.db.commit()
         
+        # 3. Auto-Registration: If still not found, create a new client
+        if not client:
+            print(f"DEBUG: Auto-registering new client for identifier: {identifier}")
+            name = "New Client"
+            if metadata:
+                name = metadata.get("name") or metadata.get("first_name") or name
+                if metadata.get("last_name"):
+                    name = f"{name} {metadata.get('last_name')}".strip()
+            
+            # Determine platform for ID storage
+            platform = metadata.get("platform") if metadata else None
+            is_telegram = platform == "telegram"
+            
+            client = Client(
+                business_id=self.business.id,
+                name=name,
+                phone=identifier if not is_telegram else None,
+                telegram_id=encrypt_token(identifier) if is_telegram else None,
+                telegram_id_hash=id_hash if is_telegram else None,
+                whatsapp_id=encrypt_token(identifier) if not is_telegram else None,
+                whatsapp_id_hash=id_hash if not is_telegram else None
+            )
+            self.db.add(client)
+            await self.db.commit()
+            await self.db.refresh(client)
+            
         return client
 
     async def _get_openai_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
@@ -106,15 +137,17 @@ class AIService:
 
         return response_message.content
 
-    async def get_response(self, identifier: str, user_message: str) -> str:
+    async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:
         provider = await self.get_active_provider()
-        client_obj = await self._get_client(identifier)
+        
+        # Unified client lookup (includes auto-reg and healing)
+        client_obj = await self._get_client(identifier, metadata)
         
         # Retrieve history from Redis
         history = await self.memory.get_history(identifier)
         
         # Identity Gate logic
-        is_known = client_obj and client_obj.name and not client_obj.name.startswith("TG_") and not client_obj.name.startswith("WA_")
+        is_known = client_obj and client_obj.name and not client_obj.name.startswith("TG_") and not client_obj.name.startswith("WA_") and client_obj.name != "New Client"
         has_email = client_obj and client_obj.email
         
         # Determine Greeting
@@ -263,15 +296,18 @@ class AIService:
             except: pass
         return True
 
+    async def _check_client_direct(self, identifier: str) -> Client:
+        """Helper for tools to get client without meta."""
+        return await self._get_client(identifier)
+
     async def _create_appointment_tool(self, identifier: str, name: str, start_iso: str, duration: int) -> str:
         start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
         end = start + timedelta(minutes=duration)
         
-        client_obj = await self._get_client(identifier)
-        if not client_obj:
-            client_obj = Client(business_id=self.business.id, name=name, phone=identifier)
-            self.db.add(client_obj)
-            await self.db.flush()
+        client_obj = await self._check_client_direct(identifier)
+        if client_obj.name == "New Client":
+            client_obj.name = name
+            await self.db.commit()
         
         apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start, end_time=end, status="scheduled")
         self.db.add(apt)
@@ -282,8 +318,8 @@ class AIService:
             try:
                 service = GoogleCalendarService(integration, self.db)
                 google_id = await service.create_event(
-                    summary=f"Sherpa: {name}", 
-                    description=f"Client: {name}\nID: {identifier}\nBooked via AI Assistant", 
+                    summary=f"Sherpa: {client_obj.name}", 
+                    description=f"Client: {client_obj.name}\nID: {identifier}\nBooked via AI Assistant", 
                     start_time=start, 
                     end_time=end
                 )
@@ -292,12 +328,10 @@ class AIService:
                 print(f"Google Sync Error: {e}")
         
         await self.db.commit()
-        return f"SUCCESS: Appointment booked for {name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."
+        return f"SUCCESS: Appointment booked for {client_obj.name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."
 
     async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None, phone: str = None) -> str:
-        client_obj = await self._get_client(identifier)
-        if not client_obj:
-            return "ERROR: Client record not found."
+        client_obj = await self._check_client_direct(identifier)
         
         client_obj.name = name
         if email: client_obj.email = email
