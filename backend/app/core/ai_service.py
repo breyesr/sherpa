@@ -8,6 +8,7 @@ from sqlalchemy import or_
 from app.models.crm import Appointment, Client
 from app.models.integration import Integration
 from app.core.system_config import ConfigService
+from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
 
 class AIService:
@@ -21,13 +22,16 @@ class AIService:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
     async def _get_client(self, identifier: str) -> Optional[Client]:
+        # Identifier can be phone number or Telegram chat ID
+        # We search by phone, whatsapp_id_hash, or telegram_id_hash
+        id_hash = Client.hash_id(identifier)
         res = await self.db.execute(
             select(Client).where(
                 Client.business_id == self.business.id,
                 or_(
                     Client.phone == identifier,
-                    Client.telegram_id == identifier,
-                    Client.whatsapp_id == identifier
+                    Client.telegram_id_hash == id_hash,
+                    Client.whatsapp_id_hash == id_hash
                 )
             )
         )
@@ -87,13 +91,26 @@ class AIService:
         is_known = client_obj and client_obj.name and not client_obj.name.startswith("TG_") and not client_obj.name.startswith("WA_")
         has_email = client_obj and client_obj.email
         
+        # Determine Greeting
+        greeting = self.assistant_config.greeting
+        if is_known and len(history) == 0:
+            greeting = self.assistant_config.personalized_greeting.format(name=client_obj.name.split()[0])
+        
+        # Logic Template influence
+        logic_instruction = ""
+        if self.assistant_config.logic_template == "custom_steps":
+            logic_instruction = "Follow the specific custom steps defined for this business flow."
+        else:
+            logic_instruction = "Follow the standard booking flow: check availability, ask for missing details, then confirm."
+
         identity_instruction = ""
         if not is_known or not has_email:
-            identity_instruction = """
+            identity_instruction = f"""
             IMPORTANT: This user is currently ANONYMOUS or missing contact details.
+            Current Name in CRM: {client_obj.name if client_obj else 'Unknown'}
             Before you confirm any booking, you MUST politely ask for their:
-            1. Full Name
-            2. Email Address
+            1. Full Name (if not known)
+            2. Email Address (if not known)
             Once they provide them, use the 'update_client_identity' tool to save them.
             Do NOT book an appointment until you have at least their name.
             """
@@ -104,9 +121,10 @@ class AIService:
         
         Business Context:
         - Category: {self.business.category}
-        - Greeting: {self.assistant_config.greeting}
+        - Greeting context: {greeting}
         
         Your Goal: Help clients book appointments.
+        {logic_instruction}
         {identity_instruction}
         
         RULES:
@@ -114,6 +132,7 @@ class AIService:
         2. If a slot is available and the user wants to book, use 'create_appointment'.
         3. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
         4. Reference previous messages in the history to avoid repeating questions.
+        5. If this is the start of the conversation, use the Greeting context to guide your opening.
         """
 
         try:
@@ -256,7 +275,11 @@ class AIService:
         
         client_obj.name = name
         if email: client_obj.email = email
-        if phone: client_obj.phone = phone
+        if phone: 
+            client_obj.phone = phone
+            # Update WhatsApp mapping as it is phone-based
+            client_obj.whatsapp_id = encrypt_token(phone)
+            client_obj.whatsapp_id_hash = Client.hash_id(phone)
         
         await self.db.commit()
         return f"SUCCESS: Client identity updated to {name}."

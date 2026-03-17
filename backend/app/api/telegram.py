@@ -57,13 +57,14 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         if chat_id and text:
             print(f"DEBUG: Processing message from {chat_id}: {text[:20]}...")
             chat_id_str = str(chat_id)
+            chat_hash = Client.hash_id(chat_id_str)
             
             # --- AUTO-CLIENT REGISTRATION ---
             from app.models.crm import Client
             res = await db.execute(
                 select(Client).where(
                     Client.business_id == business.id, 
-                    Client.telegram_id == chat_id_str
+                    Client.telegram_id_hash == chat_hash
                 )
             )
             client_obj = res.scalars().first()
@@ -73,7 +74,8 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                 client_obj = Client(
                     business_id=business.id,
                     name=name,
-                    telegram_id=chat_id_str
+                    telegram_id=encrypt_token(chat_id_str),
+                    telegram_id_hash=chat_hash
                 )
                 db.add(client_obj)
                 await db.commit()

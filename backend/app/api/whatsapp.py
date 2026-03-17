@@ -73,25 +73,29 @@ async def handle_whatsapp_message(
                         from app.models.crm import Client
                         from sqlalchemy import or_
                         
+                        # Search by hash for privacy-preserving lookup
+                        sender_hash = Client.hash_id(sender_phone)
+                        
                         # Check if client exists for this business
                         res = await db.execute(
                             select(Client).where(
                                 Client.business_id == business.id, 
                                 or_(
                                     Client.phone == sender_phone,
-                                    Client.whatsapp_id == sender_phone
+                                    Client.whatsapp_id_hash == sender_hash
                                 )
                             )
                         )
                         client_obj = res.scalars().first()
                         
                         if not client_obj:
-                            # Create new client from WhatsApp info
+                            # Create new client with encrypted IDs and searchable hash
                             client_obj = Client(
                                 business_id=business.id,
                                 name=profile_name or f"WA_{sender_phone}",
                                 phone=sender_phone,
-                                whatsapp_id=sender_phone
+                                whatsapp_id=encrypt_token(sender_phone),
+                                whatsapp_id_hash=sender_hash
                             )
                             db.add(client_obj)
                             await db.commit()

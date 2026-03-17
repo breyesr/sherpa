@@ -6,6 +6,8 @@ class AssistantConfigBase(BaseModel):
     name: str
     tone: str
     greeting: str
+    personalized_greeting: str = "Hola {name}, ¿en qué puedo ayudarte hoy?"
+    logic_template: str = "standard"
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AssistantConfigCreate(AssistantConfigBase):
@@ -15,6 +17,8 @@ class AssistantConfigUpdate(BaseModel):
     name: Optional[str] = None
     tone: Optional[str] = None
     greeting: Optional[str] = None
+    personalized_greeting: Optional[str] = None
+    logic_template: Optional[str] = None
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AssistantConfigResponse(AssistantConfigBase):

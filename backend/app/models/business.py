@@ -29,6 +29,8 @@ class AssistantConfig(Base):
     name = Column(String, nullable=False, default="Sherpa Assistant")
     tone = Column(String, nullable=False, default="Professional")
     greeting = Column(String, nullable=False, default="Hello! How can I help you today?")
+    personalized_greeting = Column(String, nullable=False, default="Hola {name}, ¿en qué puedo ayudarte hoy?")
+    logic_template = Column(String, nullable=False, default="standard") # standard, custom_steps
     working_hours = Column(JSON, nullable=True) # e.g., {"mon": ["09:00", "18:00"], ...}
 
     business_profile = relationship("BusinessProfile", back_populates="assistant_config")

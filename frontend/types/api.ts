@@ -27,6 +27,10 @@ export interface paths {
     /** Update Business Me */
     patch: operations["update_business_me_api_v1_business_me_patch"];
   };
+  "/api/v1/business/me/activate-trial": {
+    /** Activate Trial */
+    post: operations["activate_trial_api_v1_business_me_activate_trial_post"];
+  };
   "/api/v1/business/me/assistant": {
     /** Update Assistant Me */
     patch: operations["update_assistant_me_api_v1_business_me_assistant_patch"];
@@ -46,6 +50,20 @@ export interface paths {
      */
     get: operations["get_google_availability_api_v1_integrations_google_availability_get"];
   };
+  "/api/v1/integrations/google/sync": {
+    /**
+     * Trigger Google Sync
+     * @description Manually trigger a calendar sync task.
+     */
+    post: operations["trigger_google_sync_api_v1_integrations_google_sync_post"];
+  };
+  "/api/v1/integrations/{provider}": {
+    /**
+     * Disconnect Integration
+     * @description Remove an integration and its associated local cache.
+     */
+    delete: operations["disconnect_integration_api_v1_integrations__provider__delete"];
+  };
   "/api/v1/crm/clients": {
     /** Get Clients */
     get: operations["get_clients_api_v1_crm_clients_get"];
@@ -57,6 +75,86 @@ export interface paths {
     get: operations["get_appointments_api_v1_crm_appointments_get"];
     /** Create Appointment */
     post: operations["create_appointment_api_v1_crm_appointments_post"];
+  };
+  "/api/v1/crm/appointments/{appointment_id}": {
+    /** Delete Appointment */
+    delete: operations["delete_appointment_api_v1_crm_appointments__appointment_id__delete"];
+    /** Update Appointment */
+    patch: operations["update_appointment_api_v1_crm_appointments__appointment_id__patch"];
+  };
+  "/api/v1/whatsapp/webhook": {
+    /** Verify Webhook */
+    get: operations["verify_webhook_api_v1_whatsapp_webhook_get"];
+    /** Handle Whatsapp Message */
+    post: operations["handle_whatsapp_message_api_v1_whatsapp_webhook_post"];
+  };
+  "/api/v1/whatsapp/link": {
+    /** Link Whatsapp */
+    post: operations["link_whatsapp_api_v1_whatsapp_link_post"];
+  };
+  "/api/v1/telegram/webhook/{webhook_id}": {
+    /**
+     * Telegram Webhook
+     * @description Receive messages from Telegram via a unique webhook ID.
+     */
+    post: operations["telegram_webhook_api_v1_telegram_webhook__webhook_id__post"];
+  };
+  "/api/v1/telegram/link": {
+    /**
+     * Link Telegram
+     * @description Link a Telegram Bot to the current user's business.
+     */
+    post: operations["link_telegram_api_v1_telegram_link_post"];
+  };
+  "/api/v1/telegram/status": {
+    /**
+     * Get Telegram Status
+     * @description Check if Telegram is connected.
+     */
+    get: operations["get_telegram_status_api_v1_telegram_status_get"];
+  };
+  "/api/v1/telegram/disconnect": {
+    /**
+     * Disconnect Telegram
+     * @description Remove Telegram integration.
+     */
+    delete: operations["disconnect_telegram_api_v1_telegram_disconnect_delete"];
+  };
+  "/api/v1/admin/users": {
+    /**
+     * List Users
+     * @description List all users (Admin only).
+     */
+    get: operations["list_users_api_v1_admin_users_get"];
+    /**
+     * Create User Admin
+     * @description Create a new user (Admin only).
+     */
+    post: operations["create_user_admin_api_v1_admin_users_post"];
+  };
+  "/api/v1/admin/users/{user_id}": {
+    /**
+     * Delete User Admin
+     * @description Delete a user (Admin only).
+     */
+    delete: operations["delete_user_admin_api_v1_admin_users__user_id__delete"];
+    /**
+     * Update User Admin
+     * @description Update a user (Admin only).
+     */
+    patch: operations["update_user_admin_api_v1_admin_users__user_id__patch"];
+  };
+  "/api/v1/admin/settings": {
+    /**
+     * Get Admin Settings
+     * @description Fetch all system settings (Admin only).
+     */
+    get: operations["get_admin_settings_api_v1_admin_settings_get"];
+    /**
+     * Update Admin Settings
+     * @description Update system settings (Admin only).
+     */
+    post: operations["update_admin_settings_api_v1_admin_settings_post"];
   };
   "/health": {
     /** Health Check */
@@ -115,6 +213,15 @@ export interface components {
       google_event_id?: string | null;
       client?: components["schemas"]["ClientResponse"] | null;
     };
+    /** AppointmentUpdate */
+    AppointmentUpdate: {
+      /** Start Time */
+      start_time?: string | null;
+      /** End Time */
+      end_time?: string | null;
+      /** Status */
+      status?: string | null;
+    };
     /** AssistantConfigResponse */
     AssistantConfigResponse: {
       /** Name */
@@ -123,6 +230,16 @@ export interface components {
       tone: string;
       /** Greeting */
       greeting: string;
+      /**
+       * Personalized Greeting
+       * @default Hola {name}, ¿en qué puedo ayudarte hoy?
+       */
+      personalized_greeting?: string;
+      /**
+       * Logic Template
+       * @default standard
+       */
+      logic_template?: string;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -140,6 +257,10 @@ export interface components {
       tone?: string | null;
       /** Greeting */
       greeting?: string | null;
+      /** Personalized Greeting */
+      personalized_greeting?: string | null;
+      /** Logic Template */
+      logic_template?: string | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -269,6 +390,31 @@ export interface components {
       /** Password */
       password: string;
     };
+    /** UserCreateAdmin */
+    UserCreateAdmin: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Password */
+      password: string;
+      /**
+       * Role
+       * @default member
+       */
+      role?: string;
+      /**
+       * Is Active
+       * @default true
+       */
+      is_active?: boolean;
+      /**
+       * Is Admin
+       * @default false
+       */
+      is_admin?: boolean;
+    };
     /** UserResponse */
     UserResponse: {
       /**
@@ -278,8 +424,21 @@ export interface components {
       email: string;
       /** Id */
       id: string;
-      /** Is Active */
-      is_active: boolean;
+      /**
+       * Is Active
+       * @default true
+       */
+      is_active?: boolean | null;
+      /**
+       * Is Admin
+       * @default false
+       */
+      is_admin?: boolean | null;
+      /**
+       * Role
+       * @default member
+       */
+      role?: string | null;
     };
     /** UserUpdate */
     UserUpdate: {
@@ -287,6 +446,10 @@ export interface components {
       email?: string | null;
       /** Password */
       password?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Is Active */
+      is_active?: boolean | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -443,6 +606,17 @@ export interface operations {
       };
     };
   };
+  /** Activate Trial */
+  activate_trial_api_v1_business_me_activate_trial_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BusinessProfileResponse"];
+        };
+      };
+    };
+  };
   /** Update Assistant Me */
   update_assistant_me_api_v1_business_me_assistant_patch: {
     requestBody: {
@@ -513,6 +687,45 @@ export interface operations {
       };
     };
   };
+  /**
+   * Trigger Google Sync
+   * @description Manually trigger a calendar sync task.
+   */
+  trigger_google_sync_api_v1_integrations_google_sync_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Disconnect Integration
+   * @description Remove an integration and its associated local cache.
+   */
+  disconnect_integration_api_v1_integrations__provider__delete: {
+    parameters: {
+      path: {
+        provider: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Clients */
   get_clients_api_v1_crm_clients_get: {
     responses: {
@@ -569,6 +782,331 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["AppointmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Appointment */
+  delete_appointment_api_v1_crm_appointments__appointment_id__delete: {
+    parameters: {
+      path: {
+        appointment_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Appointment */
+  update_appointment_api_v1_crm_appointments__appointment_id__patch: {
+    parameters: {
+      path: {
+        appointment_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AppointmentUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AppointmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Verify Webhook */
+  verify_webhook_api_v1_whatsapp_webhook_get: {
+    parameters: {
+      query?: {
+        "hub.mode"?: string;
+        "hub.verify_token"?: string;
+        "hub.challenge"?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Handle Whatsapp Message */
+  handle_whatsapp_message_api_v1_whatsapp_webhook_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** Link Whatsapp */
+  link_whatsapp_api_v1_whatsapp_link_post: {
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Telegram Webhook
+   * @description Receive messages from Telegram via a unique webhook ID.
+   */
+  telegram_webhook_api_v1_telegram_webhook__webhook_id__post: {
+    parameters: {
+      path: {
+        webhook_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Link Telegram
+   * @description Link a Telegram Bot to the current user's business.
+   */
+  link_telegram_api_v1_telegram_link_post: {
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Telegram Status
+   * @description Check if Telegram is connected.
+   */
+  get_telegram_status_api_v1_telegram_status_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Disconnect Telegram
+   * @description Remove Telegram integration.
+   */
+  disconnect_telegram_api_v1_telegram_disconnect_delete: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * List Users
+   * @description List all users (Admin only).
+   */
+  list_users_api_v1_admin_users_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create User Admin
+   * @description Create a new user (Admin only).
+   */
+  create_user_admin_api_v1_admin_users_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UserCreateAdmin"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete User Admin
+   * @description Delete a user (Admin only).
+   */
+  delete_user_admin_api_v1_admin_users__user_id__delete: {
+    parameters: {
+      path: {
+        user_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update User Admin
+   * @description Update a user (Admin only).
+   */
+  update_user_admin_api_v1_admin_users__user_id__patch: {
+    parameters: {
+      path: {
+        user_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UserUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Admin Settings
+   * @description Fetch all system settings (Admin only).
+   */
+  get_admin_settings_api_v1_admin_settings_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+  };
+  /**
+   * Update Admin Settings
+   * @description Update system settings (Admin only).
+   */
+  update_admin_settings_api_v1_admin_settings_post: {
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

@@ -20,8 +20,16 @@ export default function SettingsPage() {
   // Edit states
   const [editBusiness, setEditBusiness] = useState({ name: '', category: '', contact_phone: '' });
   const [editUser, setEditUser] = useState({ email: '', password: '' });
+  const [editAssistant, setEditAssistant] = useState({ 
+    name: '', 
+    tone: '', 
+    greeting: '', 
+    personalized_greeting: '', 
+    logic_template: 'standard' 
+  });
   const [savingBusiness, setSavingBusiness] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
+  const [savingAssistant, setSavingAssistant] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   const fetchData = useCallback(async () => {
@@ -43,6 +51,15 @@ export default function SettingsPage() {
           category: busData.category || '',
           contact_phone: busData.contact_phone || ''
         });
+        if (busData.assistant_config) {
+          setEditAssistant({
+            name: busData.assistant_config.name,
+            tone: busData.assistant_config.tone,
+            greeting: busData.assistant_config.greeting,
+            personalized_greeting: busData.assistant_config.personalized_greeting || '',
+            logic_template: busData.assistant_config.logic_template || 'standard'
+          });
+        }
       }
       
       if (userRes.ok) {
@@ -93,6 +110,32 @@ export default function SettingsPage() {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setSavingBusiness(false);
+    }
+  };
+
+  const handleSaveAssistant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAssistant(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const res = await fetch(`${API_BASE_URL}/business/me/assistant`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editAssistant)
+      });
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Assistant configuration updated successfully!' });
+        fetchData();
+      } else {
+        throw new Error('Failed to update assistant configuration');
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSavingAssistant(false);
     }
   };
 
@@ -256,6 +299,99 @@ export default function SettingsPage() {
               >
                 <Save size={18} />
                 {savingBusiness ? 'Saving...' : 'Save Profile'}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {/* Assistant Section */}
+        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8">
+          <div className="flex items-center gap-3 text-xl font-bold text-gray-900 border-b border-gray-50 pb-6">
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+              <MessageSquare size={22} />
+            </div>
+            <h2>Assistant Behavior</h2>
+          </div>
+          
+          <form onSubmit={handleSaveAssistant} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Assistant Name</label>
+                <input 
+                  type="text"
+                  value={editAssistant.name}
+                  onChange={e => setEditAssistant({...editAssistant, name: e.target.value})}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Tone</label>
+                <select 
+                  value={editAssistant.tone}
+                  onChange={e => setEditAssistant({...editAssistant, tone: e.target.value})}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                >
+                  <option value="Professional">Professional</option>
+                  <option value="Friendly">Friendly</option>
+                  <option value="Direct">Direct</option>
+                </select>
+              </div>
+              <div className="col-span-1 md:col-span-2 space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Standard Greeting</label>
+                <textarea 
+                  value={editAssistant.greeting}
+                  onChange={e => setEditAssistant({...editAssistant, greeting: e.target.value})}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px]"
+                  placeholder="Hello! How can I help you today?"
+                />
+              </div>
+              <div className="col-span-1 md:col-span-2 space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Personalized Greeting (for known clients)</label>
+                <textarea 
+                  value={editAssistant.personalized_greeting}
+                  onChange={e => setEditAssistant({...editAssistant, personalized_greeting: e.target.value})}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px]"
+                  placeholder="Hola {name}, ¿en qué puedo ayudarte hoy?"
+                />
+                <p className="text-[10px] text-gray-400 mt-1 italic">Use {'{name}'} as a placeholder for the client's first name.</p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Logic Template</label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditAssistant({...editAssistant, logic_template: 'standard'})}
+                    className={`flex-1 p-3 rounded-xl border font-bold text-sm transition-all ${
+                      editAssistant.logic_template === 'standard' 
+                      ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
+                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditAssistant({...editAssistant, logic_template: 'custom_steps'})}
+                    className={`flex-1 p-3 rounded-xl border font-bold text-sm transition-all ${
+                      editAssistant.logic_template === 'custom_steps' 
+                      ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
+                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    Custom Steps
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-4">
+              <button 
+                type="submit"
+                disabled={savingAssistant}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+              >
+                <Save size={18} />
+                {savingAssistant ? 'Saving...' : 'Save Assistant'}
               </button>
             </div>
           </form>
