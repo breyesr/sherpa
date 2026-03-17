@@ -59,6 +59,50 @@ async def create_client(
     await db.refresh(client)
     return client
 
+@router.patch("/clients/{client_id}", response_model=ClientResponse)
+async def update_client(
+    client_id: str,
+    client_in: ClientUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    business = await get_user_business(db, current_user.id)
+    
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.business_id == business.id)
+    )
+    client = result.scalars().first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    update_data = client_in.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(client, field, value)
+    
+    db.add(client)
+    await db.commit()
+    await db.refresh(client)
+    return client
+
+@router.delete("/clients/{client_id}")
+async def delete_client(
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    business = await get_user_business(db, current_user.id)
+    
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.business_id == business.id)
+    )
+    client = result.scalars().first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    await db.delete(client)
+    await db.commit()
+    return {"status": "deleted"}
+
 @router.get("/appointments", response_model=List[AppointmentResponse])
 async def get_appointments(
     db: AsyncSession = Depends(get_db),

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { UserPlus, Search, Phone, Mail, Calendar, Users } from 'lucide-react';
-import AddClientModal from '@/components/AddClientModal';
+import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2 } from 'lucide-react';
+import ClientModal from '@/components/ClientModal';
 import { API_BASE_URL } from '@/config';
 
 export default function CRMPage() {
@@ -12,6 +12,7 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const fetchClients = async () => {
     try {
@@ -39,12 +40,22 @@ export default function CRMPage() {
     c.phone.includes(searchTerm)
   );
 
+  const handleEditClient = (client: any) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const handleAddClient = () => {
+    setSelectedClient(null);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleAddClient}
           className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg active:scale-95"
         >
           <UserPlus size={18} />
@@ -72,8 +83,14 @@ export default function CRMPage() {
       ) : filteredClients.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
-            <div key={client.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">{client.name}</h3>
+            <div key={client.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative">
+              <button 
+                onClick={() => handleEditClient(client)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+              >
+                <Edit2 size={18} />
+              </button>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 pr-8 group-hover:text-blue-600 transition-colors truncate">{client.name}</h3>
               <div className="space-y-3 text-sm text-gray-600">
                 <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg">
                   <div className="w-8 h-8 bg-white border rounded-md flex items-center justify-center text-blue-500 shadow-sm">
@@ -105,7 +122,7 @@ export default function CRMPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">No clients found</h2>
           <p className="text-gray-500 mb-8 max-w-sm mx-auto">Add your first client to start scheduling appointments and automate reminders.</p>
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleAddClient}
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all"
           >
             <UserPlus size={20} />
@@ -114,11 +131,15 @@ export default function CRMPage() {
         </div>
       )}
 
-      <AddClientModal 
+      <ClientModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedClient(null);
+        }} 
         onSuccess={fetchClients}
         token={token}
+        client={selectedClient}
       />
     </div>
   );
