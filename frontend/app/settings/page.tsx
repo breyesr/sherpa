@@ -26,7 +26,10 @@ export default function SettingsPage() {
     greeting: '', 
     personalized_greeting: '', 
     logic_template: 'standard',
-    custom_steps: ''
+    custom_steps: '',
+    require_reason: true,
+    confirm_details: true,
+    strict_guardrails: true
   });
   const [savingBusiness, setSavingBusiness] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
@@ -59,7 +62,10 @@ export default function SettingsPage() {
             greeting: busData.assistant_config.greeting,
             personalized_greeting: busData.assistant_config.personalized_greeting || '',
             logic_template: busData.assistant_config.logic_template || 'standard',
-            custom_steps: busData.assistant_config.custom_steps || ''
+            custom_steps: busData.assistant_config.custom_steps || '',
+            require_reason: busData.assistant_config.require_reason ?? true,
+            confirm_details: busData.assistant_config.confirm_details ?? true,
+            strict_guardrails: busData.assistant_config.strict_guardrails ?? true
           });
         }
       }
@@ -344,7 +350,7 @@ export default function SettingsPage() {
                 <textarea 
                   value={editAssistant.greeting}
                   onChange={e => setEditAssistant({...editAssistant, greeting: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px]"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[80px]"
                   placeholder="Hello! How can I help you today?"
                 />
               </div>
@@ -353,11 +359,12 @@ export default function SettingsPage() {
                 <textarea 
                   value={editAssistant.personalized_greeting}
                   onChange={e => setEditAssistant({...editAssistant, personalized_greeting: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px]"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[80px]"
                   placeholder="Hola {name}, ¿en qué puedo ayudarte hoy?"
                 />
                 <p className="text-[10px] text-gray-400 mt-1 italic">Use {'{name}'} as a placeholder for the client's first name.</p>
               </div>
+              
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Logic Template</label>
                 <div className="flex gap-4">
@@ -392,12 +399,57 @@ export default function SettingsPage() {
                   <textarea 
                     value={editAssistant.custom_steps}
                     onChange={e => setEditAssistant({...editAssistant, custom_steps: e.target.value})}
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all min-h-[150px]"
-                    placeholder="e.g. 1. Greet the user. 2. Ask for their pet's name. 3. Show available grooming slots..."
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all min-h-[120px]"
+                    placeholder="e.g. 1. Greet the user. 2. Ask for their pet's name..."
                   />
-                  <p className="text-[10px] text-gray-400 mt-1 italic">Define the specific sequence of actions or questions the AI should follow.</p>
                 </div>
               )}
+
+              {/* Behavioral Controls */}
+              <div className="space-y-4 col-span-1 md:col-span-2 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mt-4">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Behavioral Controls</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox"
+                      checked={editAssistant.require_reason}
+                      onChange={e => setEditAssistant({...editAssistant, require_reason: e.target.checked})}
+                      className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Require Reason</span>
+                      <span className="text-[10px] text-gray-400">Ask why they are booking</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox"
+                      checked={editAssistant.confirm_details}
+                      onChange={e => setEditAssistant({...editAssistant, confirm_details: e.target.checked})}
+                      className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Confirm Details</span>
+                      <span className="text-[10px] text-gray-400">Verify contact info first</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox"
+                      checked={editAssistant.strict_guardrails}
+                      onChange={e => setEditAssistant({...editAssistant, strict_guardrails: e.target.checked})}
+                      className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Strict Guardrails</span>
+                      <span className="text-[10px] text-gray-400">Prevent off-topic chat</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end pt-4">
               <button 

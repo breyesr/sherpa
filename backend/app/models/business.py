@@ -32,6 +32,12 @@ class AssistantConfig(Base):
     personalized_greeting = Column(String, nullable=False, default="Hola {name}, ¿en qué puedo ayudarte hoy?")
     logic_template = Column(String, nullable=False, default="standard") # standard, custom_steps
     custom_steps = Column(String, nullable=True) # JSON or markdown string of steps
+    
+    # Behavioral Toggles (Instruction Assembler)
+    require_reason = Column(Boolean, default=True)
+    confirm_details = Column(Boolean, default=True)
+    strict_guardrails = Column(Boolean, default=True)
+    
     working_hours = Column(JSON, nullable=True) # e.g., {"mon": ["09:00", "18:00"], ...}
 
     business_profile = relationship("BusinessProfile", back_populates="assistant_config")
