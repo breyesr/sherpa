@@ -26,16 +26,18 @@ class AIService:
         Find a client by identifier (phone, telegram_id, whatsapp_id) using hashes.
         Includes self-healing for legacy plain-text IDs and auto-registration for new users.
         """
-        id_hash = Client.hash_id(identifier)
+        # CRITICAL: Always normalize the incoming identifier (remove +, spaces, etc)
+        normalized_id = Client.normalize_id(identifier)
+        id_hash = Client.hash_id(normalized_id)
         
-        # 1. Primary Search: Use the privacy-preserving hashes
+        # 1. Primary Search: Use the privacy-preserving hashes OR normalized phone
         res = await self.db.execute(
             select(Client).where(
                 Client.business_id == self.business.id,
                 or_(
                     Client.telegram_id_hash == id_hash,
                     Client.whatsapp_id_hash == id_hash,
-                    Client.phone == identifier
+                    Client.phone == normalized_id
                 )
             )
         )
@@ -47,28 +49,22 @@ class AIService:
                 select(Client).where(
                     Client.business_id == self.business.id,
                     or_(
-                        Client.telegram_id == identifier,
-                        Client.whatsapp_id == identifier
+                        Client.telegram_id == normalized_id,
+                        Client.whatsapp_id == normalized_id
                     )
                 )
             )
             client = res.scalars().first()
             
             if client:
-                print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes.")
-                # If we found it by raw ID, it means the hash was missing. Populate it now.
-                if client.telegram_id == identifier:
-                    client.telegram_id_hash = id_hash
-                    client.telegram_id = encrypt_token(identifier)
-                if client.whatsapp_id == identifier:
-                    client.whatsapp_id_hash = id_hash
-                    client.whatsapp_id = encrypt_token(identifier)
-                
+                print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes via model listener.")
+                # We just need to trigger a save, the model listener will handle the rest
+                client.updated_at = datetime.utcnow()
                 await self.db.commit()
         
         # 3. Auto-Registration: If still not found, create a new client
         if not client:
-            print(f"DEBUG: Auto-registering new client for identifier: {identifier}")
+            print(f"DEBUG: Auto-registering new client for normalized ID: {normalized_id}")
             name = "New Client"
             if metadata:
                 name = metadata.get("name") or metadata.get("first_name") or name
@@ -82,11 +78,10 @@ class AIService:
             client = Client(
                 business_id=self.business.id,
                 name=name,
-                phone=identifier if not is_telegram else None,
-                telegram_id=encrypt_token(identifier) if is_telegram else None,
-                telegram_id_hash=id_hash if is_telegram else None,
-                whatsapp_id=encrypt_token(identifier) if not is_telegram else None,
-                whatsapp_id_hash=id_hash if not is_telegram else None
+                # Model listener will auto-generate hashes and encrypt IDs from these raw values
+                phone=normalized_id if not is_telegram else None,
+                telegram_id=normalized_id if is_telegram else None,
+                whatsapp_id=normalized_id if not is_telegram else None
             )
             self.db.add(client)
             await self.db.commit()
@@ -140,11 +135,14 @@ class AIService:
     async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:
         provider = await self.get_active_provider()
         
-        # Unified client lookup (includes auto-reg and healing)
-        client_obj = await self._get_client(identifier, metadata)
+        # Normalize for consistency in memory and lookup
+        normalized_id = Client.normalize_id(identifier)
         
-        # Retrieve history from Redis
-        history = await self.memory.get_history(identifier)
+        # Unified client lookup (includes auto-reg and healing)
+        client_obj = await self._get_client(normalized_id, metadata)
+        
+        # Retrieve history from Redis (using normalized ID for consistent keys)
+        history = await self.memory.get_history(normalized_id)
         
         # Identity Gate logic
         is_known = client_obj and client_obj.name and not client_obj.name.startswith("TG_") and not client_obj.name.startswith("WA_") and client_obj.name != "New Client"
@@ -197,14 +195,14 @@ class AIService:
         try:
             # We currently only fully support memory for OpenAI in this patch
             if provider == "openai":
-                response_text = await self._get_openai_response(system_prompt, user_message, identifier, history)
+                response_text = await self._get_openai_response(system_prompt, user_message, normalized_id, history)
             else:
                 # Fallback or other providers...
-                response_text = await self._get_openai_response(system_prompt, user_message, identifier, history)
+                response_text = await self._get_openai_response(system_prompt, user_message, normalized_id, history)
             
-            # Save to Memory
-            await self.memory.add_message(identifier, "user", user_message)
-            await self.memory.add_message(identifier, "assistant", response_text)
+            # Save to Memory (using normalized ID)
+            await self.memory.add_message(normalized_id, "user", user_message)
+            await self.memory.add_message(normalized_id, "assistant", response_text)
             
             return response_text
         except Exception as e:
@@ -336,10 +334,8 @@ class AIService:
         client_obj.name = name
         if email: client_obj.email = email
         if phone: 
+            # Listener will handle the encryption and hashing of this new phone
             client_obj.phone = phone
-            # Update WhatsApp mapping as it is phone-based
-            client_obj.whatsapp_id = encrypt_token(phone)
-            client_obj.whatsapp_id_hash = Client.hash_id(phone)
         
         await self.db.commit()
         return f"SUCCESS: Client identity updated to {name}."

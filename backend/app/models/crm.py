@@ -5,6 +5,10 @@ from uuid_extensions import uuid7str
 from datetime import datetime
 import hashlib
 
+import hashlib
+import re
+from sqlalchemy import event
+
 class Client(Base):
     __tablename__ = "clients"
 
@@ -34,10 +38,49 @@ class Client(Base):
     appointments = relationship("Appointment", back_populates="client", cascade="all, delete-orphan")
 
     @staticmethod
-    def hash_id(id_val: str) -> str:
+    def normalize_id(id_val: str) -> str:
         if not id_val:
             return None
-        return hashlib.sha256(id_val.encode()).hexdigest()
+        # Remove all non-alphanumeric characters (keeps only digits and letters)
+        # This makes +1 234-567 and 1234567 identical for hashing
+        return re.sub(r'[^a-zA-Z0-9]', '', str(id_val))
+
+    @staticmethod
+    def hash_id(id_val: str) -> str:
+        normalized = Client.normalize_id(id_val)
+        if not normalized:
+            return None
+        return hashlib.sha256(normalized.encode()).hexdigest()
+
+# Auto-populate hashes and normalize data on save
+@event.listens_for(Client, 'before_insert')
+@event.listens_for(Client, 'before_update')
+def receive_before_save(mapper, connection, target):
+    from app.core.security import encrypt_token
+    
+    # Normalize phone
+    if target.phone:
+        target.phone = Client.normalize_id(target.phone)
+    
+    # If a phone is provided but no WhatsApp ID, auto-link them
+    if target.phone and not target.whatsapp_id_hash:
+        target.whatsapp_id_hash = Client.hash_id(target.phone)
+        target.whatsapp_id = encrypt_token(target.phone)
+
+    # Ensure Telegram hashes are synced if ID is set (and not yet hashed)
+    if target.telegram_id and not target.telegram_id_hash:
+        # We only do this if it's NOT encrypted yet (raw ID from dashboard/AI)
+        if not target.telegram_id.startswith("gAAAA"):
+            raw_tg = Client.normalize_id(target.telegram_id)
+            target.telegram_id_hash = Client.hash_id(raw_tg)
+            target.telegram_id = encrypt_token(raw_tg)
+
+    # Ensure WhatsApp hashes are synced if ID is set (and not yet hashed)
+    if target.whatsapp_id and not target.whatsapp_id_hash:
+        if not target.whatsapp_id.startswith("gAAAA"):
+            raw_wa = Client.normalize_id(target.whatsapp_id)
+            target.whatsapp_id_hash = Client.hash_id(raw_wa)
+            target.whatsapp_id = encrypt_token(raw_wa)
 
 class Appointment(Base):
     __tablename__ = "appointments"
