@@ -10,6 +10,7 @@ import traceback
 from app.core.database import get_db
 from app.models.business import BusinessProfile
 from app.models.integration import Integration
+from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
 from app.core.config import settings
 
