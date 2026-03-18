@@ -70,6 +70,12 @@ export interface paths {
     /** Create Client */
     post: operations["create_client_api_v1_crm_clients_post"];
   };
+  "/api/v1/crm/clients/{client_id}": {
+    /** Delete Client */
+    delete: operations["delete_client_api_v1_crm_clients__client_id__delete"];
+    /** Update Client */
+    patch: operations["update_client_api_v1_crm_clients__client_id__patch"];
+  };
   "/api/v1/crm/appointments": {
     /** Get Appointments */
     get: operations["get_appointments_api_v1_crm_appointments_get"];
@@ -240,6 +246,8 @@ export interface components {
        * @default standard
        */
       logic_template?: string;
+      /** Custom Steps */
+      custom_steps?: string | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -261,6 +269,8 @@ export interface components {
       personalized_greeting?: string | null;
       /** Logic Template */
       logic_template?: string | null;
+      /** Custom Steps */
+      custom_steps?: string | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -351,6 +361,15 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+    };
+    /** ClientUpdate */
+    ClientUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -742,6 +761,55 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["ClientCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ClientResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Client */
+  delete_client_api_v1_crm_clients__client_id__delete: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Client */
+  update_client_api_v1_crm_clients__client_id__patch: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClientUpdate"];
       };
     };
     responses: {

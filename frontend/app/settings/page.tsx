@@ -25,7 +25,8 @@ export default function SettingsPage() {
     tone: '', 
     greeting: '', 
     personalized_greeting: '', 
-    logic_template: 'standard' 
+    logic_template: 'standard',
+    custom_steps: ''
   });
   const [savingBusiness, setSavingBusiness] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
@@ -57,7 +58,8 @@ export default function SettingsPage() {
             tone: busData.assistant_config.tone,
             greeting: busData.assistant_config.greeting,
             personalized_greeting: busData.assistant_config.personalized_greeting || '',
-            logic_template: busData.assistant_config.logic_template || 'standard'
+            logic_template: busData.assistant_config.logic_template || 'standard',
+            custom_steps: busData.assistant_config.custom_steps || ''
           });
         }
       }
@@ -383,6 +385,19 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+
+              {editAssistant.logic_template === 'custom_steps' && (
+                <div className="col-span-1 md:col-span-2 space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Custom Steps / Instructions</label>
+                  <textarea 
+                    value={editAssistant.custom_steps}
+                    onChange={e => setEditAssistant({...editAssistant, custom_steps: e.target.value})}
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all min-h-[150px]"
+                    placeholder="e.g. 1. Greet the user. 2. Ask for their pet's name. 3. Show available grooming slots..."
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1 italic">Define the specific sequence of actions or questions the AI should follow.</p>
+                </div>
+              )}
             </div>
             <div className="flex justify-end pt-4">
               <button 
@@ -573,7 +588,7 @@ export default function SettingsPage() {
                 ) : (
                   <button 
                     onClick={() => setIsWhatsAppModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-all shadow-md active:scale-95"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
                   >
                     Connect WhatsApp
                   </button>

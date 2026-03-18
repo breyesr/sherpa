@@ -157,8 +157,8 @@ class AIService:
         
         # Logic Template influence
         logic_instruction = ""
-        if self.assistant_config.logic_template == "custom_steps":
-            logic_instruction = "Follow the specific custom steps defined for this business flow."
+        if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
+            logic_instruction = f"Follow these specific custom steps: {self.assistant_config.custom_steps}"
         else:
             logic_instruction = "Follow the standard booking flow: check availability, ask for missing details, then confirm."
 
