@@ -155,17 +155,17 @@ class AIService:
                 else:
                     logic_instruction = "STANDARD FLOW: Help the user find a slot and book it."
 
-                # STRENGTHENED REQUIREMENTS
+                # STRENGTHENED REQUIREMENTS (with None handling)
                 requirement_instructions = []
-                if self.assistant_config.require_reason:
+                if self.assistant_config.require_reason is not False: # Default to True if None
                     requirement_instructions.append("CRITICAL: You MUST ask the user for the 'Reason for the visit' before you are allowed to book.")
-                if self.assistant_config.confirm_details:
+                if self.assistant_config.confirm_details is not False: # Default to True if None
                     requirement_instructions.append(f"CRITICAL: You MUST show the user their details and wait for their explicit confirmation before booking:\n- Name: {client_obj.name}\n- Email: {client_obj.email or 'Unknown'}\n- Phone: {client_obj.phone or identifier}")
                 
                 req_str = "\n".join(requirement_instructions)
 
                 guardrails = ""
-                if self.assistant_config.strict_guardrails:
+                if self.assistant_config.strict_guardrails is not False: # Default to True if None
                     guardrails = "SYSTEM GUARDRAILS: Stay on topic (appointments only). No politics/medical advice."
 
                 system_prompt = f"""
