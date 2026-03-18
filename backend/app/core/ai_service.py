@@ -2,7 +2,7 @@ import json
 import traceback
 import asyncio
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from app.core.google_calendar import GoogleCalendarService
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.future import select
@@ -24,10 +24,11 @@ class AIService:
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
-    async def _get_client(self, identifier: str, metadata: Optional[Dict] = None) -> Client:
+    async def _get_client(self, identifier: str, metadata: Optional[Dict] = None) -> Tuple[Client, bool]:
         """
         Find a client by identifier (phone, telegram_id, whatsapp_id) using hashes.
         Includes self-healing for legacy plain-text IDs and auto-registration for new users.
+        Returns (client_object, is_new_registration)
         """
         try:
             # CRITICAL: Always normalize the incoming identifier (remove +, spaces, etc)
@@ -61,15 +62,18 @@ class AIService:
                 client = res.scalars().first()
                 
                 if client:
-                    print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes.")
+                    print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes via model listener.")
                     client.updated_at = datetime.utcnow()
                     await self.db.commit()
             
             # 3. Auto-Registration: If still not found, create a new client
+            is_new = False
             if not client:
+                is_new = True
                 print(f"DEBUG: Auto-registering new client for normalized ID: {normalized_id}")
                 name = "New Client"
                 if metadata:
+                    # We store the platform name but keep is_new=True so the AI greets generically the first time
                     name = metadata.get("name") or metadata.get("first_name") or name
                     if metadata.get("last_name"):
                         name = f"{name} {metadata.get('last_name')}".strip()
@@ -88,7 +92,7 @@ class AIService:
                 await self.db.commit()
                 await self.db.refresh(client)
                 
-            return client
+            return client, is_new
         except Exception as e:
             print(f"ERROR: _get_client failed: {e}")
             traceback.print_exc()
@@ -111,7 +115,7 @@ class AIService:
 
         try:
             response = await openai_client.chat.completions.create(
-                model="gpt-4o", # Upgraded to 4o for better speed/reliability
+                model="gpt-4o",
                 messages=messages,
                 tools=tools,
                 tool_choice="auto"
@@ -153,18 +157,23 @@ class AIService:
         try:
             # 1. Normalize and Lookup Client
             normalized_id = Client.normalize_id(identifier)
-            client_obj = await self._get_client(normalized_id, metadata)
+            client_obj, is_new = await self._get_client(normalized_id, metadata)
             
             # 2. History
             history = await self.memory.get_history(normalized_id)
             
-            # 3. Contextual instructions
-            is_known = client_obj and client_obj.name and not client_obj.name.startswith("TG_") and not client_obj.name.startswith("WA_") and client_obj.name != "New Client"
-            has_email = client_obj and client_obj.email
+            # 3. Identity & Greeting Logic
+            # A user is considered "registered" if they have an email OR were NOT just created
+            is_registered = not is_new and client_obj.email is not None
+            has_real_name = client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
             
-            greeting = self.assistant_config.greeting
-            if is_known and len(history) == 0:
-                greeting = self.assistant_config.personalized_greeting.format(name=client_obj.name.split()[0])
+            # Determine Greeting
+            greeting = self.assistant_config.greeting # Default to generic
+            
+            # Only use personalized greeting if they are RETURNING and we have a name
+            if not is_new and has_real_name and len(history) == 0:
+                first_name = client_obj.name.split()[0]
+                greeting = self.assistant_config.personalized_greeting.format(name=first_name)
             
             logic_instruction = ""
             if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
@@ -173,15 +182,14 @@ class AIService:
                 logic_instruction = "Follow the standard booking flow: check availability, ask for missing details, then confirm."
 
             identity_instruction = ""
-            if not is_known or not has_email:
+            if not is_registered:
                 identity_instruction = f"""
-                IMPORTANT: This user is currently ANONYMOUS or missing contact details.
-                Current Name in CRM: {client_obj.name}
+                IMPORTANT: This user is not fully registered in our CRM.
+                Current Name: {client_obj.name}
                 Before you confirm any booking, you MUST politely ask for their:
-                1. Full Name (if not known)
-                2. Email Address (if not known)
-                Once they provide them, use the 'update_client_identity' tool to save them.
-                Do NOT book an appointment until you have at least their name.
+                1. Full Name (if not already known correctly)
+                2. Email Address
+                Use the 'update_client_identity' tool to save these details.
                 """
             
             system_prompt = f"""
@@ -201,9 +209,9 @@ class AIService:
             2. If a slot is available and the user wants to book, use 'create_appointment'.
             3. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
             4. When presenting available slots, use a clear, user-friendly format (e.g. "Monday, March 10th at 10:00 AM").
-            5. Do NOT use technical jargon like '(UTC)' or ISO strings when talking to the user.
-            6. Reference previous messages in the history to avoid repeating questions.
-            7. If this is the start of the conversation, use the Greeting context to guide your opening.
+            5. Do NOT use technical jargon like '(UTC)' or ISO strings.
+            6. Reference previous messages in history.
+            7. If history is empty, start by using the 'Greeting context' provided above.
             """
 
             # 4. Generate Response with Timeout
@@ -408,7 +416,8 @@ class AIService:
             return "Error searching for slots."
 
     async def _check_client_direct(self, identifier: str) -> Client:
-        return await self._get_client(identifier)
+        client, _ = await self._get_client(identifier)
+        return client
 
     async def _create_appointment_tool(self, identifier: str, name: str, start_iso: str, duration: int) -> str:
         try:
