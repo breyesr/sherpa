@@ -156,7 +156,7 @@ class AIService:
             4. Use 'update_client_identity' to save name/email if missing or provided.
             """
 
-            response_text = await asyncio.wait_for(self._get_openai_response(system_prompt, user_message, normalized_id, history), timeout=45.0)
+            response_text = await asyncio.wait_for(self._get_openai_response(system_prompt, user_message, identifier, history), timeout=45.0)
             await self.memory.add_message(normalized_id, "user", user_message)
             await self.memory.add_message(normalized_id, "assistant", response_text)
             return response_text
