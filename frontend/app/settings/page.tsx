@@ -36,6 +36,46 @@ export default function SettingsPage() {
   const [savingAssistant, setSavingAssistant] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Sandbox State
+  const [sandboxMessages, setSandboxMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const [sandboxInput, setSandboxInput] = useState('');
+  const [isSandboxLoading, setIsSandboxLoading] = useState(false);
+
+  const handleTestChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sandboxInput.trim() || isSandboxLoading) return;
+
+    const newUserMessage = { role: 'user' as const, content: sandboxInput };
+    setSandboxMessages([...sandboxMessages, newUserMessage]);
+    setSandboxInput('');
+    setIsSandboxLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/business/test-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: sandboxInput,
+          assistant_config: editAssistant
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSandboxMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      } else {
+        throw new Error('Failed to get response');
+      }
+    } catch (err) {
+      setSandboxMessages(prev => [...prev, { role: 'assistant', content: "Error: Could not connect to the AI service." }]);
+    } finally {
+      setIsSandboxLoading(false);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     try {
       const [busRes, userRes] = await Promise.all([
@@ -458,10 +498,80 @@ export default function SettingsPage() {
                 className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
                 <Save size={18} />
-                {savingAssistant ? 'Saving...' : 'Save Assistant'}
+                {savingAssistant ? 'Saving...' : 'Update Assistant'}
               </button>
             </div>
           </form>
+
+          {/* Sandbox Section */}
+          <div className="mt-12 bg-gray-50/80 rounded-[2.5rem] border border-gray-100 p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                  <Send size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Live Test Sandbox</h3>
+                  <p className="text-xs text-gray-400 font-medium">Preview behavior with your current settings above</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setSandboxMessages([])}
+                className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-wider"
+              >
+                Clear Chat
+              </button>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-gray-100 h-[400px] flex flex-col shadow-sm overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {sandboxMessages.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center text-center space-y-3 opacity-40">
+                    <MessageSquare size={48} className="text-gray-300" />
+                    <p className="text-sm font-medium text-gray-500 max-w-[200px]">Send a message to test how your assistant responds.</p>
+                  </div>
+                )}
+                {sandboxMessages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm font-medium ${
+                      m.role === 'user' 
+                      ? 'bg-blue-600 text-white rounded-br-none' 
+                      : 'bg-gray-100 text-gray-700 rounded-bl-none'
+                    }`}>
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+                {isSandboxLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 text-gray-400 px-4 py-3 rounded-2xl rounded-bl-none text-sm animate-pulse font-medium">
+                      Thinking...
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 bg-gray-50/50 border-t border-gray-50 flex gap-2">
+                <input 
+                  type="text"
+                  value={sandboxInput}
+                  onChange={e => setSandboxInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleTestChat(e as any))}
+                  placeholder="Type a message to test..."
+                  className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
+                />
+                <button 
+                  type="button"
+                  onClick={handleTestChat}
+                  disabled={isSandboxLoading || !sandboxInput.trim()}
+                  className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 active:scale-90"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Account Section */}

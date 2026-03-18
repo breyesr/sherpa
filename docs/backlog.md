@@ -7,6 +7,8 @@
 - [x] Task 1.4: Setup Celery + Redis for background jobs.
 - [x] Task 1.5: Establish OpenAPI type generation loop for frontend.
 - [x] Task 1.6: Deploy to Railway (API, Worker, Web) with automated migrations.
+- [ ] Task 1.7: Expand Docker Compose to include Backend, Worker, Beat, and Frontend services.
+- [ ] Task 1.8: Implement API Rate Limiting (e.g., SlowAPI or FastAPI-limiter) to prevent AI/Messaging abuse.
 
 ## Epic 2: Authentication & Business Profile
 - [x] Task 2.1: Implement JWT Auth (Register, Login).
@@ -41,6 +43,7 @@
 - [x] Task 7.1: Implement Client list with search (Backend + Frontend).
 - [x] Task 7.2: Auto-create client on first booking.
 - [x] Task 7.3: Implement 24h automatic reminder job (Celery).
+- [ ] Task 7.4: Refactor background tasks (reminders, sync) to use async `httpx` instead of `requests`.
 
 ## Epic 8: Dashboard & Subscription
 - [ ] Task 8.1: Implement KPI display (Total Clients, Appointments, Reminders).
@@ -52,6 +55,12 @@
 - [ ] Task 9.3: Refine WhatsApp multi-tenant webhook for full production parity.
 - [ ] Task 9.4: Implement Redis-based conversation state to handle multi-turn data collection.
 - [ ] Task 9.5: Automate "Booking Confirmation" message back to the messaging provider.
+
+## Epic 10: Scalability & UX Hardening
+- [ ] Task 10.1: Migrate CRM and Calendar data fetching to React Server Components (RSC) to improve LCP.
+- [ ] Task 10.2: Implement Skeleton loaders and standardized Error Boundaries for all dashboard views.
+- [ ] Task 10.3: Configure and verify Celery Beat for reliable periodic task triggering (Reminders & Sync).
+- [ ] Task 10.4: Implement "Retry" and "Recovery" interactive paths for AI/API failure states.
 
 ## Hard Constraints (Enforced)
 - No Form Builders.

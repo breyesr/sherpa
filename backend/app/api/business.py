@@ -29,11 +29,34 @@ async def get_full_business(db: AsyncSession, user_id: str) -> BusinessProfile:
     )
     return result.scalars().first()
 
-@router.get("/me", response_model=BusinessProfileResponse)
-async def get_business_me(
+from pydantic import BaseModel
+from app.core.ai_service import AIService
+
+class TestChatRequest(BaseModel):
+    message: str
+    assistant_config: Optional[AssistantConfigUpdate] = None
+
+@router.post("/test-chat")
+async def test_chat(
+    payload: TestChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
+    business = await get_full_business(db, current_user.id)
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+    
+    # If the user is previewing new config, temporarily override it
+    if payload.assistant_config:
+        for field, value in payload.assistant_config.dict(exclude_unset=True).items():
+            setattr(business.assistant_config, field, value)
+    
+    ai_service = AIService(business, db)
+    # Use a dummy identifier for testing
+    test_id = f"test_{current_user.id}"
+    response = await ai_service.get_response(test_id, payload.message, metadata={"name": current_user.email, "platform": "sandbox"})
+    
+    return {"response": response}
     business = await get_full_business(db, current_user.id)
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")

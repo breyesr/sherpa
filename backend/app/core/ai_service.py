@@ -3,6 +3,8 @@ import traceback
 import asyncio
 import re
 from typing import List, Dict, Any, Optional, Tuple
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import litellm
 from app.core.google_calendar import GoogleCalendarService
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.future import select
@@ -13,6 +15,17 @@ from app.models.integration import Integration
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
+
+# Setup prompt template environment
+try:
+    # Use relative path as seen from backend root
+    prompt_env = Environment(
+        loader=FileSystemLoader("app/core/prompts"),
+        autoescape=select_autoescape()
+    )
+except Exception as e:
+    print(f"CRITICAL: Failed to initialize Jinja2 environment: {e}")
+    prompt_env = None
 
 class AIService:
     def __init__(self, business_profile: Any, db: Any):
@@ -56,15 +69,15 @@ class AIService:
             traceback.print_exc()
             raise
 
-    async def _get_openai_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
-        from openai import AsyncOpenAI
-        api_key = await ConfigService.get(self.db, "OPENAI_API_KEY")
-        if not api_key: return "Assistant configuration error: OpenAI API Key missing."
+    async def _get_llm_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
+        provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+        model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o" if provider == "openai" else "claude-3-haiku-20240307")
+        api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
         
-        # Use a timeout for OpenAI calls
-        openai_client = AsyncOpenAI(api_key=api_key, timeout=30.0)
+        if not api_key:
+            return f"Assistant configuration error: {provider.upper()} API Key missing."
+
         messages = [{"role": "system", "content": system_prompt}]
-        
         for h in history:
             messages.append(h)
         messages.append({"role": "user", "content": user_message})
@@ -72,15 +85,18 @@ class AIService:
         tools = self._get_tools_definition()
 
         try:
-            response = await openai_client.chat.completions.create(
-                model="gpt-4o",
+            # LiteLLM handles the conversion between different provider formats
+            response = await litellm.acompletion(
+                model=f"{provider}/{model}" if "/" not in model else model,
                 messages=messages,
                 tools=tools,
-                tool_choice="auto"
+                tool_choice="auto",
+                api_key=api_key,
+                timeout=45.0
             )
 
             response_message = response.choices[0].message
-            if response_message.tool_calls:
+            if response_message.get("tool_calls"):
                 messages.append(response_message)
                 for tool_call in response_message.tool_calls:
                     print(f"DEBUG: AI calling tool: {tool_call.function.name}")
@@ -97,40 +113,49 @@ class AIService:
                         "content": result
                     })
                 
-                final_response = await openai_client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=messages
+                final_response = await litellm.acompletion(
+                    model=f"{provider}/{model}" if "/" not in model else model,
+                    messages=messages,
+                    api_key=api_key,
+                    timeout=45.0
                 )
                 return final_response.choices[0].message.content
-
+            
             return response_message.content or "I processed your request but have no verbal response."
         except Exception as e:
-            print(f"DIAGNOSTIC: OpenAI Call Failed: {e}")
+            print(f"ERROR: LLM generation failed: {e}")
+            traceback.print_exc()
             raise
 
     async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:
-        provider = await self.get_active_provider()
-        
+        """Entry point for all messaging platforms."""
         try:
             # 1. Identity Stage
+            client_obj, is_new = await self._get_client(identifier, metadata)
+            normalized_id = Client.normalize_id(identifier)
+            
+            # 2. Memory Stage
+            history = await self.memory.get_history(normalized_id)
+            
+            # 3. Prompt Construction Stage (Jinja2)
             try:
-                normalized_id = Client.normalize_id(identifier)
-                client_obj, is_new = await self._get_client(normalized_id, metadata)
-            except Exception as e:
-                print(f"CRITICAL: Identity Stage Failed for {identifier}: {e}")
-                return "I'm having trouble recognizing you right now. Please try again in a moment."
-
-            # 2. History Stage
-            try:
-                history = await self.memory.get_history(normalized_id)
-            except Exception as e:
-                print(f"CRITICAL: History/Redis Stage Failed for {identifier}: {e}")
-                history = [] # Fallback to no history instead of crashing
-
-            # 3. Context & Greeting Construction
-            try:
-                is_known = client_obj and client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
+                if not prompt_env:
+                    raise Exception("Jinja2 environment not initialized")
                 
+                template = prompt_env.get_template("system_prompt.j2")
+                
+                # Prepare context for template
+                working_hours = self.assistant_config.working_hours or {}
+                wh_parts = []
+                for day, times in working_hours.items():
+                    if times and len(times) >= 2:
+                        wh_parts.append(f"{day.capitalize()}: {times[0]}-{times[1]}")
+                    else:
+                        wh_parts.append(f"{day.capitalize()}: Closed")
+                
+                wh_str = "\n".join(wh_parts)
+                
+                is_known = client_obj and client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
                 greeting_context = self.assistant_config.greeting
                 if is_known:
                     try:
@@ -143,67 +168,28 @@ class AIService:
                     except Exception as ge:
                         print(f"WARNING: Personalized greeting formatting failed: {ge}")
                         greeting_context = self.assistant_config.greeting
-                
-                wh_str = "Not configured"
-                if self.assistant_config.working_hours:
-                    wh_parts = [f"{d.capitalize()}: {t[0]}-{t[1]}" if (t and len(t)>=2) else f"{d.capitalize()}: Closed" for d, t in self.assistant_config.working_hours.items()]
-                    wh_str = "\n".join(wh_parts)
 
-                logic_instruction = ""
-                if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
-                    logic_instruction = f"MANDATORY CUSTOM FLOW:\n{self.assistant_config.custom_steps}"
-                else:
-                    logic_instruction = "STANDARD FLOW: Help the user find a slot and book it."
-
-                # STRENGTHENED REQUIREMENTS (with None handling)
-                requirement_instructions = []
-                if self.assistant_config.require_reason is not False: # Default to True if None
-                    requirement_instructions.append("CRITICAL: You MUST ask the user for the 'Reason for the visit' before you are allowed to book.")
-                if self.assistant_config.confirm_details is not False: # Default to True if None
-                    requirement_instructions.append(f"CRITICAL: You MUST show the user their details and wait for their explicit confirmation before booking:\n- Name: {client_obj.name}\n- Email: {client_obj.email or 'Unknown'}\n- Phone: {client_obj.phone or identifier}")
-                
-                req_str = "\n".join(requirement_instructions)
-
-                guardrails = ""
-                if self.assistant_config.strict_guardrails is not False: # Default to True if None
-                    guardrails = "SYSTEM GUARDRAILS: Stay on topic (appointments only). No politics/medical advice."
-
-                system_prompt = f"""
-                You are {self.assistant_config.name}, AI assistant for '{self.business.name}'.
-                Tone: {self.assistant_config.tone}
-                {guardrails}
-                
-                BUSINESS CONTEXT:
-                - Category: {self.business.category}
-                - Working Hours:
-                {wh_str}
-                - Greeting Context: {greeting_context}
-                
-                CORE OPERATING LOGIC:
-                {logic_instruction}
-                
-                BLOCKING REQUIREMENTS (DO NOT CALL 'create_appointment' UNTIL THESE ARE MET):
-                {req_str}
-                
-                RULES:
-                1. Present slots human-friendly (Mar 10 at 10:00).
-                2. Times are UTC. Current: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}.
-                3. Use 'update_client_identity' if details missing or user wants to update them.
-                4. If history is empty, use the 'Greeting Context' to open the conversation.
-                """
+                system_prompt = template.render(
+                    assistant=self.assistant_config,
+                    business=self.business,
+                    client=client_obj,
+                    client_identifier=identifier,
+                    working_hours=wh_str,
+                    greeting_context=greeting_context,
+                    current_time=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')
+                )
             except Exception as e:
-                print(f"CRITICAL: Prompt Construction Stage Failed: {e}")
+                print(f"CRITICAL: Prompt Construction Stage (Jinja2) Failed: {e}")
+                traceback.print_exc()
                 return "I'm having trouble setting up the conversation. Please try again."
 
             # 4. Generation Stage
             try:
-                response_text = await asyncio.wait_for(
-                    self._get_openai_response(system_prompt, user_message, identifier, history),
-                    timeout=45.0
-                )
+                response_text = await self._get_llm_response(system_prompt, user_message, identifier, history)
             except Exception as e:
                 print(f"CRITICAL: Generation Stage Failed: {e}")
                 return "I'm having trouble thinking right now. My AI provider might be busy. Please try again later."
+
             
             # 5. Save to Memory
             try:
