@@ -135,8 +135,6 @@ class AIService:
                 if is_known:
                     try:
                         first_name = client_obj.name.split()[0]
-                        # Robust formatting: supports {name}, {full_name}, {first_name}
-                        # Using a dict with .get() behavior or multiple replaces is safer
                         raw_template = self.assistant_config.personalized_greeting
                         greeting_context = raw_template.replace("{name}", first_name)\
                                                        .replace("{first_name}", first_name)\
@@ -144,7 +142,7 @@ class AIService:
                                                        .replace("{full name}", client_obj.name)
                     except Exception as ge:
                         print(f"WARNING: Personalized greeting formatting failed: {ge}")
-                        greeting_context = self.assistant_config.greeting # Fallback to generic
+                        greeting_context = self.assistant_config.greeting
                 
                 wh_str = "Not configured"
                 if self.assistant_config.working_hours:
@@ -153,15 +151,16 @@ class AIService:
 
                 logic_instruction = ""
                 if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
-                    logic_instruction = f"BUSINESS RULES: You MUST follow these specific steps:\n{self.assistant_config.custom_steps}"
+                    logic_instruction = f"MANDATORY CUSTOM FLOW:\n{self.assistant_config.custom_steps}"
                 else:
-                    logic_instruction = "BUSINESS RULES: Follow standard booking flow."
+                    logic_instruction = "STANDARD FLOW: Help the user find a slot and book it."
 
+                # STRENGTHENED REQUIREMENTS
                 requirement_instructions = []
                 if self.assistant_config.require_reason:
-                    requirement_instructions.append("- You MUST ask for the reason for the appointment.")
+                    requirement_instructions.append("CRITICAL: You MUST ask the user for the 'Reason for the visit' before you are allowed to book.")
                 if self.assistant_config.confirm_details:
-                    requirement_instructions.append(f"- Before finalizing, confirm info: Name: {client_obj.name}, Email: {client_obj.email or 'Unknown'}, Phone: {client_obj.phone or identifier}.")
+                    requirement_instructions.append(f"CRITICAL: You MUST show the user their details and wait for their explicit confirmation before booking:\n- Name: {client_obj.name}\n- Email: {client_obj.email or 'Unknown'}\n- Phone: {client_obj.phone or identifier}")
                 
                 req_str = "\n".join(requirement_instructions)
 
@@ -176,17 +175,21 @@ class AIService:
                 
                 BUSINESS CONTEXT:
                 - Category: {self.business.category}
-                - Working Hours: {wh_str}
+                - Working Hours:
+                {wh_str}
                 - Greeting Context: {greeting_context}
                 
                 CORE OPERATING LOGIC:
                 {logic_instruction}
+                
+                BLOCKING REQUIREMENTS (DO NOT CALL 'create_appointment' UNTIL THESE ARE MET):
                 {req_str}
                 
                 RULES:
                 1. Present slots human-friendly (Mar 10 at 10:00).
                 2. Times are UTC. Current: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}.
-                3. Use 'update_client_identity' if details missing.
+                3. Use 'update_client_identity' if details missing or user wants to update them.
+                4. If history is empty, use the 'Greeting Context' to open the conversation.
                 """
             except Exception as e:
                 print(f"CRITICAL: Prompt Construction Stage Failed: {e}")
@@ -220,7 +223,18 @@ class AIService:
         return [
             {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "days_ahead": {"type": "integer", "default": 3}}}}},
             {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}}, "required": ["start_time"]}}},
-            {"type": "function", "function": {"name": "create_appointment", "description": "Book it.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "notes": {"type": "string"}}, "required": ["start_time", "notes"]}}},
+            {"type": "function", "function": {
+                "name": "create_appointment", 
+                "description": "FINAL STEP: Book the appointment in the system. PRE-CONDITION: You MUST have already asked for the 'reason' and received user 'confirmation' of their contact info as per system instructions. Do NOT call this early.", 
+                "parameters": {
+                    "type": "object", 
+                    "properties": {
+                        "start_time": {"type": "string", "description": "ISO format"}, 
+                        "notes": {"type": "string", "description": "Reason for visit provided by user"}
+                    }, 
+                    "required": ["start_time", "notes"]
+                }
+            }},
             {"type": "function", "function": {"name": "update_client_identity", "description": "Update CRM details.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}, "required": ["name"]}}}
         ]
 
