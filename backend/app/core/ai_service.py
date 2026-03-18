@@ -133,8 +133,18 @@ class AIService:
                 
                 greeting_context = self.assistant_config.greeting
                 if is_known:
-                    first_name = client_obj.name.split()[0]
-                    greeting_context = self.assistant_config.personalized_greeting.format(name=first_name)
+                    try:
+                        first_name = client_obj.name.split()[0]
+                        # Robust formatting: supports {name}, {full_name}, {first_name}
+                        # Using a dict with .get() behavior or multiple replaces is safer
+                        raw_template = self.assistant_config.personalized_greeting
+                        greeting_context = raw_template.replace("{name}", first_name)\
+                                                       .replace("{first_name}", first_name)\
+                                                       .replace("{full_name}", client_obj.name)\
+                                                       .replace("{full name}", client_obj.name)
+                    except Exception as ge:
+                        print(f"WARNING: Personalized greeting formatting failed: {ge}")
+                        greeting_context = self.assistant_config.greeting # Fallback to generic
                 
                 wh_str = "Not configured"
                 if self.assistant_config.working_hours:
