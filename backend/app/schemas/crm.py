@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 class ClientBase(BaseModel):
     name: str
-    phone: str
+    phone: Optional[str] = None
     email: Optional[str] = None
 
 class ClientCreate(ClientBase):
@@ -18,6 +18,8 @@ class ClientUpdate(BaseModel):
 class ClientResponse(ClientBase):
     id: str
     business_id: str
+    telegram_id_hash: Optional[str] = None
+    whatsapp_id_hash: Optional[str] = None
     created_at: datetime
 
     class Config:

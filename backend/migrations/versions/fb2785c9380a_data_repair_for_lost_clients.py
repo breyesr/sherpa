@@ -19,70 +19,68 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 import hashlib
-from app.core.security import encrypt_token
+import re
+from app.core.security import encrypt_token, decrypt_token
+
+def normalize_id(id_val: str) -> str:
+    if not id_val: return None
+    return re.sub(r'[^a-zA-Z0-9]', '', str(id_val))
+
+def hash_id(id_val: str) -> str:
+    norm = normalize_id(id_val)
+    if not norm: return None
+    return hashlib.sha256(norm.encode()).hexdigest()
 
 def upgrade() -> None:
     connection = op.get_bind()
     
-    # 1. Fetch all clients with plain text IDs (not yet migrated)
+    # 1. Fetch all clients to check for normalization/hashing needs
     results = connection.execute(
-        sa.text("SELECT id, telegram_id, whatsapp_id FROM clients WHERE (telegram_id IS NOT NULL AND telegram_id NOT LIKE 'gAAAA%') OR (whatsapp_id IS NOT NULL AND whatsapp_id NOT LIKE 'gAAAA%')")
+        sa.text("SELECT id, name, phone, telegram_id, whatsapp_id, telegram_id_hash, whatsapp_id_hash FROM clients")
     ).fetchall()
     
-    print(f"Found {len(results)} clients needing repair.")
+    print(f"Auditing {len(results)} clients for repair...")
     
     for row in results:
-        client_id = row[0]
-        tg_raw = row[1] if (row[1] and not row[1].startswith('gAAAA')) else None
-        wa_raw = row[2] if (row[2] and not row[2].startswith('gAAAA')) else None
-        
-        tg_hash = hashlib.sha256(tg_raw.encode()).hexdigest() if tg_raw else None
-        wa_hash = hashlib.sha256(wa_raw.encode()).hexdigest() if wa_raw else None
-        
-        # Check for "New" client that already took this hash (Duplicate created during downtime)
-        new_client = None
-        if tg_hash:
-            new_client = connection.execute(
-                sa.text("SELECT id FROM clients WHERE telegram_id_hash = :hash AND id != :old_id"),
-                {"hash": tg_hash, "old_id": client_id}
-            ).fetchone()
-        
-        if not new_client and wa_hash:
-            new_client = connection.execute(
-                sa.text("SELECT id FROM clients WHERE whatsapp_id_hash = :hash AND id != :old_id"),
-                {"hash": wa_hash, "old_id": client_id}
-            ).fetchone()
-            
-        if new_client:
-            new_id = new_client[0]
-            print(f"Merging new client {new_id} into old client {client_id}...")
-            
-            # Move appointments
-            connection.execute(
-                sa.text("UPDATE appointments SET client_id = :old_id WHERE client_id = :new_id"),
-                {"old_id": client_id, "new_id": new_id}
-            )
-            
-            # Delete the "split-brain" duplicate
-            connection.execute(
-                sa.text("DELETE FROM clients WHERE id = :new_id"),
-                {"new_id": new_id}
-            )
-
-        # Update the old client with encrypted ID and searchable hash
+        c_id, name, phone, tg_id, wa_id, tg_hash, wa_hash = row
         updates = {}
-        if tg_raw:
-            updates["telegram_id"] = encrypt_token(tg_raw)
-            updates["telegram_id_hash"] = tg_hash
-        if wa_raw:
-            updates["whatsapp_id"] = encrypt_token(wa_raw)
-            updates["whatsapp_id_hash"] = wa_hash
+        
+        # A. Resolve Phone Normalization
+        if phone:
+            norm_phone = normalize_id(phone)
+            if norm_phone != phone:
+                updates["phone"] = norm_phone
             
+            # If WhatsApp hash is missing, derive it from normalized phone
+            if not wa_hash:
+                wa_hash = hash_id(norm_phone)
+                updates["whatsapp_id_hash"] = wa_hash
+                updates["whatsapp_id"] = encrypt_token(norm_phone)
+
+        # B. Resolve Telegram IDs
+        if tg_id and not tg_id.startswith('gAAAA'):
+            norm_tg = normalize_id(tg_id)
+            updates["telegram_id"] = encrypt_token(norm_tg)
+            updates["telegram_id_hash"] = hash_id(norm_tg)
+        elif tg_id and not tg_hash:
+            # Encrypted but no hash
+            raw_tg = normalize_id(decrypt_token(tg_id))
+            updates["telegram_id_hash"] = hash_id(raw_tg)
+
+        # C. Resolve WhatsApp IDs (if different from phone)
+        if wa_id and not wa_id.startswith('gAAAA'):
+            norm_wa = normalize_id(wa_id)
+            updates["whatsapp_id"] = encrypt_token(norm_wa)
+            updates["whatsapp_id_hash"] = hash_id(norm_wa)
+        elif wa_id and not wa_hash:
+            raw_wa = normalize_id(decrypt_token(wa_id))
+            updates["whatsapp_id_hash"] = hash_id(raw_wa)
+
         if updates:
             set_clause = ", ".join([f"{k} = :{k}" for k in updates.keys()])
             connection.execute(
                 sa.text(f"UPDATE clients SET {set_clause} WHERE id = :id"),
-                {"id": client_id, **updates}
+                {"id": c_id, **updates}
             )
 
 def downgrade() -> None:
