@@ -1,6 +1,7 @@
 import json
 import traceback
 import asyncio
+import re
 from typing import List, Dict, Any, Optional
 from app.core.google_calendar import GoogleCalendarService
 from datetime import datetime, timedelta, timezone
@@ -199,8 +200,10 @@ class AIService:
             1. ALWAYS check availability using 'check_availability' before suggesting or confirming a time.
             2. If a slot is available and the user wants to book, use 'create_appointment'.
             3. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
-            4. Reference previous messages in the history to avoid repeating questions.
-            5. If this is the start of the conversation, use the Greeting context to guide your opening.
+            4. When presenting available slots, use a clear, user-friendly format (e.g. "Monday, March 10th at 10:00 AM").
+            5. Do NOT use technical jargon like '(UTC)' or ISO strings when talking to the user.
+            6. Reference previous messages in the history to avoid repeating questions.
+            7. If this is the start of the conversation, use the Greeting context to guide your opening.
             """
 
             # 4. Generate Response with Timeout
@@ -215,7 +218,7 @@ class AIService:
                     timeout=45.0
                 )
             
-            # 5. Save to Memory
+            # 5. Save to Memory (using normalized ID)
             await self.memory.add_message(normalized_id, "user", user_message)
             await self.memory.add_message(normalized_id, "assistant", response_text)
             
@@ -336,10 +339,16 @@ class AIService:
 
     async def _get_available_slots_tool(self, date_str: str = None, days_ahead: int = 3) -> str:
         try:
+            now_utc = datetime.now(timezone.utc)
             if date_str:
                 try: start_dt = datetime.fromisoformat(date_str).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
-                except: start_dt = datetime.now(timezone.utc)
-            else: start_dt = datetime.now(timezone.utc)
+                except: start_dt = now_utc
+            else: start_dt = now_utc
+
+            # UI/UX Improvement: Round to the next clean hour if starting from "now"
+            if start_dt == now_utc:
+                if start_dt.minute > 0:
+                    start_dt = start_dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
 
             end_dt = start_dt + timedelta(days=days_ahead)
             working_hours = self.assistant_config.working_hours or {
@@ -369,22 +378,31 @@ class AIService:
 
             available_slots = []
             current_check = start_dt
+            
+            # Limit to 12 slots for readability
             while current_check < end_dt and len(available_slots) < 12:
-                if current_check < datetime.now(timezone.utc):
+                if current_check < now_utc:
                     current_check += timedelta(minutes=60)
                     continue
+                
                 day_name = current_check.strftime('%a').lower()
                 hours = working_hours.get(day_name, [])
                 if hours and len(hours) >= 2:
                     wh_start = current_check.replace(hour=int(hours[0].split(':')[0]), minute=int(hours[0].split(':')[1]))
                     wh_end = current_check.replace(hour=int(hours[1].split(':')[0]), minute=int(hours[1].split(':')[1]))
+                    
                     if wh_start <= current_check < wh_end:
                         slot_end = current_check + timedelta(minutes=60)
                         if not any(current_check < b_end and slot_end > b_start for b_start, b_end in busy_ranges):
-                            available_slots.append(current_check.strftime('%Y-%m-%d %H:%M'))
+                            # UX: Provide a human-friendly format to the AI so it repeats it correctly
+                            available_slots.append(current_check.strftime('%A, %b %d at %H:%M'))
+                
                 current_check += timedelta(minutes=60)
 
-            return "Available: " + ", ".join(available_slots) if available_slots else "No free slots found."
+            if not available_slots:
+                return "No free slots found in this range."
+            
+            return "FREE SLOTS LIST:\n" + "\n".join([f"- {s}" for s in available_slots])
         except Exception as e:
             print(f"ERROR: _get_available_slots_tool failed: {e}")
             return "Error searching for slots."
