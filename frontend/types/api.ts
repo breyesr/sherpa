@@ -89,14 +89,23 @@ export interface paths {
     patch: operations["update_appointment_api_v1_crm_appointments__appointment_id__patch"];
   };
   "/api/v1/whatsapp/webhook": {
-    /** Verify Webhook */
-    get: operations["verify_webhook_api_v1_whatsapp_webhook_get"];
-    /** Handle Whatsapp Message */
-    post: operations["handle_whatsapp_message_api_v1_whatsapp_webhook_post"];
+    /**
+     * Verify Whatsapp
+     * @description WhatsApp Webhook verification.
+     */
+    get: operations["verify_whatsapp_api_v1_whatsapp_webhook_get"];
+    /**
+     * Whatsapp Webhook
+     * @description Receive messages from WhatsApp Cloud API.
+     */
+    post: operations["whatsapp_webhook_api_v1_whatsapp_webhook_post"];
   };
-  "/api/v1/whatsapp/link": {
-    /** Link Whatsapp */
-    post: operations["link_whatsapp_api_v1_whatsapp_link_post"];
+  "/api/v1/whatsapp/setup": {
+    /**
+     * Setup Whatsapp
+     * @description Save WhatsApp Cloud API credentials.
+     */
+    post: operations["setup_whatsapp_api_v1_whatsapp_setup_post"];
   };
   "/api/v1/telegram/webhook/{webhook_id}": {
     /**
@@ -191,6 +200,8 @@ export interface components {
        * @default scheduled
        */
       status?: string;
+      /** Notes */
+      notes?: string | null;
     };
     /** AppointmentResponse */
     AppointmentResponse: {
@@ -211,6 +222,8 @@ export interface components {
        * @default scheduled
        */
       status?: string;
+      /** Notes */
+      notes?: string | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -227,6 +240,8 @@ export interface components {
       end_time?: string | null;
       /** Status */
       status?: string | null;
+      /** Notes */
+      notes?: string | null;
     };
     /** AssistantConfigResponse */
     AssistantConfigResponse: {
@@ -248,6 +263,21 @@ export interface components {
       logic_template?: string;
       /** Custom Steps */
       custom_steps?: string | null;
+      /**
+       * Require Reason
+       * @default true
+       */
+      require_reason?: boolean;
+      /**
+       * Confirm Details
+       * @default true
+       */
+      confirm_details?: boolean;
+      /**
+       * Strict Guardrails
+       * @default true
+       */
+      strict_guardrails?: boolean;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -271,6 +301,12 @@ export interface components {
       logic_template?: string | null;
       /** Custom Steps */
       custom_steps?: string | null;
+      /** Require Reason */
+      require_reason?: boolean | null;
+      /** Confirm Details */
+      confirm_details?: boolean | null;
+      /** Strict Guardrails */
+      strict_guardrails?: boolean | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -340,7 +376,7 @@ export interface components {
       /** Name */
       name: string;
       /** Phone */
-      phone: string;
+      phone?: string | null;
       /** Email */
       email?: string | null;
     };
@@ -349,13 +385,17 @@ export interface components {
       /** Name */
       name: string;
       /** Phone */
-      phone: string;
+      phone?: string | null;
       /** Email */
       email?: string | null;
       /** Id */
       id: string;
       /** Business Id */
       business_id: string;
+      /** Telegram Id Hash */
+      telegram_id_hash?: string | null;
+      /** Whatsapp Id Hash */
+      whatsapp_id_hash?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -909,8 +949,11 @@ export interface operations {
       };
     };
   };
-  /** Verify Webhook */
-  verify_webhook_api_v1_whatsapp_webhook_get: {
+  /**
+   * Verify Whatsapp
+   * @description WhatsApp Webhook verification.
+   */
+  verify_whatsapp_api_v1_whatsapp_webhook_get: {
     parameters: {
       query?: {
         "hub.mode"?: string;
@@ -933,8 +976,11 @@ export interface operations {
       };
     };
   };
-  /** Handle Whatsapp Message */
-  handle_whatsapp_message_api_v1_whatsapp_webhook_post: {
+  /**
+   * Whatsapp Webhook
+   * @description Receive messages from WhatsApp Cloud API.
+   */
+  whatsapp_webhook_api_v1_whatsapp_webhook_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -944,8 +990,11 @@ export interface operations {
       };
     };
   };
-  /** Link Whatsapp */
-  link_whatsapp_api_v1_whatsapp_link_post: {
+  /**
+   * Setup Whatsapp
+   * @description Save WhatsApp Cloud API credentials.
+   */
+  setup_whatsapp_api_v1_whatsapp_setup_post: {
     requestBody: {
       content: {
         "application/json": {

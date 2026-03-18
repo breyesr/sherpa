@@ -879,8 +879,9 @@
         "tags": [
           "whatsapp"
         ],
-        "summary": "Verify Webhook",
-        "operationId": "verify_webhook_api_v1_whatsapp_webhook_get",
+        "summary": "Verify Whatsapp",
+        "description": "WhatsApp Webhook verification.",
+        "operationId": "verify_whatsapp_api_v1_whatsapp_webhook_get",
         "parameters": [
           {
             "name": "hub.mode",
@@ -935,8 +936,9 @@
         "tags": [
           "whatsapp"
         ],
-        "summary": "Handle Whatsapp Message",
-        "operationId": "handle_whatsapp_message_api_v1_whatsapp_webhook_post",
+        "summary": "Whatsapp Webhook",
+        "description": "Receive messages from WhatsApp Cloud API.",
+        "operationId": "whatsapp_webhook_api_v1_whatsapp_webhook_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -949,13 +951,14 @@
         }
       }
     },
-    "/api/v1/whatsapp/link": {
+    "/api/v1/whatsapp/setup": {
       "post": {
         "tags": [
           "whatsapp"
         ],
-        "summary": "Link Whatsapp",
-        "operationId": "link_whatsapp_api_v1_whatsapp_link_post",
+        "summary": "Setup Whatsapp",
+        "description": "Save WhatsApp Cloud API credentials.",
+        "operationId": "setup_whatsapp_api_v1_whatsapp_setup_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1432,6 +1435,17 @@
             "type": "string",
             "title": "Status",
             "default": "scheduled"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           }
         },
         "type": "object",
@@ -1462,6 +1476,17 @@
             "type": "string",
             "title": "Status",
             "default": "scheduled"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
           "id": {
             "type": "string",
@@ -1539,6 +1564,17 @@
               }
             ],
             "title": "Status"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           }
         },
         "type": "object",
@@ -1578,6 +1614,21 @@
               }
             ],
             "title": "Custom Steps"
+          },
+          "require_reason": {
+            "type": "boolean",
+            "title": "Require Reason",
+            "default": true
+          },
+          "confirm_details": {
+            "type": "boolean",
+            "title": "Confirm Details",
+            "default": true
+          },
+          "strict_guardrails": {
+            "type": "boolean",
+            "title": "Strict Guardrails",
+            "default": true
           },
           "working_hours": {
             "anyOf": [
@@ -1682,6 +1733,39 @@
               }
             ],
             "title": "Custom Steps"
+          },
+          "require_reason": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Reason"
+          },
+          "confirm_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirm Details"
+          },
+          "strict_guardrails": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict Guardrails"
           },
           "working_hours": {
             "anyOf": [
@@ -1922,7 +2006,14 @@
             "title": "Name"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
           },
           "email": {
@@ -1939,8 +2030,7 @@
         },
         "type": "object",
         "required": [
-          "name",
-          "phone"
+          "name"
         ],
         "title": "ClientCreate"
       },
@@ -1951,7 +2041,14 @@
             "title": "Name"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
           },
           "email": {
@@ -1973,6 +2070,28 @@
             "type": "string",
             "title": "Business Id"
           },
+          "telegram_id_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Id Hash"
+          },
+          "whatsapp_id_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Id Hash"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -1982,7 +2101,6 @@
         "type": "object",
         "required": [
           "name",
-          "phone",
           "id",
           "business_id",
           "created_at"
