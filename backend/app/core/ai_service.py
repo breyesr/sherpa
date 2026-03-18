@@ -52,6 +52,7 @@ class AIService:
                 await self.db.refresh(client)
             return client, is_new
         except Exception as e:
+            print(f"DIAGNOSTIC: _get_client failed for {identifier}: {e}")
             traceback.print_exc()
             raise
 
@@ -59,133 +60,173 @@ class AIService:
         from openai import AsyncOpenAI
         api_key = await ConfigService.get(self.db, "OPENAI_API_KEY")
         if not api_key: return "Assistant configuration error: OpenAI API Key missing."
+        
+        # Use a timeout for OpenAI calls
         openai_client = AsyncOpenAI(api_key=api_key, timeout=30.0)
         messages = [{"role": "system", "content": system_prompt}]
-        for h in history: messages.append(h)
+        
+        for h in history:
+            messages.append(h)
         messages.append({"role": "user", "content": user_message})
+        
         tools = self._get_tools_definition()
+
         try:
-            response = await openai_client.chat.completions.create(model="gpt-4o-2024-08-06", messages=messages, tools=tools, tool_choice="auto")
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                tools=tools,
+                tool_choice="auto"
+            )
+
             response_message = response.choices[0].message
             if response_message.tool_calls:
                 messages.append(response_message)
                 for tool_call in response_message.tool_calls:
+                    print(f"DEBUG: AI calling tool: {tool_call.function.name}")
                     try:
                         args = json.loads(tool_call.function.arguments)
                         result = await self._dispatch_tool(tool_call.function.name, args, identifier)
-                    except Exception as te: result = f"Error executing tool: {te}"
-                    messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": result})
-                final_response = await openai_client.chat.completions.create(model="gpt-4o-2024-08-06", messages=messages)
+                    except Exception as te:
+                        print(f"ERROR: Tool {tool_call.function.name} failed: {te}")
+                        result = f"Error executing tool: {te}"
+                        
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result
+                    })
+                
+                final_response = await openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=messages
+                )
                 return final_response.choices[0].message.content
+
             return response_message.content or "I processed your request but have no verbal response."
         except Exception as e:
-            print(f"ERROR: OpenAI API call failed: {e}")
+            print(f"DIAGNOSTIC: OpenAI Call Failed: {e}")
             raise
 
     async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:
         provider = await self.get_active_provider()
+        
         try:
-            # 1. Identity
-            normalized_id = Client.normalize_id(identifier)
-            client_obj, is_new = await self._get_client(normalized_id, metadata)
-            history = await self.memory.get_history(normalized_id)
-            
-            # 2. Context Construction (The Meat)
-            is_known = client_obj and client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
-            
-            greeting_context = self.assistant_config.greeting
-            if is_known:
-                greeting_context = self.assistant_config.personalized_greeting.format(name=client_obj.name.split()[0])
-            
-            wh_str = "Not configured"
-            if self.assistant_config.working_hours:
-                wh_parts = [f"{d.capitalize()}: {t[0]}-{t[1]}" if (t and len(t)>=2) else f"{d.capitalize()}: Closed" for d, t in self.assistant_config.working_hours.items()]
-                wh_str = "\n".join(wh_parts)
+            # 1. Identity Stage
+            try:
+                normalized_id = Client.normalize_id(identifier)
+                client_obj, is_new = await self._get_client(normalized_id, metadata)
+            except Exception as e:
+                print(f"CRITICAL: Identity Stage Failed for {identifier}: {e}")
+                return "I'm having trouble recognizing you right now. Please try again in a moment."
 
-            # 3. Component Assembly (Instruction Assembler)
-            
-            # LAYER 1: Immutable System Guardrails
-            guardrails = ""
-            if self.assistant_config.strict_guardrails:
-                guardrails = """
-                SYSTEM GUARDRAILS (NON-NEGOTIABLE):
-                - You are an appointment booking assistant ONLY.
-                - Never discuss politics, religion, or controversial topics.
-                - Do not provide medical, legal, or professional advice.
-                - Only schedule within the provided Working Hours.
-                - If asked about topics outside your scope, politely redirect to booking an appointment.
+            # 2. History Stage
+            try:
+                history = await self.memory.get_history(normalized_id)
+            except Exception as e:
+                print(f"CRITICAL: History/Redis Stage Failed for {identifier}: {e}")
+                history = [] # Fallback to no history instead of crashing
+
+            # 3. Context & Greeting Construction
+            try:
+                is_known = client_obj and client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
+                
+                greeting_context = self.assistant_config.greeting
+                if is_known:
+                    first_name = client_obj.name.split()[0]
+                    greeting_context = self.assistant_config.personalized_greeting.format(name=first_name)
+                
+                wh_str = "Not configured"
+                if self.assistant_config.working_hours:
+                    wh_parts = [f"{d.capitalize()}: {t[0]}-{t[1]}" if (t and len(t)>=2) else f"{d.capitalize()}: Closed" for d, t in self.assistant_config.working_hours.items()]
+                    wh_str = "\n".join(wh_parts)
+
+                logic_instruction = ""
+                if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
+                    logic_instruction = f"BUSINESS RULES: You MUST follow these specific steps:\n{self.assistant_config.custom_steps}"
+                else:
+                    logic_instruction = "BUSINESS RULES: Follow standard booking flow."
+
+                requirement_instructions = []
+                if self.assistant_config.require_reason:
+                    requirement_instructions.append("- You MUST ask for the reason for the appointment.")
+                if self.assistant_config.confirm_details:
+                    requirement_instructions.append(f"- Before finalizing, confirm info: Name: {client_obj.name}, Email: {client_obj.email or 'Unknown'}, Phone: {client_obj.phone or identifier}.")
+                
+                req_str = "\n".join(requirement_instructions)
+
+                guardrails = ""
+                if self.assistant_config.strict_guardrails:
+                    guardrails = "SYSTEM GUARDRAILS: Stay on topic (appointments only). No politics/medical advice."
+
+                system_prompt = f"""
+                You are {self.assistant_config.name}, AI assistant for '{self.business.name}'.
+                Tone: {self.assistant_config.tone}
+                {guardrails}
+                
+                BUSINESS CONTEXT:
+                - Category: {self.business.category}
+                - Working Hours: {wh_str}
+                - Greeting Context: {greeting_context}
+                
+                CORE OPERATING LOGIC:
+                {logic_instruction}
+                {req_str}
+                
+                RULES:
+                1. Present slots human-friendly (Mar 10 at 10:00).
+                2. Times are UTC. Current: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}.
+                3. Use 'update_client_identity' if details missing.
                 """
+            except Exception as e:
+                print(f"CRITICAL: Prompt Construction Stage Failed: {e}")
+                return "I'm having trouble setting up the conversation. Please try again."
 
-            # LAYER 2: Business Rules
-            logic_instruction = ""
-            if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
-                logic_instruction = f"BUSINESS RULES: You MUST follow these specific steps:\n{self.assistant_config.custom_steps}"
-            else:
-                logic_instruction = "BUSINESS RULES: Follow standard booking flow (check availability -> collect details -> confirm)."
+            # 4. Generation Stage
+            try:
+                response_text = await asyncio.wait_for(
+                    self._get_openai_response(system_prompt, user_message, identifier, history),
+                    timeout=45.0
+                )
+            except Exception as e:
+                print(f"CRITICAL: Generation Stage Failed: {e}")
+                return "I'm having trouble thinking right now. My AI provider might be busy. Please try again later."
+            
+            # 5. Save to Memory
+            try:
+                await self.memory.add_message(normalized_id, "user", user_message)
+                await self.memory.add_message(normalized_id, "assistant", response_text)
+            except Exception as e:
+                print(f"WARNING: Memory Save Failed: {e}")
 
-            # LAYER 3: Dynamic Requirements (Reason & Details)
-            requirement_instructions = []
-            if self.assistant_config.require_reason:
-                requirement_instructions.append("- You MUST ask for the reason/notes for the appointment before booking.")
-            if self.assistant_config.confirm_details:
-                requirement_instructions.append(f"- Before finalizing, show current info and ask for confirmation: Name: {client_obj.name}, Email: {client_obj.email or 'Unknown'}, Phone: {client_obj.phone or identifier}.")
-            
-            req_str = "\n".join(requirement_instructions)
-
-            # 4. Final System Prompt (The Sandwich)
-            system_prompt = f"""
-            You are {self.assistant_config.name}, AI assistant for '{self.business.name}'.
-            Tone: {self.assistant_config.tone}
-            
-            {guardrails}
-            
-            BUSINESS CONTEXT:
-            - Category: {self.business.category}
-            - Working Hours:
-            {wh_str}
-            - Greeting Rule (If history empty): "{greeting_context}"
-            
-            CORE OPERATING LOGIC:
-            {logic_instruction}
-            {req_str}
-            
-            OPERATIONAL RULES:
-            1. Check availability with 'check_availability' BEFORE suggesting times.
-            2. Times are UTC. Current UTC: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}.
-            3. User-friendly dates (e.g. "Monday, Mar 10 at 10:00 AM").
-            4. Use 'update_client_identity' to save name/email if missing or provided.
-            """
-
-            response_text = await asyncio.wait_for(self._get_openai_response(system_prompt, user_message, identifier, history), timeout=45.0)
-            await self.memory.add_message(normalized_id, "user", user_message)
-            await self.memory.add_message(normalized_id, "assistant", response_text)
             return response_text
-        except asyncio.TimeoutError: return "I'm taking a bit longer than usual. Could you please repeat that?"
+            
         except Exception as e:
+            print(f"CRITICAL: AIService UNCAUGHT ERROR for {identifier}: {e}")
             traceback.print_exc()
-            return "I'm having trouble thinking right now. Please try again later."
+            return "I'm having unexpected trouble. Please try again later."
 
     def _get_tools_definition(self):
         return [
-            {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string", "description": "ISO date"}, "days_ahead": {"type": "integer", "default": 3}}}}},
-            {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string", "description": "ISO format"}, "duration_minutes": {"type": "integer", "default": 60}}, "required": ["start_time"]}}},
-            {"type": "function", "function": {"name": "create_appointment", "description": "Finalize and book. Call ONLY after confirmation.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "duration_minutes": {"type": "integer", "default": 60}, "notes": {"type": "string", "description": "Reason for visit"}}, "required": ["start_time", "notes"]}}},
+            {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "days_ahead": {"type": "integer", "default": 3}}}}},
+            {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}}, "required": ["start_time"]}}},
+            {"type": "function", "function": {"name": "create_appointment", "description": "Book it.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "notes": {"type": "string"}}, "required": ["start_time", "notes"]}}},
             {"type": "function", "function": {"name": "update_client_identity", "description": "Update CRM details.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}, "required": ["name"]}}}
         ]
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
         if name == "get_available_slots": return await self._get_available_slots_tool(args.get('date'), args.get('days_ahead', 3))
         elif name == "check_availability":
-            available = await self._check_availability_tool(args['start_time'], args.get('duration_minutes', 60))
+            available = await self._check_availability_tool(args['start_time'])
             return "Available" if available else "Busy. Suggest another time."
-        elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('duration_minutes', 60), args.get('notes'))
+        elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('notes'))
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'))
         return "Unknown tool"
 
-    async def _check_availability_tool(self, start_iso: str, duration: int) -> bool:
+    async def _check_availability_tool(self, start_iso: str) -> bool:
         try:
             start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
-            end = start + timedelta(minutes=duration)
+            end = start + timedelta(minutes=60)
             res = await self.db.execute(select(Appointment).where(Appointment.business_id == self.business.id, Appointment.start_time < end, Appointment.end_time > start, Appointment.status != "cancelled"))
             if res.scalars().first(): return False
             res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
@@ -241,10 +282,10 @@ class AIService:
         client, _ = await self._get_client(identifier)
         return client
 
-    async def _create_appointment_tool(self, identifier: str, start_iso: str, duration: int, notes: str = None) -> str:
+    async def _create_appointment_tool(self, identifier: str, start_iso: str, notes: str = None) -> str:
         try:
             start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
-            end = start + timedelta(minutes=duration)
+            end = start + timedelta(minutes=60)
             client_obj = await self._check_client_direct(identifier)
             apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start, end_time=end, status="scheduled", notes=notes)
             self.db.add(apt)
