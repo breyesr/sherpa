@@ -62,7 +62,8 @@ class AIService:
                 client = res.scalars().first()
                 
                 if client:
-                    print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes via model listener.")
+                    print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes.")
+                    # Model listener handles the rest on commit
                     client.updated_at = datetime.utcnow()
                     await self.db.commit()
             
@@ -73,7 +74,6 @@ class AIService:
                 print(f"DEBUG: Auto-registering new client for normalized ID: {normalized_id}")
                 name = "New Client"
                 if metadata:
-                    # We store the platform name but keep is_new=True so the AI greets generically the first time
                     name = metadata.get("name") or metadata.get("first_name") or name
                     if metadata.get("last_name"):
                         name = f"{name} {metadata.get('last_name')}".strip()
@@ -162,82 +162,101 @@ class AIService:
             # 2. History
             history = await self.memory.get_history(normalized_id)
             
-            # 3. Identity & Greeting Logic
-            # A user is considered "registered" if they have an email OR were NOT just created
+            # 3. Dynamic Logic & Prompt Construction
             is_registered = not is_new and client_obj.email is not None
+            # Check if name is real or placeholder
             has_real_name = client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
             
-            # Determine Greeting
-            greeting = self.assistant_config.greeting # Default to generic
-            
-            # Only use personalized greeting if they are RETURNING and we have a name
+            # Determine Greeting Context
+            # We use the generic greeting if history is empty and user is new
+            # We use personalized if history is empty and user is known
+            greeting_context = self.assistant_config.greeting
             if not is_new and has_real_name and len(history) == 0:
                 first_name = client_obj.name.split()[0]
-                greeting = self.assistant_config.personalized_greeting.format(name=first_name)
+                greeting_context = self.assistant_config.personalized_greeting.format(name=first_name)
             
+            # Construct readable Working Hours
+            wh_str = "Not configured"
+            if self.assistant_config.working_hours:
+                wh_parts = []
+                for day, times in self.assistant_config.working_hours.items():
+                    if times and len(times) >= 2:
+                        wh_parts.append(f"{day.capitalize()}: {times[0]}-{times[1]}")
+                    else:
+                        wh_parts.append(f"{day.capitalize()}: Closed")
+                wh_str = "\n".join(wh_parts)
+
+            # Logic Template instructions
             logic_instruction = ""
             if self.assistant_config.logic_template == "custom_steps" and self.assistant_config.custom_steps:
-                logic_instruction = f"Follow these specific custom steps: {self.assistant_config.custom_steps}"
+                logic_instruction = f"""
+                MANDATORY BEHAVIOR: You MUST follow these specific custom steps defined by the business owner:
+                {self.assistant_config.custom_steps}
+                Do not deviate from these steps for the booking process.
+                """
             else:
                 logic_instruction = "Follow the standard booking flow: check availability, ask for missing details, then confirm."
 
+            # Identity Gate instructions
             identity_instruction = ""
             if not is_registered:
                 identity_instruction = f"""
                 IMPORTANT: This user is not fully registered in our CRM.
-                Current Name: {client_obj.name}
-                Before you confirm any booking, you MUST politely ask for their:
-                1. Full Name (if not already known correctly)
-                2. Email Address
-                Use the 'update_client_identity' tool to save these details.
+                - Current Name in CRM: {client_obj.name}
+                - Email: {"Known" if client_obj.email else "UNKNOWN"}
+                
+                Before you confirm any appointment, you MUST politely obtain:
+                1. Their Full Name (if current name looks like a placeholder or is incorrect)
+                2. Their Email Address (if unknown)
+                
+                Use the 'update_client_identity' tool to save these details immediately when provided.
                 """
+            
+            user_info = f"User Name: {client_obj.name if has_real_name else 'Unknown'}"
             
             system_prompt = f"""
             You are {self.assistant_config.name}, an AI assistant for '{self.business.name}'.
             Your tone is {self.assistant_config.tone}.
             
-            Business Context:
-            - Category: {self.business.category}
-            - Greeting context: {greeting}
+            USER INFORMATION:
+            - {user_info}
+            - Registered: {'Yes' if is_registered else 'No'}
             
-            Your Goal: Help clients book appointments.
+            BUSINESS CONTEXT:
+            - Category: {self.business.category}
+            - Working Hours:
+            {wh_str}
+            - Initial Greeting Context: {greeting_context}
+            
+            CORE INSTRUCTIONS:
             {logic_instruction}
             {identity_instruction}
             
             RULES:
-            1. ALWAYS check availability using 'check_availability' before suggesting or confirming a time.
-            2. If a slot is available and the user wants to book, use 'create_appointment'.
-            3. ALL times you handle are in UTC. Current time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC.
-            4. When presenting available slots, use a clear, user-friendly format (e.g. "Monday, March 10th at 10:00 AM").
-            5. Do NOT use technical jargon like '(UTC)' or ISO strings.
-            6. Reference previous messages in history.
-            7. If history is empty, start by using the 'Greeting context' provided above.
+            1. ALWAYS check availability with 'check_availability' before suggesting or confirming a time.
+            2. Present slots in a human-friendly way (e.g. "Monday, March 10th at 10:00 AM"). No technical strings.
+            3. All times are in UTC. Current UTC time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}.
+            4. If history is empty, use the 'Initial Greeting Context' to guide your opening.
+            5. If you know the user's name, use it naturally to greet them and build trust.
             """
 
             # 4. Generate Response with Timeout
-            if provider == "openai":
-                response_text = await asyncio.wait_for(
-                    self._get_openai_response(system_prompt, user_message, normalized_id, history),
-                    timeout=45.0
-                )
-            else:
-                response_text = await asyncio.wait_for(
-                    self._get_openai_response(system_prompt, user_message, normalized_id, history),
-                    timeout=45.0
-                )
+            response_text = await asyncio.wait_for(
+                self._get_openai_response(system_prompt, user_message, normalized_id, history),
+                timeout=45.0
+            )
             
-            # 5. Save to Memory (using normalized ID)
+            # 5. Save to Memory
             await self.memory.add_message(normalized_id, "user", user_message)
             await self.memory.add_message(normalized_id, "assistant", response_text)
             
             return response_text
         except asyncio.TimeoutError:
-            print(f"CRITICAL: AI Response Timeout for {identifier}")
             return "I'm taking a bit longer than usual to think. Could you please repeat that?"
         except Exception as e:
             print(f"CRITICAL: AIService error for {identifier}: {e}")
             traceback.print_exc()
-            return "I'm having trouble connecting to my brain right now. Please try again in a moment."
+            return "I'm having trouble thinking right now. Please try again in a moment."
 
     def _get_tools_definition(self):
         return [
@@ -290,13 +309,12 @@ class AIService:
                 "type": "function",
                 "function": {
                     "name": "update_client_identity",
-                    "description": "Update client info in CRM.",
+                    "description": "Update client name and email in the CRM.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "name": {"type": "string"},
-                            "email": {"type": "string"},
-                            "phone": {"type": "string"}
+                            "name": {"type": "string", "description": "Full name"},
+                            "email": {"type": "string", "description": "Email address"}
                         },
                         "required": ["name"]
                     }
@@ -313,7 +331,7 @@ class AIService:
         elif name == "create_appointment":
             return await self._create_appointment_tool(identifier, args['client_name'], args['start_time'], args.get('duration_minutes', 60))
         elif name == "update_client_identity":
-            return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
+            return await self._update_client_identity_tool(identifier, args['name'], args.get('email'))
         return "Unknown tool"
 
     async def _check_availability_tool(self, start_iso: str, duration: int) -> bool:
@@ -353,7 +371,6 @@ class AIService:
                 except: start_dt = now_utc
             else: start_dt = now_utc
 
-            # UI/UX Improvement: Round to the next clean hour if starting from "now"
             if start_dt == now_utc:
                 if start_dt.minute > 0:
                     start_dt = start_dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
@@ -386,31 +403,24 @@ class AIService:
 
             available_slots = []
             current_check = start_dt
-            
-            # Limit to 12 slots for readability
             while current_check < end_dt and len(available_slots) < 12:
                 if current_check < now_utc:
                     current_check += timedelta(minutes=60)
                     continue
-                
                 day_name = current_check.strftime('%a').lower()
                 hours = working_hours.get(day_name, [])
                 if hours and len(hours) >= 2:
                     wh_start = current_check.replace(hour=int(hours[0].split(':')[0]), minute=int(hours[0].split(':')[1]))
                     wh_end = current_check.replace(hour=int(hours[1].split(':')[0]), minute=int(hours[1].split(':')[1]))
-                    
                     if wh_start <= current_check < wh_end:
                         slot_end = current_check + timedelta(minutes=60)
                         if not any(current_check < b_end and slot_end > b_start for b_start, b_end in busy_ranges):
-                            # UX: Provide a human-friendly format to the AI so it repeats it correctly
                             available_slots.append(current_check.strftime('%A, %b %d at %H:%M'))
-                
                 current_check += timedelta(minutes=60)
 
             if not available_slots:
-                return "No free slots found in this range."
-            
-            return "FREE SLOTS LIST:\n" + "\n".join([f"- {s}" for s in available_slots])
+                return "No free slots found."
+            return "FREE SLOTS:\n" + "\n".join([f"- {s}" for s in available_slots])
         except Exception as e:
             print(f"ERROR: _get_available_slots_tool failed: {e}")
             return "Error searching for slots."
@@ -446,12 +456,11 @@ class AIService:
             print(f"ERROR: _create_appointment_tool failed: {e}")
             return f"Failed to book: {e}"
 
-    async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None, phone: str = None) -> str:
+    async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None) -> str:
         try:
             client_obj = await self._check_client_direct(identifier)
             client_obj.name = name
             if email: client_obj.email = email
-            if phone: client_obj.phone = phone
             await self.db.commit()
             return f"SUCCESS: Identity updated to {name}."
         except Exception as e:
