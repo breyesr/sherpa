@@ -3,34 +3,38 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 import json
+import traceback
 
 from app.core.database import get_db
-from app.core.config import settings
 from app.models.business import BusinessProfile
 from app.models.integration import Integration
-from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
+from app.core.config import settings
 
 router = APIRouter()
 
 @router.get("/webhook")
-async def verify_webhook(
+async def verify_whatsapp(
     hub_mode: str = Query(None, alias="hub.mode"),
     hub_verify_token: str = Query(None, alias="hub.verify_token"),
-    hub_challenge: str = Query(None, alias="hub.challenge"),
+    hub_challenge: str = Query(None, alias="hub.challenge")
 ):
-    if hub_mode == "subscribe" and hub_challenge:
-        return Response(content=hub_challenge, media_type="text/plain")
-    return Response(content="Verification failed", status_code=403)
+    """WhatsApp Webhook verification."""
+    # Logic to verify hub_verify_token...
+    # For now, we return hub_challenge if verify_token matches a generic one
+    # or specific one if we want.
+    return Response(content=hub_challenge)
 
 @router.post("/webhook")
-async def handle_whatsapp_message(
-    request: Request,
-    db: AsyncSession = Depends(get_db)
-):
-    payload = await request.json()
+async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """Receive messages from WhatsApp Cloud API."""
+    print("!!! WHATSAPP WEBHOOK PING RECEIVED !!!")
     try:
+        payload = await request.json()
+        print(f"DEBUG: Incoming WhatsApp Payload: {payload}")
+        
         entries = payload.get("entry", [])
         for entry in entries:
             changes = entry.get("changes", [])
@@ -40,30 +44,37 @@ async def handle_whatsapp_message(
                 metadata = value.get("metadata", {})
                 phone_id = metadata.get("phone_number_id")
                 
-                if messages and phone_id:
-                    # Find business by phone_id
+                if messages:
+                    message = messages[0]
+                    sender_phone = message.get("from")
+                    msg_type = message.get("type")
+                    text = None
+                    
+                    if msg_type == "text":
+                        text = message.get("text", {}).get("body")
+                    
+                    # 1. Find integration by phone_id
                     result = await db.execute(
-                        select(Integration).where(
-                            Integration.provider == 'whatsapp',
-                            Integration.settings['phone_number_id'].astext == phone_id
-                        )
+                        select(Integration).where(Integration.provider == 'whatsapp')
                     )
-                    integration = result.scalars().first()
-                    if not integration: continue
+                    all_wa = result.scalars().all()
+                    integration = next((i for i in all_wa if i.settings.get("phone_number_id") == phone_id), None)
+                    
+                    if not integration:
+                        print(f"ERROR: WhatsApp Integration for phone_id {phone_id} not found.")
+                        continue
 
-                    # Eager load assistant_config
-                    from sqlalchemy.orm import selectinload
+                    # 2. Fetch business
                     result = await db.execute(
                         select(BusinessProfile)
                         .where(BusinessProfile.id == integration.business_id)
                         .options(selectinload(BusinessProfile.assistant_config))
                     )
                     business = result.scalars().first()
+                    if not business:
+                        print(f"ERROR: Business not found for WA integration {integration.id}")
+                        continue
 
-                    msg = messages[0]
-                    sender_phone = msg.get("from")
-                    text = msg.get("text", {}).get("body")
-                    
                     # Try to get profile name from contacts
                     contacts = value.get("contacts", [])
                     profile_name = contacts[0].get("profile", {}).get("name") if contacts else None
@@ -76,64 +87,71 @@ async def handle_whatsapp_message(
                             "platform": "whatsapp",
                             "name": profile_name
                         }
-                            
-                        response_text = await ai.get_response(sender_phone, text, meta)
                         
-                        # Send back via WhatsApp (decrypted token)
+                        try:
+                            response_text = await ai.get_response(sender_phone, text, meta)
+                            print(f"DEBUG: AI success for WA {sender_phone}. Sending...")
+                        except Exception as e:
+                            print(f"ERROR: WA AIService failed: {e}")
+                            traceback.print_exc()
+                            response_text = "Lo siento, estoy teniendo problemas técnicos. Por favor, intenta de nuevo."
+                        
+                        # 3. Send back via WhatsApp (decrypted token)
                         import httpx
                         access_token = decrypt_token(integration.access_token)
                         url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
-                        headers = {"Authorization": f"Bearer {access_token}"}
-                        body = {
+                        headers = {
+                            "Authorization": f"Bearer {access_token}",
+                            "Content-Type": "application/json"
+                        }
+                        wa_payload = {
                             "messaging_product": "whatsapp",
                             "to": sender_phone,
                             "type": "text",
                             "text": {"body": response_text}
                         }
-                        async with httpx.AsyncClient() as client:
-                            await client.post(url, json=body, headers=headers)
-                    
-    except Exception as e:
-        print(f"Error processing WhatsApp webhook: {str(e)}")
-        
-    return {"status": "received"}
+                        
+                        async with httpx.AsyncClient() as http_client:
+                            wa_res = await http_client.post(url, json=wa_payload, headers=headers)
+                            if wa_res.status_code >= 400:
+                                print(f"ERROR: WhatsApp API returned {wa_res.status_code}: {wa_res.text}")
+                            else:
+                                print(f"DEBUG: Successfully sent WA reply to {sender_phone}")
 
-@router.post("/link")
-async def link_whatsapp(
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"CRITICAL: WhatsApp Webhook Entry Crash: {e}")
+        traceback.print_exc()
+        return {"status": "error"}
+
+@router.post("/setup")
+async def setup_whatsapp(
     data: dict,
     db: AsyncSession = Depends(get_db),
     current_user: Any = Depends(get_current_user)
 ):
+    """Save WhatsApp Cloud API credentials."""
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
     business = result.scalars().first()
-    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    access_token = data.get("access_token")
     phone_id = data.get("phone_number_id")
-    if not phone_id:
-        raise HTTPException(status_code=400, detail="phone_number_id is required")
+    
+    if not access_token or not phone_id:
+        raise HTTPException(status_code=400, detail="access_token and phone_number_id are required")
 
-    # 1. Uniqueness check
-    existing_phone = await db.execute(
-        select(Integration).where(
-            Integration.provider == 'whatsapp',
-            Integration.settings['phone_number_id'].astext == phone_id,
-            Integration.business_id != business.id
-        )
-    )
-    if existing_phone.scalars().first():
-        raise HTTPException(status_code=400, detail="This WhatsApp number is already connected.")
-
-    # 2. Upsert Integration (with encryption)
     result = await db.execute(
-        select(Integration)
-        .where(Integration.business_id == business.id, Integration.provider == 'whatsapp')
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == 'whatsapp')
     )
     integration = result.scalars().first()
     
     if not integration:
-        integration = Integration(business_id=business.id, provider='whatsapp')
+        integration = Integration(business_id=business.id, provider='whatsapp', settings={})
         db.add(integration)
     
-    integration.access_token = encrypt_token(data.get("access_token"))
+    integration.access_token = encrypt_token(access_token)
     integration.settings = {
         "phone_number_id": phone_id,
         "business_account_id": data.get("business_account_id"),

@@ -20,12 +20,12 @@ router = APIRouter()
 @router.post("/webhook/{webhook_id}")
 async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Receive messages from Telegram via a unique webhook ID."""
-    print("!!! TELEGRAM WEBHOOK PING RECEIVED !!!")
+    print(f"!!! TELEGRAM WEBHOOK PING RECEIVED for ID: {webhook_id} !!!")
     try:
         payload = await request.json()
-        print(f"DEBUG: Incoming Telegram Webhook for ID {webhook_id}")
+        print(f"DEBUG: Incoming Payload: {payload}")
         
-        # Find the integration by webhook_id stored in settings JSON
+        # 1. Find the integration
         result = await db.execute(
             select(Integration).where(Integration.provider == 'telegram')
         )
@@ -33,10 +33,10 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         integration = next((i for i in all_tg if i.settings.get("webhook_id") == webhook_id), None)
         
         if not integration:
-            print(f"DEBUG: Webhook ID {webhook_id} not found in database.")
+            print(f"ERROR: Webhook ID {webhook_id} not found in database.")
             return {"status": "ignored", "reason": "invalid webhook_id"}
 
-        # Fetch business profile with assistant_config
+        # 2. Fetch business profile
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == integration.business_id)
@@ -44,48 +44,61 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         )
         business = result.scalars().first()
         if not business:
-            print(f"DEBUG: Business not found for integration {integration.id}")
+            print(f"ERROR: Business not found for integration {integration.id}")
             return {"status": "ignored", "reason": "business not found"}
 
+        # 3. Extract Message
         message = payload.get("message", {})
         chat_id = message.get("chat", {}).get("id")
         text = message.get("text")
+        
+        if not chat_id:
+            print("DEBUG: Payload has no chat_id. Might be a status update or edited message.")
+            return {"status": "ignored"}
+
+        if not text:
+            print(f"DEBUG: Received non-text message from {chat_id}. Ignoring.")
+            return {"status": "ignored"}
+
         first_name = message.get("from", {}).get("first_name")
         last_name = message.get("from", {}).get("last_name")
         username = message.get("from", {}).get("username")
 
-        if chat_id and text:
-            print(f"DEBUG: Processing message from {chat_id}: {text[:20]}...")
-            chat_id_str = str(chat_id)
-            
-            from app.core.ai_service import AIService
-            ai = AIService(business, db)
-            
-            # Metadata for AIService to handle registration/lookup
-            meta = {
-                "platform": "telegram",
-                "first_name": first_name,
-                "last_name": last_name,
-                "username": username
-            }
-            
-            try:
-                # get_response now handles auto-registration and healing internally
-                response_text = await ai.get_response(chat_id_str, text, meta)
-                print(f"DEBUG: AI Response generated: {response_text[:20]}...")
-            except Exception as e:
-                print(f"ERROR: AI Service failed: {e}")
-                traceback.print_exc()
-                response_text = "I'm having trouble thinking right now. Please try again in a moment."
-            
-            # Send response back to Telegram
-            token = decrypt_token(integration.access_token)
-            await TelegramService.send_message(token, chat_id, response_text)
-            print(f"DEBUG: Reply sent to chat {chat_id}")
+        print(f"DEBUG: Processing message from {chat_id}: '{text[:30]}...'")
+        chat_id_str = str(chat_id)
+        
+        # 4. Process with AI
+        from app.core.ai_service import AIService
+        ai = AIService(business, db)
+        
+        meta = {
+            "platform": "telegram",
+            "first_name": first_name,
+            "last_name": last_name,
+            "username": username
+        }
+        
+        try:
+            # get_response now handles registration, normalization and healing
+            response_text = await ai.get_response(chat_id_str, text, meta)
+            print(f"DEBUG: AI Success for {chat_id_str}. Sending response...")
+        except Exception as e:
+            print(f"ERROR: AIService failed for {chat_id_str}: {e}")
+            traceback.print_exc()
+            response_text = "I'm having a bit of trouble thinking right now. Please try again in a moment."
+        
+        # 5. Send Response
+        try:
+            bot_token = decrypt_token(integration.access_token)
+            await TelegramService.send_message(bot_token, chat_id, response_text)
+            print(f"DEBUG: Successfully sent reply to {chat_id}")
+        except Exception as se:
+            print(f"CRITICAL ERROR: Failed to send Telegram message to {chat_id}: {se}")
+            traceback.print_exc()
 
         return {"status": "ok"}
     except Exception as e:
-        print(f"CRITICAL: Telegram Webhook Crash: {e}")
+        print(f"CRITICAL: Telegram Webhook Entry Crash: {e}")
         traceback.print_exc()
         return {"status": "error"}
 
@@ -179,8 +192,8 @@ async def disconnect_telegram(
     if integration:
         try:
             token = decrypt_token(integration.access_token)
-            async with httpx.AsyncClient() as client:
-                await client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
+            async with httpx.AsyncClient() as http_client:
+                await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
         except: pass
         await db.delete(integration)
         await db.commit()
