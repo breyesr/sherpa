@@ -30,6 +30,7 @@ class AppointmentBase(BaseModel):
     start_time: datetime
     end_time: datetime
     status: str = "scheduled"
+    notes: Optional[str] = None
 
 class AppointmentCreate(AppointmentBase):
     pass
@@ -38,6 +39,7 @@ class AppointmentUpdate(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     status: Optional[str] = None
+    notes: Optional[str] = None
 
 class AppointmentResponse(AppointmentBase):
     id: str

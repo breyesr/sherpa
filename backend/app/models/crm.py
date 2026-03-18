@@ -99,6 +99,7 @@ class Appointment(Base):
     end_time = Column(DateTime, nullable=False)
     status = Column(String, default="scheduled") # scheduled, confirmed, cancelled, completed
     reminder_sent = Column(Boolean, default=False)
+    notes = Column(String, nullable=True) # Reason for booking
     
     # Link to Google Calendar event if synced
     google_event_id = Column(String, nullable=True)

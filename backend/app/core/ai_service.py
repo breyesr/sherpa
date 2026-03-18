@@ -31,7 +31,6 @@ class AIService:
         Returns (client_object, is_new_registration)
         """
         try:
-            # CRITICAL: Always normalize the incoming identifier (remove +, spaces, etc)
             normalized_id = Client.normalize_id(identifier)
             id_hash = Client.hash_id(normalized_id)
             
@@ -63,7 +62,6 @@ class AIService:
                 
                 if client:
                     print(f"DEBUG: Self-healing client {client.id}. Populating missing hashes.")
-                    # Model listener handles the rest on commit
                     client.updated_at = datetime.utcnow()
                     await self.db.commit()
             
@@ -115,7 +113,8 @@ class AIService:
 
         try:
             response = await openai_client.chat.completions.create(
-                model="gpt-4o",
+                # model="gpt-4o",
+                model="gpt-4o-2024-08-06", # Ensure tool use is stable
                 messages=messages,
                 tools=tools,
                 tool_choice="auto"
@@ -140,7 +139,7 @@ class AIService:
                     })
                 
                 final_response = await openai_client.chat.completions.create(
-                    model="gpt-4o",
+                    model="gpt-4o-2024-08-06",
                     messages=messages
                 )
                 return final_response.choices[0].message.content
@@ -163,15 +162,14 @@ class AIService:
             history = await self.memory.get_history(normalized_id)
             
             # 3. Dynamic Logic & Prompt Construction
-            is_registered = not is_new and client_obj.email is not None
-            # Check if name is real or placeholder
-            has_real_name = client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
+            is_known = client_obj and client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
+            has_email = client_obj and client_obj.email is not None
+            has_phone = client_obj and client_obj.phone is not None
             
             # Determine Greeting Context
-            # We use the generic greeting if history is empty and user is new
-            # We use personalized if history is empty and user is known
             greeting_context = self.assistant_config.greeting
-            if not is_new and has_real_name and len(history) == 0:
+            if is_known:
+                # If we know the user, prioritize the personalized greeting
                 first_name = client_obj.name.split()[0]
                 greeting_context = self.assistant_config.personalized_greeting.format(name=first_name)
             
@@ -192,52 +190,63 @@ class AIService:
                 logic_instruction = f"""
                 MANDATORY BEHAVIOR: You MUST follow these specific custom steps defined by the business owner:
                 {self.assistant_config.custom_steps}
-                Do not deviate from these steps for the booking process.
                 """
             else:
-                logic_instruction = "Follow the standard booking flow: check availability, ask for missing details, then confirm."
+                logic_instruction = "Follow the standard booking flow: check availability, ask for missing details, confirm, and book."
 
-            # Identity Gate instructions
+            # Identity & Confirmation instructions
             identity_instruction = ""
-            if not is_registered:
+            if not is_known or not has_email:
                 identity_instruction = f"""
-                IMPORTANT: This user is not fully registered in our CRM.
-                - Current Name in CRM: {client_obj.name}
+                IMPORTANT - USER REGISTRATION:
+                This user is not fully registered.
+                - Current Name: {client_obj.name}
                 - Email: {"Known" if client_obj.email else "UNKNOWN"}
                 
-                Before you confirm any appointment, you MUST politely obtain:
-                1. Their Full Name (if current name looks like a placeholder or is incorrect)
-                2. Their Email Address (if unknown)
-                
-                Use the 'update_client_identity' tool to save these details immediately when provided.
+                You MUST obtain:
+                1. Full Name
+                2. Email Address
+                Use 'update_client_identity' to save them.
                 """
             
-            user_info = f"User Name: {client_obj.name if has_real_name else 'Unknown'}"
+            confirmation_instruction = f"""
+            IMPORTANT - BOOKING CONFIRMATION PROCESS:
+            Before you use the 'create_appointment' tool, you MUST follow these steps exactly:
+            1. Ask for the REASON for the appointment (e.g. "What is the reason for your visit?").
+            2. Show the user their current contact info and ASK for confirmation:
+               - Name: {client_obj.name}
+               - Email: {client_obj.email or "Not provided"}
+               - Phone: {client_obj.phone or identifier}
+            3. Explicitly ask: "Is this information correct, or would you like to update anything before we finalize?"
+            4. ONLY once the user confirms the details and provides the reason, proceed to call 'create_appointment'.
+            """
             
             system_prompt = f"""
             You are {self.assistant_config.name}, an AI assistant for '{self.business.name}'.
             Your tone is {self.assistant_config.tone}.
             
             USER INFORMATION:
-            - {user_info}
-            - Registered: {'Yes' if is_registered else 'No'}
+            - Name: {client_obj.name}
+            - Email: {client_obj.email or "Unknown"}
+            - Phone: {client_obj.phone or identifier}
             
             BUSINESS CONTEXT:
             - Category: {self.business.category}
             - Working Hours:
             {wh_str}
-            - Initial Greeting Context: {greeting_context}
+            - GREETING RULE: If history is empty, you MUST open with: "{greeting_context}"
             
             CORE INSTRUCTIONS:
             {logic_instruction}
             {identity_instruction}
+            {confirmation_instruction}
             
             RULES:
-            1. ALWAYS check availability with 'check_availability' before suggesting or confirming a time.
+            1. ALWAYS check availability with 'check_availability' BEFORE suggesting or confirming a time.
             2. Present slots in a human-friendly way (e.g. "Monday, March 10th at 10:00 AM"). No technical strings.
             3. All times are in UTC. Current UTC time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}.
-            4. If history is empty, use the 'Initial Greeting Context' to guide your opening.
-            5. If you know the user's name, use it naturally to greet them and build trust.
+            4. Reference previous messages in history to avoid repeating questions.
+            5. Use the user's name naturally once you know it.
             """
 
             # 4. Generate Response with Timeout
@@ -293,15 +302,15 @@ class AIService:
                 "type": "function",
                 "function": {
                     "name": "create_appointment",
-                    "description": "Finalize and book the appointment.",
+                    "description": "Finalize and book the appointment. Call this ONLY after user confirmed contact details.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "client_name": {"type": "string"},
-                            "start_time": {"type": "string"},
-                            "duration_minutes": {"type": "integer", "default": 60}
+                            "start_time": {"type": "string", "description": "ISO format"},
+                            "duration_minutes": {"type": "integer", "default": 60},
+                            "notes": {"type": "string", "description": "Reason for the appointment provided by the user."}
                         },
-                        "required": ["client_name", "start_time"]
+                        "required": ["start_time", "notes"]
                     }
                 }
             },
@@ -329,7 +338,7 @@ class AIService:
             available = await self._check_availability_tool(args['start_time'], args.get('duration_minutes', 60))
             return "Available" if available else "Busy. Suggest another time."
         elif name == "create_appointment":
-            return await self._create_appointment_tool(identifier, args['client_name'], args['start_time'], args.get('duration_minutes', 60))
+            return await self._create_appointment_tool(identifier, args['start_time'], args.get('duration_minutes', 60), args.get('notes'))
         elif name == "update_client_identity":
             return await self._update_client_identity_tool(identifier, args['name'], args.get('email'))
         return "Unknown tool"
@@ -429,16 +438,20 @@ class AIService:
         client, _ = await self._get_client(identifier)
         return client
 
-    async def _create_appointment_tool(self, identifier: str, name: str, start_iso: str, duration: int) -> str:
+    async def _create_appointment_tool(self, identifier: str, start_iso: str, duration: int, notes: str = None) -> str:
         try:
             start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
             end = start + timedelta(minutes=duration)
             client_obj = await self._check_client_direct(identifier)
-            if client_obj.name == "New Client":
-                client_obj.name = name
-                await self.db.commit()
             
-            apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start, end_time=end, status="scheduled")
+            apt = Appointment(
+                business_id=self.business.id, 
+                client_id=client_obj.id, 
+                start_time=start, 
+                end_time=end, 
+                status="scheduled",
+                notes=notes
+            )
             self.db.add(apt)
             
             res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
@@ -446,12 +459,17 @@ class AIService:
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
-                    google_id = await service.create_event(f"Sherpa: {client_obj.name}", start, end, f"Client: {client_obj.name}\nBooked via AI")
+                    google_id = await service.create_event(
+                        summary=f"Sherpa: {client_obj.name}", 
+                        start_time=start, 
+                        end_time=end, 
+                        description=f"Client: {client_obj.name}\nReason: {notes or 'No reason provided'}\nBooked via AI"
+                    )
                     apt.google_event_id = google_id
                 except: pass
             
             await self.db.commit()
-            return f"SUCCESS: Booked for {client_obj.name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."
+            return f"SUCCESS: Booked for {client_obj.name} at {start.strftime('%Y-%m-%d %H:%M')} UTC. Reason: {notes}"
         except Exception as e:
             print(f"ERROR: _create_appointment_tool failed: {e}")
             return f"Failed to book: {e}"
