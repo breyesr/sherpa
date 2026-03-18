@@ -214,6 +214,20 @@ class AIService:
             {
                 "type": "function",
                 "function": {
+                    "name": "get_available_slots",
+                    "description": "Find free time slots for a specific date or range.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "date": {"type": "string", "description": "ISO date (YYYY-MM-DD) to check. If omitted, checks from today."},
+                            "days_ahead": {"type": "integer", "default": 3, "description": "How many days to look ahead."}
+                        }
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "check_availability",
                     "description": "Check if a specific time slot is free.",
                     "parameters": {
@@ -261,7 +275,9 @@ class AIService:
         ]
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
-        if name == "check_availability":
+        if name == "get_available_slots":
+            return await self._get_available_slots_tool(args.get('date'), args.get('days_ahead', 3))
+        elif name == "check_availability":
             available = await self._check_availability_tool(args['start_time'], args.get('duration_minutes', 60))
             return "Available" if available else "Busy. Suggest another time."
         elif name == "create_appointment":
@@ -293,6 +309,99 @@ class AIService:
                 if busy: return False
             except: pass
         return True
+
+    async def _get_available_slots_tool(self, date_str: str = None, days_ahead: int = 3) -> str:
+        """
+        Calculates free slots by checking working hours, Google Calendar, and local DB.
+        """
+        # 1. Determine time range
+        if date_str:
+            try:
+                start_dt = datetime.fromisoformat(date_str).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+            except:
+                start_dt = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            start_dt = datetime.now(timezone.utc)
+
+        end_dt = start_dt + timedelta(days=days_ahead)
+        
+        # 2. Get Business Working Hours
+        # Default: 09:00 to 18:00 if not set
+        working_hours = self.assistant_config.working_hours or {
+            "mon": ["09:00", "18:00"], "tue": ["09:00", "18:00"], "wed": ["09:00", "18:00"],
+            "thu": ["09:00", "18:00"], "fri": ["09:00", "18:00"], "sat": [], "sun": []
+        }
+
+        # 3. Gather all Busy Slots (Google + Local)
+        # Fetch local appointments in range
+        res = await self.db.execute(
+            select(Appointment).where(
+                Appointment.business_id == self.business.id,
+                Appointment.start_time < end_dt.replace(tzinfo=None),
+                Appointment.end_time > start_dt.replace(tzinfo=None),
+                Appointment.status != "cancelled"
+            )
+        )
+        local_apts = res.scalars().all()
+        
+        busy_ranges = []
+        for apt in local_apts:
+            busy_ranges.append((apt.start_time.replace(tzinfo=timezone.utc), apt.end_time.replace(tzinfo=timezone.utc)))
+
+        # Fetch Google busy slots
+        res = await self.db.execute(
+            select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google')
+        )
+        integration = res.scalars().first()
+        if integration:
+            try:
+                service = GoogleCalendarService(integration, self.db)
+                google_busy = await service.get_availability(start_dt, end_dt)
+                for b in google_busy:
+                    b_start = datetime.fromisoformat(b['start'].replace('Z', '+00:00'))
+                    b_end = datetime.fromisoformat(b['end'].replace('Z', '+00:00'))
+                    busy_ranges.append((b_start, b_end))
+            except: pass
+
+        # 4. Iterate and find gaps
+        available_slots = []
+        current_check = start_dt
+        
+        # Let's check in 1-hour increments during working hours
+        while current_check < end_dt:
+            # Skip if in the past
+            if current_check < datetime.now(timezone.utc):
+                current_check += timedelta(minutes=60)
+                continue
+
+            day_name = current_check.strftime('%a').lower() # mon, tue...
+            hours = working_hours.get(day_name, [])
+            
+            if hours and len(hours) >= 2:
+                wh_start_str, wh_end_str = hours[0], hours[1]
+                wh_start = current_check.replace(hour=int(wh_start_str.split(':')[0]), minute=int(wh_start_str.split(':')[1]), second=0)
+                wh_end = current_check.replace(hour=int(wh_end_str.split(':')[0]), minute=int(wh_end_str.split(':')[1]), second=0)
+                
+                if wh_start <= current_check < wh_end:
+                    # Check if this slot (assume 1h) conflicts with any busy range
+                    slot_end = current_check + timedelta(minutes=60)
+                    is_busy = False
+                    for b_start, b_end in busy_ranges:
+                        if current_check < b_end and slot_end > b_start:
+                            is_busy = True
+                            break
+                    
+                    if not is_busy:
+                        available_slots.append(current_check.strftime('%Y-%m-%d %H:%M'))
+            
+            current_check += timedelta(minutes=60)
+            # Limit number of slots returned to avoid token bloat
+            if len(available_slots) >= 15: break
+
+        if not available_slots:
+            return "No available slots found in this range. Try another date."
+        
+        return "Available slots: " + ", ".join(available_slots) + " (UTC)"
 
     async def _check_client_direct(self, identifier: str) -> Client:
         """Helper for tools to get client without meta."""
