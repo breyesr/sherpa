@@ -155,8 +155,6 @@ class AIService:
                 wh_str = "\n".join(wh_parts)
                 
                 # 1. Improved 'is_known' logic and Data Status
-                # A user is known if their name is not a placeholder and they aren't new
-                is_known = False
                 missing_fields = []
                 # Check for various placeholder names
                 placeholders = ["TG_", "WA_", "New Client", "Unknown Client", "Unknown"]
@@ -164,13 +162,16 @@ class AIService:
                 
                 if is_placeholder_name:
                     missing_fields.append("full name")
-                if not client_obj.email:
-                    missing_fields.append("email")
-                if not client_obj.phone:
+                if not client_obj.email or "@" not in client_obj.email:
+                    missing_fields.append("email address")
+                
+                # Phone Check: If it's a 'test_' ID or just the identifier, we want a real phone
+                is_real_phone = client_obj.phone and client_obj.phone.isdigit() and len(client_obj.phone) >= 7
+                if not is_real_phone:
                     missing_fields.append("phone number")
 
-                if not missing_fields and not is_new:
-                    is_known = True
+                # A user is truly known ONLY if all fields are present and valid
+                is_known = len(missing_fields) == 0 and not is_new
 
                 # 2. Greeting & Identity Context Construction
                 if is_known:
