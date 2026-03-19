@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, Token, UserUpdate
+from app.core.limiter import limiter
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -98,7 +99,12 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     return user
 
 @router.post("/login", response_model=Token)
-async def login(db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()) -> Any:
+@limiter.limit("5/minute")
+async def login(
+    request: Request,
+    db: AsyncSession = Depends(get_db), 
+    form_data: OAuth2PasswordRequestForm = Depends()
+) -> Any:
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalars().first()
     if not user or not verify_password(form_data.password, user.hashed_password):

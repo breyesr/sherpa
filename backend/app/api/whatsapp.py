@@ -13,6 +13,7 @@ from app.models.integration import Integration
 from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
 from app.core.config import settings
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -29,6 +30,7 @@ async def verify_whatsapp(
     return Response(content=hub_challenge)
 
 @router.post("/webhook")
+@limiter.limit("60/minute")
 async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Receive messages from WhatsApp Cloud API."""
     print("!!! WHATSAPP WEBHOOK PING RECEIVED !!!")

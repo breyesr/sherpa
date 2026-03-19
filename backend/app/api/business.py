@@ -1,5 +1,5 @@
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -14,6 +14,7 @@ from app.schemas.business import (
     AssistantConfigUpdate
 )
 from app.api.auth import get_current_user
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -37,7 +38,9 @@ class TestChatRequest(BaseModel):
     assistant_config: Optional[AssistantConfigUpdate] = None
 
 @router.post("/test-chat")
+@limiter.limit("10/minute")
 async def test_chat(
+    request: Request,
     payload: TestChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)

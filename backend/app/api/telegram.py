@@ -14,10 +14,12 @@ from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
 from app.core.telegram_service import TelegramService
 from app.core.config import settings
+from app.core.limiter import limiter
 
 router = APIRouter()
 
 @router.post("/webhook/{webhook_id}")
+@limiter.limit("60/minute")
 async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Receive messages from Telegram via a unique webhook ID."""
     print(f"!!! TELEGRAM WEBHOOK PING RECEIVED for ID: {webhook_id} !!!")
