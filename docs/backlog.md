@@ -72,6 +72,12 @@
 - [ ] Task 11.5: Replace CI/CD placeholder checks with real `pytest` execution and coverage reporting.
 - [ ] Task 11.6: Implement "Assistant is typing..." signals for messaging platforms.
 - [ ] Task 11.7: Implement responsive Sidebar and mobile-optimized CRM views.
+- [ ] Task 11.8: Refactor `sync_single_calendar` to use bulk `insert().values()` operations for batch processing.
+- [ ] Task 11.9: Apply `useMemo` to CRM filtering and Calendar sorting to prevent UI lag under load.
+- [ ] Task 11.10: Expand Zustand stores to manage global CRM and Appointment state for data consistency.
+- [ ] Task 11.11: Move migrations to a standalone "Pre-Deploy" task to prevent race conditions during scaling.
+- [ ] Task 11.12: Configure Redis with `allkeys-lru` eviction policy and persistent storage.
+- [ ] Task 11.13: Migrate Google Calendar Auth from popup-based to standard redirect-based flow.
 
 ## Hard Constraints (Enforced)
 - No Form Builders.
