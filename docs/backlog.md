@@ -8,7 +8,7 @@
 - [x] Task 1.5: Establish OpenAPI type generation loop for frontend.
 - [x] Task 1.6: Deploy to Railway (API, Worker, Web) with automated migrations.
 - [ ] Task 1.7: Expand Docker Compose to include Backend, Worker, Beat, and Frontend services.
-- [ ] Task 1.8: Implement API Rate Limiting (e.g., SlowAPI or FastAPI-limiter) to prevent AI/Messaging abuse.
+- [x] Task 1.8: Implement API Rate Limiting (e.g., SlowAPI or FastAPI-limiter) to prevent AI/Messaging abuse.
 
 ## Epic 2: Authentication & Business Profile
 - [x] Task 2.1: Implement JWT Auth (Register, Login).
