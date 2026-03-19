@@ -54,9 +54,15 @@ async def test_chat(
     ai_service = AIService(business, db)
     # Use a dummy identifier for testing
     test_id = f"test_{current_user.id}"
-    response = await ai_service.get_response(test_id, payload.message, metadata={"name": current_user.email, "platform": "sandbox"})
+    response = await ai_service.get_response(identifier=test_id, user_message=payload.message, metadata={"name": current_user.email, "platform": "sandbox"})
     
     return {"response": response}
+
+@router.get("/me", response_model=BusinessProfileResponse)
+async def get_business_me(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
     business = await get_full_business(db, current_user.id)
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
