@@ -155,28 +155,43 @@ class AIService:
                 
                 wh_str = "\n".join(wh_parts)
                 
-                # Improved 'is_known' logic
+                # 1. Improved 'is_known' logic and Data Status
                 # A user is known if their name is not a placeholder and they aren't new
                 is_known = False
-                if client_obj and client_obj.name:
-                    is_placeholder = any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
-                    if not is_placeholder and not is_new:
-                        is_known = True
+                missing_fields = []
+                if not client_obj.name or any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"]):
+                    missing_fields.append("name")
+                if not client_obj.email:
+                    missing_fields.append("email")
+                
+                # Phone is usually the identifier itself, but we check if it's "clean"
+                if not client_obj.phone:
+                    missing_fields.append("phone")
 
+                if not missing_fields and not is_new:
+                    is_known = True
+
+                # 2. Greeting & Identity Context Construction
                 if is_known:
                     try:
+                        # For known users, we use the Personalized Greeting
                         first_name = client_obj.name.split()[0]
                         raw_template = self.assistant_config.personalized_greeting or "Hola {name}, ¿en qué puedo ayudarte hoy?"
                         greeting_context = raw_template.replace("{name}", first_name)\
                                                        .replace("{first_name}", first_name)\
                                                        .replace("{full_name}", client_obj.name)\
                                                        .replace("{full name}", client_obj.name)
+                        
+                        # Added: Identity Confirmation Instruction for known users
+                        identity_instruction = f"IDENTITY CONFIRMATION: This is a returning client. Greet them by their full name '{client_obj.name}'. Show them their registered info (Email: {client_obj.email}, Phone: {client_obj.phone or identifier}) and ask them to confirm if it is still correct before proceeding to book."
                     except Exception as ge:
                         print(f"WARNING: Personalized greeting formatting failed: {ge}")
                         greeting_context = self.assistant_config.greeting
+                        identity_instruction = "IDENTITY CONFIRMATION: Greet the user and verify their details."
                 else:
                     # Unknown user: ALWAYS use the Standard Greeting
                     greeting_context = self.assistant_config.greeting
+                    identity_instruction = f"IDENTITY COLLECTION: This is a NEW or incomplete lead. You MUST politely ask for their missing information ({', '.join(missing_fields)}) before you are allowed to book any appointment."
 
                 system_prompt = template.render(
                     assistant=self.assistant_config,
@@ -185,6 +200,7 @@ class AIService:
                     client_identifier=identifier,
                     working_hours=wh_str,
                     greeting_context=greeting_context,
+                    identity_instruction=identity_instruction,
                     current_time=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')
                 )
             except Exception as e:
