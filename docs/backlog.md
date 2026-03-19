@@ -64,6 +64,15 @@
 - [ ] Task 10.3: Configure and verify Celery Beat for reliable periodic task triggering (Reminders & Sync).
 - [ ] Task 10.4: Implement "Retry" and "Recovery" interactive paths for AI/API failure states.
 
+## Epic 11: System Scalability & Reliability
+- [ ] Task 11.1: Refactor Google Calendar API to use async HTTP calls (httpx) instead of blocking sync client.
+- [ ] Task 11.2: Add B-Tree and Composite indexes to `appointments` and `busy_slots` tables.
+- [ ] Task 11.3: Configure separate Railway services for Web API, Celery Worker, and Celery Beat.
+- [ ] Task 11.4: Integrate TanStack Query (React Query) for frontend data synchronization and caching.
+- [ ] Task 11.5: Replace CI/CD placeholder checks with real `pytest` execution and coverage reporting.
+- [ ] Task 11.6: Implement "Assistant is typing..." signals for messaging platforms.
+- [ ] Task 11.7: Implement responsive Sidebar and mobile-optimized CRM views.
+
 ## Hard Constraints (Enforced)
 - No Form Builders.
 - No Advanced Conversational AI.
