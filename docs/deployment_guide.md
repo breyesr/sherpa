@@ -1,68 +1,40 @@
-# Sherpa MVP – Production Deployment Guide (Railway)
+# Sherpa Deployment & Process Separation Guide
 
-This document reflects the verified steps to deploy Sherpa 100% on **Railway.app**.
+This guide explains how to configure Railway to achieve independent horizontal scaling and safe migrations.
 
-## 🏗️ Architecture Overview
-*   **Web (Frontend):** Next.js 14 (App Router).
-*   **API (Backend):** FastAPI (Uvicorn).
-*   **Worker (AI Brain):** Celery (Background processor).
-*   **Database:** PostgreSQL 16.
-*   **Cache/Broker:** Redis 7.
+## 1. Process Separation (Independent Services)
 
----
+To prevent background tasks from affecting API performance, we split the backend into three distinct services in Railway.
 
-## 1. Initial Infrastructure
-1.  **Project:** Create an "Empty Project" on Railway.
-2.  **Database:** Add **PostgreSQL** and **Redis** from the "Database" menu.
-3.  **Repository:** Connect your GitHub repo (`sherpa`).
+### Step A: Create the Services
+In your Railway project, add three new services pointing to the same repository and the `backend/` directory:
 
----
+1.  **Sherpa API** (The Web server)
+    -   **Start Command:** `./pre_deploy.sh && PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+    -   **Custom Domain:** Yes
+2.  **Sherpa Worker** (Background Jobs)
+    -   **Start Command:** `PYTHONPATH=. celery -A app.core.celery_app worker --loglevel=info`
+    -   **Custom Domain:** No
+3.  **Sherpa Beat** (Periodic Scheduler)
+    -   **Start Command:** `PYTHONPATH=. celery -A app.core.celery_app beat --loglevel=info`
+    -   **Custom Domain:** No
 
-## 2. API Service Setup (The Engine)
-1.  **Service Name:** Rename the default box to `api`.
-2.  **Root Directory:** Set to `/backend` in Settings.
-3.  **Start Command:** 
-    `PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-4.  **Networking:** Set the port to **8080** in Settings.
-5.  **Pre-deploy Step:** Add `PYTHONPATH=. alembic upgrade head` to ensure database tables are created.
-6.  **Variables:**
-    *   `SECRET_KEY`: (Random string for encryption).
-    *   `BASE_URL`: (Your generated domain, e.g., `https://api-xxx.up.railway.app`).
-    *   **References:** Link all variables from the **Postgres** and **Redis** services.
+## 2. Safe Migrations (Gating)
 
----
+Currently, `pre_deploy.sh` (which runs `alembic upgrade head`) is included in the API start command. This is safe **only if you have 1 instance** of the API.
 
-## 3. Worker Service Setup (The AI Brain)
-1.  **Create Service:** Add a new service from the same GitHub repo.
-2.  **Service Name:** Rename to `worker`.
-3.  **Root Directory:** Set to `/backend`.
-4.  **Start Command:** 
-    `C_FORCE_ROOT=1 celery -A app.core.celery_app worker --loglevel=info --concurrency=1 --pool=solo`
-5.  **Resources:** Set Memory limit to **1 GB** in the "Scale" settings.
-6.  **Variables:** Use "Reference" to copy **all** variables from the `api` service.
+### For Scaling to Multiple Instances:
+To prevent race conditions when scaling the API to 2+ instances:
 
----
+1.  Remove `./pre_deploy.sh &&` from the **Sherpa API** start command.
+2.  Create a 4th service called **Sherpa Migrator**.
+3.  Set its start command to `./pre_deploy.sh`.
+4.  Configure it to run once per deployment (or trigger it manually before updating the other services).
 
-## 4. Web Service Setup (The Interface)
-1.  **Create Service:** Add a new service from the same GitHub repo.
-2.  **Service Name:** Rename to `web`.
-3.  **Root Directory:** Set to `/frontend`.
-4.  **Variables:**
-    *   `NEXT_PUBLIC_API_URL`: Your API domain + version (e.g., `https://api-xxx.up.railway.app/api/v1`).
-5.  **Networking:** Generate a public domain. This is the link you will use to access Sherpa.
-
----
-
-## 5. Post-Deployment Configuration
-1.  **Admin Rights:** Access your Railway Postgres database and run:
-    `UPDATE users SET is_admin = true WHERE email = 'your@email.com';`
-2.  **Credentials:** Go to your live `/admin` page and enter:
-    *   `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `CLAUDE_API_KEY`.
-    *   Google Cloud `CLIENT_ID` and `CLIENT_SECRET`.
-3.  **Google OAuth:** Add `https://YOUR_API_DOMAIN/api/v1/integrations/google/callback` to the "Authorized Redirect URIs" in Google Cloud Console.
-
----
-
-## 🔒 Security
-*   **At-Rest Encryption:** Tokens are encrypted using the `SECRET_KEY`. Keep this safe.
-*   **Multi-Tenancy:** Data is strictly isolated by `business_id`.
+## 3. Environment Variables
+Ensure all 4 services (API, Worker, Beat, Migrator) share the same environment variables, especially:
+- `DATABASE_URL`
+- `REDIS_URL`
+- `OPENAI_API_KEY` (and other LLM keys)
+- `TELEGRAM_BOT_TOKEN`
+- `WHATSAPP_ACCESS_TOKEN`
