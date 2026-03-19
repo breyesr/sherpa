@@ -48,3 +48,13 @@ class TelegramService:
                 await client.post(url, json={"chat_id": chat_id, "text": text})
             except Exception as e:
                 print(f"ERROR: Failed to send Telegram message: {e}")
+
+    @staticmethod
+    async def send_typing(token: str, chat_id: int):
+        """Send 'typing' status to a specific chat."""
+        url = f"https://api.telegram.org/bot{token}/sendChatAction"
+        async with httpx.AsyncClient() as client:
+            try:
+                await client.post(url, json={"chat_id": chat_id, "action": "typing"})
+            except Exception as e:
+                print(f"ERROR: Failed to send Telegram typing action: {e}")

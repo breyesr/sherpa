@@ -70,7 +70,7 @@
 - [x] Task 11.3: Configure separate Railway services for Web API, Celery Worker, and Celery Beat.
 - [ ] Task 11.4: Integrate TanStack Query (React Query) for frontend data synchronization and caching.
 - [ ] Task 11.5: Replace CI/CD placeholder checks with real `pytest` execution and coverage reporting.
-- [ ] Task 11.6: Implement "Assistant is typing..." signals for messaging platforms.
+- [x] Task 11.6: Implement "Assistant is typing..." signals for messaging platforms.
 - [ ] Task 11.7: Implement responsive Sidebar and mobile-optimized CRM views.
 - [ ] Task 11.8: Refactor `sync_single_calendar` to use bulk `insert().values()` operations for batch processing.
 - [ ] Task 11.9: Apply `useMemo` to CRM filtering and Calendar sorting to prevent UI lag under load.

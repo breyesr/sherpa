@@ -69,6 +69,12 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         print(f"DEBUG: Processing message from {chat_id}: '{text[:30]}...'")
         chat_id_str = str(chat_id)
         
+        # Trigger 'typing' status immediately to improve UX
+        try:
+            bot_token = decrypt_token(integration.access_token)
+            await TelegramService.send_typing(bot_token, chat_id)
+        except: pass
+
         # 4. Process with AI
         from app.core.ai_service import AIService
         ai = AIService(business, db)

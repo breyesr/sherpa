@@ -83,6 +83,20 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     profile_name = contacts[0].get("profile", {}).get("name") if contacts else None
                     
                     if text:
+                        # 1. Mark as Read immediately
+                        try:
+                            access_token = decrypt_token(integration.access_token)
+                            read_url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
+                            read_payload = {
+                                "messaging_product": "whatsapp",
+                                "status": "read",
+                                "message_id": message.get("id")
+                            }
+                            async with httpx.AsyncClient() as http_client:
+                                await http_client.post(read_url, json=read_payload, headers={"Authorization": f"Bearer {access_token}"})
+                        except Exception as re:
+                            print(f"DEBUG: WhatsApp mark-as-read failed: {re}")
+
                         from app.core.ai_service import AIService
                         ai = AIService(business, db)
                         
