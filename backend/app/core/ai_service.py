@@ -158,14 +158,16 @@ class AIService:
                 # A user is known if their name is not a placeholder and they aren't new
                 is_known = False
                 missing_fields = []
-                if not client_obj.name or any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"]):
-                    missing_fields.append("name")
+                # Check for various placeholder names
+                placeholders = ["TG_", "WA_", "New Client", "Unknown Client", "Unknown"]
+                is_placeholder_name = not client_obj.name or any(client_obj.name.startswith(p) for p in placeholders)
+                
+                if is_placeholder_name:
+                    missing_fields.append("full name")
                 if not client_obj.email:
                     missing_fields.append("email")
-                
-                # Phone is usually the identifier itself, but we check if it's "clean"
                 if not client_obj.phone:
-                    missing_fields.append("phone")
+                    missing_fields.append("phone number")
 
                 if not missing_fields and not is_new:
                     is_known = True
@@ -181,7 +183,6 @@ class AIService:
                                                        .replace("{full_name}", client_obj.name)\
                                                        .replace("{full name}", client_obj.name)
                         
-                        # Added: Identity Confirmation Instruction for known users
                         identity_instruction = f"IDENTITY CONFIRMATION: This is a returning client. Greet them by their full name '{client_obj.name}'. Show them their registered info (Email: {client_obj.email}, Phone: {client_obj.phone or identifier}) and ask them to confirm if it is still correct before proceeding to book."
                     except Exception as ge:
                         print(f"WARNING: Personalized greeting formatting failed: {ge}")
@@ -190,7 +191,7 @@ class AIService:
                 else:
                     # Unknown user: ALWAYS use the Standard Greeting
                     greeting_context = self.assistant_config.greeting
-                    identity_instruction = f"IDENTITY COLLECTION: This is a NEW or incomplete lead. You MUST politely ask for their missing information ({', '.join(missing_fields)}) before you are allowed to book any appointment."
+                    identity_instruction = f"IDENTITY COLLECTION: This is a NEW or incomplete lead. You MUST politely ask for their missing information ({', '.join(missing_fields)}) before you are allowed to book any appointment. DO NOT mention appointments until you have these details."
 
                 system_prompt = template.render(
                     assistant=self.assistant_config,
@@ -200,6 +201,8 @@ class AIService:
                     working_hours=wh_str,
                     greeting_context=greeting_context,
                     identity_instruction=identity_instruction,
+                    is_known=is_known,
+                    missing_fields=missing_fields,
                     current_time=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')
                 )
             except Exception as e:
