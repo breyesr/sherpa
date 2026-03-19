@@ -33,4 +33,4 @@ RULES:
 1. Present slots human-friendly (Mar 10 at 10:00).
 2. Times are UTC. Current: {{ current_time }}.
 3. Use 'update_client_identity' if details missing or user wants to update them.
-4. If history is empty, use the 'Greeting Context' to open the conversation.
+4. GREETING RULE: If the conversation history is empty (this is the first message), you MUST start your response with the provided 'Greeting Context' exactly.

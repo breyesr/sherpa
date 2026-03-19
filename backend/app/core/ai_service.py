@@ -155,12 +155,18 @@ class AIService:
                 
                 wh_str = "\n".join(wh_parts)
                 
-                is_known = client_obj and client_obj.name and not any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
-                greeting_context = self.assistant_config.greeting
+                # Improved 'is_known' logic
+                # A user is known if their name is not a placeholder and they aren't new
+                is_known = False
+                if client_obj and client_obj.name:
+                    is_placeholder = any(client_obj.name.startswith(p) for p in ["TG_", "WA_", "New Client"])
+                    if not is_placeholder and not is_new:
+                        is_known = True
+
                 if is_known:
                     try:
                         first_name = client_obj.name.split()[0]
-                        raw_template = self.assistant_config.personalized_greeting
+                        raw_template = self.assistant_config.personalized_greeting or "Hola {name}, ¿en qué puedo ayudarte hoy?"
                         greeting_context = raw_template.replace("{name}", first_name)\
                                                        .replace("{first_name}", first_name)\
                                                        .replace("{full_name}", client_obj.name)\
@@ -168,6 +174,9 @@ class AIService:
                     except Exception as ge:
                         print(f"WARNING: Personalized greeting formatting failed: {ge}")
                         greeting_context = self.assistant_config.greeting
+                else:
+                    # Unknown user: ALWAYS use the Standard Greeting
+                    greeting_context = self.assistant_config.greeting
 
                 system_prompt = template.render(
                     assistant=self.assistant_config,
