@@ -63,7 +63,7 @@ async def google_callback(
     code: str,
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    import requests
+    import httpx
     import traceback
     from app.core.system_config import ConfigService
     
@@ -91,8 +91,9 @@ async def google_callback(
             "grant_type": "authorization_code",
         }
         
-        response = requests.post(token_url, data=data)
-        token_data = response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_url, data=data)
+            token_data = response.json()
         
         if "error" in token_data:
             print(f"DEBUG: Google Token Exchange Error: {token_data}")

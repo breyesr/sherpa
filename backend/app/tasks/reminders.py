@@ -7,7 +7,7 @@ from app.core.database import SessionLocal
 from app.models.crm import Appointment
 from app.models.integration import Integration
 from app.core.security import decrypt_token
-import requests
+import httpx
 
 @celery_app.task(name="send_upcoming_reminders")
 @async_task
@@ -45,7 +45,7 @@ async def send_single_reminder(appointment_id: str):
             .where(Appointment.id == appointment_id)
             .options(
                 selectinload(Appointment.client), 
-                selectinload(Appointment.business_profile).selectinload(Integration.business_profile)
+                selectinload(Appointment.business_profile)
             )
         )
         # Note: We need integrations too
@@ -86,9 +86,12 @@ async def send_single_reminder(appointment_id: str):
                         "type": "text",
                         "text": {"body": reminder_text}
                     }
-                    res = requests.post(url, json=body, headers=headers)
-                    if res.ok:
-                        sent = True
+                    async with httpx.AsyncClient() as client_http:
+                        res = await client_http.post(url, json=body, headers=headers)
+                        if res.status_code < 400:
+                            sent = True
+                        else:
+                            print(f"WhatsApp API Error: {res.text}")
             except Exception as e:
                 print(f"WhatsApp reminder failed for apt {apt.id}: {e}")
 
@@ -107,5 +110,6 @@ async def send_single_reminder(appointment_id: str):
 
         if sent:
             apt.reminder_sent = True
+            db.add(apt)
             await db.commit()
             print(f"Reminder sent for appointment {apt.id}")

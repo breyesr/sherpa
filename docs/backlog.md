@@ -45,7 +45,7 @@
 - [x] Task 7.1: Implement Client list with search (Backend + Frontend).
 - [x] Task 7.2: Auto-create client on first booking.
 - [x] Task 7.3: Implement 24h automatic reminder job (Celery).
-- [ ] Task 7.4: Refactor background tasks (reminders, sync) to use async `httpx` instead of `requests`.
+- [x] Task 7.4: Refactor background tasks (reminders, sync) to use async `httpx` instead of `requests`.
 
 ## Epic 8: Dashboard & Subscription
 - [ ] Task 8.1: Implement KPI display (Total Clients, Appointments, Reminders).
@@ -65,7 +65,7 @@
 - [ ] Task 10.4: Implement "Retry" and "Recovery" interactive paths for AI/API failure states.
 
 ## Epic 11: System Scalability & Reliability
-- [ ] Task 11.1: Refactor Google Calendar API to use async HTTP calls (httpx) instead of blocking sync client.
+- [x] Task 11.1: Refactor Google Calendar API to use async HTTP calls (httpx) instead of blocking sync client.
 - [ ] Task 11.2: Add B-Tree and Composite indexes to `appointments` and `busy_slots` tables.
 - [x] Task 11.3: Configure separate Railway services for Web API, Celery Worker, and Celery Beat.
 - [ ] Task 11.4: Integrate TanStack Query (React Query) for frontend data synchronization and caching.
