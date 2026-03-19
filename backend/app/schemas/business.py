@@ -9,9 +9,9 @@ class AssistantConfigBase(BaseModel):
     personalized_greeting: str = "Hola {name}, ¿en qué puedo ayudarte hoy?"
     logic_template: str = "standard"
     custom_steps: Optional[str] = None
-    require_reason: bool = True
-    confirm_details: bool = True
-    strict_guardrails: bool = True
+    require_reason: Optional[bool] = True
+    confirm_details: Optional[bool] = True
+    strict_guardrails: Optional[bool] = True
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AssistantConfigCreate(AssistantConfigBase):
