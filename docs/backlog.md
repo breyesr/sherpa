@@ -59,7 +59,7 @@
 - [ ] Task 9.5: Automate "Booking Confirmation" message back to the messaging provider.
 
 ## Epic 10: Scalability & UX Hardening
-- [ ] Task 10.1: Migrate CRM and Calendar data fetching to React Server Components (RSC) to improve LCP.
+- [x] Task 10.1: Migrate CRM and Calendar data fetching to React Server Components (RSC) to improve LCP.
 - [ ] Task 10.2: Implement Skeleton loaders and standardized Error Boundaries for all dashboard views.
 - [ ] Task 10.3: Configure and verify Celery Beat for reliable periodic task triggering (Reminders & Sync).
 - [ ] Task 10.4: Implement "Retry" and "Recovery" interactive paths for AI/API failure states.

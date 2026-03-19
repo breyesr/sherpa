@@ -52,6 +52,9 @@ export default function RegisterPage() {
 
       const loginData = await loginResponse.json();
       setToken(loginData.access_token);
+      
+      // Set cookie for Server Components (expires in 7 days)
+      document.cookie = `sherpa_token=${loginData.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
       // 3. Success! Redirect to Onboarding
       router.push('/onboarding');

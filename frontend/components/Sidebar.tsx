@@ -16,6 +16,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const logout = useAuthStore((state) => state.logout);
 
+  const handleLogout = () => {
+    logout();
+    // Clear cookie
+    document.cookie = "sherpa_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  };
+
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Inbox', href: '/conversations', icon: MessageSquare },
@@ -53,7 +59,7 @@ export default function Sidebar() {
 
       <div className="p-4 border-t">
         <button 
-          onClick={logout}
+          onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-2 w-full text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
         >
           <LogOut size={20} />
