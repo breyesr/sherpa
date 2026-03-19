@@ -68,9 +68,14 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     setIsRescheduleModalOpen(true);
   };
 
+  // Deduplicate: Filter out Google Busy slots that match a CRM appointment's google_event_id
+  const googleEventIds = new Set(initialAppointments.map(a => a.google_event_id).filter(Boolean));
+  
+  const filteredBusySlots = initialBusySlots.filter(b => !googleEventIds.has(b.id));
+
   const allEvents = [
     ...initialAppointments.map(a => ({ ...a, type: 'appointment' })),
-    ...initialBusySlots.map(b => ({ ...b, type: 'google_busy' }))
+    ...filteredBusySlots.map(b => ({ ...b, type: 'google_busy' }))
   ].sort((a, b) => new Date(a.start_time || a.start).getTime() - new Date(b.start_time || b.start).getTime());
 
   return (

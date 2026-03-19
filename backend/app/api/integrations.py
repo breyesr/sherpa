@@ -172,7 +172,16 @@ async def get_google_availability(
     start_time = datetime.utcnow()
     end_time = start_time + timedelta(days=7)
     
-    busy_slots = await service.get_availability(start_time, end_time)
+    # Use list_events instead of get_availability to get event IDs for deduplication
+    events = await service.list_events(start_time, end_time)
+    busy_slots = []
+    for e in events:
+        busy_slots.append({
+            "start": e.get('start', {}).get('dateTime') or e.get('start', {}).get('date'),
+            "end": e.get('end', {}).get('dateTime') or e.get('end', {}).get('date'),
+            "id": e.get('id')
+        })
+        
     return {"busy_slots": busy_slots}
 
 @router.post("/google/sync")
