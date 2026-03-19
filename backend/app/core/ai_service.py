@@ -53,10 +53,9 @@ class AIService:
             is_new = False
             if not client:
                 is_new = True
-                name = "New Client"
-                if metadata:
-                    name = metadata.get("name") or metadata.get("first_name") or name
-                    if metadata.get("last_name"): name = f"{name} {metadata.get('last_name')}".strip()
+                # CRITICAL: Do not use metadata to guess the name. 
+                # The name MUST come from the user message as per the flowchart.
+                name = "Unknown Client"
                 platform = metadata.get("platform") if metadata else None
                 is_telegram = platform == "telegram"
                 client = Client(business_id=self.business.id, name=name, phone=normalized_id if not is_telegram else None, telegram_id=normalized_id if is_telegram else None, whatsapp_id=normalized_id if not is_telegram else None)
@@ -246,7 +245,7 @@ class AIService:
                     "required": ["start_time", "notes"]
                 }
             }},
-            {"type": "function", "function": {"name": "update_client_identity", "description": "Update CRM details.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}, "required": ["name"]}}}
+            {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}}
         ]
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
@@ -255,7 +254,7 @@ class AIService:
             available = await self._check_availability_tool(args['start_time'])
             return "Available" if available else "Busy. Suggest another time."
         elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('notes'))
-        elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'))
+        elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
         return "Unknown tool"
 
     async def _check_availability_tool(self, start_iso: str) -> bool:
@@ -336,11 +335,12 @@ class AIService:
             return f"SUCCESS: Booked for {client_obj.name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."
         except Exception as e: return f"Failed to book: {e}"
 
-    async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None) -> str:
+    async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None, phone: str = None) -> str:
         try:
             client_obj = await self._check_client_direct(identifier)
             client_obj.name = name
             if email: client_obj.email = email
+            if phone: client_obj.phone = Client.normalize_id(phone)
             await self.db.commit()
-            return f"SUCCESS: Identity updated."
+            return f"SUCCESS: Identity updated and user registered as {name}."
         except: return "Failed to update identity."
