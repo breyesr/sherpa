@@ -50,10 +50,8 @@ export default function AdminSettingsPage() {
           setIsAuthorized(true);
         }
 
-        // Fetch Users (moved out of initial fetch to allow re-fetching if needed)
-        fetchUsers();
+        } catch (err) {
 
-      } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
@@ -337,7 +335,7 @@ export default function AdminSettingsPage() {
                         user.role === 'super_admin' ? 'bg-purple-100 text-purple-700' :
                         user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
                       }`}>
-                        {user.role.replace('_', ' ')}
+                        {(user.role || 'member').replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
