@@ -68,10 +68,22 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     setIsRescheduleModalOpen(true);
   };
 
-  // Deduplicate: Filter out Google Busy slots that match a CRM appointment's google_event_id
+  // Aggressive Deduplicate
   const googleEventIds = new Set(initialAppointments.map(a => a.google_event_id).filter(Boolean));
   
-  const filteredBusySlots = initialBusySlots.filter(b => !googleEventIds.has(b.id));
+  // Also track appointment times for a fallback check
+  const appointmentTimes = new Set(initialAppointments.map(a => new Date(a.start_time).getTime()));
+
+  const filteredBusySlots = initialBusySlots.filter(b => {
+    // 1. Check by ID
+    if (googleEventIds.has(b.id)) return false;
+    
+    // 2. Check by Time overlap (if start times are exactly the same, it's highly likely a duplicate)
+    const bStartTime = new Date(b.start).getTime();
+    if (appointmentTimes.has(bStartTime)) return false;
+
+    return true;
+  });
 
   const allEvents = [
     ...initialAppointments.map(a => ({ ...a, type: 'appointment' })),
@@ -131,7 +143,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                         </div>
                         <div>
                           <span className={`font-bold ${isApt ? 'text-gray-900' : 'text-gray-500 italic'}`}>
-                            {isApt ? event.client?.name : 'Google Calendar: Busy'}
+                            {isApt ? event.client?.name : (event.summary || 'Google Calendar: Busy')}
                           </span>
                           {!isApt && <p className="text-xs text-gray-400">External event</p>}
                         </div>

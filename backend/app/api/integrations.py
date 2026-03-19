@@ -179,7 +179,8 @@ async def get_google_availability(
         busy_slots.append({
             "start": e.get('start', {}).get('dateTime') or e.get('start', {}).get('date'),
             "end": e.get('end', {}).get('dateTime') or e.get('end', {}).get('date'),
-            "id": e.get('id')
+            "id": e.get('id'),
+            "summary": e.get('summary', 'Busy')
         })
         
     return {"busy_slots": busy_slots}
