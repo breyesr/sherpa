@@ -5,43 +5,37 @@ from app.core.system_config import ConfigService
 
 async def initialize_secrets():
     async with SessionLocal() as db:
-        print("--- INITIALIZING SYSTEM SECRETS ---")
+        print("--- INITIALIZING SYSTEM SECRETS (NON-DESTRUCTIVE) ---")
         
         # 1. AI Provider
-        provider = os.getenv("ACTIVE_AI_PROVIDER", "openai")
-        await ConfigService.set(db, "ACTIVE_AI_PROVIDER", provider, "The active LLM provider (openai, gemini, anthropic)")
-        print(f"Set ACTIVE_AI_PROVIDER to: {provider}")
+        existing_provider = await ConfigService.get(db, "ACTIVE_AI_PROVIDER")
+        if not existing_provider:
+            provider = os.getenv("ACTIVE_AI_PROVIDER", "openai")
+            await ConfigService.set(db, "ACTIVE_AI_PROVIDER", provider, "The active LLM provider")
+            print(f"Set ACTIVE_AI_PROVIDER to: {provider}")
+        else:
+            print(f"ACTIVE_AI_PROVIDER already exists: {existing_provider}")
 
-        # 2. API Keys from Env
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if openai_key:
-            await ConfigService.set(db, "OPENAI_API_KEY", openai_key, "OpenAI API Key")
-            print("Imported OPENAI_API_KEY from environment.")
+        # Helper to safely import key if missing
+        async def import_if_missing(key_name: str, env_name: str, description: str):
+            existing = await ConfigService.get(db, key_name)
+            if not existing:
+                env_val = os.getenv(env_name)
+                if env_val and env_val != "PLACEHOLDER":
+                    await ConfigService.set(db, key_name, env_val, description)
+                    print(f"Imported {key_name} from environment.")
+                else:
+                    print(f"Skipping {key_name}: No valid env var found.")
+            else:
+                print(f"{key_name} already exists in database. Skipping import.")
 
-        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-        if anthropic_key:
-            await ConfigService.set(db, "ANTHROPIC_API_KEY", anthropic_key, "Anthropic API Key")
-            print("Imported ANTHROPIC_API_KEY from environment.")
-
-        gemini_key = os.getenv("GEMINI_API_KEY")
-        if gemini_key:
-            await ConfigService.set(db, "GEMINI_API_KEY", gemini_key, "Google Gemini API Key")
-            print("Imported GEMINI_API_KEY from environment.")
-
-        google_id = os.getenv("GOOGLE_CLIENT_ID")
-        if google_id:
-            await ConfigService.set(db, "GOOGLE_CLIENT_ID", google_id, "Google OAuth Client ID")
-            print("Imported GOOGLE_CLIENT_ID from environment.")
-
-        google_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-        if google_secret:
-            await ConfigService.set(db, "GOOGLE_CLIENT_SECRET", google_secret, "Google OAuth Client Secret")
-            print("Imported GOOGLE_CLIENT_SECRET from environment.")
-
-        google_uri = os.getenv("GOOGLE_REDIRECT_URI")
-        if google_uri:
-            await ConfigService.set(db, "GOOGLE_REDIRECT_URI", google_uri, "Google OAuth Redirect URI")
-            print("Imported GOOGLE_REDIRECT_URI from environment.")
+        # 2. Sync all keys
+        await import_if_missing("OPENAI_API_KEY", "OPENAI_API_KEY", "OpenAI API Key")
+        await import_if_missing("ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY", "Anthropic API Key")
+        await import_if_missing("GEMINI_API_KEY", "GEMINI_API_KEY", "Google Gemini API Key")
+        await import_if_missing("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_ID", "Google OAuth Client ID")
+        await import_if_missing("GOOGLE_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "Google OAuth Client Secret")
+        await import_if_missing("GOOGLE_REDIRECT_URI", "GOOGLE_REDIRECT_URI", "Google OAuth Redirect URI")
 
         print("--- SECRETS INITIALIZATION COMPLETE ---")
 
