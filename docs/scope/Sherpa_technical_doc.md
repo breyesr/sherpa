@@ -11,96 +11,70 @@ The system is multi-tenant, ensuring strict data isolation between businesses.
 ## 2. Architecture
 
 - **Backend:** FastAPI (Python 3.11)
-- **Frontend:** Next.js 14 (React)
-- **Database:** PostgreSQL 16
-- **Cache / Queue:** Redis 7 + Celery
-- **Infrastructure:** Docker, GitHub Actions CI/CD
-- **Hosting:** Railway (Production + Staging)
-- **Security:** HTTPS, JWT, Fernet Encryption (AES)
+- **Frontend:** Next.js 14 (App Router, React Server Components)
+- **AI Core:** LiteLLM (Universal provider support: OpenAI, Gemini, Claude)
+- **Prompt Engine:** Jinja2 (Dynamic, multi-layered template construction)
+- **Database:** PostgreSQL 16 (Alembic migrations)
+- **Cache / Queue:** Redis 7 + Celery (Separate processes for API, Worker, and Beat)
+- **Infrastructure:** Railway (Production + Staging), Docker, GitHub Actions CI/CD
+- **Security:** JWT (Cookie-based for RSC), Fernet AES Encryption, SlowAPI Rate Limiting
 
 ---
 
 ## 3. Core Modules
 
 ### 3.1 Onboarding Wizard
-- Step-by-step configuration (Business info, Assistant, Calendar, Messaging)
+- Step-by-step configuration (Business info, Timezone, Assistant, Calendar, Messaging)
 - Optional flow: Step 1 mandatory, others skippable via "Skip for now"
-- Banner notification for incomplete setup
 
-### 3.2 AI Conversations
-- Multi-turn persistent memory (Redis-based)
-- Automated lead capture (registering anonymous users)
-- Tone and greeting customization
+### 3.2 AI Core (Universal Assistant)
+- **Multi-Provider:** Powered by LiteLLM to support GPT-4o, Claude 3, and Gemini 1.5.
+- **Dynamic Prompting:** Jinja2 templates assemble instructions based on business config, timezone, and current state.
+- **Identity Gating:** Explicit flow ensuring Name, Email, and Phone are collected from user messages before allowing bookings.
+- **Memory:** Redis-based persistent session memory (20-message window).
 
-### 3.3 CRM
-- Client list with auto-registration from messaging platforms
-- Unique identifiers for Telegram and WhatsApp
-- Linking appointments to client records
+### 3.3 CRM & Lead Capture
+- **Explicit Registration:** Clients are created as "Unknown" until identity data is explicitly provided in chat.
+- **Hashed Identifiers:** Privacy-preserving blind indexes (SHA-256) for Telegram and WhatsApp IDs.
+- **Verification:** AI confirms existing data for returning users before proceeding.
 
 ### 3.4 Calendar & Appointments
-- Google Calendar OAuth2 integration
-- Free/Busy availability check via one-way sync
-- Appointment CRUD (Manual + AI-automated)
+- **Timezone Support:** Full support for business-specific timezones. AI and Dashboard respect local time.
+- **Google Calendar:** Fully asynchronous `httpx` integration for non-blocking I/O.
+- **True Rescheduling:** Intelligent logic to `UPDATE` existing appointments instead of creating duplicates.
+- **Deduplication:** Aggressive dashboard filtering using Event IDs and Time overlaps.
 
 ### 3.5 Assistant Configuration
-- AI setup (name, tone, rules)
-- Working hours (JSON-based)
-- Knowledge base integration (FAQS)
-
-### 3.6 Integrations
-- **Google Calendar:** OAuth2, availability check, event creation
-- **Telegram:** Bot API, unique webhook IDs, token encryption
-- **WhatsApp:** Meta Cloud API (in progress)
+- **Behavioral Toggles:** Modular controls for "Require Reason", "Confirm Details", and "Strict Guardrails".
+- **Live Test Sandbox:** Real-time chat preview in the dashboard to test AI behavior with unsaved settings.
 
 ---
 
 ## 4. API Design
 
 - RESTful API with OpenAPI 3.1
+- **Rate Limiting:** IP-based protection on all public and sensitive endpoints.
 - Core Routes:
-  - `/auth` – login, register
+  - `/auth` – login, register, me (session)
   - `/admin` – system settings, user management
-  - `/business` – profile, assistant setup
-  - `/clients` – CRM CRUD
-  - `/appointments` – booking logic
-  - `/integrations` – OAuth callbacks and status
-  - `/telegram` – Webhook and linking
-  - `/whatsapp` – Webhook and setup
+  - `/business` – profile, assistant, test-chat
+  - `/crm` – clients, appointments
+  - `/integrations` – Google OAuth, availability sync
+  - `/telegram` / `/whatsapp` – Webhooks with instant status signals (Typing/Read)
 
 ---
 
-## 5. Authentication & Roles
+## 5. Security & Stability
 
-- **JWT:** Access + Refresh pattern
-- **Roles:**
-  - `super_admin`: Full system access + system settings
-  - `admin`: Business owner with full profile access
-  - `member`: Staff with restricted CRM/Calendar access
-
----
-
-## 6. Database Schema (Highlights)
-
-- **User:** Auth data + role
-- **BusinessProfile:** Core tenant entity
-- **AssistantConfig:** AI behavior
-- **Client:** CRM record with `telegram_id` and `whatsapp_id`
-- **Appointment:** Linked to client and business
-- **SystemConfiguration:** Encrypted global secrets
+- **CI/CD Hardening:** Automated Ruff linting, Pytest unit tests, and TypeScript type-checking on every push.
+- **Process Separation:** Independent services for Web API, Celery Worker, and Celery Beat to prevent cascading failures.
+- **Safe Migrations:** Standalone `pre_deploy.sh` script to handle DB updates without race conditions.
+- **Encryption:** All third-party credentials (LLM Keys, OAuth Tokens) are encrypted at rest.
 
 ---
 
-## 7. Security & Stability
+## 6. Deployment Strategy
 
-- **CORS:** Controlled via regex for Railway subdomains
-- **Database:** `expire_on_commit=False` for async compatibility
-- **Encryption:** All external API keys encrypted at rest
-- **Logging:** Detailed Tracebacks for OAuth and Webhooks
-
----
-
-## 8. Deployment Strategy
-
-- **Staging:** Isolated environment for feature branch testing
-- **Production:** `main` branch auto-deploy
-- **Config-as-Code:** `railway.json` defines infrastructure logic
+- **Staging:** Isolated environment for feature branch testing.
+- **Production:** `main` branch auto-deploy via Railway.
+- **Self-Healing:** Automatic execution of `production_client_repair.py` on every deployment to fix data inconsistencies.
