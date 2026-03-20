@@ -37,6 +37,66 @@ class TestChatRequest(BaseModel):
     message: str
     assistant_config: Optional[AssistantConfigUpdate] = None
 
+from sqlalchemy import func
+from app.models.crm import Client, Appointment
+
+@router.get("/stats")
+async def get_business_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    business = await get_full_business(db, current_user.id)
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+    
+    # 1. Total Clients
+    client_count_res = await db.execute(
+        select(func.count(Client.id)).where(Client.business_id == business.id)
+    )
+    total_clients = client_count_res.scalar() or 0
+    
+    # 2. Total Appointments (All time)
+    apt_count_res = await db.execute(
+        select(func.count(Appointment.id)).where(Appointment.business_id == business.id)
+    )
+    total_appointments = apt_count_res.scalar() or 0
+    
+    # 3. Today's Appointments
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    today_count_res = await db.execute(
+        select(func.count(Appointment.id)).where(
+            Appointment.business_id == business.id,
+            Appointment.start_time >= today_start,
+            Appointment.start_time < today_end,
+            Appointment.status == "scheduled"
+        )
+    )
+    today_appointments = today_count_res.scalar() or 0
+    
+    # 4. Upcoming (Next 5)
+    upcoming_res = await db.execute(
+        select(Appointment)
+        .where(
+            Appointment.business_id == business.id,
+            Appointment.start_time >= now,
+            Appointment.status == "scheduled"
+        )
+        .options(selectinload(Appointment.client))
+        .order_by(Appointment.start_time)
+        .limit(5)
+    )
+    upcoming = upcoming_res.scalars().all()
+    
+    return {
+        "total_clients": total_clients,
+        "total_appointments": total_appointments,
+        "today_appointments": today_appointments,
+        "upcoming": upcoming
+    }
+
 @router.post("/test-chat")
 @limiter.limit("10/minute")
 async def test_chat(
