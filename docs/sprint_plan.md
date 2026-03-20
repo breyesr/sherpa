@@ -1,30 +1,34 @@
-# Sprint Plan: March 5 - March 12, 2026
+# Sprint Plan: March 19 - March 26, 2026
 
 ## Objective
-Establish Business Profile, Assistant Config, and a functional Onboarding Wizard to gather business data.
+Finalize UX Hardening and establish a robust multi-tenant infrastructure for MVP scaling.
 
-## Phase 1: Backend Data Layer (Epic 2)
-- **Task 2.2:** Define `BusinessProfile` and `AssistantConfig` models in SQLAlchemy.
-  - Acceptance Criteria: `BusinessProfile` stores Name, Category, and Contact info; `AssistantConfig` stores Name, Tone, Greeting, and Working Hours.
-- **Task 2.3 & 2.4:** Implement CRUD endpoints for `BusinessProfile` and `AssistantConfig`.
-  - Acceptance Criteria: Authenticated users can create/update their business and assistant settings.
+## Phase 1: UX Hardening (Epic 10)
+- **Task 10.2: Implement Skeleton Loaders.**
+  - **Acceptance Criteria:** CRM, Calendar, and Dashboard views must show stable skeleton screens during RSC data fetching to eliminate layout shifts.
+- **Task 10.5: Resolve Dashboard/Settings Flickering.**
+  - **Acceptance Criteria:** Transitions between all pages must be visually seamless without flashes of unstyled content or hydration pulses.
+- **Task 11.6: AI Typing Indicators (Refinement).**
+  - **Acceptance Criteria:** Ensure Telegram "typing" and WhatsApp "read" receipts are firing reliably for 100% of messages.
 
-## Phase 2: Frontend Onboarding UI (Epic 3)
-- **Task 3.1:** Build a 5-step wizard in Next.js.
-  - Acceptance Criteria: Step 1 (Info), Step 2 (Assistant), Step 3 (Calendar Link), Step 4 (WhatsApp Link), Step 5 (Activate Trial).
-- **Task 3.2:** Connect Step 1 and 2 to the backend endpoints created in Phase 1.
-- **Task 3.3:** Implement a simple "Trial" status in the `BusinessProfile` to show trial expiration dates.
+## Phase 2: State Management & Performance (Epic 11)
+- **Task 11.10: Zustand Store Expansion.**
+  - **Acceptance Criteria:** Move CRM and Appointment state to global Zustand stores. Implement "Optimistic Updates" for client deletion and appointment creation.
+- **Task 11.9: Frontend Memoization.**
+  - **Acceptance Criteria:** Apply `useMemo` and `useCallback` to high-frequency UI filters and calendar sorts to prevent lag during rapid user interaction.
 
-## Phase 4: Lead Capture & Scheduling (Epic 9)
-- **Objective:** Ensure every chat results in a CRM lead and intelligent booking.
-- **Task 9.1:** Modify `AIService` to identify "Anonymous" users and prioritize data collection.
-- **Task 9.2:** Implement tool-calling for the AI to save Name/Email into the `Client` table.
-- **Task 9.3:** Verify the full loop: Text -> AI asks Name -> AI saves to CRM -> AI books slot.
+## Phase 3: Infrastructure & DX (Epic 1)
+- **Task 1.7: Full-Stack Docker Compose.**
+  - **Acceptance Criteria:** Root `docker-compose.yml` must orchestrate API, Frontend, Worker, Beat, Postgres, and Redis in one command.
+- **Task 9.3: WhatsApp Multi-Tenant Refinement.**
+  - **Acceptance Criteria:** Ensure webhooks correctly route messages based on `phone_number_id` and handle Meta status updates without errors.
 
-## Phase 5: Production Readiness
-- **Objective:** Mirror Staging fixes to Production and finalize WhatsApp.
+## Phase 4: Production Readiness
+- **Objective:** Finalize manual rescheduling UI parity with AI rescheduling logic.
+- **Task 6.4 (Frontend):** Ensure the "Reschedule" button in the dashboard updates the existing record instead of calling the standard creation endpoint.
 
 ## Out of Scope for this Sprint
-- Actual Google Calendar OAuth integration.
-- Actual WhatsApp Meta API integration.
-- Stripe payment processing (test mode).
+- Form Builders.
+- Advanced Conversational AI.
+- Multi-branch setup.
+- MercadoPago integration.
