@@ -18,6 +18,16 @@ async def initialize_secrets():
             await ConfigService.set(db, "OPENAI_API_KEY", openai_key, "OpenAI API Key")
             print("Imported OPENAI_API_KEY from environment.")
 
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        if anthropic_key:
+            await ConfigService.set(db, "ANTHROPIC_API_KEY", anthropic_key, "Anthropic API Key")
+            print("Imported ANTHROPIC_API_KEY from environment.")
+
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        if gemini_key:
+            await ConfigService.set(db, "GEMINI_API_KEY", gemini_key, "Google Gemini API Key")
+            print("Imported GEMINI_API_KEY from environment.")
+
         google_id = os.getenv("GOOGLE_CLIENT_ID")
         if google_id:
             await ConfigService.set(db, "GOOGLE_CLIENT_ID", google_id, "Google OAuth Client ID")

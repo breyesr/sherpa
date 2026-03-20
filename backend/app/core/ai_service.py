@@ -71,7 +71,13 @@ class AIService:
 
     async def _get_llm_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
         provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
-        model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o" if provider == "openai" else "claude-3-haiku-20240307")
+        
+        # Determine default model based on provider
+        default_model = "gpt-4o"
+        if provider == "gemini": default_model = "gemini-1.5-flash"
+        elif provider == "anthropic": default_model = "claude-3-haiku-20240307"
+        
+        model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", default_model)
         api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
         
         if not api_key:
