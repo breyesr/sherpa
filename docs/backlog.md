@@ -15,7 +15,7 @@
 - [x] Task 2.2: Define BusinessProfile and AssistantConfig models.
 - [x] Task 2.3: Implement endpoints for BusinessProfile CRUD.
 - [x] Task 2.4: Implement endpoints for AssistantConfig CRUD.
-- [ ] Task 2.5: Add Timezone support to BusinessProfile and ensure all Dashboard views respect the business local time.
+- [x] Task 2.5: Add Timezone support to BusinessProfile and ensure all Dashboard views respect the business local time.
 
 ## Epic 3: Guided Onboarding Wizard
 - [x] Task 3.1: Create multi-step Onboarding UI in Next.js (5 steps).
@@ -40,6 +40,7 @@
 - [x] Task 6.2: Create Dashboard Calendar view (Next.js).
 - [x] Task 6.3: Implement manual appointment creation via Dashboard.
 - [x] Task 6.4: Update manual/AI rescheduling logic to modify existing appointments instead of creating new ones.
+- [x] Task 6.5: Implement AI tool to list user appointments (get_client_appointments).
 
 ## Epic 7: CRM & Reminders
 - [x] Task 7.1: Implement Client list with search (Backend + Frontend).

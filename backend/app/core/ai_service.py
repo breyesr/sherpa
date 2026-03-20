@@ -254,7 +254,8 @@ class AIService:
                     "required": ["start_time", "notes"]
                 }
             }},
-            {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}}
+            {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}},
+            {"type": "function", "function": {"name": "get_client_appointments", "description": "List all future scheduled appointments for the current user.", "parameters": {"type": "object", "properties": {}}}}
         ]
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
@@ -264,6 +265,7 @@ class AIService:
             return "Available" if available else "Busy. Suggest another time."
         elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('notes'))
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
+        elif name == "get_client_appointments": return await self._get_client_appointments_tool(identifier)
         return "Unknown tool"
 
     async def _check_availability_tool(self, start_iso: str) -> bool:
@@ -467,3 +469,32 @@ class AIService:
             await self.db.commit()
             return f"SUCCESS: Identity updated and user registered as {name}."
         except: return "Failed to update identity."
+
+    async def _get_client_appointments_tool(self, identifier: str) -> str:
+        """Fetch and format all future scheduled appointments for this client."""
+        try:
+            biz_tz = ZoneInfo(self.business.timezone or "UTC")
+            client_obj = await self._check_client_direct(identifier)
+            
+            res = await self.db.execute(
+                select(Appointment).where(
+                    Appointment.business_id == self.business.id,
+                    Appointment.client_id == client_obj.id,
+                    Appointment.status == "scheduled",
+                    Appointment.start_time > datetime.utcnow()
+                ).order_by(Appointment.start_time)
+            )
+            apts = res.scalars().all()
+            
+            if not apts:
+                return "You have no upcoming appointments scheduled."
+            
+            lines = [f"FOUND {len(apts)} UPCOMING APPOINTMENTS:"]
+            for a in apts:
+                local_start = a.start_time.replace(tzinfo=timezone.utc).astimezone(biz_tz)
+                lines.append(f"- {local_start.strftime('%A, %b %d at %H:%M')} (Reason: {a.notes or 'General visit'})")
+            
+            return "\n".join(lines)
+        except Exception as e:
+            print(f"Error in _get_client_appointments_tool: {e}")
+            return "Error retrieving your appointments."
