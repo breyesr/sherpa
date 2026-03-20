@@ -20,9 +20,10 @@ interface ClientCalendarProps {
   initialAppointments: any[];
   initialBusySlots: any[];
   token: string | null;
+  timezone: string;
 }
 
-export default function ClientCalendar({ initialAppointments, initialBusySlots, token }: ClientCalendarProps) {
+export default function ClientCalendar({ initialAppointments, initialBusySlots, token, timezone }: ClientCalendarProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
@@ -153,11 +154,11 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-gray-900 font-medium">
                           <CalendarIcon size={14} className="text-blue-500" />
-                          {start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                          {start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })}
                         </div>
                         <div className="flex items-center gap-2 text-gray-500 text-sm">
                           <Clock size={14} />
-                          {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
                         </div>
                       </div>
                     </td>

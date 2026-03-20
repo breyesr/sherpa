@@ -12,6 +12,7 @@ class BusinessProfile(Base):
     name = Column(String, nullable=False)
     category = Column(String, nullable=True)
     contact_phone = Column(String, nullable=True)
+    timezone = Column(String, nullable=False, default="UTC")
     trial_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
 

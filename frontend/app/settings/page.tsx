@@ -7,6 +7,24 @@ import WhatsAppModal from '@/components/WhatsAppModal';
 import TelegramModal from '@/components/TelegramModal';
 import { API_BASE_URL } from '@/config';
 
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/Mexico_City', label: 'Mexico City' },
+  { value: 'America/Monterrey', label: 'Monterrey' },
+  { value: 'America/Tijuana', label: 'Tijuana' },
+  { value: 'America/New_York', label: 'New York (EST)' },
+  { value: 'America/Chicago', label: 'Chicago (CST)' },
+  { value: 'America/Denver', label: 'Denver (MST)' },
+  { value: 'America/Los_Angeles', label: 'Los Angeles (PST)' },
+  { value: 'America/Sao_Paulo', label: 'São Paulo' },
+  { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires' },
+  { value: 'America/Bogota', label: 'Bogotá' },
+  { value: 'Europe/Madrid', label: 'Madrid' },
+  { value: 'Europe/London', label: 'London' },
+  { value: 'Europe/Paris', label: 'Paris' },
+  { value: 'Europe/Berlin', label: 'Berlin' },
+];
+
 export default function SettingsPage() {
   const token = useAuthStore((state) => state.token);
   const [business, setBusiness] = useState<any>(null);
@@ -18,7 +36,7 @@ export default function SettingsPage() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   
   // Edit states
-  const [editBusiness, setEditBusiness] = useState({ name: '', category: '', contact_phone: '' });
+  const [editBusiness, setEditBusiness] = useState({ name: '', category: '', contact_phone: '', timezone: 'UTC' });
   const [editUser, setEditUser] = useState({ email: '', password: '' });
   const [editAssistant, setEditAssistant] = useState({ 
     name: '', 
@@ -93,7 +111,8 @@ export default function SettingsPage() {
         setEditBusiness({
           name: busData.name,
           category: busData.category || '',
-          contact_phone: busData.contact_phone || ''
+          contact_phone: busData.contact_phone || '',
+          timezone: busData.timezone || 'UTC'
         });
         if (busData.assistant_config) {
           setEditAssistant({
@@ -331,6 +350,18 @@ export default function SettingsPage() {
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   placeholder="+1 234 567 890"
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Timezone</label>
+                <select 
+                  value={editBusiness.timezone}
+                  onChange={e => setEditBusiness({...editBusiness, timezone: e.target.value})}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                >
+                  {TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Trial Status</label>

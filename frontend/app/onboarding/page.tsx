@@ -6,6 +6,24 @@ import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/config';
 import { Info, Loader2 } from 'lucide-react';
 
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/Mexico_City', label: 'Mexico City' },
+  { value: 'America/Monterrey', label: 'Monterrey' },
+  { value: 'America/Tijuana', label: 'Tijuana' },
+  { value: 'America/New_York', label: 'New York (EST)' },
+  { value: 'America/Chicago', label: 'Chicago (CST)' },
+  { value: 'America/Denver', label: 'Denver (MST)' },
+  { value: 'America/Los_Angeles', label: 'Los Angeles (PST)' },
+  { value: 'America/Sao_Paulo', label: 'São Paulo' },
+  { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires' },
+  { value: 'America/Bogota', label: 'Bogotá' },
+  { value: 'Europe/Madrid', label: 'Madrid' },
+  { value: 'Europe/London', label: 'London' },
+  { value: 'Europe/Paris', label: 'Paris' },
+  { value: 'Europe/Berlin', label: 'Berlin' },
+];
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -17,6 +35,7 @@ export default function OnboardingPage() {
   const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState('');
   const [phone, setPhone] = useState('');
+  const [timezone, setTimezone] = useState('UTC');
   const [assistantName, setAssistantName] = useState('Sherpa Assistant');
   const [assistantTone, setAssistantTone] = useState('Professional');
   const [greeting, setGreeting] = useState('Hello! How can I help you today?');
@@ -93,6 +112,7 @@ export default function OnboardingPage() {
           name: businessName,
           category: category,
           contact_phone: phone,
+          timezone: timezone,
         }),
       });
 
@@ -170,6 +190,18 @@ export default function OnboardingPage() {
                   className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
                   placeholder="+1 (555) 000-0000"
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Timezone *</label>
+                <select 
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  {TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
               </div>
               <p className="text-[10px] text-gray-400 italic">* Required to create your profile</p>
             </div>

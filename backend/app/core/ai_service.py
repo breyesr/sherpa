@@ -7,6 +7,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.google_calendar import GoogleCalendarService
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import or_
@@ -194,6 +195,10 @@ class AIService:
                     greeting_context = self.assistant_config.greeting
                     identity_instruction = f"IDENTITY COLLECTION: This is a NEW or incomplete lead. You MUST politely ask for their missing information ({', '.join(missing_fields)}) before you are allowed to book any appointment. DO NOT mention appointments until you have these details."
 
+                # Business Timezone
+                biz_tz = ZoneInfo(self.business.timezone or "UTC")
+                local_now = datetime.now(biz_tz)
+
                 system_prompt = template.render(
                     assistant=self.assistant_config,
                     business=self.business,
@@ -204,7 +209,7 @@ class AIService:
                     identity_instruction=identity_instruction,
                     is_known=is_known,
                     missing_fields=missing_fields,
-                    current_time=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')
+                    current_time=local_now.strftime('%Y-%m-%d %H:%M')
                 )
             except Exception as e:
                 print(f"CRITICAL: Prompt Construction Stage (Jinja2) Failed: {e}")
@@ -263,16 +268,25 @@ class AIService:
 
     async def _check_availability_tool(self, start_iso: str) -> bool:
         try:
-            start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
-            end = start + timedelta(minutes=60)
-            res = await self.db.execute(select(Appointment).where(Appointment.business_id == self.business.id, Appointment.start_time < end, Appointment.end_time > start, Appointment.status != "cancelled"))
+            biz_tz = ZoneInfo(self.business.timezone or "UTC")
+            # Parse ISO string. 
+            dt = datetime.fromisoformat(start_iso.replace('Z', '+00:00'))
+            # If the LLM didn't provide a timezone, assume it's in the business's local time.
+            if dt.tzinfo is None or dt.utcoffset() is None:
+                dt = dt.replace(tzinfo=biz_tz)
+            
+            start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            end_utc = start_utc + timedelta(minutes=60)
+            
+            res = await self.db.execute(select(Appointment).where(Appointment.business_id == self.business.id, Appointment.start_time < end_utc, Appointment.end_time > start_utc, Appointment.status != "cancelled"))
             if res.scalars().first(): return False
+            
             res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
             integration = res.scalars().first()
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
-                    busy = await service.get_availability(start, end)
+                    busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=60)).astimezone(timezone.utc))
                     if busy: return False
                 except: pass
             return True
@@ -280,41 +294,89 @@ class AIService:
 
     async def _get_available_slots_tool(self, date_str: str = None, days_ahead: int = 3) -> str:
         try:
-            now_utc = datetime.now(timezone.utc)
+            biz_tz = ZoneInfo(self.business.timezone or "UTC")
+            now_local = datetime.now(biz_tz)
+            
             if date_str:
-                try: start_dt = datetime.fromisoformat(date_str).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
-                except: start_dt = now_utc
-            else: start_dt = now_utc
-            if start_dt == now_utc and start_dt.minute > 0: start_dt = start_dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+                try: 
+                    # Parse date and set to start of day in business timezone
+                    parsed_dt = datetime.fromisoformat(date_str)
+                    start_dt = parsed_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=biz_tz)
+                except: 
+                    start_dt = now_local
+            else: 
+                start_dt = now_local
+            
+            # Round up to next hour if it's currently today
+            if start_dt.date() == now_local.date() and start_dt.hour == now_local.hour:
+                start_dt = start_dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            
             end_dt = start_dt + timedelta(days=days_ahead)
-            working_hours = self.assistant_config.working_hours or {"mon": ["09:00", "18:00"], "tue": ["09:00", "18:00"], "wed": ["09:00", "18:00"], "thu": ["09:00", "18:00"], "fri": ["09:00", "18:00"], "sat": [], "sun": []}
-            res = await self.db.execute(select(Appointment).where(Appointment.business_id == self.business.id, Appointment.start_time < end_dt.replace(tzinfo=None), Appointment.end_time > start_dt.replace(tzinfo=None), Appointment.status != "cancelled"))
-            busy_ranges = [(a.start_time.replace(tzinfo=timezone.utc), a.end_time.replace(tzinfo=timezone.utc)) for a in res.scalars().all()]
+            
+            # Fetch existing local appointments
+            res = await self.db.execute(
+                select(Appointment).where(
+                    Appointment.business_id == self.business.id, 
+                    Appointment.start_time < end_dt.astimezone(timezone.utc).replace(tzinfo=None), 
+                    Appointment.end_time > start_dt.astimezone(timezone.utc).replace(tzinfo=None), 
+                    Appointment.status != "cancelled"
+                )
+            )
+            
+            # Convert existing busy ranges to local business time for easy comparison
+            busy_ranges = [
+                (a.start_time.replace(tzinfo=timezone.utc).astimezone(biz_tz), 
+                 a.end_time.replace(tzinfo=timezone.utc).astimezone(biz_tz)) 
+                for a in res.scalars().all()
+            ]
+            
+            # Check Google Calendar integration
             res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
             integration = res.scalars().first()
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
-                    google_busy = await service.get_availability(start_dt, end_dt)
-                    for b in google_busy: busy_ranges.append((datetime.fromisoformat(b['start'].replace('Z', '+00:00')), datetime.fromisoformat(b['end'].replace('Z', '+00:00'))))
+                    # We pass UTC to the service as it handles the API calls
+                    google_busy = await service.get_availability(start_dt.astimezone(timezone.utc), end_dt.astimezone(timezone.utc))
+                    for b in google_busy: 
+                        busy_ranges.append((
+                            datetime.fromisoformat(b['start'].replace('Z', '+00:00')).astimezone(biz_tz), 
+                            datetime.fromisoformat(b['end'].replace('Z', '+00:00')).astimezone(biz_tz)
+                        ))
                 except: pass
+            
+            working_hours = self.assistant_config.working_hours or {"mon": ["09:00", "18:00"], "tue": ["09:00", "18:00"], "wed": ["09:00", "18:00"], "thu": ["09:00", "18:00"], "fri": ["09:00", "18:00"], "sat": [], "sun": []}
+            
             available_slots = []
             current_check = start_dt
-            while current_check < end_dt and len(available_slots) < 12:
-                if current_check < now_utc:
+            
+            while current_check < end_dt and len(available_slots) < 15:
+                # Skip past times
+                if current_check < now_local:
                     current_check += timedelta(minutes=60)
                     continue
+                
                 day_name = current_check.strftime('%a').lower()
                 hours = working_hours.get(day_name, [])
+                
                 if hours and len(hours) >= 2:
+                    # Construct start/end of working day in business timezone
                     wh_start = current_check.replace(hour=int(hours[0].split(':')[0]), minute=int(hours[0].split(':')[1]))
                     wh_end = current_check.replace(hour=int(hours[1].split(':')[0]), minute=int(hours[1].split(':')[1]))
+                    
                     if wh_start <= current_check < wh_end:
                         slot_end = current_check + timedelta(minutes=60)
-                        if not any(current_check < b_end and slot_end > b_start for b_start, b_end in busy_ranges): available_slots.append(current_check.strftime('%A, %b %d at %H:%M'))
+                        # Check for overlaps with any busy range (now all in biz_tz)
+                        if not any(current_check < b_end and slot_end > b_start for b_start, b_end in busy_ranges):
+                            available_slots.append(current_check.strftime('%A, %b %d at %H:%M'))
+                
                 current_check += timedelta(minutes=60)
-            return "FREE SLOTS:\n" + "\n".join([f"- {s}" for s in available_slots]) if available_slots else "No free slots found."
-        except: return "Error searching for slots."
+            
+            return "FREE SLOTS (Business Timezone: " + (self.business.timezone or "UTC") + "):\n" + "\n".join([f"- {s}" for s in available_slots]) if available_slots else "No free slots found."
+        except Exception as e:
+            print(f"Error in _get_available_slots_tool: {e}")
+            traceback.print_exc()
+            return "Error searching for slots."
 
     async def _check_client_direct(self, identifier: str) -> Client:
         client, _ = await self._get_client(identifier)
@@ -322,22 +384,35 @@ class AIService:
 
     async def _create_appointment_tool(self, identifier: str, start_iso: str, notes: str = None) -> str:
         try:
-            start = datetime.fromisoformat(start_iso.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
-            end = start + timedelta(minutes=60)
+            biz_tz = ZoneInfo(self.business.timezone or "UTC")
+            # Parse ISO string.
+            dt = datetime.fromisoformat(start_iso.replace('Z', '+00:00'))
+            # If the LLM didn't provide a timezone, assume it's in the business's local time.
+            if dt.tzinfo is None or dt.utcoffset() is None:
+                dt = dt.replace(tzinfo=biz_tz)
+            
+            start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            end_utc = start_utc + timedelta(minutes=60)
+            
             client_obj = await self._check_client_direct(identifier)
-            apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start, end_time=end, status="scheduled", notes=notes)
+            apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
             self.db.add(apt)
             res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
             integration = res.scalars().first()
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
-                    google_id = await service.create_event(f"Sherpa: {client_obj.name}", start, end, f"Reason: {notes}\nBooked via AI")
+                    google_id = await service.create_event(f"Sherpa: {client_obj.name}", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
                     apt.google_event_id = google_id
                 except: pass
             await self.db.commit()
-            return f"SUCCESS: Booked for {client_obj.name} at {start.strftime('%Y-%m-%d %H:%M')} UTC."
-        except Exception as e: return f"Failed to book: {e}"
+            
+            # Respond in local time for user clarity
+            local_start = dt.astimezone(biz_tz)
+            return f"SUCCESS: Booked for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+        except Exception as e: 
+            traceback.print_exc()
+            return f"Failed to book: {e}"
 
     async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None, phone: str = None) -> str:
         try:

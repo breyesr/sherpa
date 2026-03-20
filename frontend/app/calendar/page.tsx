@@ -13,18 +13,23 @@ export default async function CalendarPage() {
 
   let appointments = [];
   let busySlots = [];
+  let business = null;
 
   try {
-    const [aptRes, busyRes] = await Promise.all([
+    const [aptRes, busyRes, bizRes] = await Promise.all([
       serverFetch('/crm/appointments'),
-      serverFetch('/integrations/google/availability')
+      serverFetch('/integrations/google/availability'),
+      serverFetch('/business/me')
     ]);
 
     if (aptRes.ok) appointments = await aptRes.json();
     if (busyRes.ok) {
       const data = await busyRes.json();
       busySlots = data.busy_slots || [];
-    } else if (aptRes.status === 401) {
+    }
+    if (bizRes.ok) business = await bizRes.json();
+
+    if (aptRes.status === 401) {
       redirect('/auth/login');
     }
   } catch (err) {
@@ -35,7 +40,8 @@ export default async function CalendarPage() {
     <ClientCalendar 
       initialAppointments={appointments} 
       initialBusySlots={busySlots} 
-      token={token} 
+      token={token}
+      timezone={business?.timezone || 'UTC'}
     />
   );
 }

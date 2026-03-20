@@ -49,6 +49,7 @@ class BusinessProfileBase(BaseModel):
     name: str
     category: Optional[str] = None
     contact_phone: Optional[str] = None
+    timezone: str = "UTC"
 
 class BusinessProfileCreate(BusinessProfileBase):
     pass
@@ -57,6 +58,7 @@ class BusinessProfileUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
     contact_phone: Optional[str] = None
+    timezone: Optional[str] = None
 
 class BusinessProfileResponse(BusinessProfileBase):
     id: str
