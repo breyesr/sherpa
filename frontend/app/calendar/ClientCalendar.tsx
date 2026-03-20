@@ -9,7 +9,8 @@ import {
   RefreshCw,
   ShieldAlert,
   Edit2,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import AddAppointmentModal from '@/components/AddAppointmentModal';
 import RescheduleAppointmentModal from '@/components/RescheduleAppointmentModal';
@@ -114,7 +115,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     
     // 2. Fuzzy Time Match: If start times are within 60 seconds of each other
     const bStartTime = new Date(b.start).getTime();
-    const isDuplicateTime = appointmentTimestamps.some(aptTime => 
+    const isDuplicateTime = appointmentTimestamps.some((aptTime: number) => 
       Math.abs(aptTime - bStartTime) < 60000
     );
     

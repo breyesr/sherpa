@@ -83,7 +83,7 @@ export default function ClientCRM({ initialClients, token }: ClientCRMProps) {
 
       {filteredClients.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClients.map((client) => (
+          {filteredClients.map((client: any) => (
             <div key={client.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative">
               <button 
                 onClick={() => handleEditClient(client)}
