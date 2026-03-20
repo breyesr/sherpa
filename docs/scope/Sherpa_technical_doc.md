@@ -11,13 +11,13 @@ The system is multi-tenant, ensuring strict data isolation between businesses.
 ## 2. Architecture
 
 - **Backend:** FastAPI (Python 3.11)
-- **Frontend:** Next.js 14 (App Router, React Server Components)
+- **Frontend:** Next.js 14 (App Router, Full React Server Components migration)
 - **AI Core:** LiteLLM (Universal provider support: OpenAI, Gemini, Claude)
 - **Prompt Engine:** Jinja2 (Dynamic, multi-layered template construction)
-- **Database:** PostgreSQL 16 (Alembic migrations)
+- **Database:** PostgreSQL 16 (Alembic migrations, optimized B-Tree indexing)
 - **Cache / Queue:** Redis 7 + Celery (Separate processes for API, Worker, and Beat)
 - **Infrastructure:** Railway (Production + Staging), Docker, GitHub Actions CI/CD
-- **Security:** JWT (Cookie-based for RSC), Fernet AES Encryption, SlowAPI Rate Limiting
+- **Security:** JWT (Cookie-based for RSC), Server-Side Auth Gating (Middleware), Fernet AES Encryption, SlowAPI Rate Limiting
 
 ---
 
@@ -67,6 +67,7 @@ The system is multi-tenant, ensuring strict data isolation between businesses.
 ## 5. Security & Stability
 
 - **CI/CD Hardening:** Automated Ruff linting, Pytest unit tests, and TypeScript type-checking on every push.
+- **Server-Side Auth:** Middleware-based gating ensures zero-flicker protected routes and improved security.
 - **Process Separation:** Independent services for Web API, Celery Worker, and Celery Beat to prevent cascading failures.
 - **Safe Migrations:** Standalone `pre_deploy.sh` script to handle DB updates without race conditions.
 - **Encryption:** All third-party credentials (LLM Keys, OAuth Tokens) are encrypted at rest.

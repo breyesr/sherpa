@@ -64,6 +64,7 @@
 - [ ] Task 10.2: Implement Skeleton loaders and standardized Error Boundaries for all dashboard views.
 - [ ] Task 10.3: Configure and verify Celery Beat for reliable periodic task triggering (Reminders & Sync).
 - [ ] Task 10.4: Implement "Retry" and "Recovery" interactive paths for AI/API failure states.
+- [ ] Task 10.5: Resolve persistent visual flickering in Dashboard and Settings pages during RSC transition.
 
 ## Epic 11: System Scalability & Reliability
 - [x] Task 11.1: Refactor Google Calendar API to use async HTTP calls (httpx) instead of blocking sync client.
