@@ -81,9 +81,42 @@
 - [ ] Task 11.12: Configure Redis with `allkeys-lru` eviction policy and persistent storage.
 - [ ] Task 11.13: Migrate Google Calendar Auth from popup-based to standard redirect-based flow.
 
+## Epic 12: Customizable Service Catalog
+- [ ] Task 12.1: Define Service model with JSONB `attributes` and implementation of CRUD API.
+- [ ] Task 12.2: Implement Dynamic Service Management UI (List, Add, Edit).
+- [ ] Task 12.3: Build a lightweight Custom Field Builder for services (Text, Number, Select).
+- [ ] Task 12.4: Update AIService (Jinja2) to inject the active service catalog and required fields into the prompt.
+- [ ] Task 12.5: Refactor `create_appointment` tool to capture and store custom service attributes in JSONB metadata.
+
+## Epic 13: Extensible CRM Client Profiles
+- [ ] Task 13.1: Add JSONB `metadata` column to Client model and update schemas.
+- [ ] Task 13.2: Create Global CRM Field Settings (e.g., Define "Pet Name" once for the business).
+- [ ] Task 13.3: Implement Dynamic Client Profile UI that renders inputs based on global field definitions.
+- [ ] Task 13.4: Create `update_client_metadata` AI tool for autonomous data extraction during chat.
+- [ ] Task 13.5: Inject client metadata into the prompt for advanced personalization (e.g., "How is Max doing?").
+
+## Epic 14: Settings Navigation & UI Overhaul
+- [ ] Task 14.1: Redesign Settings layout into a Tabbed/Sidebar-based navigation (General, Assistant, Integrations, Account).
+- [ ] Task 14.2: Implement persistent Form State management to prevent data loss during tab switching.
+- [ ] Task 14.3: Detach Live Test Sandbox into a persistent slide-out drawer accessible from all setting tabs.
+- [ ] Task 14.4: Ensure full mobile responsiveness for the new settings architecture.
+
+## Epic 15: Business-to-Assistant (B2A) Internal Chat
+- [ ] Task 15.1: Implement a dedicated "Internal Manager" chat interface in the dashboard.
+- [ ] Task 15.2: Create a "Boss Mode" Jinja2 system prompt (Focus on reporting and operational oversight).
+- [ ] Task 15.3: Expose read-only reporting tools to the AI (e.g., `get_daily_summary`, `search_client_history`).
+- [ ] Task 15.4: Implement strict data gating to ensure B2A chat cannot trigger client-facing messages or external bookings.
+
+## Epic 16: Official WhatsApp Integration via Twilio
+- [ ] Task 16.1: Implement Twilio Webhook handler for incoming messages and status receipts (Delivered/Read).
+- [ ] Task 16.2: Implement Redis-based "AI Silent Mode" triggered by manual dashboard interjections.
+- [ ] Task 16.3: Develop the "Message Credit" engine to track and limit tenant-specific outbound costs.
+- [ ] Task 16.4: Build Media Pipeline to securely download and store Twilio attachments to S3/Cloudinary.
+- [ ] Task 16.5: Implement WhatsApp Template Management UI and compliance enforcement for 24h window.
+
 ## Hard Constraints (Enforced)
-- No Form Builders.
-- No Advanced Conversational AI.
+- No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
+- No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).
 - No Multi-branch setups.
-- No Segmented CRM.
+- No Segmented Marketing CRM (Operational context only).
 - No MercadoPago.

@@ -83,8 +83,6 @@ Each Epic now includes: goals, priorities, dependencies, user stories, and accep
 - [ ] Link with patient records  
 - [ ] Manual override mode
 
-... (repeat this pattern for all remaining features and epics) ...
-
 ---
 
 ## Additional Enhancements
@@ -109,3 +107,67 @@ Each Epic now includes: goals, priorities, dependencies, user stories, and accep
 - Every feature must include at least one user story.  
 - Each story must include Given/When/Then format.
 
+---
+
+## Epic 12: Customizable Service Catalog
+**Goal:** Enable businesses to define a personalized catalog of services with custom attributes.
+**Priority:** P2
+**Dependencies:** Epic 6
+
+### Feature 12.1: Dynamic Service Model
+**User Story:** As a developer, I want a JSONB-backed service model so that I can store heterogeneous service data without migrations.
+**Acceptance Criteria:**
+- Given a business creates a service, when they add custom attributes (e.g., "Pet Type"), then the data is successfully persisted in the JSONB column.
+
+---
+
+## Epic 13: Extensible CRM Client Profiles
+**Goal:** Allow businesses to attach custom data fields to their client records.
+**Priority:** P2
+**Dependencies:** Epic 7
+
+### Feature 13.1: AI Metadata Extraction
+**User Story:** As a business owner, I want the AI to autonomously update client profiles so that my CRM stays enriched without manual entry.
+**Acceptance Criteria:**
+- Given a client mentions a custom field (e.g., "My dog's name is Rex"), when the AI processes the message, then it triggers 'update_client_metadata' to save "Rex" to the 'Pet Name' field.
+
+---
+
+## Epic 14: Settings Navigation & UI Overhaul
+**Goal:** Redesign the Settings module to reduce cognitive load.
+**Priority:** P1
+**Dependencies:** None
+
+### Feature 14.1: Tabbed Navigation
+**User Story:** As a user, I want a clear separation of settings so that I can find configuration options quickly.
+**Acceptance Criteria:**
+- Given the settings page, when I navigate between tabs, then the URL updates and the specific form renders without a full page reload.
+
+---
+
+## Epic 15: Business-to-Assistant (B2A) Internal Chat
+**Goal:** Provide business owners with an internal chat interface to query operational data.
+**Priority:** P2
+**Dependencies:** Epics 6, 7
+
+### Feature 15.1: Internal Manager AI Persona
+**User Story:** As a business owner, I want ask my assistant for reports so that I can manage my day more efficiently.
+**Acceptance Criteria:**
+- Given I am logged into the dashboard, when I ask "How many clients do I have?", then the AI provides an accurate count based on the database.
+
+---
+
+## Epic 16: Official WhatsApp Integration via Twilio
+**Goal:** Implement a professional, multi-tenant WhatsApp connection with human-in-the-loop oversight and cost controls.
+**Priority:** P1
+**Dependencies:** Epics 5, 9
+
+### Feature 16.1: AI Silent Mode (Human-in-the-Loop)
+**User Story:** As a business owner, I want the AI to pause when I manually reply to a client so that we don't send conflicting messages.
+**Acceptance Criteria:**
+- Given a dashboard user sends a message to a client, when Redis 'silent_mode' is set, then the AI Assistant must not respond to that client for 60 minutes.
+
+### Feature 16.2: Message Credit Engine
+**User Story:** As a super admin, I want to limit monthly messages per tenant so that I can maintain platform profitability.
+**Acceptance Criteria:**
+- Given a tenant reaches 100% of their message limit, when an outbound AI message is triggered, then the system must block the send and notify the tenant.
