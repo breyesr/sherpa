@@ -220,8 +220,9 @@ class AIService:
             try:
                 response_text = await self._get_llm_response(system_prompt, user_message, identifier, history)
             except Exception as e:
-                print(f"CRITICAL: Generation Stage Failed: {e}")
-                return "I'm having trouble thinking right now. My AI provider might be busy. Please try again later."
+                print(f"CRITICAL: Generation Stage Failed: {str(e)}")
+                # Provide more detail in the log but a generic message to the user
+                return f"I'm having trouble thinking right now. My AI provider might be busy or misconfigured. (Error: {str(e)[:50]}...)"
 
             
             # 5. Save to Memory
