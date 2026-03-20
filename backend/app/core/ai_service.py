@@ -73,7 +73,7 @@ class AIService:
         provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
         
         # Determine default model based on provider
-        default_model = "gpt-4o"
+        default_model = "gpt-4o-mini"
         if provider == "gemini": default_model = "gemini-1.5-flash"
         elif provider == "anthropic": default_model = "claude-3-haiku-20240307"
         
@@ -226,9 +226,9 @@ class AIService:
             try:
                 response_text = await self._get_llm_response(system_prompt, user_message, identifier, history)
             except Exception as e:
-                print(f"CRITICAL: Generation Stage Failed: {str(e)}")
-                # Provide more detail in the log but a generic message to the user
-                return f"I'm having trouble thinking right now. My AI provider might be busy or misconfigured. (Error: {str(e)[:50]}...)"
+                full_error = str(e)
+                print(f"CRITICAL: Generation Stage Failed: {full_error}")
+                return f"AI Provider Error: {full_error}"
 
             
             # 5. Save to Memory
