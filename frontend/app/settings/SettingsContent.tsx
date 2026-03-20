@@ -88,30 +88,39 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
     strict_guardrails: business?.assistant_config?.strict_guardrails ?? true
   });
 
-  // Keep edit states in sync when business data is refetched
+  // Keep edit states in sync ONLY if they are currently empty (initial load)
+  // or if the user is not actively editing (to avoid clobbering)
   useEffect(() => {
-    if (business) {
-      setEditBusiness({
-        name: business.name,
-        category: business.category || '',
-        contact_phone: business.contact_phone || '',
-        timezone: business.timezone || 'UTC'
+    if (business && !savingBusiness && !savingAssistant) {
+      setEditBusiness(prev => {
+        // Only update if current local state is 'default' or matches the new business ID
+        if (!prev.name) return {
+          name: business.name,
+          category: business.category || '',
+          contact_phone: business.contact_phone || '',
+          timezone: business.timezone || 'UTC'
+        };
+        return prev;
       });
+      
       if (business.assistant_config) {
-        setEditAssistant({
-          name: business.assistant_config.name,
-          tone: business.assistant_config.tone,
-          greeting: business.assistant_config.greeting,
-          personalized_greeting: business.assistant_config.personalized_greeting || '',
-          logic_template: business.assistant_config.logic_template || 'standard',
-          custom_steps: business.assistant_config.custom_steps || '',
-          require_reason: business.assistant_config.require_reason ?? true,
-          confirm_details: business.assistant_config.confirm_details ?? true,
-          strict_guardrails: business.assistant_config.strict_guardrails ?? true
+        setEditAssistant(prev => {
+          if (!prev.name) return {
+            name: business.assistant_config.name,
+            tone: business.assistant_config.tone,
+            greeting: business.assistant_config.greeting,
+            personalized_greeting: business.assistant_config.personalized_greeting || '',
+            logic_template: business.assistant_config.logic_template || 'standard',
+            custom_steps: business.assistant_config.custom_steps || '',
+            require_reason: business.assistant_config.require_reason ?? true,
+            confirm_details: business.assistant_config.confirm_details ?? true,
+            strict_guardrails: business.assistant_config.strict_guardrails ?? true
+          };
+          return prev;
         });
       }
     }
-  }, [business]);
+  }, [business, savingBusiness, savingAssistant]);
 
   useEffect(() => {
     if (user) {

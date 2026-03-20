@@ -28,10 +28,12 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
       const res = await fetch(`${API_BASE_URL}/business/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) throw new Error('Failed to fetch business');
       return res.json();
     },
     initialData: initialBusiness,
     staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000, // Keep in cache longer
   });
 
   const { data: stats = initialStats, isFetching: isFetchingStats } = useQuery({
@@ -40,6 +42,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
       const res = await fetch(`${API_BASE_URL}/business/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) throw new Error('Failed to fetch stats');
       return res.json();
     },
     initialData: initialStats,
@@ -48,8 +51,8 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
 
   return (
     <div className="space-y-8">
-      {/* Onboarding Banner */}
-      {!business && (
+      {/* Onboarding Banner - only show if business explicitly fetched as null/undefined */}
+      {business === undefined || business === null && (
         <div className="bg-blue-600 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg">
           <div>
             <h2 className="text-xl font-bold">Complete your setup! 🚀</h2>
