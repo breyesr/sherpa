@@ -45,3 +45,4 @@ GEMINI.md
 # Build
 dist/
 build/
+*.tsbuildinfo
