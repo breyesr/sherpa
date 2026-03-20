@@ -390,7 +390,9 @@ class AIService:
                 
                 current_check += timedelta(minutes=60)
             
-            return "FREE SLOTS (Business Timezone: " + (self.business.timezone or "UTC") + "):\n" + "\n".join([f"- {s}" for s in available_slots]) if available_slots else "No free slots found."
+            # Add explicit timezone label to the slots response
+            tz_name = self.business.timezone or "UTC"
+            return f"FREE SLOTS (in {tz_name} time):\n" + "\n".join([f"- {s}" for s in available_slots]) if available_slots else "No free slots found."
         except Exception as e:
             print(f"Error in _get_available_slots_tool: {e}")
             traceback.print_exc()
@@ -434,7 +436,11 @@ class AIService:
             if existing_apt:
                 # RESCHEDULE MODE
                 print(f"DEBUG: Rescheduling existing appointment {existing_apt.id}")
-                old_time_str = existing_apt.start_time.strftime('%Y-%m-%d %H:%M')
+                
+                # Convert old time to business local for feedback
+                old_local = existing_apt.start_time.replace(tzinfo=timezone.utc).astimezone(biz_tz)
+                old_time_str = old_local.strftime('%Y-%m-%d %H:%M')
+                
                 existing_apt.start_time = start_utc
                 existing_apt.end_time = end_utc
                 if notes: existing_apt.notes = notes
