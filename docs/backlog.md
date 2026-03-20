@@ -39,7 +39,7 @@
 - [x] Task 6.1: Implement Appointment CRUD (Backend + Frontend).
 - [x] Task 6.2: Create Dashboard Calendar view (Next.js).
 - [x] Task 6.3: Implement manual appointment creation via Dashboard.
-- [ ] Task 6.4: Update manual/AI rescheduling logic to modify existing appointments instead of creating new ones.
+- [x] Task 6.4: Update manual/AI rescheduling logic to modify existing appointments instead of creating new ones.
 
 ## Epic 7: CRM & Reminders
 - [x] Task 7.1: Implement Client list with search (Backend + Frontend).

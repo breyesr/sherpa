@@ -399,24 +399,64 @@ class AIService:
             end_utc = start_utc + timedelta(minutes=60)
             
             client_obj = await self._check_client_direct(identifier)
-            apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
-            self.db.add(apt)
-            res = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
-            integration = res.scalars().first()
-            if integration:
-                try:
-                    service = GoogleCalendarService(integration, self.db)
-                    google_id = await service.create_event(f"Sherpa: {client_obj.name}", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
-                    apt.google_event_id = google_id
-                except: pass
-            await self.db.commit()
             
-            # Respond in local time for user clarity
-            local_start = dt.astimezone(biz_tz)
-            return f"SUCCESS: Booked for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+            # 1. Check for existing 'scheduled' appointment for this client
+            res = await self.db.execute(
+                select(Appointment).where(
+                    Appointment.business_id == self.business.id,
+                    Appointment.client_id == client_obj.id,
+                    Appointment.status == "scheduled",
+                    Appointment.start_time > datetime.utcnow() # Only future appointments
+                ).order_by(Appointment.start_time)
+            )
+            existing_apt = res.scalars().first()
+            
+            # 2. Setup Integration for Google Calendar
+            res_int = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
+            integration = res_int.scalars().first()
+            service = GoogleCalendarService(integration, self.db) if integration else None
+
+            if existing_apt:
+                # RESCHEDULE MODE
+                print(f"DEBUG: Rescheduling existing appointment {existing_apt.id}")
+                old_time_str = existing_apt.start_time.strftime('%Y-%m-%d %H:%M')
+                existing_apt.start_time = start_utc
+                existing_apt.end_time = end_utc
+                if notes: existing_apt.notes = notes
+                
+                if service and existing_apt.google_event_id:
+                    try:
+                        await service.update_event(
+                            event_id=existing_apt.google_event_id,
+                            summary=f"Sherpa: {client_obj.name}",
+                            start_time=start_utc,
+                            end_time=end_utc,
+                            description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI"
+                        )
+                    except: pass
+                
+                await self.db.commit()
+                local_start = dt.astimezone(biz_tz)
+                return f"SUCCESS: Your appointment has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+            
+            else:
+                # NEW BOOKING MODE
+                apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
+                self.db.add(apt)
+                
+                if service:
+                    try:
+                        google_id = await service.create_event(f"Sherpa: {client_obj.name}", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
+                        apt.google_event_id = google_id
+                    except: pass
+                
+                await self.db.commit()
+                local_start = dt.astimezone(biz_tz)
+                return f"SUCCESS: Booked for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                
         except Exception as e: 
             traceback.print_exc()
-            return f"Failed to book: {e}"
+            return f"Failed to book or reschedule: {e}"
 
     async def _update_client_identity_tool(self, identifier: str, name: str, email: str = None, phone: str = None) -> str:
         try:
