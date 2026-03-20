@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2 } from 'lucide-react';
+import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2, Loader2 } from 'lucide-react';
 import ClientModal from '@/components/ClientModal';
 import { useRouter } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config';
 
 interface ClientCRMProps {
   initialClients: any[];
@@ -15,8 +17,22 @@ export default function ClientCRM({ initialClients, token }: ClientCRMProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const filteredClients = initialClients.filter(c => 
+  const { data: clients = [], isFetching } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch clients');
+      return res.json();
+    },
+    initialData: initialClients,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
+  const filteredClients = clients.filter((c: any) => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone.includes(searchTerm)
   );
@@ -34,14 +50,17 @@ export default function ClientCRM({ initialClients, token }: ClientCRMProps) {
   const handleSuccess = () => {
     setIsModalOpen(false);
     setSelectedClient(null);
-    // Refresh the page to get updated data from the server
-    router.refresh();
+    // Invalidate and refetch
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+          {isFetching && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
+        </div>
         <button 
           onClick={handleAddClient}
           className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg active:scale-95"

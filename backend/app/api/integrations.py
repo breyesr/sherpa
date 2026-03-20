@@ -176,11 +176,16 @@ async def get_google_availability(
     events = await service.list_events(start_time, end_time)
     busy_slots = []
     for e in events:
+        summary = e.get('summary', 'Busy')
+        # Skip events created by Sherpa itself to prevent duplication
+        if summary.startswith("Sherpa:"):
+            continue
+            
         busy_slots.append({
             "start": e.get('start', {}).get('dateTime') or e.get('start', {}).get('date'),
             "end": e.get('end', {}).get('dateTime') or e.get('end', {}).get('date'),
             "id": e.get('id'),
-            "summary": e.get('summary', 'Busy')
+            "summary": summary
         })
         
     return {"busy_slots": busy_slots}

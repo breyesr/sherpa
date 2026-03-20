@@ -14,6 +14,7 @@ import {
 import AddAppointmentModal from '@/components/AddAppointmentModal';
 import RescheduleAppointmentModal from '@/components/RescheduleAppointmentModal';
 import { useRouter } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 
 interface ClientCalendarProps {
@@ -29,6 +30,34 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const { data: appointments = [], isFetching: isFetchingApts } = useQuery({
+    queryKey: ['appointments'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/crm/appointments`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch appointments');
+      return res.json();
+    },
+    initialData: initialAppointments,
+    staleTime: 30 * 1000,
+  });
+
+  const { data: busySlots = [], isFetching: isFetchingBusy } = useQuery({
+    queryKey: ['busy_slots'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/integrations/google/availability`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch availability');
+      const data = await res.json();
+      return data.busy_slots || [];
+    },
+    initialData: initialBusySlots,
+    staleTime: 30 * 1000,
+  });
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -37,11 +66,14 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      router.refresh();
+      // Invalidate and refetch
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        setIsSyncing(false);
+      }, 2000);
     } catch (err) {
       console.error(err);
-    } finally {
       setIsSyncing(false);
     }
   };
@@ -55,7 +87,8 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        router.refresh();
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
       } else {
         alert('Failed to cancel appointment');
       }
@@ -70,33 +103,39 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   };
 
   // Aggressive Deduplicate
-  const googleEventIds = new Set(initialAppointments.map(a => a.google_event_id).filter(Boolean));
+  const googleEventIds = new Set(appointments.map((a: any) => a.google_event_id).filter(Boolean));
   
-  // Also track appointment times for a fallback check
-  const appointmentTimes = new Set(initialAppointments.map(a => new Date(a.start_time).getTime()));
+  // Track appointment times for fallback fuzzy matching (within 1 minute)
+  const appointmentTimestamps = appointments.map((a: any) => new Date(a.start_time).getTime());
 
-  const filteredBusySlots = initialBusySlots.filter(b => {
+  const filteredBusySlots = busySlots.filter((b: any) => {
     // 1. Check by ID
     if (googleEventIds.has(b.id)) return false;
     
-    // 2. Check by Time overlap (if start times are exactly the same, it's highly likely a duplicate)
+    // 2. Fuzzy Time Match: If start times are within 60 seconds of each other
     const bStartTime = new Date(b.start).getTime();
-    if (appointmentTimes.has(bStartTime)) return false;
+    const isDuplicateTime = appointmentTimestamps.some(aptTime => 
+      Math.abs(aptTime - bStartTime) < 60000
+    );
+    
+    if (isDuplicateTime) return false;
 
     return true;
   });
 
   const allEvents = [
-    ...initialAppointments.map(a => ({ ...a, type: 'appointment' })),
-    ...filteredBusySlots.map(b => ({ ...b, type: 'google_busy' }))
+    ...appointments.map((a: any) => ({ ...a, type: 'appointment' })),
+    ...filteredBusySlots.map((b: any) => ({ ...b, type: 'google_busy' }))
   ].sort((a, b) => new Date(a.start_time || a.start).getTime() - new Date(b.start_time || b.start).getTime());
+
+  const isGlobalFetching = isFetchingApts || isFetchingBusy || isSyncing;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
-          <p className="text-gray-500 mt-1">Appointments and Google Calendar availability.</p>
+          {isGlobalFetching && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
         </div>
         <div className="flex gap-3">
           <button 

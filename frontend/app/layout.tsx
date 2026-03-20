@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import DashboardLayout from "@/components/DashboardLayout";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Sherpa MVP",
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <DashboardLayout>
-          {children}
-        </DashboardLayout>
+        <Providers>
+          <DashboardLayout>
+            {children}
+          </DashboardLayout>
+        </Providers>
       </body>
     </html>
   );

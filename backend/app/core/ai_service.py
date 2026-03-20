@@ -341,12 +341,19 @@ class AIService:
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
-                    # We pass UTC to the service as it handles the API calls
-                    google_busy = await service.get_availability(start_dt.astimezone(timezone.utc), end_dt.astimezone(timezone.utc))
-                    for b in google_busy: 
+                    # Use list_events to get summaries and filter out Sherpa-created events
+                    google_events = await service.list_events(start_dt.astimezone(timezone.utc), end_dt.astimezone(timezone.utc))
+                    for e in google_events:
+                        summary = e.get('summary', '')
+                        if summary.startswith("Sherpa:"):
+                            continue # Skip our own appointments
+                            
+                        start_str = e.get('start', {}).get('dateTime') or e.get('start', {}).get('date')
+                        end_str = e.get('end', {}).get('dateTime') or e.get('end', {}).get('date')
+                        
                         busy_ranges.append((
-                            datetime.fromisoformat(b['start'].replace('Z', '+00:00')).astimezone(biz_tz), 
-                            datetime.fromisoformat(b['end'].replace('Z', '+00:00')).astimezone(biz_tz)
+                            datetime.fromisoformat(start_str.replace('Z', '+00:00')).astimezone(biz_tz), 
+                            datetime.fromisoformat(end_str.replace('Z', '+00:00')).astimezone(biz_tz)
                         ))
                 except: pass
             
