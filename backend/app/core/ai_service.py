@@ -271,9 +271,11 @@ class AIService:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             # Parse ISO string. 
             dt = datetime.fromisoformat(start_iso.replace('Z', '+00:00'))
-            # If the LLM didn't provide a timezone, assume it's in the business's local time.
-            if dt.tzinfo is None or dt.utcoffset() is None:
-                dt = dt.replace(tzinfo=biz_tz)
+            
+            # If naive OR marked as UTC (but business isn't UTC), assume it's business local time.
+            # This handles models that append 'Z' by habit despite instructions.
+            if dt.tzinfo is None or (dt.utcoffset() == timedelta(0) and self.business.timezone != "UTC"):
+                dt = dt.replace(tzinfo=None).replace(tzinfo=biz_tz)
             
             start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
             end_utc = start_utc + timedelta(minutes=60)
@@ -286,6 +288,7 @@ class AIService:
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
+                    # Use the corrected 'dt' converted to UTC for the Google check
                     busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=60)).astimezone(timezone.utc))
                     if busy: return False
                 except: pass
@@ -387,9 +390,10 @@ class AIService:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             # Parse ISO string.
             dt = datetime.fromisoformat(start_iso.replace('Z', '+00:00'))
-            # If the LLM didn't provide a timezone, assume it's in the business's local time.
-            if dt.tzinfo is None or dt.utcoffset() is None:
-                dt = dt.replace(tzinfo=biz_tz)
+            
+            # If naive OR marked as UTC (but business isn't UTC), assume it's business local time.
+            if dt.tzinfo is None or (dt.utcoffset() == timedelta(0) and self.business.timezone != "UTC"):
+                dt = dt.replace(tzinfo=None).replace(tzinfo=biz_tz)
             
             start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
             end_utc = start_utc + timedelta(minutes=60)
