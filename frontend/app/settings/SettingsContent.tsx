@@ -813,14 +813,14 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
       <WhatsAppModal 
         isOpen={isWhatsAppModalOpen}
         onClose={() => setIsWhatsAppModalOpen(false)}
-        onSuccess={() => fetchData()}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['business'] })}
         token={token}
       />
 
       <TelegramModal 
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
-        onSuccess={() => fetchData()}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['business'] })}
         token={token}
       />
     </div>
