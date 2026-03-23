@@ -88,6 +88,11 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
     strict_guardrails: business?.assistant_config?.strict_guardrails ?? true
   });
 
+  const [savingBusiness, setSavingBusiness] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
+  const [savingAssistant, setSavingAssistant] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
   // Keep edit states in sync ONLY if they are currently empty (initial load)
   // or if the user is not actively editing (to avoid clobbering)
   useEffect(() => {
@@ -127,11 +132,6 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
       setEditUser({ email: user.email, password: '' });
     }
   }, [user]);
-
-  const [savingBusiness, setSavingBusiness] = useState(false);
-  const [savingUser, setSavingUser] = useState(false);
-  const [savingAssistant, setSavingAssistant] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
 
   // Sandbox State
   const [sandboxMessages, setSandboxMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
@@ -813,14 +813,14 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
       <WhatsAppModal 
         isOpen={isWhatsAppModalOpen}
         onClose={() => setIsWhatsAppModalOpen(false)}
-        onSuccess={() => fetchData()}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['business'] })}
         token={token}
       />
 
       <TelegramModal 
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
-        onSuccess={() => fetchData()}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['business'] })}
         token={token}
       />
     </div>
