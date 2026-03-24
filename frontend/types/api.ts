@@ -96,6 +96,20 @@ export interface paths {
     /** Update Appointment */
     patch: operations["update_appointment_api_v1_crm_appointments__appointment_id__patch"];
   };
+  "/api/v1/services/": {
+    /** List Services */
+    get: operations["list_services_api_v1_services__get"];
+    /** Create Service */
+    post: operations["create_service_api_v1_services__post"];
+  };
+  "/api/v1/services/{service_id}": {
+    /** Get Service */
+    get: operations["get_service_api_v1_services__service_id__get"];
+    /** Delete Service */
+    delete: operations["delete_service_api_v1_services__service_id__delete"];
+    /** Update Service */
+    patch: operations["update_service_api_v1_services__service_id__patch"];
+  };
   "/api/v1/whatsapp/webhook": {
     /**
      * Verify Whatsapp
@@ -293,6 +307,26 @@ export interface components {
        * @default true
        */
       strict_guardrails?: boolean | null;
+      /**
+       * Enable Honesty
+       * @default true
+       */
+      enable_honesty?: boolean;
+      /**
+       * Enable Internal Alert
+       * @default false
+       */
+      enable_internal_alert?: boolean;
+      /**
+       * Enable Lead Capture
+       * @default true
+       */
+      enable_lead_capture?: boolean;
+      /**
+       * Enable Emergency Phone
+       * @default false
+       */
+      enable_emergency_phone?: boolean;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -322,6 +356,14 @@ export interface components {
       confirm_details?: boolean | null;
       /** Strict Guardrails */
       strict_guardrails?: boolean | null;
+      /** Enable Honesty */
+      enable_honesty?: boolean | null;
+      /** Enable Internal Alert */
+      enable_internal_alert?: boolean | null;
+      /** Enable Lead Capture */
+      enable_lead_capture?: boolean | null;
+      /** Enable Emergency Phone */
+      enable_emergency_phone?: boolean | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -477,6 +519,32 @@ export interface components {
        */
       created_at: string;
     };
+    /** ServiceCreate */
+    ServiceCreate: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Duration Minutes
+       * @default 60
+       */
+      duration_minutes?: number;
+      /** Price */
+      price?: string | null;
+      /**
+       * Attributes
+       * @default {}
+       */
+      attributes?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Is Active
+       * @default true
+       */
+      is_active?: boolean;
+    };
     /** ServiceResponse */
     ServiceResponse: {
       /** Name */
@@ -516,6 +584,23 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+    };
+    /** ServiceUpdate */
+    ServiceUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Duration Minutes */
+      duration_minutes?: number | null;
+      /** Price */
+      price?: string | null;
+      /** Attributes */
+      attributes?: {
+        [key: string]: unknown;
+      } | null;
+      /** Is Active */
+      is_active?: boolean | null;
     };
     /** TestChatRequest */
     TestChatRequest: {
@@ -1063,6 +1148,110 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["AppointmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Services */
+  list_services_api_v1_services__get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ServiceResponse"][];
+        };
+      };
+    };
+  };
+  /** Create Service */
+  create_service_api_v1_services__post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ServiceCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ServiceResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Service */
+  get_service_api_v1_services__service_id__get: {
+    parameters: {
+      path: {
+        service_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ServiceResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Service */
+  delete_service_api_v1_services__service_id__delete: {
+    parameters: {
+      path: {
+        service_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ServiceResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Service */
+  update_service_api_v1_services__service_id__patch: {
+    parameters: {
+      path: {
+        service_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ServiceUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ServiceResponse"];
         };
       };
       /** @description Validation Error */
