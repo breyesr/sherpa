@@ -85,8 +85,9 @@
 - [ ] Task 12.1: Define Service model with JSONB `attributes` and implementation of CRUD API.
 - [ ] Task 12.2: Implement Dynamic Service Management UI (List, Add, Edit).
 - [ ] Task 12.3: Build a lightweight Custom Field Builder for services (Text, Number, Select).
-- [ ] Task 12.4: Update AIService (Jinja2) to inject the active service catalog and required fields into the prompt.
-- [ ] Task 12.5: Refactor `create_appointment` tool to capture and store custom service attributes in JSONB metadata.
+- [ ] Task 12.4: **AI Brain Upgrade**: Update AIService (Jinja2) to inject the active service catalog and required fields into the prompt.
+- [ ] Task 12.5: **Smart Escalation Chain**: Implement behavioral toggles (Honesty, Internal Alert, Lead Capture, Emergency Phone) for AI fallback handling.
+- [ ] Task 12.6: Refactor `create_appointment` tool to capture and store custom service attributes in JSONB metadata.
 
 ## Epic 13: Extensible CRM Client Profiles
 - [ ] Task 13.1: Add JSONB `metadata` column to Client model and update schemas.
