@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
 interface ClientModalProps {
@@ -18,6 +18,7 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -66,6 +67,33 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client 
     }
   };
 
+  const handleResolveAlert = async () => {
+    if (!client) return;
+    setResolving(true);
+    setError('');
+
+    try {
+      const updatedFields = { ...client.custom_fields, needs_review: false };
+      const res = await fetch(`${API_BASE_URL}/crm/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ custom_fields: updatedFields })
+      });
+
+      if (!res.ok) throw new Error('Failed to resolve alert');
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setResolving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!client || !confirm(`Are you sure you want to delete ${client.name}?`)) return;
     
@@ -108,6 +136,31 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client 
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 animate-in fade-in slide-in-from-top-2">
               {error}
+            </div>
+          )}
+
+          {client?.custom_fields?.needs_review && (
+            <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3">
+              <AlertCircle className="text-red-500 mt-0.5 shrink-0" size={18} />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-red-800">Review Requested by AI</p>
+                <p className="text-xs text-red-600 mt-1">
+                  Reason: {client.custom_fields.review_reason || 'Manual intervention needed'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResolveAlert}
+                  disabled={resolving}
+                  className="mt-3 flex items-center gap-2 bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-50 transition-all shadow-sm"
+                >
+                  {resolving ? 'Resolving...' : (
+                    <>
+                      <CheckCircle size={14} />
+                      Mark as Resolved
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
           
