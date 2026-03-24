@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, UniqueConstraint
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -17,6 +17,9 @@ class Client(Base):
     name = Column(String, nullable=False)
     phone = Column(String, nullable=True, index=True)
     email = Column(String, nullable=True)
+    
+    # Flexible custom fields (Epic 13)
+    custom_fields = Column(JSON, nullable=True, default=dict)
     
     # External Messaging IDs (Encrypted at rest)
     telegram_id = Column(String, nullable=True)
@@ -94,6 +97,7 @@ class Appointment(Base):
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     client_id = Column(String, ForeignKey("clients.id"), nullable=False)
+    service_id = Column(String, ForeignKey("services.id"), nullable=True)
     
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
@@ -109,3 +113,4 @@ class Appointment(Base):
 
     business_profile = relationship("BusinessProfile", back_populates="appointments")
     client = relationship("Client", back_populates="appointments")
+    service = relationship("Service", back_populates="appointments")
