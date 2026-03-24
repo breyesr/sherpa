@@ -438,7 +438,23 @@ class AIService:
             end_utc = start_utc + timedelta(minutes=duration)
             
             client_obj = await self._check_client_direct(identifier)
-...
+            
+            # 1. Check for existing 'scheduled' appointment for this client
+            res = await self.db.execute(
+                select(Appointment).where(
+                    Appointment.business_id == self.business.id,
+                    Appointment.client_id == client_obj.id,
+                    Appointment.status == "scheduled",
+                    Appointment.start_time > datetime.utcnow() # Only future appointments
+                ).order_by(Appointment.start_time)
+            )
+            existing_apt = res.scalars().first()
+            
+            # 2. Setup Integration for Google Calendar
+            res_int = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
+            integration = res_int.scalars().first()
+            service = GoogleCalendarService(integration, self.db) if integration else None
+
             if existing_apt:
                 # RESCHEDULE MODE
                 print(f"DEBUG: Rescheduling existing appointment {existing_apt.id}")
@@ -461,7 +477,8 @@ class AIService:
                             end_time=end_utc,
                             description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI"
                         )
-                    except: pass
+                    except Exception as e:
+                        print(f"WARNING: Google Reschedule failed: {e}")
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
@@ -476,7 +493,8 @@ class AIService:
                     try:
                         google_id = await service.create_event(f"Sherpa: {client_obj.name} ({service_name})", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
                         apt.google_event_id = google_id
-                    except: pass
+                    except Exception as e:
+                        print(f"WARNING: Google Booking failed: {e}")
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
