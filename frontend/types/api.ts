@@ -19,6 +19,14 @@ export interface paths {
     /** Login */
     post: operations["login_api_v1_auth_login_post"];
   };
+  "/api/v1/business/stats": {
+    /** Get Business Stats */
+    get: operations["get_business_stats_api_v1_business_stats_get"];
+  };
+  "/api/v1/business/test-chat": {
+    /** Test Chat */
+    post: operations["test_chat_api_v1_business_test_chat_post"];
+  };
   "/api/v1/business/me": {
     /** Get Business Me */
     get: operations["get_business_me_api_v1_business_me_get"];
@@ -185,6 +193,8 @@ export interface components {
     AppointmentCreate: {
       /** Client Id */
       client_id: string;
+      /** Service Id */
+      service_id?: string | null;
       /**
        * Start Time
        * Format: date-time
@@ -207,6 +217,8 @@ export interface components {
     AppointmentResponse: {
       /** Client Id */
       client_id: string;
+      /** Service Id */
+      service_id?: string | null;
       /**
        * Start Time
        * Format: date-time
@@ -231,9 +243,12 @@ export interface components {
       /** Google Event Id */
       google_event_id?: string | null;
       client?: components["schemas"]["ClientResponse"] | null;
+      service?: components["schemas"]["ServiceResponse"] | null;
     };
     /** AppointmentUpdate */
     AppointmentUpdate: {
+      /** Service Id */
+      service_id?: string | null;
       /** Start Time */
       start_time?: string | null;
       /** End Time */
@@ -267,17 +282,17 @@ export interface components {
        * Require Reason
        * @default true
        */
-      require_reason?: boolean;
+      require_reason?: boolean | null;
       /**
        * Confirm Details
        * @default true
        */
-      confirm_details?: boolean;
+      confirm_details?: boolean | null;
       /**
        * Strict Guardrails
        * @default true
        */
-      strict_guardrails?: boolean;
+      strict_guardrails?: boolean | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -338,6 +353,11 @@ export interface components {
       category?: string | null;
       /** Contact Phone */
       contact_phone?: string | null;
+      /**
+       * Timezone
+       * @default UTC
+       */
+      timezone?: string;
     };
     /** BusinessProfileResponse */
     BusinessProfileResponse: {
@@ -347,6 +367,11 @@ export interface components {
       category?: string | null;
       /** Contact Phone */
       contact_phone?: string | null;
+      /**
+       * Timezone
+       * @default UTC
+       */
+      timezone?: string;
       /** Id */
       id: string;
       /** User Id */
@@ -370,6 +395,8 @@ export interface components {
       category?: string | null;
       /** Contact Phone */
       contact_phone?: string | null;
+      /** Timezone */
+      timezone?: string | null;
     };
     /** ClientCreate */
     ClientCreate: {
@@ -379,6 +406,13 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /**
+       * Custom Fields
+       * @default {}
+       */
+      custom_fields?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ClientResponse */
     ClientResponse: {
@@ -388,6 +422,13 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /**
+       * Custom Fields
+       * @default {}
+       */
+      custom_fields?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -410,6 +451,10 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Custom Fields */
+      custom_fields?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -431,6 +476,52 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+    };
+    /** ServiceResponse */
+    ServiceResponse: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Duration Minutes
+       * @default 60
+       */
+      duration_minutes?: number;
+      /** Price */
+      price?: string | null;
+      /**
+       * Attributes
+       * @default {}
+       */
+      attributes?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Is Active
+       * @default true
+       */
+      is_active?: boolean;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** TestChatRequest */
+    TestChatRequest: {
+      /** Message */
+      message: string;
+      assistant_config?: components["schemas"]["AssistantConfigUpdate"] | null;
     };
     /** Token */
     Token: {
@@ -600,6 +691,39 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Token"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Business Stats */
+  get_business_stats_api_v1_business_stats_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** Test Chat */
+  test_chat_api_v1_business_test_chat_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TestChatRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

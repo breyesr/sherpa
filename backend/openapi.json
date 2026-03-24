@@ -157,6 +157,78 @@
         }
       }
     },
+    "/api/v1/business/stats": {
+      "get": {
+        "tags": [
+          "business"
+        ],
+        "summary": "Get Business Stats",
+        "operationId": "get_business_stats_api_v1_business_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Business Stats Api V1 Business Stats Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/business/test-chat": {
+      "post": {
+        "tags": [
+          "business"
+        ],
+        "summary": "Test Chat",
+        "operationId": "test_chat_api_v1_business_test_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Test Chat Api V1 Business Test Chat Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/business/me": {
       "get": {
         "tags": [
@@ -1421,6 +1493,17 @@
             "type": "string",
             "title": "Client Id"
           },
+          "service_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Id"
+          },
           "start_time": {
             "type": "string",
             "format": "date-time",
@@ -1461,6 +1544,17 @@
           "client_id": {
             "type": "string",
             "title": "Client Id"
+          },
+          "service_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Id"
           },
           "start_time": {
             "type": "string",
@@ -1516,6 +1610,16 @@
                 "type": "null"
               }
             ]
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1530,6 +1634,17 @@
       },
       "AppointmentUpdate": {
         "properties": {
+          "service_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Id"
+          },
           "start_time": {
             "anyOf": [
               {
@@ -1616,17 +1731,38 @@
             "title": "Custom Steps"
           },
           "require_reason": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Require Reason",
             "default": true
           },
           "confirm_details": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Confirm Details",
             "default": true
           },
           "strict_guardrails": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Strict Guardrails",
             "default": true
           },
@@ -1872,6 +2008,11 @@
               }
             ],
             "title": "Contact Phone"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "UTC"
           }
         },
         "type": "object",
@@ -1907,6 +2048,11 @@
               }
             ],
             "title": "Contact Phone"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "UTC"
           },
           "id": {
             "type": "string",
@@ -1994,6 +2140,17 @@
               }
             ],
             "title": "Contact Phone"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
           }
         },
         "type": "object",
@@ -2026,6 +2183,19 @@
               }
             ],
             "title": "Email"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields",
+            "default": {}
           }
         },
         "type": "object",
@@ -2061,6 +2231,19 @@
               }
             ],
             "title": "Email"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields",
+            "default": {}
           },
           "id": {
             "type": "string",
@@ -2141,6 +2324,18 @@
               }
             ],
             "title": "Email"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields"
           }
         },
         "type": "object",
@@ -2194,6 +2389,109 @@
           "created_at"
         ],
         "title": "IntegrationResponse"
+      },
+      "ServiceResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "title": "Duration Minutes",
+            "default": 60
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "attributes": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attributes",
+            "default": {}
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "business_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ServiceResponse"
+      },
+      "TestChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "assistant_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssistantConfigUpdate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "TestChatRequest"
       },
       "Token": {
         "properties": {
