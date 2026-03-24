@@ -112,7 +112,7 @@ async def get_appointments(
     result = await db.execute(
         select(Appointment)
         .where(Appointment.business_id == business.id)
-        .options(selectinload(Appointment.client))
+        .options(selectinload(Appointment.client), selectinload(Appointment.service))
     )
     return result.scalars().all()
 
@@ -173,6 +173,7 @@ async def create_appointment(
     appointment = Appointment(
         business_id=business.id,
         client_id=appointment_in.client_id,
+        service_id=appointment_in.service_id,
         start_time=requested_start,
         end_time=requested_end,
         status=appointment_in.status
@@ -197,7 +198,7 @@ async def create_appointment(
     await db.refresh(appointment)
     
     result = await db.execute(
-        select(Appointment).where(Appointment.id == appointment.id).options(selectinload(Appointment.client))
+        select(Appointment).where(Appointment.id == appointment.id).options(selectinload(Appointment.client), selectinload(Appointment.service))
     )
     return result.scalars().first()
 
@@ -213,11 +214,14 @@ async def update_appointment(
     result = await db.execute(
         select(Appointment)
         .where(Appointment.id == appointment_id, Appointment.business_id == business.id)
-        .options(selectinload(Appointment.client))
+        .options(selectinload(Appointment.client), selectinload(Appointment.service))
     )
     appointment = result.scalars().first()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if appointment_in.service_id is not None:
+        appointment.service_id = appointment_in.service_id
 
     if appointment_in.start_time or appointment_in.end_time:
         new_start = normalize_to_utc_naive(appointment_in.start_time or appointment.start_time)
