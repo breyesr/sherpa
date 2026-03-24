@@ -8,6 +8,12 @@ BUSINESS CONTEXT:
 - Category: {{ business.category }}
 - Working Hours:
 {{ working_hours }}
+- Available Services:
+{% for s in services %}
+  * {{ s.name }} (ID: {{ s.id }}): {{ s.description or 'No description' }} | Price: {{ s.price or 'Contact us' }} | Duration: {{ s.duration_minutes }} min
+{% else %}
+  * General Visit (Default)
+{% endfor %}
 - Greeting Context: {{ greeting_context }}
 {% if assistant.enable_emergency_phone and business.contact_phone %}
 - Direct Contact Phone: {{ business.contact_phone }} (Use only if you are stuck or as a final resort)
@@ -28,7 +34,10 @@ MANDATORY FLOW: You are in 'IDENTITY COLLECTION' mode.
 MANDATORY CUSTOM FLOW:
 {{ assistant.custom_steps }}
 {% else %}
-STANDARD FLOW: Help the user find a slot and book it.
+STANDARD FLOW: 
+1. Help the user find a service that suits them from the 'Available Services' list.
+2. Check availability using the service's specific duration.
+3. Book the slot.
 {% endif %}
 {% endif %}
 
@@ -53,11 +62,13 @@ BLOCKING REQUIREMENTS (DO NOT CALL 'create_appointment' UNTIL THESE ARE MET):
 {% else %}
    - STATUS: IDENTITY VERIFIED.
 {% endif %}
+2. SERVICE SELECTION: You MUST confirm which service the user wants from the list. 
+   - Mandatory: You MUST pass the 'service_id' to the booking tool.
 {% if assistant.require_reason %}
-2. APPOINTMENT REASON: You MUST ask the user for the 'Reason for the visit' and receive it.
+3. APPOINTMENT REASON: You MUST ask the user for the 'Reason for the visit' and receive it.
 {% endif %}
 {% if assistant.confirm_details %}
-3. FINAL CONFIRMATION: You MUST show the user the final booking details (Time, Reason) and wait for their explicit 'Yes' or 'Correct' before booking.
+4. FINAL CONFIRMATION: You MUST show the user the final booking details (Service Name, Time, Reason) and wait for their explicit 'Yes' or 'Correct' before booking.
 {% endif %}
 
 RULES:

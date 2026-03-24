@@ -12,6 +12,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import or_
 from app.models.crm import Appointment, Client
+from app.models.service import Service
 from app.models.integration import Integration
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
@@ -150,6 +151,12 @@ class AIService:
                 
                 template = prompt_env.get_template("system_prompt.j2")
                 
+                # Fetch Active Services for the business
+                res_services = await self.db.execute(
+                    select(Service).where(Service.business_id == self.business.id, Service.is_active == True)
+                )
+                services = res_services.scalars().all()
+                
                 # Prepare context for template
                 working_hours = self.assistant_config.working_hours or {}
                 wh_parts = []
@@ -209,6 +216,7 @@ class AIService:
                     assistant=self.assistant_config,
                     business=self.business,
                     client=client_obj,
+                    services=services,
                     client_identifier=identifier,
                     working_hours=wh_str,
                     greeting_context=greeting_context,
@@ -246,8 +254,8 @@ class AIService:
 
     def _get_tools_definition(self):
         return [
-            {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "days_ahead": {"type": "integer", "default": 3}}}}},
-            {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}}, "required": ["start_time"]}}},
+            {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}, "days_ahead": {"type": "integer", "default": 3}}}}},
+            {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}}, "required": ["start_time"]}}},
             {"type": "function", "function": {
                 "name": "create_appointment", 
                 "description": "FINAL STEP: Book the appointment in the system. PRE-CONDITION: You MUST have already asked for the 'reason' and received user 'confirmation' of their contact info as per system instructions. Do NOT call this early.", 
@@ -255,7 +263,8 @@ class AIService:
                     "type": "object", 
                     "properties": {
                         "start_time": {"type": "string", "description": "ISO format"}, 
-                        "notes": {"type": "string", "description": "Reason for visit provided by user"}
+                        "service_id": {"type": "string", "description": "The ID of the service selected by the user"},
+                        "notes": {"type": "string", "description": "Reason for visit or additional details"}
                     }, 
                     "required": ["start_time", "notes"]
                 }
@@ -266,29 +275,29 @@ class AIService:
         ]
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
-        if name == "get_available_slots": return await self._get_available_slots_tool(args.get('date'), args.get('days_ahead', 3))
+        if name == "get_available_slots": return await self._get_available_slots_tool(args.get('date'), args.get('duration_minutes'), args.get('days_ahead', 3))
         elif name == "check_availability":
-            available = await self._check_availability_tool(args['start_time'])
+            available = await self._check_availability_tool(args['start_time'], args.get('duration_minutes'))
             return "Available" if available else "Busy. Suggest another time."
-        elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('notes'))
+        elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('service_id'), args.get('notes'))
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
         elif name == "get_client_appointments": return await self._get_client_appointments_tool(identifier)
         elif name == "flag_for_review": return await self._flag_for_review_tool(identifier, args.get('reason'))
         return "Unknown tool"
 
-    async def _check_availability_tool(self, start_iso: str) -> bool:
+    async def _check_availability_tool(self, start_iso: str, duration_minutes: int = None) -> bool:
         try:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             # Parse ISO string. 
             dt = datetime.fromisoformat(start_iso.replace('Z', '+00:00'))
             
             # If naive OR marked as UTC (but business isn't UTC), assume it's business local time.
-            # This handles models that append 'Z' by habit despite instructions.
             if dt.tzinfo is None or (dt.utcoffset() == timedelta(0) and self.business.timezone != "UTC"):
                 dt = dt.replace(tzinfo=None).replace(tzinfo=biz_tz)
             
+            duration = duration_minutes or 60
             start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
-            end_utc = start_utc + timedelta(minutes=60)
+            end_utc = start_utc + timedelta(minutes=duration)
             
             res = await self.db.execute(select(Appointment).where(Appointment.business_id == self.business.id, Appointment.start_time < end_utc, Appointment.end_time > start_utc, Appointment.status != "cancelled"))
             if res.scalars().first(): return False
@@ -298,17 +307,18 @@ class AIService:
             if integration:
                 try:
                     service = GoogleCalendarService(integration, self.db)
-                    # Use the corrected 'dt' converted to UTC for the Google check
-                    busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=60)).astimezone(timezone.utc))
+                    busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=duration)).astimezone(timezone.utc))
                     if busy: return False
                 except: pass
             return True
         except: return False
 
-    async def _get_available_slots_tool(self, date_str: str = None, days_ahead: int = 3) -> str:
+    async def _get_available_slots_tool(self, date_str: str = None, duration_minutes: int = None, days_ahead: int = 3) -> str:
         try:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             now_local = datetime.now(biz_tz)
+            
+            slot_duration = duration_minutes or 60
             
             if date_str:
                 try: 
@@ -385,7 +395,7 @@ class AIService:
                     wh_end = current_check.replace(hour=int(hours[1].split(':')[0]), minute=int(hours[1].split(':')[1]))
                     
                     if wh_start <= current_check < wh_end:
-                        slot_end = current_check + timedelta(minutes=60)
+                        slot_end = current_check + timedelta(minutes=slot_duration)
                         # Check for overlaps with any busy range (now all in biz_tz)
                         if not any(current_check < b_end and slot_end > b_start for b_start, b_end in busy_ranges):
                             available_slots.append(current_check.strftime('%A, %b %d at %H:%M'))
@@ -404,7 +414,7 @@ class AIService:
         client, _ = await self._get_client(identifier)
         return client
 
-    async def _create_appointment_tool(self, identifier: str, start_iso: str, notes: str = None) -> str:
+    async def _create_appointment_tool(self, identifier: str, start_iso: str, service_id: str = None, notes: str = None) -> str:
         try:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             # Parse ISO string.
@@ -414,27 +424,21 @@ class AIService:
             if dt.tzinfo is None or (dt.utcoffset() == timedelta(0) and self.business.timezone != "UTC"):
                 dt = dt.replace(tzinfo=None).replace(tzinfo=biz_tz)
             
+            # Fetch Service to get duration
+            duration = 60
+            service_name = "General Visit"
+            if service_id:
+                res_svc = await self.db.execute(select(Service).where(Service.id == service_id))
+                svc = res_svc.scalars().first()
+                if svc:
+                    duration = svc.duration_minutes or 60
+                    service_name = svc.name
+
             start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
-            end_utc = start_utc + timedelta(minutes=60)
+            end_utc = start_utc + timedelta(minutes=duration)
             
             client_obj = await self._check_client_direct(identifier)
-            
-            # 1. Check for existing 'scheduled' appointment for this client
-            res = await self.db.execute(
-                select(Appointment).where(
-                    Appointment.business_id == self.business.id,
-                    Appointment.client_id == client_obj.id,
-                    Appointment.status == "scheduled",
-                    Appointment.start_time > datetime.utcnow() # Only future appointments
-                ).order_by(Appointment.start_time)
-            )
-            existing_apt = res.scalars().first()
-            
-            # 2. Setup Integration for Google Calendar
-            res_int = await self.db.execute(select(Integration).where(Integration.business_id == self.business.id, Integration.provider == 'google'))
-            integration = res_int.scalars().first()
-            service = GoogleCalendarService(integration, self.db) if integration else None
-
+...
             if existing_apt:
                 # RESCHEDULE MODE
                 print(f"DEBUG: Rescheduling existing appointment {existing_apt.id}")
@@ -445,13 +449,14 @@ class AIService:
                 
                 existing_apt.start_time = start_utc
                 existing_apt.end_time = end_utc
+                if service_id: existing_apt.service_id = service_id
                 if notes: existing_apt.notes = notes
                 
                 if service and existing_apt.google_event_id:
                     try:
                         await service.update_event(
                             event_id=existing_apt.google_event_id,
-                            summary=f"Sherpa: {client_obj.name}",
+                            summary=f"Sherpa: {client_obj.name} ({service_name})",
                             start_time=start_utc,
                             end_time=end_utc,
                             description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI"
@@ -460,22 +465,22 @@ class AIService:
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
-                return f"SUCCESS: Your appointment has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                return f"SUCCESS: Your appointment for {service_name} has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
             
             else:
                 # NEW BOOKING MODE
-                apt = Appointment(business_id=self.business.id, client_id=client_obj.id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
+                apt = Appointment(business_id=self.business.id, client_id=client_obj.id, service_id=service_id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
                 self.db.add(apt)
                 
                 if service:
                     try:
-                        google_id = await service.create_event(f"Sherpa: {client_obj.name}", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
+                        google_id = await service.create_event(f"Sherpa: {client_obj.name} ({service_name})", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
                         apt.google_event_id = google_id
                     except: pass
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
-                return f"SUCCESS: Booked for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                return f"SUCCESS: Booked {service_name} for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
                 
         except Exception as e: 
             traceback.print_exc()
