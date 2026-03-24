@@ -261,7 +261,8 @@ class AIService:
                 }
             }},
             {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}},
-            {"type": "function", "function": {"name": "get_client_appointments", "description": "List all future scheduled appointments for the current user.", "parameters": {"type": "object", "properties": {}}}}
+            {"type": "function", "function": {"name": "get_client_appointments", "description": "List all future scheduled appointments for the current user.", "parameters": {"type": "object", "properties": {}}}},
+            {"type": "function", "function": {"name": "flag_for_review", "description": "INTERNAL ALERT: Notify the manager that this client needs human assistance because you are stuck or don't have the info requested.", "parameters": {"type": "object", "properties": {"reason": {"type": "string", "description": "What the user asked that you didn't know"}}}}}
         ]
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
@@ -272,6 +273,7 @@ class AIService:
         elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('notes'))
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
         elif name == "get_client_appointments": return await self._get_client_appointments_tool(identifier)
+        elif name == "flag_for_review": return await self._flag_for_review_tool(identifier, args.get('reason'))
         return "Unknown tool"
 
     async def _check_availability_tool(self, start_iso: str) -> bool:
@@ -517,3 +519,19 @@ class AIService:
         except Exception as e:
             print(f"Error in _get_client_appointments_tool: {e}")
             return "Error retrieving your appointments."
+
+    async def _flag_for_review_tool(self, identifier: str, reason: str = None) -> str:
+        try:
+            client_obj = await self._check_client_direct(identifier)
+            if not client_obj.custom_fields:
+                client_obj.custom_fields = {}
+            
+            client_obj.custom_fields["needs_review"] = True
+            client_obj.custom_fields["review_reason"] = reason or "AI got stuck"
+            client_obj.custom_fields["last_review_flag"] = datetime.utcnow().isoformat()
+            
+            await self.db.commit()
+            return "SUCCESS: Manager has been notified."
+        except Exception as e:
+            print(f"Error in _flag_for_review_tool: {e}")
+            return "Error notifying manager."

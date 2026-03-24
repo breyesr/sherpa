@@ -40,6 +40,12 @@ class AssistantConfig(Base):
     confirm_details = Column(Boolean, default=True)
     strict_guardrails = Column(Boolean, default=True)
     
+    # Smart Escalation Chain (Epic 12.5)
+    enable_honesty = Column(Boolean, default=True)
+    enable_internal_alert = Column(Boolean, default=False)
+    enable_lead_capture = Column(Boolean, default=True)
+    enable_emergency_phone = Column(Boolean, default=False)
+    
     working_hours = Column(JSON, nullable=True) # e.g., {"mon": ["09:00", "18:00"], ...}
 
     business_profile = relationship("BusinessProfile", back_populates="assistant_config")

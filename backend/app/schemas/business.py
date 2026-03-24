@@ -12,6 +12,13 @@ class AssistantConfigBase(BaseModel):
     require_reason: Optional[bool] = True
     confirm_details: Optional[bool] = True
     strict_guardrails: Optional[bool] = True
+    
+    # Escalation Path
+    enable_honesty: bool = True
+    enable_internal_alert: bool = False
+    enable_lead_capture: bool = True
+    enable_emergency_phone: bool = False
+    
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AssistantConfigCreate(AssistantConfigBase):
@@ -27,6 +34,10 @@ class AssistantConfigUpdate(BaseModel):
     require_reason: Optional[bool] = None
     confirm_details: Optional[bool] = None
     strict_guardrails: Optional[bool] = None
+    enable_honesty: Optional[bool] = None
+    enable_internal_alert: Optional[bool] = None
+    enable_lead_capture: Optional[bool] = None
+    enable_emergency_phone: Optional[bool] = None
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AssistantConfigResponse(AssistantConfigBase):
