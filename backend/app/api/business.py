@@ -81,7 +81,7 @@ async def get_business_stats(
             Appointment.business_id == business.id,
             Appointment.start_time >= today_start,
             Appointment.start_time < today_end,
-            Appointment.status == "scheduled"
+            Appointment.status != "cancelled"
         )
     )
     today_appointments = today_count_res.scalar() or 0
@@ -93,7 +93,7 @@ async def get_business_stats(
         .where(
             Appointment.business_id == business.id,
             Appointment.start_time >= yesterday,
-            Appointment.status == "scheduled"
+            Appointment.status != "cancelled"
         )
         .options(selectinload(Appointment.client), selectinload(Appointment.service))
         .order_by(Appointment.start_time)
