@@ -269,14 +269,17 @@ class AIService:
                 print(f"CRITICAL: Generation Stage Failed: {e}")
                 return "I'm having trouble thinking right now. My AI provider might be busy or misconfigured. Please try again later."
 
-            
-            # 5. Save to Memory
-            try:
-                await self.memory.add_message(normalized_id, "user", user_message)
-                await self.memory.add_message(normalized_id, "assistant", response_text)
-            except Exception as e:
-                print(f"WARNING: Memory Save Failed: {e}")
+            # 5. Response Hand-off
+            # Persist AI response to DB
+            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text)
+            self.db.add(ai_msg_obj)
+            conv.last_message_at = datetime.utcnow()
+            await self.db.commit()
 
+            # Persist to Redis Memory (for next turn context)
+            await self.memory.add_message(normalized_id, "user", user_message)
+            await self.memory.add_message(normalized_id, "assistant", response_text)
+            
             return response_text
             
         except Exception as e:

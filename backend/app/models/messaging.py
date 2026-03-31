@@ -8,8 +8,8 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    client_id = Column(String, ForeignKey("clients.id"), nullable=False)
+    business_id = Column(String, ForeignKey("business_profiles.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(String, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     platform = Column(String, nullable=False) # 'telegram', 'whatsapp', 'sandbox'
     platform_chat_id = Column(String, nullable=False, index=True) # The external ID (encrypted or hashed)
     
@@ -31,7 +31,7 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
-    conversation_id = Column(String, ForeignKey("conversations.id"), nullable=False)
+    conversation_id = Column(String, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
     
     role = Column(String, nullable=False) # 'user', 'assistant', 'system'
     content = Column(Text, nullable=False)
