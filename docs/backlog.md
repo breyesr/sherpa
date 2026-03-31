@@ -61,7 +61,7 @@
 
 ## Epic 10: Scalability & UX Hardening
 - [x] Task 10.1: Migrate CRM, Calendar, Dashboard, and Inbox data fetching to React Server Components (RSC) to improve LCP.
-- [ ] Task 10.2: Implement Skeleton loaders and standardized Error Boundaries for all dashboard views.
+- [x] Task 10.2: Implement Skeleton loaders and standardized Error Boundaries for all dashboard views.
 - [ ] Task 10.3: Configure and verify Celery Beat for reliable periodic task triggering (Reminders & Sync).
 - [ ] Task 10.4: Implement "Retry" and "Recovery" interactive paths for AI/API failure states.
 - [ ] Task 10.5: Resolve persistent visual flickering in Dashboard and Settings pages during RSC transition.
@@ -70,7 +70,7 @@
 - [x] Task 11.1: Refactor Google Calendar API to use async HTTP calls (httpx) instead of blocking sync client.
 - [x] Task 11.2: Add B-Tree and Composite indexes to `appointments` and `busy_slots` tables.
 - [x] Task 11.3: Configure separate Railway services for Web API, Celery Worker, and Celery Beat.
-- [ ] Task 11.4: Integrate TanStack Query (React Query) for frontend data synchronization and caching.
+- [x] Task 11.4: Integrate TanStack Query (React Query) for frontend data synchronization and caching.
 - [x] Task 11.5: Replace CI/CD placeholder checks with real `pytest` execution and coverage reporting.
 - [x] Task 11.6: Implement "Assistant is typing..." signals for messaging platforms.
 - [ ] Task 11.7: Implement responsive Sidebar and mobile-optimized CRM views.
@@ -82,22 +82,22 @@
 - [ ] Task 11.13: Migrate Google Calendar Auth from popup-based to standard redirect-based flow.
 
 ## Epic 12: Customizable Service Catalog
-- [ ] Task 12.1: Define Service model with JSONB `attributes` and implementation of CRUD API.
-- [ ] Task 12.2: Implement Dynamic Service Management UI (List, Add, Edit).
+- [x] Task 12.1: Define Service model with JSONB `attributes` and implementation of CRUD API.
+- [x] Task 12.2: Implement Dynamic Service Management UI (List, Add, Edit).
 - [ ] Task 12.3: Build a lightweight Custom Field Builder for services (Text, Number, Select).
-- [ ] Task 12.4: **AI Brain Upgrade**: Update AIService (Jinja2) to inject the active service catalog and required fields into the prompt.
-- [ ] Task 12.5: **Smart Escalation Chain**: Implement behavioral toggles (Honesty, Internal Alert, Lead Capture, Emergency Phone) for AI fallback handling.
-- [ ] Task 12.6: Refactor `create_appointment` tool to capture and store custom service attributes in JSONB metadata.
+- [x] Task 12.4: **AI Brain Upgrade**: Update AIService (Jinja2) to inject the active service catalog and required fields into the prompt.
+- [x] Task 12.5: **Smart Escalation Chain**: Implement behavioral toggles (Honesty, Internal Alert, Lead Capture, Emergency Phone) for AI fallback handling.
+- [x] Task 12.6: Refactor `create_appointment` tool to capture and store custom service attributes in JSONB metadata.
 
 ## Epic 13: Extensible CRM Client Profiles
-- [ ] Task 13.1: Add JSONB `metadata` column to Client model and update schemas.
-- [ ] Task 13.2: Create Global CRM Field Settings (e.g., Define "Pet Name" once for the business).
-- [ ] Task 13.3: Implement Dynamic Client Profile UI that renders inputs based on global field definitions.
+- [x] Task 13.1: Add JSONB `custom_fields` column to Client model and update schemas.
+- [x] Task 13.2: Create Global CRM Field Settings (e.g., Define "Pet Name" once for the business).
+- [x] Task 13.3: Implement Dynamic Client Profile UI that renders inputs based on global field definitions.
 - [ ] Task 13.4: Create `update_client_metadata` AI tool for autonomous data extraction during chat.
 - [ ] Task 13.5: Inject client metadata into the prompt for advanced personalization (e.g., "How is Max doing?").
 
 ## Epic 14: Settings Navigation & UI Overhaul
-- [ ] Task 14.1: Redesign Settings layout into a Tabbed/Sidebar-based navigation (General, Assistant, Integrations, Account).
+- [x] Task 14.1: Redesign Settings layout into a Tabbed navigation (General, Assistant, Services, Integrations).
 - [ ] Task 14.2: Implement persistent Form State management to prevent data loss during tab switching.
 - [ ] Task 14.3: Detach Live Test Sandbox into a persistent slide-out drawer accessible from all setting tabs.
 - [ ] Task 14.4: Ensure full mobile responsiveness for the new settings architecture.
@@ -116,10 +116,24 @@
 - [ ] Task 16.5: Implement WhatsApp Template Management UI and compliance enforcement for 24h window.
 
 ## Epic 17: Dashboard UX Polish & Accessibility
-- [x] Task 17.1: Implement Global Toast Notifications (e.g., Sonner or React-Toastify) to replace static top-page success messages.
-- [x] Task 17.2: Refactor Settings navigation to support Anchor/Hash links (e.g., `/settings?tab=general`) for direct scrolling from shortcuts.
-- [x] Task 17.3: Optimize Modal responsiveness for dynamic content; implement internal scrolling for long forms to prevent screen overflow.
-- [ ] Task 17.4: Run a comprehensive UX/UI Audit to identify inconsistencies in spacing, typography, and interactive feedback across the dashboard.
-- [ ] Task 17.5: **Unsaved Changes Guardian**: Implement dirty-state detection in Settings tabs to warn users before navigating away with unsaved modifications.
-- [ ] Task 17.6: **Two-Stage Field Deletion**: Implement "Mark for Deletion" UI for CRM fields; fields remain visible (but dimmed) until the global "Save" button is clicked.
-- [ ] Task 17.7: **Data Retention UI**: Add tooltips explaining that deleting a field definition hides it from the UI but preserves historical data in the JSONB storage.
+- [x] Task 17.1: Implement Global Toast Notifications (e.g., Sonner).
+- [x] Task 17.2: Refactor Settings navigation to support Anchor/Hash links (e.g., `/settings?tab=general`).
+- [x] Task 17.3: Optimize Modal responsiveness for dynamic content; implement internal scrolling.
+- [ ] Task 17.4: Run a comprehensive UX/UI Audit.
+- [ ] Task 17.5: **Unsaved Changes Guardian**: Warning before navigating away with unsaved modifications.
+- [ ] Task 17.6: **Two-Stage Field Deletion**: Soft-delete UI for CRM fields.
+- [ ] Task 17.7: **Data Retention UI**: Tooltips explaining JSONB preservation.
+
+## Epic 18: Bulk Data Portability & CRM Sync
+- [ ] Task 18.1: High-Performance Bulk Importer (Backend): Background processing for CSV/XLSX files using Celery.
+- [ ] Task 18.2: Dynamic Column Mapper (Frontend): Mapping UI to align external file headers with Sherpa CRM fields.
+- [ ] Task 18.3: Intelligent Deduplication Engine: Logic to handle phone/email collisions during bulk imports.
+- [ ] Task 18.4: Third-Party CRM Connectors: Sync with HubSpot, Salesforce, or Pipedrive.
+- [ ] Task 18.5: Import Safety & Rollback: "Review before commit" flow and 24h undo capability.
+
+## Hard Constraints (Enforced)
+- No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
+- No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).
+- No Multi-branch setups.
+- No Segmented Marketing CRM (Operational context only).
+- No MercadoPago.

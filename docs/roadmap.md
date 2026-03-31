@@ -46,5 +46,15 @@ This roadmap outlines the prioritized path to a scalable, production-ready SaaS.
 - [ ] **Reliability Hardening**:
     - Standardized Error Boundaries and interactive AI recovery paths.
 
+## Phase 5: Growth & Ecosystem
+*Goal: Lower barriers to entry and integrate with the broader business stack.*
+
+- [ ] **Bulk Data Importer (Task 18.1/18.2)**:
+    - CSV/XLSX upload with dynamic column mapping.
+- [ ] **External CRM Sync (Task 18.4)**:
+    - Two-way sync with HubSpot or Salesforce.
+- [ ] **Developer API & Webhooks**:
+    - Allow owners to trigger external actions (e.g., Zapier) when an appointment is booked.
+
 ---
 *Last Updated: March 20, 2026*
