@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2, Scissors, User } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 import GeneralSettings from './components/GeneralSettings';
 import AssistantSettings from './components/AssistantSettings';
@@ -19,8 +22,25 @@ interface SettingsContentProps {
 type TabType = 'general' | 'assistant' | 'services' | 'integrations';
 
 export default function SettingsContent({ initialBusiness, initialUser, token }: SettingsContentProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('general');
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get('tab') as TabType;
+  
+  const [activeTab, setActiveTab] = useState<TabType>(tabParam || 'general');
+
+  // Update URL when tab changes
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.push(`/settings?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    if (tabParam && ['general', 'assistant', 'services', 'integrations'].includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, activeTab]);
   
   const queryClient = useQueryClient();
   
@@ -49,8 +69,11 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   });
 
   const handleMessage = (msg: { type: string, text: string }) => {
-    setMessage(msg);
-    setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    if (msg.type === 'success') {
+      toast.success(msg.text);
+    } else {
+      toast.error(msg.text);
+    }
   };
 
   const tabs = [
@@ -67,16 +90,6 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           {isFetchingBiz && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
         </div>
-        
-        {message.text && (
-          <div className={`px-4 py-2 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-top-2 border ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-700 border-green-100' 
-              : 'bg-red-50 text-red-700 border-red-100'
-          }`}>
-            {message.text}
-          </div>
-        )}
       </div>
 
       {/* Tab Navigation */}
@@ -86,7 +99,7 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
+              onClick={() => handleTabChange(tab.id as TabType)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
                 activeTab === tab.id
                   ? 'bg-white text-blue-600 shadow-sm border border-gray-100'

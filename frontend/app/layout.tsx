@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import DashboardLayout from "@/components/DashboardLayout";
 import Providers from "@/components/Providers";
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: "Sherpa MVP",
@@ -20,6 +21,7 @@ export default function RootLayout({
           <DashboardLayout>
             {children}
           </DashboardLayout>
+          <Toaster position="top-right" richColors />
         </Providers>
       </body>
     </html>

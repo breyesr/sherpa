@@ -81,7 +81,7 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => router.push('/settings')}
+            onClick={() => router.push('/settings?tab=general')}
             className="flex items-center gap-2 bg-gray-50 text-gray-600 px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-all font-bold border border-gray-200"
           >
             <Settings size={18} />

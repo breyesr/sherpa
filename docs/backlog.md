@@ -115,9 +115,9 @@
 - [ ] Task 16.4: Build Media Pipeline to securely download and store Twilio attachments to S3/Cloudinary.
 - [ ] Task 16.5: Implement WhatsApp Template Management UI and compliance enforcement for 24h window.
 
-## Hard Constraints (Enforced)
-- No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
-- No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).
-- No Multi-branch setups.
-- No Segmented Marketing CRM (Operational context only).
-- No MercadoPago.
+## Epic 17: Dashboard UX Polish & Accessibility
+- [ ] Task 17.1: Implement Global Toast Notifications (e.g., Sonner or React-Toastify) to replace static top-page success messages.
+- [ ] Task 17.2: Refactor Settings navigation to support Anchor/Hash links (e.g., `/settings#crm`) for direct scrolling from shortcuts.
+- [ ] Task 17.3: Optimize Modal responsiveness for dynamic content; implement internal scrolling for long forms to prevent screen overflow.
+- [ ] Task 17.4: Run a comprehensive UX/UI Audit to identify inconsistencies in spacing, typography, and interactive feedback across the dashboard.
+- [ ] Task 17.5: Implement "Dirty State" warnings to prevent users from navigating away with unsaved changes in Settings.

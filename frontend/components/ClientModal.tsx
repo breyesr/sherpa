@@ -129,8 +129,8 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
-        <div className="p-8 border-b flex justify-between items-center bg-gray-50/50">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+        <div className="p-8 border-b flex justify-between items-center bg-gray-50/50 shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{client ? 'Edit Client' : 'Add New Client'}</h2>
             <p className="text-sm text-gray-500 mt-1">{client ? 'Update client details' : 'Fill in the information below'}</p>
@@ -140,7 +140,7 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto">
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 animate-in fade-in slide-in-from-top-2">
               {error}
