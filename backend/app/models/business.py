@@ -26,6 +26,7 @@ class BusinessProfile(Base):
     clients = relationship("Client", back_populates="business_profile", cascade="all, delete-orphan")
     appointments = relationship("Appointment", back_populates="business_profile", cascade="all, delete-orphan")
     services = relationship("Service", back_populates="business_profile", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="business_profile", cascade="all, delete-orphan")
 
 class AssistantConfig(Base):
     __tablename__ = "assistant_configs"

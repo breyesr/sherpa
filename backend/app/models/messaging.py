@@ -23,8 +23,8 @@ class Conversation(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    business_profile = relationship("BusinessProfile", backref="conversations")
-    client = relationship("Client", backref="conversations")
+    business_profile = relationship("BusinessProfile", back_populates="conversations")
+    client = relationship("Client", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
 
 class Message(Base):

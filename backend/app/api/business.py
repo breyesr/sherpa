@@ -140,7 +140,7 @@ async def test_chat(
     
     ai_service = AIService(business, db)
     # Use a dummy identifier for testing
-    test_id = f"test_{current_user.id}"
+    test_id = f"sandbox_{current_user.id}"
     response = await ai_service.get_response(identifier=test_id, user_message=payload.message, metadata={"name": current_user.email, "platform": "sandbox"})
     
     return {"response": response}
