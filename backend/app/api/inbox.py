@@ -28,6 +28,7 @@ async def list_conversations(
     current_user: User = Depends(get_current_user)
 ) -> Any:
     business = await get_user_business(db, current_user.id)
+    print(f"DEBUG INBOX: Listing conversations for business {business.id}")
     
     result = await db.execute(
         select(Conversation)
@@ -35,7 +36,12 @@ async def list_conversations(
         .options(selectinload(Conversation.client))
         .order_by(desc(Conversation.last_message_at))
     )
-    return result.scalars().all()
+    convs = result.scalars().all()
+    print(f"DEBUG INBOX: Found {len(convs)} conversations")
+    for c in convs:
+        print(f"  - Conv {c.id}: Client {c.client_id}, Platform {c.platform}")
+        
+    return convs
 
 @router.get("/conversations/{conversation_id}/messages")
 async def get_conversation_messages(

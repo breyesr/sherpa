@@ -146,6 +146,7 @@ class AIService:
         )
         conv = res.scalars().first()
         if not conv:
+            print(f"DEBUG INBOX: Creating NEW conversation for client {client_id} on {platform}")
             conv = Conversation(
                 business_id=self.business.id,
                 client_id=client_id,
@@ -154,6 +155,8 @@ class AIService:
             )
             self.db.add(conv)
             await self.db.flush()
+        else:
+            print(f"DEBUG INBOX: Found EXISTING conversation {conv.id}")
         return conv
 
     async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:

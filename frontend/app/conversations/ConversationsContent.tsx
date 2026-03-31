@@ -21,10 +21,13 @@ export default function ConversationsContent({ initialConversations, token }: Co
   const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
+      console.log("DEBUG INBOX: Fetching conversations...");
       const res = await fetch(`${API_BASE_URL}/inbox/conversations`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      return res.json();
+      const data = await res.json();
+      console.log("DEBUG INBOX: Received conversations:", data);
+      return data;
     },
     initialData: initialConversations,
     refetchInterval: 5000, // Poll every 5 seconds for new messages
