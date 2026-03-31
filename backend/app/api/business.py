@@ -13,6 +13,7 @@ from app.schemas.business import (
     BusinessProfileCreate, BusinessProfileUpdate, BusinessProfileResponse,
     AssistantConfigUpdate
 )
+from app.schemas.crm import AppointmentResponse
 from app.api.auth import get_current_user
 from app.core.limiter import limiter
 
@@ -108,12 +109,15 @@ async def get_business_stats(
     upcoming = upcoming_res.scalars().all()
     print(f"DEBUG STATS: upcoming_count={len(upcoming)}")
     
+    # 6. Serialize for response
+    serialized_upcoming = [AppointmentResponse.from_orm(a) for a in upcoming]
+    
     return {
         "total_clients": total_clients,
         "total_appointments": total_appointments,
         "flagged_clients": flagged_clients,
         "today_appointments": today_appointments,
-        "upcoming": upcoming,
+        "upcoming": serialized_upcoming,
         "business_name": business.name
     }
 
