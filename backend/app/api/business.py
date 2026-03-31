@@ -49,30 +49,35 @@ async def get_business_stats(
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
     
+    print(f"DEBUG STATS: Fetching for business {business.id} ({business.name})")
+    
     # 1. Total Clients
     client_count_res = await db.execute(
         select(func.count(Client.id)).where(Client.business_id == business.id)
     )
     total_clients = client_count_res.scalar() or 0
+    print(f"DEBUG STATS: total_clients={total_clients}")
     
     # 2. Total Appointments (All time)
     apt_count_res = await db.execute(
         select(func.count(Appointment.id)).where(Appointment.business_id == business.id)
     )
     total_appointments = apt_count_res.scalar() or 0
-
+    print(f"DEBUG STATS: total_appointments={total_appointments}")
+    
     # 3. Flagged Clients (Action Required)
+    # Use a safer check for JSONB
     flagged_count_res = await db.execute(
         select(func.count(Client.id)).where(
             Client.business_id == business.id,
-            func.json_extract_path_text(Client.custom_fields, 'needs_review') == 'true'
+            func.coalesce(func.json_extract_path_text(Client.custom_fields, 'needs_review'), 'false') == 'true'
         )
     )
     flagged_clients = flagged_count_res.scalar() or 0
+    print(f"DEBUG STATS: flagged_clients={flagged_clients}")
     
-    # 3. Today's Appointments
+    # 4. Today's Appointments
     now = datetime.utcnow()
-    # Adjust today to business timezone if needed, but for count UTC is fine for "current 24h"
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
     
@@ -85,8 +90,9 @@ async def get_business_stats(
         )
     )
     today_appointments = today_count_res.scalar() or 0
+    print(f"DEBUG STATS: today_appointments={today_appointments}")
     
-    # 4. Upcoming & Recent (Focus on the last 24h + future)
+    # 5. Upcoming & Recent (Focus on the last 24h + future)
     yesterday = now - timedelta(days=1)
     upcoming_res = await db.execute(
         select(Appointment)
@@ -100,6 +106,7 @@ async def get_business_stats(
         .limit(10)
     )
     upcoming = upcoming_res.scalars().all()
+    print(f"DEBUG STATS: upcoming_count={len(upcoming)}")
     
     return {
         "total_clients": total_clients,
