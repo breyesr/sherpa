@@ -309,6 +309,7 @@ class AIService:
             }},
             {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}},
             {"type": "function", "function": {"name": "get_client_appointments", "description": "List all future scheduled appointments for the current user.", "parameters": {"type": "object", "properties": {}}}},
+            {"type": "function", "function": {"name": "update_client_metadata", "description": "SAVE CLIENT INFO: Store specific custom details about the client (e.g., Pet Name, Allergies, Preferences) as you discover them during chat.", "parameters": {"type": "object", "properties": {"metadata": {"type": "object", "description": "Key-value pairs of information to save"}}}}},
             {"type": "function", "function": {"name": "flag_for_review", "description": "INTERNAL ALERT: Notify the manager that this client needs human assistance because you are stuck or don't have the info requested.", "parameters": {"type": "object", "properties": {"reason": {"type": "string", "description": "What the user asked that you didn't know"}}}}}
         ]
 
@@ -320,6 +321,7 @@ class AIService:
         elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('service_id'), args.get('notes'))
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
         elif name == "get_client_appointments": return await self._get_client_appointments_tool(identifier)
+        elif name == "update_client_metadata": return await self._update_client_metadata_tool(identifier, args.get('metadata'))
         elif name == "flag_for_review": return await self._flag_for_review_tool(identifier, args.get('reason'))
         return "Unknown tool"
 
@@ -596,3 +598,26 @@ class AIService:
         except Exception as e:
             print(f"Error in _flag_for_review_tool: {e}")
             return "Error notifying manager."
+
+    async def _update_client_metadata_tool(self, identifier: str, metadata: dict = None) -> str:
+        """Update the custom_fields JSONB for a client."""
+        if not metadata:
+            return "No information provided to update."
+        try:
+            client_obj = await self._check_client_direct(identifier)
+            if not client_obj.custom_fields:
+                client_obj.custom_fields = {}
+            
+            # Merge new metadata into existing custom_fields
+            updated_fields = dict(client_obj.custom_fields)
+            for key, value in metadata.items():
+                # Sanitize keys
+                clean_key = str(key).lower().replace(" ", "_")
+                updated_fields[clean_key] = value
+            
+            client_obj.custom_fields = updated_fields
+            await self.db.commit()
+            return f"SUCCESS: Client information updated: {', '.join(metadata.keys())}."
+        except Exception as e:
+            print(f"Error in _update_client_metadata_tool: {e}")
+            return "Failed to save client information."
