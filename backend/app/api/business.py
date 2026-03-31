@@ -55,7 +55,13 @@ async def get_business_stats(
     )
     total_clients = client_count_res.scalar() or 0
     
-    # 2. Flagged Clients (Action Required)
+    # 2. Total Appointments (All time)
+    apt_count_res = await db.execute(
+        select(func.count(Appointment.id)).where(Appointment.business_id == business.id)
+    )
+    total_appointments = apt_count_res.scalar() or 0
+
+    # 3. Flagged Clients (Action Required)
     flagged_count_res = await db.execute(
         select(func.count(Client.id)).where(
             Client.business_id == business.id,
@@ -80,12 +86,13 @@ async def get_business_stats(
     )
     today_appointments = today_count_res.scalar() or 0
     
-    # 4. Upcoming (Next 10)
+    # 4. Upcoming & Recent (Focus on the last 24h + future)
+    yesterday = now - timedelta(days=1)
     upcoming_res = await db.execute(
         select(Appointment)
         .where(
             Appointment.business_id == business.id,
-            Appointment.start_time >= now,
+            Appointment.start_time >= yesterday,
             Appointment.status == "scheduled"
         )
         .options(selectinload(Appointment.client), selectinload(Appointment.service))
@@ -96,6 +103,7 @@ async def get_business_stats(
     
     return {
         "total_clients": total_clients,
+        "total_appointments": total_appointments,
         "flagged_clients": flagged_clients,
         "today_appointments": today_appointments,
         "upcoming": upcoming,
