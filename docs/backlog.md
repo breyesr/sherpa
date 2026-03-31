@@ -116,8 +116,10 @@
 - [ ] Task 16.5: Implement WhatsApp Template Management UI and compliance enforcement for 24h window.
 
 ## Epic 17: Dashboard UX Polish & Accessibility
-- [ ] Task 17.1: Implement Global Toast Notifications (e.g., Sonner or React-Toastify) to replace static top-page success messages.
-- [ ] Task 17.2: Refactor Settings navigation to support Anchor/Hash links (e.g., `/settings#crm`) for direct scrolling from shortcuts.
-- [ ] Task 17.3: Optimize Modal responsiveness for dynamic content; implement internal scrolling for long forms to prevent screen overflow.
+- [x] Task 17.1: Implement Global Toast Notifications (e.g., Sonner or React-Toastify) to replace static top-page success messages.
+- [x] Task 17.2: Refactor Settings navigation to support Anchor/Hash links (e.g., `/settings?tab=general`) for direct scrolling from shortcuts.
+- [x] Task 17.3: Optimize Modal responsiveness for dynamic content; implement internal scrolling for long forms to prevent screen overflow.
 - [ ] Task 17.4: Run a comprehensive UX/UI Audit to identify inconsistencies in spacing, typography, and interactive feedback across the dashboard.
-- [ ] Task 17.5: Implement "Dirty State" warnings to prevent users from navigating away with unsaved changes in Settings.
+- [ ] Task 17.5: **Unsaved Changes Guardian**: Implement dirty-state detection in Settings tabs to warn users before navigating away with unsaved modifications.
+- [ ] Task 17.6: **Two-Stage Field Deletion**: Implement "Mark for Deletion" UI for CRM fields; fields remain visible (but dimmed) until the global "Save" button is clicked.
+- [ ] Task 17.7: **Data Retention UI**: Add tooltips explaining that deleting a field definition hides it from the UI but preserves historical data in the JSONB storage.
