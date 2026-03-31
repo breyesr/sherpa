@@ -400,6 +400,13 @@ export interface components {
        * @default UTC
        */
       timezone?: string;
+      /**
+       * Crm Config
+       * @default []
+       */
+      crm_config?: {
+          [key: string]: unknown;
+        }[] | null;
     };
     /** BusinessProfileResponse */
     BusinessProfileResponse: {
@@ -414,6 +421,13 @@ export interface components {
        * @default UTC
        */
       timezone?: string;
+      /**
+       * Crm Config
+       * @default []
+       */
+      crm_config?: {
+          [key: string]: unknown;
+        }[] | null;
       /** Id */
       id: string;
       /** User Id */
@@ -439,6 +453,10 @@ export interface components {
       contact_phone?: string | null;
       /** Timezone */
       timezone?: string | null;
+      /** Crm Config */
+      crm_config?: {
+          [key: string]: unknown;
+        }[] | null;
     };
     /** ClientCreate */
     ClientCreate: {

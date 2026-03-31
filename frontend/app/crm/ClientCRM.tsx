@@ -9,16 +9,29 @@ import { API_BASE_URL } from '@/config';
 
 interface ClientCRMProps {
   initialClients: any[];
+  initialBusiness: any;
   token: string | null;
 }
 
-export default function ClientCRM({ initialClients, token }: ClientCRMProps) {
+export default function ClientCRM({ initialClients, initialBusiness, token }: ClientCRMProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/business/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return res.json();
+    },
+    initialData: initialBusiness,
+    staleTime: 60 * 1000,
+  });
 
   const { data: clients = [], isFetching } = useQuery({
     queryKey: ['clients'],
@@ -181,6 +194,7 @@ export default function ClientCRM({ initialClients, token }: ClientCRMProps) {
         onSuccess={handleSuccess}
         token={token || ''}
         client={selectedClient}
+        business={business}
       />
     </div>
   );

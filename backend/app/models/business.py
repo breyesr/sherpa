@@ -15,6 +15,10 @@ class BusinessProfile(Base):
     timezone = Column(String, nullable=False, default="UTC")
     trial_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
+    
+    # Global CRM Configuration (Epic 13.2)
+    # Store field definitions: [{"key": "pet_name", "label": "Pet Name", "type": "text"}, ...]
+    crm_config = Column(JSON, nullable=True, default=list)
 
     user = relationship("User", back_populates="business_profile")
     assistant_config = relationship("AssistantConfig", back_populates="business_profile", uselist=False, cascade="all, delete-orphan")

@@ -2298,6 +2298,22 @@
             "type": "string",
             "title": "Timezone",
             "default": "UTC"
+          },
+          "crm_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crm Config",
+            "default": []
           }
         },
         "type": "object",
@@ -2338,6 +2354,22 @@
             "type": "string",
             "title": "Timezone",
             "default": "UTC"
+          },
+          "crm_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crm Config",
+            "default": []
           },
           "id": {
             "type": "string",
@@ -2436,6 +2468,21 @@
               }
             ],
             "title": "Timezone"
+          },
+          "crm_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crm Config"
           }
         },
         "type": "object",

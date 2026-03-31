@@ -10,12 +10,14 @@ interface ClientModalProps {
   onSuccess: () => void;
   token: string | null;
   client?: any; // If provided, we are in edit mode
+  business: any;
 }
 
-export default function ClientModal({ isOpen, onClose, onSuccess, token, client }: ClientModalProps) {
+export default function ClientModal({ isOpen, onClose, onSuccess, token, client, business }: ClientModalProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [customFields, setCustomFields] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -26,12 +28,18 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client 
       setName(client.name || '');
       setPhone(client.phone || '');
       setEmail(client.email || '');
+      setCustomFields(client.custom_fields || {});
     } else {
       setName('');
       setPhone('');
       setEmail('');
+      setCustomFields({});
     }
   }, [client, isOpen]);
+
+  const handleCustomFieldChange = (key: string, value: any) => {
+    setCustomFields((prev: any) => ({ ...prev, [key]: value }));
+  };
 
   if (!isOpen) return null;
 
@@ -53,7 +61,7 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ name, phone, email })
+        body: JSON.stringify({ name, phone, email, custom_fields: customFields })
       });
 
       if (!res.ok) throw new Error(`Failed to ${client ? 'update' : 'create'} client`);
@@ -198,6 +206,39 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client 
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
+
+          {/* Dynamic Custom Fields */}
+          {business?.crm_config?.length > 0 && (
+            <div className="pt-4 space-y-6 border-t border-gray-100">
+              <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest">Additional Information</h3>
+              <div className="grid grid-cols-1 gap-6">
+                {business.crm_config.map((field: any) => (
+                  <div key={field.key} className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">{field.label}</label>
+                    {field.type === 'boolean' ? (
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <input 
+                          type="checkbox"
+                          checked={!!customFields[field.key]}
+                          onChange={(e) => handleCustomFieldChange(field.key, e.target.checked)}
+                          className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                        />
+                        <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600 transition-colors">Enabled</span>
+                      </label>
+                    ) : (
+                      <input 
+                        type={field.type === 'number' ? 'number' : 'text'} 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                        value={customFields[field.key] || ''}
+                        onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="pt-6 flex flex-col gap-3">
             <button 

@@ -61,6 +61,7 @@ class BusinessProfileBase(BaseModel):
     category: Optional[str] = None
     contact_phone: Optional[str] = None
     timezone: str = "UTC"
+    crm_config: Optional[List[Dict]] = []
 
 class BusinessProfileCreate(BusinessProfileBase):
     pass
@@ -70,6 +71,7 @@ class BusinessProfileUpdate(BaseModel):
     category: Optional[str] = None
     contact_phone: Optional[str] = None
     timezone: Optional[str] = None
+    crm_config: Optional[List[Dict]] = None
 
 class BusinessProfileResponse(BusinessProfileBase):
     id: str

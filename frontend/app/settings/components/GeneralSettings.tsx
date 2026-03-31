@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -39,13 +39,37 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
     name: business?.name || '', 
     category: business?.category || '', 
     contact_phone: business?.contact_phone || '', 
-    timezone: business?.timezone || 'UTC' 
+    timezone: business?.timezone || 'UTC',
+    crm_config: business?.crm_config || []
   });
   
   const [editUser, setEditUser] = useState({ 
     email: user?.email || '', 
     password: '' 
   });
+
+  const handleAddField = () => {
+    setEditBusiness({
+      ...editBusiness,
+      crm_config: [...editBusiness.crm_config, { key: '', label: '', type: 'text' }]
+    });
+  };
+
+  const handleRemoveField = (index: number) => {
+    const newConfig = [...editBusiness.crm_config];
+    newConfig.splice(index, 1);
+    setEditBusiness({ ...editBusiness, crm_config: newConfig });
+  };
+
+  const handleFieldChange = (index: number, field: string, value: string) => {
+    const newConfig = [...editBusiness.crm_config];
+    newConfig[index] = { ...newConfig[index], [field]: value };
+    // Auto-generate key from label if key is empty
+    if (field === 'label' && !newConfig[index].key) {
+      newConfig[index].key = value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }
+    setEditBusiness({ ...editBusiness, crm_config: newConfig });
+  };
 
   const handleSaveBusiness = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +193,95 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
             </button>
           </div>
         </form>
+      </section>
+
+      {/* CRM Configuration Section */}
+      <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+        <div className="flex items-center justify-between border-b border-gray-50 pb-6">
+          <div className="flex items-center gap-3 text-xl font-bold text-gray-900">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <Database size={22} />
+            </div>
+            <h2>CRM Custom Fields</h2>
+          </div>
+          <button 
+            onClick={handleAddField}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 text-sm"
+          >
+            <Plus size={18} />
+            Add Field
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 font-medium">
+            Define global fields for your clients. These fields will appear in the CRM profiles and the AI will be able to collect this information automatically.
+          </p>
+
+          {editBusiness.crm_config.length === 0 ? (
+            <div className="py-12 text-center border-2 border-dashed border-gray-100 rounded-2xl">
+              <p className="text-gray-400 font-medium">No custom fields defined yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {editBusiness.crm_config.map((field: any, idx: number) => (
+                <div key={idx} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-2xl border border-gray-100 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex-1 w-full space-y-2">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Display Label</label>
+                    <input 
+                      type="text"
+                      value={field.label}
+                      onChange={e => handleFieldChange(idx, 'label', e.target.value)}
+                      placeholder="e.g. Pet Name"
+                      className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all"
+                    />
+                  </div>
+                  <div className="flex-1 w-full space-y-2">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Internal Key</label>
+                    <input 
+                      type="text"
+                      value={field.key}
+                      onChange={e => handleFieldChange(idx, 'key', e.target.value)}
+                      placeholder="e.g. pet_name"
+                      className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all"
+                    />
+                  </div>
+                  <div className="w-full md:w-32 space-y-2">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Type</label>
+                    <select 
+                      value={field.type}
+                      onChange={e => handleFieldChange(idx, 'type', e.target.value)}
+                      className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium appearance-none transition-all"
+                    >
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="boolean">Checkbox</option>
+                    </select>
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveField(idx)}
+                    className="p-2.5 text-gray-400 hover:text-red-500 transition-colors bg-white border border-gray-200 rounded-lg"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {editBusiness.crm_config.length > 0 && (
+            <div className="flex justify-end pt-4">
+              <button 
+                onClick={handleSaveBusiness}
+                disabled={savingBusiness}
+                className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+              >
+                {savingBusiness ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                Save CRM Configuration
+              </button>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Account Section */}
