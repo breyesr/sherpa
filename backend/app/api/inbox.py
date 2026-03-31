@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.business import BusinessProfile
 from app.models.messaging import Conversation, Message
+from app.schemas.messaging import ConversationResponse, MessageResponse
 from app.api.auth import get_current_user
 
 router = APIRouter()
@@ -22,13 +23,12 @@ async def get_user_business(db: AsyncSession, user_id: str) -> BusinessProfile:
         raise HTTPException(status_code=404, detail="Business profile not found")
     return business
 
-@router.get("/conversations")
+@router.get("/conversations", response_model=List[ConversationResponse])
 async def list_conversations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
     business = await get_user_business(db, current_user.id)
-    print(f"DEBUG INBOX: Listing conversations for business {business.id}")
     
     result = await db.execute(
         select(Conversation)
@@ -37,13 +37,9 @@ async def list_conversations(
         .order_by(desc(Conversation.last_message_at))
     )
     convs = result.scalars().all()
-    print(f"DEBUG INBOX: Found {len(convs)} conversations")
-    for c in convs:
-        print(f"  - Conv {c.id}: Client {c.client_id}, Platform {c.platform}")
-        
-    return convs
+    return [ConversationResponse.from_orm(c) for c in convs]
 
-@router.get("/conversations/{conversation_id}/messages")
+@router.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
 async def get_conversation_messages(
     conversation_id: str,
     db: AsyncSession = Depends(get_db),
@@ -67,9 +63,10 @@ async def get_conversation_messages(
         .where(Message.conversation_id == conversation_id)
         .order_by(Message.created_at)
     )
-    return result.scalars().all()
+    messages = result.scalars().all()
+    return [MessageResponse.from_orm(m) for m in messages]
 
-@router.patch("/conversations/{conversation_id}")
+@router.patch("/conversations/{conversation_id}", response_model=ConversationResponse)
 async def update_conversation(
     conversation_id: str,
     data: dict,
@@ -93,4 +90,4 @@ async def update_conversation(
     
     await db.commit()
     await db.refresh(conv)
-    return conv
+    return ConversationResponse.from_orm(conv)
