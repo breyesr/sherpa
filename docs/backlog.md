@@ -131,6 +131,12 @@
 - [ ] Task 18.4: Third-Party CRM Connectors: Sync with HubSpot, Salesforce, or Pipedrive.
 - [ ] Task 18.5: Import Safety & Rollback: "Review before commit" flow and 24h undo capability.
 
+## Epic 19: Operational Hub (Inbox & Dashboard)
+- [ ] Task 19.1: Multi-channel Unified Inbox: Split-screen interface for Telegram/WhatsApp chat management.
+- [ ] Task 19.2: AI-Human Handoff UI: Indicators for flagged chats and "Pause AI" manual toggles.
+- [ ] Task 19.3: Smart Dashboard Overview: "Daily Briefing" widgets for appointments, leads, and alerts.
+- [ ] Task 19.4: Real-time Updates: WebSocket or optimized polling for incoming messages and alerts.
+
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
 - No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).

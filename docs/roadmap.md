@@ -18,8 +18,10 @@ This roadmap outlines the prioritized path to a scalable, production-ready SaaS.
 ## Phase 2: Operational Visibility (The UI Overhaul) (CURRENT)
 *Goal: Provide professional tools for business owners to manage their AI and services.*
 
-- [ ] **Tabbed Settings Redesign (Task 14.1)**:
-    - Categories: General, AI Behavior (Escalation Chain), Service Catalog, Integrations.
+- [x] **Tabbed Settings Redesign (Task 14.1)**: Modular navigation for settings.
+- [ ] **Operational Hub (Epic 19)**:
+    - **Smart Dashboard**: Daily briefing widgets (Today's Agenda, Alerts).
+    - **Unified Inbox**: Human-in-the-loop chat management for Telegram/WhatsApp.
 - [ ] **Service Manager UI (Task 12.2)**:
     - Full CRUD for services with custom attributes.
 - [ ] **Extensible CRM UI (Task 13.3)**:

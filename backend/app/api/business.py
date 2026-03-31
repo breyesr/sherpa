@@ -55,14 +55,18 @@ async def get_business_stats(
     )
     total_clients = client_count_res.scalar() or 0
     
-    # 2. Total Appointments (All time)
-    apt_count_res = await db.execute(
-        select(func.count(Appointment.id)).where(Appointment.business_id == business.id)
+    # 2. Flagged Clients (Action Required)
+    flagged_count_res = await db.execute(
+        select(func.count(Client.id)).where(
+            Client.business_id == business.id,
+            func.json_extract_path_text(Client.custom_fields, 'needs_review') == 'true'
+        )
     )
-    total_appointments = apt_count_res.scalar() or 0
+    flagged_clients = flagged_count_res.scalar() or 0
     
     # 3. Today's Appointments
     now = datetime.utcnow()
+    # Adjust today to business timezone if needed, but for count UTC is fine for "current 24h"
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
     
@@ -76,7 +80,7 @@ async def get_business_stats(
     )
     today_appointments = today_count_res.scalar() or 0
     
-    # 4. Upcoming (Next 5)
+    # 4. Upcoming (Next 10)
     upcoming_res = await db.execute(
         select(Appointment)
         .where(
@@ -84,17 +88,18 @@ async def get_business_stats(
             Appointment.start_time >= now,
             Appointment.status == "scheduled"
         )
-        .options(selectinload(Appointment.client))
+        .options(selectinload(Appointment.client), selectinload(Appointment.service))
         .order_by(Appointment.start_time)
-        .limit(5)
+        .limit(10)
     )
     upcoming = upcoming_res.scalars().all()
     
     return {
         "total_clients": total_clients,
-        "total_appointments": total_appointments,
+        "flagged_clients": flagged_clients,
         "today_appointments": today_appointments,
-        "upcoming": upcoming
+        "upcoming": upcoming,
+        "business_name": business.name
     }
 
 @router.post("/test-chat")
