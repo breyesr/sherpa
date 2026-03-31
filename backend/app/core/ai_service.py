@@ -14,6 +14,7 @@ from sqlalchemy import or_
 from app.models.crm import Appointment, Client
 from app.models.service import Service
 from app.models.integration import Integration
+from app.models.messaging import Conversation, Message
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
@@ -134,17 +135,48 @@ class AIService:
             traceback.print_exc()
             raise
 
+    async def _get_or_create_conversation(self, client_id: str, platform: str, platform_chat_id: str) -> Conversation:
+        """Fetch existing conversation or create a new one."""
+        res = await self.db.execute(
+            select(Conversation).where(
+                Conversation.business_id == self.business.id,
+                Conversation.client_id == client_id,
+                Conversation.platform == platform
+            )
+        )
+        conv = res.scalars().first()
+        if not conv:
+            conv = Conversation(
+                business_id=self.business.id,
+                client_id=client_id,
+                platform=platform,
+                platform_chat_id=platform_chat_id
+            )
+            self.db.add(conv)
+            await self.db.flush()
+        return conv
+
     async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:
         """Entry point for all messaging platforms."""
         try:
             # 1. Identity Stage
             client_obj, is_new = await self._get_client(identifier, metadata)
             normalized_id = Client.normalize_id(identifier)
+            platform = metadata.get("platform", "sandbox") if metadata else "sandbox"
             
-            # 2. Memory Stage
+            # 2. Persistence Stage (Conversations & Messages)
+            conv = await self._get_or_create_conversation(client_obj.id, platform, identifier)
+            
+            # Save incoming user message
+            user_msg_obj = Message(conversation_id=conv.id, role="user", content=user_message)
+            self.db.add(user_msg_obj)
+            conv.last_message_at = datetime.utcnow()
+            await self.db.commit()
+
+            # 3. Memory Stage (Redis for quick LLM context)
             history = await self.memory.get_history(normalized_id)
             
-            # 3. Prompt Construction Stage (Jinja2)
+            # 4. Prompt Construction Stage (Jinja2)
             try:
                 if not prompt_env:
                     raise Exception("Jinja2 environment not initialized")

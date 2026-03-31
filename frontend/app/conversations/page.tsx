@@ -11,17 +11,17 @@ export default async function ConversationsPage() {
     redirect('/auth/login');
   }
 
-  let clients = [];
+  let conversations = [];
   try {
-    const res = await serverFetch('/crm/clients');
+    const res = await serverFetch('/inbox/conversations');
     if (res.ok) {
-      clients = await res.json();
+      conversations = await res.json();
     } else if (res.status === 401) {
       redirect('/auth/login');
     }
   } catch (err) {
-    console.error('Failed to fetch clients for inbox:', err);
+    console.error('Failed to fetch conversations for inbox:', err);
   }
 
-  return <ConversationsContent initialClients={clients} />;
+  return <ConversationsContent initialConversations={conversations} token={token} />;
 }

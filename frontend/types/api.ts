@@ -110,6 +110,18 @@ export interface paths {
     /** Update Service */
     patch: operations["update_service_api_v1_services__service_id__patch"];
   };
+  "/api/v1/inbox/conversations": {
+    /** List Conversations */
+    get: operations["list_conversations_api_v1_inbox_conversations_get"];
+  };
+  "/api/v1/inbox/conversations/{conversation_id}/messages": {
+    /** Get Conversation Messages */
+    get: operations["get_conversation_messages_api_v1_inbox_conversations__conversation_id__messages_get"];
+  };
+  "/api/v1/inbox/conversations/{conversation_id}": {
+    /** Update Conversation */
+    patch: operations["update_conversation_api_v1_inbox_conversations__conversation_id__patch"];
+  };
   "/api/v1/whatsapp/webhook": {
     /**
      * Verify Whatsapp
@@ -1270,6 +1282,68 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ServiceResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Conversations */
+  list_conversations_api_v1_inbox_conversations_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** Get Conversation Messages */
+  get_conversation_messages_api_v1_inbox_conversations__conversation_id__messages_get: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Conversation */
+  update_conversation_api_v1_inbox_conversations__conversation_id__patch: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
