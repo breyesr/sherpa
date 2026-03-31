@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database } from 'lucide-react';
+import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, HelpCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -227,7 +227,15 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
               {editBusiness.crm_config.map((field: any, idx: number) => (
                 <div key={idx} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-2xl border border-gray-100 animate-in slide-in-from-top-2 duration-200">
                   <div className="flex-1 w-full space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Display Label</label>
+                    <div className="flex items-center gap-2">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Label</label>
+                      <div className="group relative">
+                        <HelpCircle size={12} className="text-gray-300 cursor-help" />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl text-center">
+                          The name your customers and AI will see (e.g., "Pet Name").
+                        </div>
+                      </div>
+                    </div>
                     <input 
                       type="text"
                       value={field.label}
@@ -236,18 +244,17 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
                       className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all"
                     />
                   </div>
-                  <div className="flex-1 w-full space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Internal Key</label>
-                    <input 
-                      type="text"
-                      value={field.key}
-                      onChange={e => handleFieldChange(idx, 'key', e.target.value)}
-                      placeholder="e.g. pet_name"
-                      className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all"
-                    />
-                  </div>
-                  <div className="w-full md:w-32 space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Type</label>
+                  
+                  <div className="w-full md:w-48 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Type</label>
+                      <div className="group relative">
+                        <HelpCircle size={12} className="text-gray-300 cursor-help" />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl text-center">
+                          "Text" for names, "Number" for counts, "Checkbox" for yes/no.
+                        </div>
+                      </div>
+                    </div>
                     <select 
                       value={field.type}
                       onChange={e => handleFieldChange(idx, 'type', e.target.value)}

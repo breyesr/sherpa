@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2, Loader2, AlertCircle, Filter } from 'lucide-react';
+import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2, Loader2, AlertCircle, Filter, Settings } from 'lucide-react';
 import ClientModal from '@/components/ClientModal';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -79,13 +79,22 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
           {isFetching && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
         </div>
-        <button 
-          onClick={handleAddClient}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg active:scale-95"
-        >
-          <UserPlus size={18} />
-          Add Client
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => router.push('/settings')}
+            className="flex items-center gap-2 bg-gray-50 text-gray-600 px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-all font-bold border border-gray-200"
+          >
+            <Settings size={18} />
+            Manage Fields
+          </button>
+          <button 
+            onClick={handleAddClient}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg active:scale-95"
+          >
+            <UserPlus size={18} />
+            Add Client
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4">
