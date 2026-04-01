@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ShieldCheck, ExternalLink, CheckCircle2, ChevronRight, Smartphone, MessageSquare } from 'lucide-react';
+import { X, ShieldCheck, ExternalLink, CheckCircle2, ChevronRight, Smartphone, MessageSquare, Copy, Check } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
 interface WhatsAppModalProps {
@@ -12,41 +12,23 @@ interface WhatsAppModalProps {
 }
 
 export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: WhatsAppModalProps) {
-  const [step, setStep] = useState(0); // 0: Select Provider
-  const [provider, setProvider] = useState<'cloud_api' | 'twilio'>('cloud_api');
-  
-  // Cloud API State
-  const [accessToken, setAccessToken] = useState('');
-  const [phoneId, setPhoneId] = useState('');
-  const [accountId, setAccountId] = useState('');
-  
-  // Twilio State
-  const [twilioSid, setTwilioSid] = useState('');
-  const [twilioToken, setTwilioToken] = useState('');
-  const [twilioNumber, setTwilioFromNumber] = useState('');
-
-  const [verifyToken] = useState('sherpa_v1');
+  const [step, setStep] = useState(1); // 1: Welcome, 2: Number, 3: Verify, 4: Success
+  const [businessNumber, setBusinessNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
-
-    const payload = provider === 'twilio' ? {
-      provider_type: 'twilio',
-      account_sid: twilioSid,
-      auth_token: twilioToken,
-      from_number: twilioNumber
-    } : {
-      provider_type: 'cloud_api',
-      access_token: accessToken,
-      phone_number_id: phoneId,
-      business_account_id: accountId,
-      verify_token: verifyToken
-    };
 
     try {
       const res = await fetch(`${API_BASE_URL}/whatsapp/setup`, {
@@ -55,19 +37,21 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          business_number: businessNumber
+        })
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to save WhatsApp settings');
+        throw new Error(errorData.detail || 'Failed to link your number');
       }
 
       setStep(4);
       setTimeout(() => {
         onSuccess();
         onClose();
-        setStep(0);
+        setStep(1);
       }, 2000);
     } catch (err: any) {
       setError(err.message);
@@ -77,173 +61,54 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
 
   const renderStep = () => {
     switch (step) {
-      case 0:
-        return (
-          <div className="space-y-6 text-left">
-            <h3 className="font-bold text-lg text-gray-900">Choose your Connection</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Select how you want to connect your WhatsApp number to Sherpa.
-            </p>
-            <div className="grid grid-cols-1 gap-4">
-              <button 
-                onClick={() => { setProvider('cloud_api'); setStep(1); }}
-                className="flex items-center gap-4 p-5 bg-gray-50 border border-gray-100 rounded-2xl hover:border-green-500 hover:bg-green-50/30 transition-all text-left group"
-              >
-                <div className="w-12 h-12 bg-white rounded-xl border border-gray-100 flex items-center justify-center text-green-600 shadow-sm group-hover:scale-110 transition-transform">
-                  <Smartphone size={24} />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">WhatsApp Cloud API</p>
-                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Official Meta API</p>
-                </div>
-              </button>
-
-              <button 
-                onClick={() => { setProvider('twilio'); setStep(5); }}
-                className="flex items-center gap-4 p-5 bg-gray-50 border border-gray-100 rounded-2xl hover:border-red-500 hover:bg-red-50/30 transition-all text-left group"
-              >
-                <div className="w-12 h-12 bg-white rounded-xl border border-gray-100 flex items-center justify-center text-red-600 shadow-sm group-hover:scale-110 transition-transform">
-                  <MessageSquare size={24} />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Twilio WhatsApp</p>
-                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Sandbox & Production</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        );
-      case 5: // Twilio Credentials
-        return (
-          <div className="space-y-6 text-left animate-in fade-in slide-in-from-right-4 duration-300">
-            <h3 className="font-bold text-lg text-gray-900">Twilio Credentials</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Enter your Twilio details to connect your number.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Account SID</label>
-                <input 
-                  type="text" 
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-mono text-sm"
-                  placeholder="AC..."
-                  value={twilioSid}
-                  onChange={(e) => setTwilioSid(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Auth Token</label>
-                <input 
-                  type="password" 
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                  placeholder="••••••••"
-                  value={twilioToken}
-                  onChange={(e) => setTwilioToken(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">From Phone Number</label>
-                <input 
-                  type="text" 
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                  placeholder="+14155238886"
-                  value={twilioNumber}
-                  onChange={(e) => setTwilioFromNumber(e.target.value)}
-                />
-              </div>
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="text-blue-800 text-xs font-bold uppercase mb-1">Webhook Setup</p>
-                <p className="text-blue-700 text-xs mb-2">Configure this URL in your Twilio Console:</p>
-                <p className="text-[10px] text-blue-900 font-mono break-all">https://your-domain.com/api/v1/whatsapp/webhook/twilio</p>
-              </div>
-            </div>
-            {error && <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl font-medium border border-red-100">{error}</p>}
-            <div className="flex gap-3 pt-2">
-              <button 
-                onClick={() => setStep(0)}
-                className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200"
-              >
-                Back
-              </button>
-              <button 
-                disabled={!twilioSid || !twilioToken || !twilioNumber || loading}
-                onClick={handleSubmit}
-                className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-md"
-              >
-                {loading ? 'Connecting...' : 'Connect Twilio'}
-              </button>
-            </div>
-          </div>
-        );
       case 1:
         return (
-          <div className="space-y-6 text-left">
-            <h3 className="font-bold text-lg text-gray-900">Step 1: Meta Developer Account</h3>
+          <div className="space-y-6 text-left animate-in fade-in duration-300">
+            <h3 className="font-bold text-lg text-gray-900">Connect in seconds</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              To use WhatsApp, you need a Meta Developer account. It's free and takes 5 minutes to set up.
+              Sherpa uses its own global infrastructure to connect your WhatsApp. You don't need any complex accounts or API keys.
             </p>
             <div className="space-y-3">
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="w-6 h-6 bg-white border rounded flex items-center justify-center shrink-0 text-xs font-bold text-gray-400">1</div>
-                <p className="text-sm text-gray-700">Go to <b>developers.facebook.com</b> and create an account.</p>
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <CheckCircle2 size={18} className="text-blue-600" />
+                <p className="text-sm font-bold text-blue-900">Zero Technical Knowledge required</p>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="w-6 h-6 bg-white border rounded flex items-center justify-center shrink-0 text-xs font-bold text-gray-400">2</div>
-                <p className="text-sm text-gray-700">Create a new <b>"Other"</b> app and select <b>"Business"</b> type.</p>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="w-6 h-6 bg-white border rounded flex items-center justify-center shrink-0 text-xs font-bold text-gray-400">3</div>
-                <p className="text-sm text-gray-700">Add <b>"WhatsApp"</b> to your app from the dashboard.</p>
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <CheckCircle2 size={18} className="text-blue-600" />
+                <p className="text-sm font-bold text-blue-900">No Twilio or Meta accounts needed</p>
               </div>
             </div>
             <button 
               onClick={() => setStep(2)}
-              className="w-full py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"
             >
-              I have my Meta App ready <ChevronRight size={18} />
+              Let's Start <ChevronRight size={18} />
             </button>
           </div>
         );
       case 2:
         return (
-          <div className="space-y-6 text-left">
-            <h3 className="font-bold text-lg text-gray-900">Step 2: WhatsApp Credentials</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Find these in the <b>WhatsApp {'\u003E'} API Setup</b> section of your Meta App.
-            </p>
+          <div className="space-y-6 text-left animate-in slide-in-from-right-4 duration-300">
+            <h3 className="font-bold text-lg text-gray-900">What's your number?</h3>
+            <p className="text-gray-600 text-sm">Enter the phone number you'll use for your business.</p>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Phone Number ID</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">WhatsApp Number</label>
                 <input 
                   type="text" 
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
-                  placeholder="e.g. 1092837465..."
-                  value={phoneId}
-                  onChange={(e) => setPhoneId(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Business Account ID</label>
-                <input 
-                  type="text" 
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
-                  placeholder="e.g. 29384756..."
-                  value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-lg font-bold"
+                  placeholder="+1 234 567 890"
+                  value={businessNumber}
+                  onChange={(e) => setBusinessNumber(e.target.value)}
                 />
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3">
+              <button onClick={() => setStep(1)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">Back</button>
               <button 
-                onClick={() => setStep(1)}
-                className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200"
-              >
-                Back
-              </button>
-              <button 
-                disabled={!phoneId || !accountId}
+                disabled={!businessNumber}
                 onClick={() => setStep(3)}
-                className="flex-[2] py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all shadow-md"
+                className="flex-[2] py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all shadow-md disabled:opacity-50"
               >
                 Next Step
               </button>
@@ -252,57 +117,51 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
         );
       case 3:
         return (
-          <div className="space-y-6 text-left">
-            <h3 className="font-bold text-lg text-gray-900">Step 3: Access Token</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Enter your <b>Permanent Access Token</b>. This ensures your assistant stays connected forever.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">System User Access Token</label>
-                <textarea 
-                  rows={3}
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none font-mono text-xs"
-                  placeholder="EAAG..."
-                  value={accessToken}
-                  onChange={(e) => setAccessToken(e.target.value)}
-                />
+          <div className="space-y-6 text-left animate-in slide-in-from-right-4 duration-300">
+            <h3 className="font-bold text-lg text-gray-900">Final Step: Verification</h3>
+            <p className="text-gray-600 text-sm">Send this exact code from your WhatsApp to our master number to link your account.</p>
+            
+            <div className="bg-gray-900 text-white p-6 rounded-[2rem] space-y-4 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <MessageSquare size={100} />
               </div>
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="text-blue-800 text-xs font-bold uppercase mb-1">Webhook Configuration</p>
-                <p className="text-blue-700 text-xs mb-2">Set these in the <b>WhatsApp {'>'} Configuration</b> tab:</p>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-blue-900"><b>CALLBACK URL:</b> https://your-domain.com/api/v1/whatsapp/webhook</p>
-                  <p className="text-[10px] text-blue-900"><b>VERIFY TOKEN:</b> {verifyToken}</p>
+              <div className="relative z-10 space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest">Send this code</p>
+                  <button onClick={() => handleCopy('join flower-leaf')} className="text-gray-400 hover:text-white transition-colors">
+                    {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <p className="text-3xl font-black tracking-tighter">join flower-leaf</p>
+                <div className="pt-2 border-t border-gray-800">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">To this number</p>
+                  <p className="text-lg font-bold">+1 415 523 8886</p>
                 </div>
               </div>
             </div>
+
             {error && <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl font-medium border border-red-100">{error}</p>}
+            
             <div className="flex gap-3">
+              <button onClick={() => setStep(2)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">Back</button>
               <button 
-                onClick={() => setStep(2)}
-                className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
-              >
-                Back
-              </button>
-              <button 
-                disabled={!accessToken || loading}
                 onClick={handleSubmit}
-                className="flex-[2] py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                disabled={loading}
+                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
               >
-                {loading ? 'Finalizing...' : 'Complete Connection'}
+                {loading ? 'Verifying...' : "I've sent the code"}
               </button>
             </div>
           </div>
         );
       case 4:
         return (
-          <div className="text-center py-12 space-y-4">
+          <div className="text-center py-12 space-y-4 animate-in zoom-in duration-500">
             <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 size={48} />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">WhatsApp Live!</h2>
-            <p className="text-gray-500">Your AI assistant is now ready to handle real WhatsApp messages.</p>
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Connected!</h2>
+            <p className="text-gray-500 font-medium">Your WhatsApp number is now managed by Sherpa.</p>
           </div>
         );
       default:

@@ -145,17 +145,13 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
 @limiter.limit("60/minute")
 async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Multi-tenant Twilio Webhook.
-    Identifies the business by the 'To' number and routes to the correct AIService.
+    Multi-tenant Twilio Webhook (ISV Platform Model).
     """
-    print("!!! TWILIO WHATSAPP WEBHOOK PING RECEIVED !!!")
+    print("!!! TWILIO PLATFORM WEBHOOK PING RECEIVED !!!")
     try:
-        # Twilio sends data as Form URL Encoded
         form_data = await request.form()
         payload = dict(form_data)
-        print(f"DEBUG: Incoming Twilio Payload: {payload}")
         
-        # Twilio phone numbers come as 'whatsapp:+123456789'
         sender_phone = payload.get("From", "").replace("whatsapp:", "")
         to_phone = payload.get("To", "").replace("whatsapp:", "")
         text = payload.get("Body")
@@ -164,63 +160,52 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         if not text:
             return Response(content="<Response></Response>", media_type="text/xml")
 
-        # 1. Multi-Tenant Lookup: Find integration by Twilio 'To' number
-        # We search in the settings JSON for the twilio_from_number
+        # LOGIC FOR MULTI-TENANCY:
+        # 1. In Production: Each business has its own 'To' number.
+        # 2. In Sandbox: All businesses share the same 'To' number.
+        
+        # Search for integration by the business's registered WhatsApp number
+        # For Sandbox testing, we'll try to find if the sender_phone is already associated with a client 
+        # but that's for messages. For the FIRST connection, we need a mapping.
+        
         result = await db.execute(
-            select(Integration).where(
-                Integration.provider == 'whatsapp'
-            )
+            select(Integration).where(Integration.provider == 'whatsapp')
         )
         all_wa = result.scalars().all()
         
-        # Identify the specific tenant
+        # Strategy A: Match by 'To' number (Production / Specific Senders)
         integration = next((i for i in all_wa if i.settings.get("twilio_from_number") == to_phone), None)
         
-        # Fallback for initial Sandbox testing if only one integration exists
-        if not integration and len(all_wa) == 1:
-            integration = all_wa[0]
+        # Strategy B: Sandbox Fallback (If To is the global sandbox number, we need to know which business to route to)
+        # For now, we'll route to the first one available for testing, 
+        # or we could use a 'State' in Redis to map a sender to a business during onboarding.
+        if not integration and to_phone == settings.TWILIO_WHATSAPP_NUMBER:
+            if len(all_wa) > 0:
+                integration = all_wa[0] # Test fallback
 
         if not integration:
-            print(f"ERROR: No business found for Twilio number {to_phone}. Dropping message.")
+            print(f"ERROR: Routing failed for {to_phone}. Register this number in Sherpa first.")
             return Response(content="<Response></Response>", media_type="text/xml")
 
-        # 2. Fetch the Business and its AI Configuration
+        # Fetch the Business
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == integration.business_id)
             .options(selectinload(BusinessProfile.assistant_config))
         )
         business = result.scalars().first()
-        if not business:
-            print(f"ERROR: Business profile missing for integration {integration.id}")
-            return Response(content="<Response></Response>", media_type="text/xml")
-
-        # 3. Process with AI Service
+        
         from app.core.ai_service import AIService
         ai = AIService(business, db)
-        
-        meta = {
-            "platform": "whatsapp",
-            "name": profile_name
-        }
-        
-        try:
-            response_text = await ai.get_response(sender_phone, text, meta)
-        except Exception as e:
-            print(f"ERROR: AI Processing failed for Twilio: {e}")
-            traceback.print_exc()
-            response_text = "Lo siento, estamos experimentando una falla técnica. Por favor intenta más tarde."
+        response_text = await ai.get_response(sender_phone, text, {"platform": "whatsapp", "name": profile_name})
 
-        # 4. Reply via Twilio TwiML (The required XML response)
         from twilio.twiml.messaging_response import MessagingResponse
         twiml = MessagingResponse()
         twiml.message(response_text)
-        
         return Response(content=str(twiml), media_type="text/xml")
 
     except Exception as e:
-        print(f"CRITICAL: Twilio Webhook Crash: {e}")
-        traceback.print_exc()
+        print(f"CRITICAL: Twilio Webhook Error: {e}")
         return Response(content="<Response></Response>", media_type="text/xml")
 
 @router.post("/setup")
@@ -230,54 +215,33 @@ async def setup_whatsapp(
     current_user: Any = Depends(get_current_user)
 ):
     """
-    Unified Setup: Supports both WhatsApp Cloud API and Twilio.
-    This flexibility is key for the "One-Click" future.
+    Simplified Setup (Option B): Users only provide their number.
+    The Platform's master keys are used automatically.
     """
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
     business = result.scalars().first()
-    if not business:
-        raise HTTPException(status_code=404, detail="Business not found")
+    if not business: raise HTTPException(status_code=404, detail="Business not found")
 
-    provider_type = data.get("provider_type", "cloud_api") 
-    
+    # In Option B, the user only provides their registered business number
+    business_number = data.get("business_number")
+    if not business_number:
+        raise HTTPException(status_code=400, detail="Business WhatsApp number is required")
+
     result = await db.execute(
         select(Integration).where(Integration.business_id == business.id, Integration.provider == 'whatsapp')
     )
     integration = result.scalars().first()
     
     if not integration:
-        integration = Integration(business_id=business.id, provider='whatsapp', settings={})
+        integration = Integration(business_id=business.id, provider='whatsapp')
         db.add(integration)
 
-    if provider_type == "twilio":
-        account_sid = data.get("account_sid")
-        auth_token = data.get("auth_token")
-        from_number = data.get("from_number") 
-        
-        if not account_sid or not auth_token or not from_number:
-            raise HTTPException(status_code=400, detail="Twilio requires Account SID, Auth Token, and From Number")
-        
-        integration.access_token = encrypt_token(auth_token)
-        integration.settings = {
-            "provider_type": "twilio",
-            "twilio_account_sid": account_sid,
-            "twilio_from_number": from_number.replace("whatsapp:", "").strip()
-        }
-    else:
-        # Standard WhatsApp Cloud API
-        access_token = data.get("access_token")
-        phone_id = data.get("phone_number_id")
-        
-        if not access_token or not phone_id:
-            raise HTTPException(status_code=400, detail="Cloud API requires Access Token and Phone ID")
-
-        integration.access_token = encrypt_token(access_token)
-        integration.settings = {
-            "provider_type": "cloud_api",
-            "phone_number_product_id": phone_id,
-            "business_account_id": data.get("business_account_id"),
-            "verify_token": data.get("verify_token")
-        }
+    # Use Platform keys (no longer storing them per user in the DB)
+    integration.settings = {
+        "provider_type": "twilio_platform",
+        "twilio_from_number": business_number.replace("whatsapp:", "").strip(),
+        "is_sandbox": business_number == settings.TWILIO_WHATSAPP_NUMBER
+    }
     
     await db.commit()
     return {"status": "success"}

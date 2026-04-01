@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = "PLACEHOLDER"
     BASE_URL: str = "http://localhost:8000"
 
+    # TWILIO PLATFORM SETTINGS (Option B: ISV Model)
+    # These are only for the Main Admin / Platform owner
+    TWILIO_ACCOUNT_SID: str | None = None
+    TWILIO_AUTH_TOKEN: str | None = None
+    TWILIO_WHATSAPP_NUMBER: str | None = None # Master sandbox number or main platform number
+
     model_config = {
         "case_sensitive": True,
         "env_file": ".env",
