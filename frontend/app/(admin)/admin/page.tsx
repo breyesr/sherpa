@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Plus, Trash2, Edit2, UserPlus } from 'lucide-react';
+import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Plus, Trash2, Edit2, UserPlus, MessageSquare } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
 export default function AdminSettingsPage() {
@@ -17,7 +17,10 @@ export default function AdminSettingsPage() {
     GEMINI_API_KEY: '',
     CLAUDE_API_KEY: '',
     ACTIVE_AI_PROVIDER: 'openai',
-    WHATSAPP_VERIFY_TOKEN: 'sherpa_v1'
+    WHATSAPP_VERIFY_TOKEN: 'sherpa_v1',
+    TWILIO_ACCOUNT_SID: '',
+    TWILIO_AUTH_TOKEN: '',
+    TWILIO_WHATSAPP_NUMBER: ''
   });
   
   // User Management State
@@ -262,6 +265,48 @@ export default function AdminSettingsPage() {
               <input type="password" value={settings.OPENAI_API_KEY} onChange={e => setSettings({...settings, OPENAI_API_KEY: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl" placeholder="OpenAI Key" />
               <input type="password" value={settings.GEMINI_API_KEY} onChange={e => setSettings({...settings, GEMINI_API_KEY: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl" placeholder="Gemini Key" />
               <input type="password" value={settings.CLAUDE_API_KEY} onChange={e => setSettings({...settings, CLAUDE_API_KEY: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl" placeholder="Claude Key" />
+            </div>
+          </section>
+
+          {/* Twilio Platform Section */}
+          <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-6">
+            <div className="flex items-center gap-3 text-xl font-bold text-gray-900">
+              <MessageSquare className="text-red-600" />
+              <h2>Twilio Platform (ISV Model)</h2>
+            </div>
+            <p className="text-sm text-gray-500">Configure the master Twilio account that will power all business numbers.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Account SID</label>
+                <input 
+                  type="text" 
+                  value={settings.TWILIO_ACCOUNT_SID} 
+                  onChange={e => setSettings({...settings, TWILIO_ACCOUNT_SID: e.target.value})} 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-red-500 outline-none" 
+                  placeholder="AC..." 
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Auth Token</label>
+                <input 
+                  type="password" 
+                  value={settings.TWILIO_AUTH_TOKEN} 
+                  onChange={e => setSettings({...settings, TWILIO_AUTH_TOKEN: e.target.value})} 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none" 
+                  placeholder="••••••••" 
+                />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Master WhatsApp Number (Sandbox/Production)</label>
+                <input 
+                  type="text" 
+                  value={settings.TWILIO_WHATSAPP_NUMBER} 
+                  onChange={e => setSettings({...settings, TWILIO_WHATSAPP_NUMBER: e.target.value})} 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-red-500 outline-none" 
+                  placeholder="14155238886" 
+                />
+                <p className="text-[10px] text-gray-400 italic mt-1">Numbers only, no plus sign. Used for sandbox routing and default identification.</p>
+              </div>
             </div>
           </section>
 
