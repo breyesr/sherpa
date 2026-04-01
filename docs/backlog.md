@@ -88,6 +88,7 @@
 - [x] Task 12.4: **AI Brain Upgrade**: Update AIService (Jinja2) to inject the active service catalog and required fields into the prompt.
 - [x] Task 12.5: **Smart Escalation Chain**: Implement behavioral toggles (Honesty, Internal Alert, Lead Capture, Emergency Phone) for AI fallback handling.
 - [x] Task 12.6: Refactor `create_appointment` tool to capture and store custom service attributes in JSONB metadata.
+- [ ] Task 12.7: **Smart Context Awareness**: Skip the 'Ask for Reason' requirement if the user has already selected a specific service from the catalog (The service name is the reason).
 
 ## Epic 13: Extensible CRM Client Profiles
 - [x] Task 13.1: Add JSONB `custom_fields` column to Client model and update schemas.
@@ -122,7 +123,11 @@
 - [ ] Task 17.4: Run a comprehensive UX/UI Audit.
 - [ ] Task 17.5: **Unsaved Changes Guardian**: Warning before navigating away with unsaved modifications.
 - [ ] Task 17.6: **Two-Stage Field Deletion**: Soft-delete UI for CRM fields.
-- [ ] Task 17.7: **Data Retention UI**: Tooltips explaining JSONB preservation.
+- [ ] Task 17.7: **Data Retention UI**: Add tooltips explaining JSONB preservation.
+- [ ] Task 17.8: **Intelligent Calendar Sorting**: Chronological ordering and visual distinction for past appointments (dimmed).
+- [ ] Task 17.9: **Enhanced Appointment Statuses**: Implement UI for scheduled, confirmed, cancelled, and completed states.
+- [ ] Task 17.10: **Dashboard Fix**: Ensure "Today's Schedule" strictly shows current date; move future appointments to a separate "Coming Up" list.
+
 
 ## Epic 18: Bulk Data Portability & CRM Sync
 - [ ] Task 18.1: High-Performance Bulk Importer (Backend): Background processing for CSV/XLSX files using Celery.
