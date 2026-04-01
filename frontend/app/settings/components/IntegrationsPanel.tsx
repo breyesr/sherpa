@@ -75,7 +75,9 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
 
   const isGoogleConnected = business?.integrations?.some((i: any) => i.provider === 'google');
   const telegramBot = business?.integrations?.find((i: any) => i.provider === 'telegram');
-  const isWhatsAppConnected = business?.integrations?.some((i: any) => i.provider === 'whatsapp');
+  const whatsappIntegration = business?.integrations?.find((i: any) => i.provider === 'whatsapp');
+  const isWhatsAppConnected = !!whatsappIntegration;
+  const whatsappProvider = whatsappIntegration?.settings?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
 
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">
@@ -177,17 +179,27 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
           {/* WhatsApp */}
           <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50/50 rounded-2xl border border-gray-100 gap-4">
             <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center text-green-500">
+              <div className={`w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center ${isWhatsAppConnected ? 'text-green-500' : 'text-gray-400'}`}>
                 <MessageSquare size={28} />
               </div>
               <div>
                 <p className="font-bold text-lg text-gray-900">WhatsApp Business</p>
-                <p className="text-sm text-gray-500">Automate client messaging via Meta API.</p>
+                <p className="text-sm text-gray-500">
+                  {isWhatsAppConnected 
+                    ? `Connected via ${whatsappProvider}` 
+                    : 'Automate client messaging via Twilio or Meta API.'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               {isWhatsAppConnected ? (
                 <div className="flex items-center gap-3">
+                  {whatsappIntegration?.settings?.twilio_from_number && (
+                    <div className="text-right mr-2">
+                      <p className="text-sm font-bold text-gray-900">+{whatsappIntegration.settings.twilio_from_number}</p>
+                      <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Twilio Active</p>
+                    </div>
+                  )}
                   <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
                     <CheckCircle2 size={16} />
                     Connected

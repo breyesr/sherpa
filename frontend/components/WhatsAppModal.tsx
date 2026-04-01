@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ShieldCheck, ExternalLink, CheckCircle2, ChevronRight } from 'lucide-react';
+import { X, ShieldCheck, ExternalLink, CheckCircle2, ChevronRight, Smartphone, MessageSquare } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
 interface WhatsAppModalProps {
@@ -12,10 +12,19 @@ interface WhatsAppModalProps {
 }
 
 export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: WhatsAppModalProps) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // 0: Select Provider
+  const [provider, setProvider] = useState<'cloud_api' | 'twilio'>('cloud_api');
+  
+  // Cloud API State
   const [accessToken, setAccessToken] = useState('');
   const [phoneId, setPhoneId] = useState('');
   const [accountId, setAccountId] = useState('');
+  
+  // Twilio State
+  const [twilioSid, setTwilioSid] = useState('');
+  const [twilioToken, setTwilioToken] = useState('');
+  const [twilioNumber, setTwilioFromNumber] = useState('');
+
   const [verifyToken] = useState('sherpa_v1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,19 +35,27 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
     setLoading(true);
     setError('');
 
+    const payload = provider === 'twilio' ? {
+      provider_type: 'twilio',
+      account_sid: twilioSid,
+      auth_token: twilioToken,
+      from_number: twilioNumber
+    } : {
+      provider_type: 'cloud_api',
+      access_token: accessToken,
+      phone_number_id: phoneId,
+      business_account_id: accountId,
+      verify_token: verifyToken
+    };
+
     try {
-      const res = await fetch(`${API_BASE_URL}/whatsapp/link`, {
+      const res = await fetch(`${API_BASE_URL}/whatsapp/setup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          access_token: accessToken,
-          phone_number_id: phoneId,
-          business_account_id: accountId,
-          verify_token: verifyToken
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -50,7 +67,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
       setTimeout(() => {
         onSuccess();
         onClose();
-        setStep(1);
+        setStep(0);
       }, 2000);
     } catch (err: any) {
       setError(err.message);
@@ -60,6 +77,104 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
 
   const renderStep = () => {
     switch (step) {
+      case 0:
+        return (
+          <div className="space-y-6 text-left">
+            <h3 className="font-bold text-lg text-gray-900">Choose your Connection</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Select how you want to connect your WhatsApp number to Sherpa.
+            </p>
+            <div className="grid grid-cols-1 gap-4">
+              <button 
+                onClick={() => { setProvider('cloud_api'); setStep(1); }}
+                className="flex items-center gap-4 p-5 bg-gray-50 border border-gray-100 rounded-2xl hover:border-green-500 hover:bg-green-50/30 transition-all text-left group"
+              >
+                <div className="w-12 h-12 bg-white rounded-xl border border-gray-100 flex items-center justify-center text-green-600 shadow-sm group-hover:scale-110 transition-transform">
+                  <Smartphone size={24} />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">WhatsApp Cloud API</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Official Meta API</p>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => { setProvider('twilio'); setStep(5); }}
+                className="flex items-center gap-4 p-5 bg-gray-50 border border-gray-100 rounded-2xl hover:border-red-500 hover:bg-red-50/30 transition-all text-left group"
+              >
+                <div className="w-12 h-12 bg-white rounded-xl border border-gray-100 flex items-center justify-center text-red-600 shadow-sm group-hover:scale-110 transition-transform">
+                  <MessageSquare size={24} />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Twilio WhatsApp</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Sandbox & Production</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        );
+      case 5: // Twilio Credentials
+        return (
+          <div className="space-y-6 text-left animate-in fade-in slide-in-from-right-4 duration-300">
+            <h3 className="font-bold text-lg text-gray-900">Twilio Credentials</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Enter your Twilio details to connect your number.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Account SID</label>
+                <input 
+                  type="text" 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-mono text-sm"
+                  placeholder="AC..."
+                  value={twilioSid}
+                  onChange={(e) => setTwilioSid(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Auth Token</label>
+                <input 
+                  type="password" 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                  placeholder="••••••••"
+                  value={twilioToken}
+                  onChange={(e) => setTwilioToken(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">From Phone Number</label>
+                <input 
+                  type="text" 
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                  placeholder="+14155238886"
+                  value={twilioNumber}
+                  onChange={(e) => setTwilioFromNumber(e.target.value)}
+                />
+              </div>
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-blue-800 text-xs font-bold uppercase mb-1">Webhook Setup</p>
+                <p className="text-blue-700 text-xs mb-2">Configure this URL in your Twilio Console:</p>
+                <p className="text-[10px] text-blue-900 font-mono break-all">https://your-domain.com/api/v1/whatsapp/webhook/twilio</p>
+              </div>
+            </div>
+            {error && <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl font-medium border border-red-100">{error}</p>}
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setStep(0)}
+                className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200"
+              >
+                Back
+              </button>
+              <button 
+                disabled={!twilioSid || !twilioToken || !twilioNumber || loading}
+                onClick={handleSubmit}
+                className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-md"
+              >
+                {loading ? 'Connecting...' : 'Connect Twilio'}
+              </button>
+            </div>
+          </div>
+        );
       case 1:
         return (
           <div className="space-y-6 text-left">
