@@ -121,8 +121,8 @@
 - [x] Task 17.2: Refactor Settings navigation to support Anchor/Hash links (e.g., `/settings?tab=general`).
 - [x] Task 17.3: Optimize Modal responsiveness for dynamic content; implement internal scrolling.
 - [ ] Task 17.4: Run a comprehensive UX/UI Audit.
-- [ ] Task 17.5: **Unsaved Changes Guardian**: Warning before navigating away with unsaved modifications.
-- [ ] Task 17.6: **Two-Stage Field Deletion**: Soft-delete UI for CRM fields.
+- [x] Task 17.5: **Unsaved Changes Guardian**: Global implementation of warnings before navigating away or switching tabs with unsaved modifications (Applied to: General, Assistant, Services).
+- [x] Task 17.6: **Two-Stage Field Deletion**: Soft-delete UI for CRM fields and Service catalog items to prevent accidental data loss.
 - [ ] Task 17.7: **Data Retention UI**: Add tooltips explaining JSONB preservation.
 - [ ] Task 17.8: **Intelligent Calendar Sorting**: Chronological ordering and visual distinction for past appointments (dimmed).
 - [ ] Task 17.9: **Enhanced Appointment Statuses**: Implement UI for scheduled, confirmed, cancelled, and completed states.
@@ -141,6 +141,15 @@
 - [ ] Task 19.2: AI-Human Handoff UI: Indicators for flagged chats and "Pause AI" manual toggles.
 - [ ] Task 19.3: Smart Dashboard Overview: "Daily Briefing" widgets for appointments, leads, and alerts.
 - [ ] Task 19.4: Real-time Updates: WebSocket or optimized polling for incoming messages and alerts.
+
+## Epic 20: Advanced Calendar Management & Agenda View
+- [x] Task 20.1: **Action-Oriented Agenda Sort**: Implement default sorting as 'Upcoming First' (Soonest Ascending) and 'Past' (Recent Descending).
+- [x] Task 20.2: **Calendar Tab System**: Implement a toggle or tabbed view to separate `[Upcoming]` and `[Past]` appointments to reduce visual noise.
+- [ ] Task 20.3: **Global Calendar Filter Bar**: Implement a unified filter bar above the calendar with:
+    - Fuzzy search for Client Name/Service/Notes.
+    - Date Range picker with quick-select chips (Today, This Week, Next Month).
+    - Status-based multi-select filter (Scheduled, Confirmed, Cancelled, Completed).
+- [ ] Task 20.4: **Enhanced Sorting Controls**: Add interactive column headers (Event/Client, Date & Time, Status) to allow manual overrides of the default sort.
 
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
