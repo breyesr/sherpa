@@ -14,6 +14,7 @@ from app.api.auth import get_current_user
 from app.core.security import encrypt_token, decrypt_token
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.system_config import ConfigService
 
 router = APIRouter()
 
@@ -177,9 +178,8 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         integration = next((i for i in all_wa if i.settings.get("twilio_from_number") == to_phone), None)
         
         # Strategy B: Sandbox Fallback (If To is the global sandbox number, we need to know which business to route to)
-        # For now, we'll route to the first one available for testing, 
-        # or we could use a 'State' in Redis to map a sender to a business during onboarding.
-        if not integration and to_phone == settings.TWILIO_WHATSAPP_NUMBER:
+        master_number = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
+        if not integration and to_phone == master_number:
             if len(all_wa) > 0:
                 integration = all_wa[0] # Test fallback
 
@@ -237,10 +237,11 @@ async def setup_whatsapp(
         db.add(integration)
 
     # Use Platform keys (no longer storing them per user in the DB)
+    master_number = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
     integration.settings = {
         "provider_type": "twilio_platform",
         "twilio_from_number": business_number.replace("whatsapp:", "").strip(),
-        "is_sandbox": business_number == settings.TWILIO_WHATSAPP_NUMBER
+        "is_sandbox": business_number.replace("whatsapp:", "").strip() == master_number
     }
     
     await db.commit()
