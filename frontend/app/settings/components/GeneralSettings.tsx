@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, HelpCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -28,25 +28,36 @@ interface GeneralSettingsProps {
   user: any;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function GeneralSettings({ business, user, token, onMessage }: GeneralSettingsProps) {
+export default function GeneralSettings({ business, user, token, onMessage, onDirtyChange }: GeneralSettingsProps) {
   const queryClient = useQueryClient();
   const [savingBusiness, setSavingBusiness] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
 
-  const [editBusiness, setEditBusiness] = useState({ 
+  const initialBusinessData = { 
     name: business?.name || '', 
     category: business?.category || '', 
     contact_phone: business?.contact_phone || '', 
     timezone: business?.timezone || 'UTC',
     crm_config: business?.crm_config || []
-  });
-  
-  const [editUser, setEditUser] = useState({ 
+  };
+
+  const initialUserData = { 
     email: user?.email || '', 
     password: '' 
-  });
+  };
+
+  const [editBusiness, setEditBusiness] = useState(initialBusinessData);
+  const [editUser, setEditUser] = useState(initialUserData);
+
+  // Dirty checking
+  useEffect(() => {
+    const isBizDirty = JSON.stringify(editBusiness) !== JSON.stringify(initialBusinessData);
+    const isUserDirty = JSON.stringify(editUser) !== JSON.stringify(initialUserData);
+    onDirtyChange?.(isBizDirty || isUserDirty);
+  }, [editBusiness, editUser, business, user, onDirtyChange]);
 
   const handleAddField = () => {
     setEditBusiness({
@@ -74,6 +85,11 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
   const handleSaveBusiness = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingBusiness(true);
+    
+    // Filter out soft-deleted fields before saving
+    const finalCrmConfig = editBusiness.crm_config.filter((f: any) => !f.is_deleted);
+    const payload = { ...editBusiness, crm_config: finalCrmConfig };
+
     try {
       const res = await fetch(`${API_BASE_URL}/business/me`, {
         method: 'PATCH',
@@ -81,10 +97,12 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editBusiness)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         onMessage({ type: 'success', text: 'Business profile updated successfully!' });
+        // Update local state to remove the deleted items from view
+        setEditBusiness(prev => ({ ...prev, crm_config: finalCrmConfig }));
         queryClient.invalidateQueries({ queryKey: ['business'] });
       } else {
         throw new Error('Failed to update business profile');
@@ -224,55 +242,72 @@ export default function GeneralSettings({ business, user, token, onMessage }: Ge
             </div>
           ) : (
             <div className="space-y-3">
-              {editBusiness.crm_config.map((field: any, idx: number) => (
-                <div key={idx} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-2xl border border-gray-100 animate-in slide-in-from-top-2 duration-200">
-                  <div className="flex-1 w-full space-y-2">
-                    <div className="flex items-center gap-2">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Label</label>
-                      <div className="group relative">
-                        <HelpCircle size={12} className="text-gray-300 cursor-help" />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl text-center">
-                          The name your customers and AI will see (e.g., "Pet Name").
-                        </div>
+              {editBusiness.crm_config.map((field: any, idx: number) => {
+                const isSoftDeleted = field.is_deleted;
+                
+                return (
+                  <div key={idx} className={`flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-2xl border transition-all duration-200 ${isSoftDeleted ? 'border-red-100 bg-red-50/30 opacity-60' : 'border-gray-100'}`}>
+                    <div className="flex-1 w-full space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Label</label>
+                        {isSoftDeleted && (
+                          <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-black uppercase tracking-tighter">To be deleted</span>
+                        )}
                       </div>
+                      <input 
+                        type="text"
+                        value={field.label}
+                        disabled={isSoftDeleted}
+                        onChange={e => handleFieldChange(idx, 'label', e.target.value)}
+                        placeholder="e.g. Pet Name"
+                        className={`w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all ${isSoftDeleted ? 'line-through text-gray-400' : ''}`}
+                      />
                     </div>
-                    <input 
-                      type="text"
-                      value={field.label}
-                      onChange={e => handleFieldChange(idx, 'label', e.target.value)}
-                      placeholder="e.g. Pet Name"
-                      className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all"
-                    />
-                  </div>
-                  
-                  <div className="w-full md:w-48 space-y-2">
-                    <div className="flex items-center gap-2">
+                    
+                    <div className="w-full md:w-48 space-y-2">
                       <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Type</label>
-                      <div className="group relative">
-                        <HelpCircle size={12} className="text-gray-300 cursor-help" />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl text-center">
-                          "Text" for names, "Number" for counts, "Checkbox" for yes/no.
-                        </div>
-                      </div>
+                      <select 
+                        value={field.type}
+                        disabled={isSoftDeleted}
+                        onChange={e => handleFieldChange(idx, 'type', e.target.value)}
+                        className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium appearance-none transition-all"
+                      >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Checkbox</option>
+                      </select>
                     </div>
-                    <select 
-                      value={field.type}
-                      onChange={e => handleFieldChange(idx, 'type', e.target.value)}
-                      className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium appearance-none transition-all"
+
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newConfig = [...editBusiness.crm_config];
+                        if (isSoftDeleted) {
+                          // Restore
+                          delete newConfig[idx].is_deleted;
+                        } else {
+                          // Soft delete
+                          newConfig[idx] = { ...newConfig[idx], is_deleted: true };
+                        }
+                        setEditBusiness({ ...editBusiness, crm_config: newConfig });
+                      }}
+                      className={`p-2.5 transition-colors border rounded-lg ${isSoftDeleted ? 'bg-white text-gray-400 hover:text-indigo-600 border-gray-200' : 'bg-white text-gray-400 hover:text-red-500 border-gray-200'}`}
+                      title={isSoftDeleted ? "Restore field" : "Delete field"}
                     >
-                      <option value="text">Text</option>
-                      <option value="number">Number</option>
-                      <option value="boolean">Checkbox</option>
-                    </select>
+                      {isSoftDeleted ? <RefreshCw size={18} /> : <Trash2 size={18} />}
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => handleRemoveField(idx)}
-                    className="p-2.5 text-gray-400 hover:text-red-500 transition-colors bg-white border border-gray-200 rounded-lg"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+          )}
+
+          {editBusiness.crm_config.some((f: any) => f.is_deleted) && (
+            <div className="flex items-center gap-2 p-4 bg-red-50 rounded-2xl border border-red-100">
+              <AlertCircle size={18} className="text-red-500 shrink-0" />
+              <p className="text-xs text-red-800 font-medium">
+                Fields marked for deletion will be permanently removed after you click "Save". Historical data for these fields in existing clients will be preserved.
+              </p>
             </div>
           )}
 

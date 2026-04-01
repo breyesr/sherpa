@@ -154,62 +154,110 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Upcoming List */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
+          {/* Today's Agenda */}
           <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-              <h3 className="font-bold text-xl text-gray-900">Today's Schedule</h3>
-              <Link href="/calendar" className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full">See full calendar</Link>
+              <div className="flex items-center gap-3">
+                <h3 className="font-bold text-xl text-gray-900">Today's Agenda</h3>
+                <span className="bg-blue-100 text-blue-700 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-tighter">
+                  {stats.upcoming?.filter((a: any) => new Date(a.start_time).toDateString() === new Date().toDateString()).length || 0}
+                </span>
+              </div>
+              <Link href="/calendar" className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full transition-colors">See full calendar</Link>
             </div>
             
-            {stats.upcoming?.length > 0 ? (
+            {stats.upcoming?.some((a: any) => new Date(a.start_time).toDateString() === new Date().toDateString()) ? (
               <div className="divide-y divide-gray-50">
-                {stats.upcoming.map((apt: any) => (
-                  <div key={apt.id} className="p-8 flex items-center justify-between hover:bg-gray-50/50 transition-all group">
-                    <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-white border border-gray-100 text-gray-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:border-blue-200 group-hover:text-blue-500 transition-all">
-                        <UserIcon size={24} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-lg text-gray-900">{apt.client?.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {apt.service && (
-                            <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
-                              <Scissors size={10} /> {apt.service.name}
+                {stats.upcoming
+                  .filter((apt: any) => new Date(apt.start_time).toDateString() === new Date().toDateString())
+                  .map((apt: any) => {
+                    const isPast = new Date(apt.start_time) < new Date();
+                    const statusColors: any = {
+                      scheduled: 'bg-blue-50 text-blue-600 border-blue-100',
+                      confirmed: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                      cancelled: 'bg-red-50 text-red-600 border-red-100',
+                      completed: 'bg-gray-50 text-gray-600 border-gray-100'
+                    };
+                    
+                    return (
+                      <div key={apt.id} className={`p-8 flex items-center justify-between hover:bg-gray-50/50 transition-all group ${isPast ? 'opacity-50 grayscale-[0.3]' : ''}`}>
+                        <div className="flex items-center gap-5">
+                          <div className={`w-14 h-14 bg-white border border-gray-100 text-gray-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:border-blue-200 group-hover:text-blue-500 transition-all ${isPast ? 'grayscale' : ''}`}>
+                            <UserIcon size={24} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg text-gray-900 line-clamp-1">{apt.client?.name}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {apt.service && (
+                                <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-blue-100">
+                                  <Scissors size={10} /> {apt.service.name}
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-400 font-medium italic truncate max-w-[150px]">
+                                {apt.notes || 'No notes'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className={`px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm border ${isPast ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-gray-900 text-white border-transparent'}`}>
+                            <Clock size={14} className={isPast ? 'text-gray-400' : 'text-blue-400'} />
+                            <span className="font-bold text-sm">
+                              {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                          )}
-                          <span className="text-xs text-gray-400 font-medium italic truncate max-w-[200px]">
-                            {apt.notes || 'No specific notes'}
-                          </span>
+                          </div>
+                          <div className="mt-2 flex justify-end">
+                            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${statusColors[apt.status] || 'bg-gray-50 text-gray-500 border-gray-100'}`}>
+                              {apt.status}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="bg-gray-900 text-white px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-md">
-                        <Clock size={14} className="text-blue-400" />
-                        <span className="font-bold text-sm">
-                          {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2">
-                        Confirmed
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             ) : (
-              <div className="p-20 text-center">
-                <div className="w-20 h-20 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle2 size={40} />
+              <div className="p-16 text-center">
+                <div className="w-16 h-16 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 size={32} />
                 </div>
-                <h4 className="text-xl font-bold text-gray-900">Your afternoon is open!</h4>
-                <p className="text-gray-500 font-medium mt-2">No more appointments scheduled for today.</p>
-                <Link href="/calendar" className="mt-8 inline-block text-blue-600 text-sm font-bold px-8 py-3 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-all">
-                  Manual Booking
-                </Link>
+                <h4 className="text-lg font-bold text-gray-900">Clear Agenda</h4>
+                <p className="text-gray-500 text-sm font-medium mt-1">No more appointments today.</p>
               </div>
             )}
           </div>
+
+          {/* Coming Up */}
+          {stats.upcoming?.some((a: any) => new Date(a.start_time).toDateString() !== new Date().toDateString()) && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg text-gray-900 px-2 flex items-center gap-2">
+                <CalendarIcon size={18} className="text-gray-400" />
+                Coming Up Next
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {stats.upcoming
+                  .filter((apt: any) => new Date(apt.start_time).toDateString() !== new Date().toDateString())
+                  .slice(0, 4)
+                  .map((apt: any) => (
+                    <div key={apt.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                          <UserIcon size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-gray-900 line-clamp-1">{apt.client?.name}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">
+                            {new Date(apt.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Status Center */}

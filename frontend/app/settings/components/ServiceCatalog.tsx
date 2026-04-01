@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Save, X, Loader2, Scissors, Clock, DollarSign } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,21 +8,37 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 interface ServiceCatalogProps {
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function ServiceCatalog({ token, onMessage }: ServiceCatalogProps) {
+export default function ServiceCatalog({ token, onMessage, onDirtyChange }: ServiceCatalogProps) {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({
+  const initialForm = {
     name: '',
     description: '',
     duration_minutes: 60,
     price: '',
     attributes: {}
-  });
+  };
+
+  const [form, setForm] = useState(initialForm);
+
+  // Dirty checking for the form
+  useEffect(() => {
+    if (!isAdding && !editingId) {
+      onDirtyChange?.(false);
+      return;
+    }
+
+    // If we are editing, we need to find the original service to compare
+    // For simplicity, if isAdding is true, we consider it dirty if form is not empty
+    const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+    onDirtyChange?.(isDirty);
+  }, [form, isAdding, editingId, onDirtyChange]);
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['services'],

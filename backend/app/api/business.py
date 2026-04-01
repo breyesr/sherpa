@@ -78,9 +78,16 @@ async def get_business_stats(
     print(f"DEBUG STATS: flagged_clients={flagged_clients}")
     
     # 4. Today's Appointments
-    now = datetime.utcnow()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + timedelta(days=1)
+    from zoneinfo import ZoneInfo
+    from datetime import timezone
+    biz_tz = ZoneInfo(business.timezone or "UTC")
+    now_local = datetime.now(biz_tz)
+    today_start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end_local = today_start_local + timedelta(days=1)
+    
+    # Convert local boundaries back to UTC for DB query
+    today_start = today_start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    today_end = today_end_local.astimezone(timezone.utc).replace(tzinfo=None)
     
     today_count_res = await db.execute(
         select(func.count(Appointment.id)).where(
@@ -91,10 +98,10 @@ async def get_business_stats(
         )
     )
     today_appointments = today_count_res.scalar() or 0
-    print(f"DEBUG STATS: today_appointments={today_appointments}")
+    print(f"DEBUG STATS: today_appointments={today_appointments} (Local Range: {today_start_local} to {today_end_local})")
     
     # 5. Upcoming & Recent (Focus on the last 24h + future)
-    yesterday = now - timedelta(days=1)
+    yesterday = (now_local - timedelta(days=1)).astimezone(timezone.utc).replace(tzinfo=None)
     upcoming_res = await db.execute(
         select(Appointment)
         .where(

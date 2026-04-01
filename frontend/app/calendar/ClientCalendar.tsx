@@ -174,7 +174,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                 const end = new Date(event.end_time || event.end);
 
                 return (
-                  <tr key={idx} className={`hover:bg-blue-50/30 transition-colors group ${!isApt ? 'bg-gray-50/20' : ''}`}>
+                  <tr key={idx} className={`hover:bg-blue-50/30 transition-colors group ${!isApt ? 'bg-gray-50/20' : ''} ${new Date(event.start_time || event.start) < new Date() ? 'opacity-50 grayscale-[0.3]' : ''}`}>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -203,7 +203,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      {isApt ? (
+                      {isApt && new Date(event.start_time) > new Date() ? (
                         <div className="flex items-center justify-end gap-2">
                           <button 
                             onClick={() => handleRescheduleClick(event)}
@@ -220,8 +220,10 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                             <Trash2 size={18} />
                           </button>
                         </div>
+                      ) : isApt ? (
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100">Past</span>
                       ) : (
-                        <span className="text-xs font-bold text-gray-300 uppercase px-4">Blocked</span>
+                        <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest px-4">Blocked</span>
                       )}
                     </td>
                   </tr>

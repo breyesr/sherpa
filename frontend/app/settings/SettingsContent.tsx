@@ -27,9 +27,29 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   const tabParam = searchParams.get('tab') as TabType;
   
   const [activeTab, setActiveTab] = useState<TabType>(tabParam || 'general');
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Unsaved changes browser warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   // Update URL when tab changes
   const handleTabChange = (tab: TabType) => {
+    if (isDirty) {
+      if (!confirm('You have unsaved changes. Are you sure you want to switch tabs and lose them?')) {
+        return;
+      }
+    }
+    
+    setIsDirty(false); // Reset dirty state on confirmed switch
     setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', tab);
@@ -116,13 +136,28 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
       {/* Tab Content */}
       <div className="mt-8">
         {activeTab === 'general' && (
-          <GeneralSettings business={business} user={user} token={token} onMessage={handleMessage} />
+          <GeneralSettings 
+            business={business} 
+            user={user} 
+            token={token} 
+            onMessage={handleMessage} 
+            onDirtyChange={setIsDirty}
+          />
         )}
         {activeTab === 'assistant' && (
-          <AssistantSettings business={business} token={token} onMessage={handleMessage} />
+          <AssistantSettings 
+            business={business} 
+            token={token} 
+            onMessage={handleMessage} 
+            onDirtyChange={setIsDirty}
+          />
         )}
         {activeTab === 'services' && (
-          <ServiceCatalog token={token} onMessage={handleMessage} />
+          <ServiceCatalog 
+            token={token} 
+            onMessage={handleMessage} 
+            onDirtyChange={setIsDirty}
+          />
         )}
         {activeTab === 'integrations' && (
           <IntegrationsPanel business={business} token={token} onMessage={handleMessage} />

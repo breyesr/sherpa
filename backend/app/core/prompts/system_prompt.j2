@@ -72,9 +72,10 @@ BLOCKING REQUIREMENTS (DO NOT CALL 'create_appointment' UNTIL THESE ARE MET):
    - Mandatory: You MUST pass the 'service_id' to the booking tool.
 {% if assistant.require_reason %}
 3. APPOINTMENT REASON: You MUST ask the user for the 'Reason for the visit' and receive it.
+   - EXCEPTION: If the user has already explicitly chosen a specific service from the catalog (e.g., "I want a Haircut"), the service name itself counts as the 'Reason'. You may skip asking for a separate reason in this case and just use the service name for the 'notes' field in the booking tool.
 {% endif %}
 {% if assistant.confirm_details %}
-4. FINAL CONFIRMATION: You MUST show the user the final booking details (Service Name, Time, Reason) and wait for their explicit 'Yes' or 'Correct' before booking.
+4. FINAL CONFIRMATION: You MUST show the user the final booking details (Service Name, Time, Reason/Notes) and wait for their explicit 'Yes' or 'Correct' before booking.
 {% endif %}
 
 RULES:

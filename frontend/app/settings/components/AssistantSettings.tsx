@@ -9,13 +9,14 @@ interface AssistantSettingsProps {
   business: any;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function AssistantSettings({ business, token, onMessage }: AssistantSettingsProps) {
+export default function AssistantSettings({ business, token, onMessage, onDirtyChange }: AssistantSettingsProps) {
   const queryClient = useQueryClient();
   const [savingAssistant, setSavingAssistant] = useState(false);
   
-  const [editAssistant, setEditAssistant] = useState({ 
+  const initialData = { 
     name: business?.assistant_config?.name || '', 
     tone: business?.assistant_config?.tone || 'Professional', 
     greeting: business?.assistant_config?.greeting || '', 
@@ -30,7 +31,15 @@ export default function AssistantSettings({ business, token, onMessage }: Assist
     enable_internal_alert: business?.assistant_config?.enable_internal_alert ?? false,
     enable_lead_capture: business?.assistant_config?.enable_lead_capture ?? true,
     enable_emergency_phone: business?.assistant_config?.enable_emergency_phone ?? false
-  });
+  };
+
+  const [editAssistant, setEditAssistant] = useState(initialData);
+
+  // Dirty checking
+  useEffect(() => {
+    const isDirty = JSON.stringify(editAssistant) !== JSON.stringify(initialData);
+    onDirtyChange?.(isDirty);
+  }, [editAssistant, business, onDirtyChange]);
 
   const [sandboxMessages, setSandboxMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [sandboxInput, setSandboxInput] = useState('');
