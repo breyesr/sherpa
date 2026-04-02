@@ -20,15 +20,24 @@ router = APIRouter()
 
 @router.get("/webhook")
 async def verify_whatsapp(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
     hub_mode: str = Query(None, alias="hub.mode"),
     hub_verify_token: str = Query(None, alias="hub.verify_token"),
     hub_challenge: str = Query(None, alias="hub.challenge")
 ):
-    """WhatsApp Webhook verification."""
-    # Logic to verify hub_verify_token...
-    # For now, we return hub_challenge if verify_token matches a generic one
-    # or specific one if we want.
-    return Response(content=hub_challenge)
+    """WhatsApp Cloud API Webhook verification."""
+    print(f"!!! WA VERIFY ATTEMPT: mode={hub_mode}, token={hub_verify_token} !!!")
+    
+    # Get dynamic verify token from Admin Settings
+    expected_token = await ConfigService.get(db, "WHATSAPP_VERIFY_TOKEN", "sherpa_v1")
+    
+    if hub_mode == "subscribe" and hub_verify_token == expected_token:
+        print("WA VERIFY SUCCESS")
+        return Response(content=hub_challenge)
+    
+    print("WA VERIFY FAILED")
+    return Response(content="Verification failed", status_code=403)
 
 @router.post("/webhook")
 @limiter.limit("60/minute")
