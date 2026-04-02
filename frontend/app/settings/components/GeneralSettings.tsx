@@ -88,7 +88,15 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     
     // Filter out soft-deleted fields before saving
     const finalCrmConfig = editBusiness.crm_config.filter((f: any) => !f.is_deleted);
-    const payload = { ...editBusiness, crm_config: finalCrmConfig };
+    
+    // Only send fields that are part of BusinessProfileUpdate schema
+    const payload = { 
+      name: editBusiness.name,
+      category: editBusiness.category,
+      contact_phone: editBusiness.contact_phone,
+      timezone: editBusiness.timezone,
+      crm_config: finalCrmConfig 
+    };
 
     try {
       const res = await fetch(`${API_BASE_URL}/business/me`, {
