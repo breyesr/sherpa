@@ -168,59 +168,83 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         form_data = await request.form()
         payload = dict(form_data)
         
-        sender_phone = payload.get("From", "").replace("whatsapp:", "")
-        to_phone = payload.get("To", "").replace("whatsapp:", "")
+        # Raw numbers from Twilio
+        raw_sender = payload.get("From", "")
+        raw_to = payload.get("To", "")
         text = payload.get("Body")
         profile_name = payload.get("ProfileName")
+
+        # Normalize: strip 'whatsapp:', '+', spaces, etc.
+        import re
+        def clean_num(n: str): return re.sub(r"\D", "", n)
+        
+        sender_phone = clean_num(raw_sender)
+        to_phone = clean_num(raw_to)
+
+        print(f"DEBUG: Normalized To={to_phone}, From={sender_phone}, Text='{text}'")
 
         if not text:
             return Response(content="<Response></Response>", media_type="text/xml")
 
-        # LOGIC FOR MULTI-TENANCY:
-        # 1. In Production: Each business has its own 'To' number.
-        # 2. In Sandbox: All businesses share the same 'To' number.
-        
-        # Search for integration by the business's registered WhatsApp number
-        # For Sandbox testing, we'll try to find if the sender_phone is already associated with a client 
-        # but that's for messages. For the FIRST connection, we need a mapping.
-        
+        # 1. Find integration
         result = await db.execute(
             select(Integration).where(Integration.provider == 'whatsapp')
         )
         all_wa = result.scalars().all()
         
-        # Strategy A: Match by 'To' number (Production / Specific Senders)
-        integration = next((i for i in all_wa if i.settings.get("twilio_from_number") == to_phone), None)
+        # Log available numbers for debugging
+        registered_numbers = [clean_num(i.settings.get("twilio_from_number", "")) for i in all_wa]
+        print(f"DEBUG: Registered business numbers in DB: {registered_numbers}")
+
+        integration = next((i for i in all_wa if clean_num(i.settings.get("twilio_from_number", "")) == to_phone), None)
         
-        # Strategy B: Sandbox Fallback (If To is the global sandbox number, we need to know which business to route to)
-        master_number = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
+        # Strategy B: Sandbox Fallback
+        master_number_raw = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
+        master_number = clean_num(master_number_raw or "")
+        
         if not integration and to_phone == master_number:
+            print("DEBUG: Using Sandbox fallback (Match with Master Number)")
             if len(all_wa) > 0:
-                integration = all_wa[0] # Test fallback
+                integration = all_wa[0]
 
         if not integration:
-            print(f"ERROR: Routing failed for {to_phone}. Register this number in Sherpa first.")
+            print(f"ERROR: Routing failed. Could not find business for number: {to_phone}")
             return Response(content="<Response></Response>", media_type="text/xml")
 
-        # Fetch the Business
+        # 2. Fetch Business
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == integration.business_id)
             .options(selectinload(BusinessProfile.assistant_config))
         )
         business = result.scalars().first()
-        
+        if not business:
+            print(f"ERROR: Business record missing for ID {integration.business_id}")
+            return Response(content="<Response></Response>", media_type="text/xml")
+
+        print(f"DEBUG: Routing message to Business: '{business.name}'")
+
+        # 3. Get AI Response
         from app.core.ai_service import AIService
         ai = AIService(business, db)
-        response_text = await ai.get_response(sender_phone, text, {"platform": "whatsapp", "name": profile_name})
+        
+        try:
+            response_text = await ai.get_response(sender_phone, text, {"platform": "whatsapp", "name": profile_name})
+            print(f"DEBUG: AI Response success: '{response_text[:50]}...'")
+        except Exception as ai_err:
+            print(f"ERROR: AI Service crash: {ai_err}")
+            traceback.print_exc()
+            response_text = "Lo siento, tuve un problema al procesar tu mensaje. ¿Podrías repetir?"
 
+        # 4. Reply via TwiML
         from twilio.twiml.messaging_response import MessagingResponse
         twiml = MessagingResponse()
         twiml.message(response_text)
         return Response(content=str(twiml), media_type="text/xml")
 
     except Exception as e:
-        print(f"CRITICAL: Twilio Webhook Error: {e}")
+        print(f"CRITICAL: Twilio Webhook Top-level Crash: {e}")
+        traceback.print_exc()
         return Response(content="<Response></Response>", media_type="text/xml")
 
 @router.post("/setup")
