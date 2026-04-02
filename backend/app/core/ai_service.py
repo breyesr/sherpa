@@ -88,7 +88,13 @@ class AIService:
         messages = [{"role": "system", "content": system_prompt}]
         for h in history:
             messages.append(h)
-        messages.append({"role": "user", "content": user_message})
+        
+        # Add platform-specific constraint for better delivery reliability
+        platform_hint = ""
+        if "whatsapp" in identifier or identifier.isdigit(): # Basic check for phone-based IDs
+            platform_hint = "\nIMPORTANT: You are communicating via WhatsApp. Keep your response concise (under 100 words) to ensure delivery."
+            
+        messages.append({"role": "user", "content": f"{user_message}{platform_hint}"})
         
         tools = self._get_tools_definition()
 
