@@ -226,19 +226,39 @@ async def update_business_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.user_id == current_user.id)
-    )
-    business = result.scalars().first()
+    # Use the helper to get the business with all relations
+    business = await get_full_business(db, current_user.id)
+    
     if not business:
-        raise HTTPException(status_code=404, detail="Business profile not found")
+        # Auto-create if it doesn't exist (robust for admins/legacy)
+        print(f"DEBUG: Business not found for user {current_user.id}, creating new profile.")
+        business = BusinessProfile(
+            user_id=current_user.id,
+            name=business_in.name or "My Business",
+            category=business_in.category,
+            contact_phone=business_in.contact_phone,
+            timezone=business_in.timezone or "UTC",
+            crm_config=business_in.crm_config or []
+        )
+        db.add(business)
+        await db.flush()
+        
+        # Also auto-create the assistant config
+        assistant = AssistantConfig(business_id=business.id)
+        db.add(assistant)
+    else:
+        # Standard update
+        update_data = business_in.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(business, field, value)
+        db.add(business)
     
-    update_data = business_in.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(business, field, value)
-    
-    db.add(business)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        
     return await get_full_business(db, current_user.id)
 
 @router.patch("/me/assistant", response_model=BusinessProfileResponse)
