@@ -32,10 +32,6 @@ export default function LoginPage() {
 
       const data = await response.json();
       setToken(data.access_token);
-      
-      // Set cookie for Server Components (expires in 7 days)
-      document.cookie = `sherpa_token=${data.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      
       router.push('/');
     } catch (err: any) {
       setError(err.message);

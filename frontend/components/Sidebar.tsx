@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { 
   LayoutDashboard, 
@@ -14,12 +14,12 @@ import {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
 
   const handleLogout = () => {
     logout();
-    // Clear cookie
-    document.cookie = "sherpa_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push('/auth/login');
   };
 
   const menuItems = [
