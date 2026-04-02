@@ -113,7 +113,9 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
         setEditBusiness(prev => ({ ...prev, crm_config: finalCrmConfig }));
         queryClient.invalidateQueries({ queryKey: ['business'] });
       } else {
-        throw new Error('Failed to update business profile');
+        const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+        console.error('Update failed:', errorData);
+        throw new Error(errorData.detail || 'Failed to update business profile');
       }
     } catch (err: any) {
       onMessage({ type: 'error', text: err.message });
