@@ -87,7 +87,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     setSavingBusiness(true);
     
     // Filter out soft-deleted fields before saving
-    const finalCrmConfig = editBusiness.crm_config.filter((f: any) => !f.is_deleted);
+    const finalCrmConfig = (editBusiness.crm_config || []).filter((f: any) => !f.is_deleted);
     
     // Only send fields that are part of BusinessProfileUpdate schema
     const payload = { 
