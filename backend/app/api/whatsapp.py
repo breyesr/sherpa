@@ -142,6 +142,12 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
         traceback.print_exc()
         return {"status": "error"}
 
+@router.api_route("/debug/twilio", methods=["GET", "POST"])
+async def debug_twilio(request: Request):
+    """Simple endpoint to verify Twilio is actually reaching the server."""
+    print(f"!!! DEBUG TWILIO REACHED: Method={request.method} !!!")
+    return {"status": "ok", "message": "Twilio can reach Sherpa!"}
+
 @router.post("/webhook/twilio")
 @limiter.limit("60/minute")
 async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db)):

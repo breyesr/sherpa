@@ -3,24 +3,27 @@
 This document tracks all reported bugs, their investigation status, and resolutions.
 
 ## Active Bugs
-
-### [BUG-004] Sign-out doesn't redirect to landing/login
-- **Status:** Open
-- **Severity:** Medium
-- **Reproduction:** Click the "Sign Out" button in the sidebar.
-- **Actual Behavior:** The user is signed out (token cleared) but the page stays on the dashboard.
-- **Expected Behavior:** Immediate redirection to `/auth/login`.
-
-### [BUG-005] Login loop/buggy state after re-authentication
-- **Status:** Open
-- **Severity:** Medium
-- **Reproduction:** Sign out, then immediately log back in. Attempt to navigate using dashboard links.
-- **Actual Behavior:** The site repeatedly redirects to login or loses session state despite successful login.
-- **Expected Behavior:** Seamless navigation after re-authentication.
+*Currently no active bugs reported.*
 
 ---
 
 ## Resolved Bugs
+
+### [BUG-004] Sign-out doesn't redirect to landing/login
+- **Status:** Resolved
+- **Severity:** Medium
+- **Reproduction:** Click the "Sign Out" button in the sidebar.
+- **Root Cause:** The `handleLogout` function cleared the state but didn't trigger a navigation change.
+- **Fix:** Added `router.push('/auth/login')` to the logout handler.
+- **Resolution Date:** 2026-04-01
+
+### [BUG-005] Login loop/buggy state after re-authentication
+- **Status:** Resolved
+- **Severity:** Medium
+- **Reproduction:** Sign out, then immediately log back in. Attempt to navigate.
+- **Root Cause:** Fragmentation between `authStore` (Zustand) and browser cookies. Middleware was reading stale or missing cookies.
+- **Fix:** Centralized cookie syncing inside `authStore.ts` so `setToken` and `logout` always update both localStorage and Cookies simultaneously.
+- **Resolution Date:** 2026-04-01
 
 ### [BUG-001] Tomorrow's data showing in Today's Dashboard widget
 - **Status:** Resolved
