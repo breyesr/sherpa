@@ -32,7 +32,10 @@ export default function LoginPage() {
 
       const data = await response.json();
       setToken(data.access_token);
-      router.push('/');
+      
+      // Force a full page reload to the root to ensure the server component 
+      // in app/page.tsx picks up the new 'sherpa_token' cookie immediately.
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.message);
     }

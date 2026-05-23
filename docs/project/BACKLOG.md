@@ -151,6 +151,11 @@
     - Status-based multi-select filter (Scheduled, Confirmed, Cancelled, Completed).
 - [ ] Task 20.4: **Enhanced Sorting Controls**: Add interactive column headers (Event/Client, Date & Time, Status) to allow manual overrides of the default sort.
 
+## Epic 21: Authentication Stability & Routing Hardening
+- [x] Task 21.1: Fix "Ghost Sidebar" on landing page by making layout responsive to client-side auth state.
+- [x] Task 21.2: Resolve stale server-side state during login redirection by forcing a router refresh.
+- [ ] Task 21.3: Audit and fix hydration mismatches in authentication-dependent layout components.
+
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
 - No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).
