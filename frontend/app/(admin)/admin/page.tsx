@@ -361,7 +361,13 @@ export default function AdminSettingsPage() {
             <button
               onClick={() => {
                 setEditingUser(null);
-                setUserForm({ email: '', password: '', role: 'member', is_active: true });
+                setUserForm({ 
+                  email: '', 
+                  password: '', 
+                  role: 'member', 
+                  is_active: true,
+                  vertical_type: 'BASIC'
+                });
                 setShowUserModal(true);
               }}
               className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
