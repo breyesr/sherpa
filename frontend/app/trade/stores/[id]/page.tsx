@@ -246,7 +246,7 @@ export default function StoreDetailPage() {
                         {getNoteIcon(note.type)}
                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">{note.type}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                      <div className="flex items-center gap-1.5 text-gray-400 text-xs font-bold uppercase tracking-widest" suppressHydrationWarning>
                         <Clock size={14} />
                         {new Date(note.created_at).toLocaleDateString()}
                       </div>

@@ -370,11 +370,11 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                     </td>
                     <td className="px-8 py-5">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-gray-900 font-medium">
+                        <div className="flex items-center gap-2 text-gray-900 font-medium" suppressHydrationWarning>
                           <CalendarIcon size={14} className="text-blue-500" />
                           {start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })}
                         </div>
-                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <div className="flex items-center gap-2 text-gray-500 text-sm" suppressHydrationWarning>
                           <Clock size={14} />
                           {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
                         </div>

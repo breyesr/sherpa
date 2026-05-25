@@ -201,7 +201,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className={`px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm border ${isPast ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-gray-900 text-white border-transparent'}`}>
+                          <div className={`px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm border ${isPast ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-gray-900 text-white border-transparent'}`} suppressHydrationWarning>
                             <Clock size={14} className={isPast ? 'text-gray-400' : 'text-blue-400'} />
                             <span className="font-bold text-sm">
                               {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -247,7 +247,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                         </div>
                         <div>
                           <p className="font-bold text-sm text-gray-900 line-clamp-1">{apt.client?.name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase" suppressHydrationWarning>
                             {new Date(apt.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>

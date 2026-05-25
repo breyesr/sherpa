@@ -136,7 +136,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
                           {conv.platform}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 truncate font-medium">
+                      <p className="text-xs text-gray-500 truncate font-medium" suppressHydrationWarning>
                         {conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No messages'}
                       </p>
                     </div>
@@ -212,7 +212,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {m.content}
                       </div>
-                      <div className={`flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
+                      <div className={`flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter ${m.role === 'user' ? 'justify-start' : 'justify-end'}`} suppressHydrationWarning>
                         {m.role === 'user' ? <User size={10} /> : <Bot size={10} />}
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
