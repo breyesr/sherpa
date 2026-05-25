@@ -80,6 +80,12 @@
 - **Migration**: Applied database migration (`18ca30515994`) to update the `stores` table.
 - **Validation**: Verified the relationship and data retrieval via automated script.
 
+## [2026-05-25] - Unified Trade CRM: Smart Store Modal (Task 24.2)
+- **Feature**: Implemented a searchable Client Picker (Combobox) in the `StoreModal`.
+- **Integration**: Connected the modal to the CRM Client list using TanStack Query.
+- **Auto-Population**: Selecting a client automatically populates the "Contact Name" and "Contact Phone" fields, while maintaining the underlying `client_id` relationship.
+- **UX**: Enhanced the Store management flow by reducing cognitive load and preventing manual data entry errors.
+
 ## [2026-05-25] - Trade Vertical: Admin Control & Stability Validation
 - **Feature**: Refactored `vertical_type` into an Admin-controlled feature. Admins now assign the `BASIC` or `TRADE` vertical to businesses via the User Management dashboard.
 - **Backend**: Updated `Admin API` and schemas to handle business vertical transitions and eager loading of profiles.

@@ -172,7 +172,7 @@
 
 ## Epic 24: Unified Trade CRM (Client-Store Integration)
 - [x] Task 24.1: API Enhancement: Add `client_id` to Store model and modify `POST /trade/stores` to support linking.
-- [ ] Task 24.2: Smart Store Modal: Implement searchable Combobox in UI to link existing CRM clients when creating a Store.
+- [x] Task 24.2: Smart Store Modal: Implement searchable Combobox in UI to link existing CRM clients when creating a Store.
 - [ ] Task 24.3: Trade Hub "Retailers" View: Create a unified view in Trade Hub showing CRM clients associated with Stores.
 - [ ] Task 24.4: Client Profile Trade Context: Add a conditional "Trade Context" tab to the client profile showing Store notes and Orders.
 

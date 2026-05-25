@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Search, User, Phone, Check } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
+import { useQuery } from '@tanstack/react-query';
 
 interface StoreModalProps {
   isOpen: boolean;
@@ -18,12 +19,33 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
     address: '',
     contact_name: '',
     contact_phone: '',
-    external_id: ''
+    external_id: '',
+    client_id: ''
   });
+  const [clientSearch, setClientSearch] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const isEditing = !!store;
+
+  // Fetch Clients for the Picker
+  const { data: clients = [], isLoading: loadingClients } = useQuery({
+    queryKey: ['clients-picker'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch clients');
+      return res.json();
+    },
+    enabled: isOpen && !!token,
+  });
+
+  const filteredClients = clients.filter((c: any) => 
+    c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.phone.includes(clientSearch)
+  ).slice(0, 5); // Limit to 5 for the dropdown
 
   useEffect(() => {
     if (store && isOpen) {
@@ -32,14 +54,30 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
         address: store.address || '',
         contact_name: store.contact_name || '',
         contact_phone: store.contact_phone || '',
-        external_id: store.external_id || ''
+        external_id: store.external_id || '',
+        client_id: store.client_id || ''
       });
+      if (store.client) {
+        setClientSearch(store.client.name);
+      }
     } else if (!isEditing && isOpen) {
-      setFormData({ name: '', address: '', contact_name: '', contact_phone: '', external_id: '' });
+      setFormData({ name: '', address: '', contact_name: '', contact_phone: '', external_id: '', client_id: '' });
+      setClientSearch('');
     }
   }, [store, isOpen, isEditing]);
 
   if (!isOpen) return null;
+
+  const handleSelectClient = (client: any) => {
+    setFormData({
+      ...formData,
+      client_id: client.id,
+      contact_name: client.name,
+      contact_phone: client.phone
+    });
+    setClientSearch(client.name);
+    setShowPicker(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +140,63 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
               />
+            </div>
+
+            {/* Client Relationship Picker */}
+            <div className="space-y-2 md:col-span-2 relative">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 flex justify-between">
+                Linked Client / Owner
+                {formData.client_id && <span className="text-blue-600 flex items-center gap-1"><Check size={12} /> Linked</span>}
+              </label>
+              <div className="relative group">
+                <input 
+                  type="text"
+                  placeholder="Search existing clients..."
+                  className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10"
+                  value={clientSearch}
+                  onChange={e => {
+                    setClientSearch(e.target.value);
+                    setShowPicker(true);
+                    if (formData.client_id) setFormData({...formData, client_id: ''});
+                  }}
+                  onFocus={() => setShowPicker(true)}
+                />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                
+                {showPicker && clientSearch && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    {loadingClients ? (
+                      <div className="p-4 text-center text-gray-400 text-sm font-bold animate-pulse">Searching clients...</div>
+                    ) : filteredClients.length > 0 ? (
+                      <div className="divide-y divide-gray-50">
+                        {filteredClients.map((c: any) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => handleSelectClient(c)}
+                            className="w-full p-4 flex items-center justify-between hover:bg-blue-50 transition-colors group text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
+                                <User size={16} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-gray-900 text-sm">{c.name}</p>
+                                <p className="text-xs text-gray-400">{c.phone}</p>
+                              </div>
+                            </div>
+                            <Plus size={16} className="text-gray-300 group-hover:text-blue-500" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center">
+                        <p className="text-xs text-gray-400 font-medium italic">No clients found matching "{clientSearch}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2 md:col-span-2">
