@@ -157,7 +157,7 @@
 - [ ] Task 21.3: Audit and fix hydration mismatches in authentication-dependent layout components.
 
 ## Epic 22: Modular "Plug & Play" Architecture
-- [ ] Task 22.1: Add `vertical_type` (BASIC, TRADE) to BusinessProfile and update schemas.
+- [x] Task 22.1: Add `vertical_type` (BASIC, TRADE) to BusinessProfile and update schemas.
 - [ ] Task 22.2: Implement 1:N `Agent` architecture to support specialized bots per vertical.
 - [ ] Task 22.3: Build "Universal Data Gateway" for CSV bulk imports and REST API ingestion.
 - [ ] Task 22.4: Implement Token-Aware Context Assembler (Prompt Pruning & Summarization Logic).

@@ -1,5 +1,12 @@
 # Handoff Log
 
+## [2026-05-25] - Vertical Type Implementation & Migration
+- **Task**: Implement the foundational vertical discriminator for the modular pivot.
+- **Action**: Added `vertical_type` (Enum: BASIC, TRADE) to `BusinessProfile` model and schemas.
+- **Migration**: Generated and applied a PostgreSQL-aware Alembic migration (`cffdb426ea17`).
+- **Validation**: Verified the schema serialization and DB values via integration test script.
+- **Parity**: Updated `openapi.json` to reflect backend changes for frontend consumers.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.
