@@ -28,6 +28,13 @@
 - **Intent**: Added lightweight intent detection to optimize response flows for noise and simple greetings.
 - **Prompt**: Updated `system_prompt.j2` to support the persistent `CONVERSATION_SUMMARY` field.
 
+## [2026-05-25] - Trade Vertical: Dossier System Implementation (Task 23.1)
+- **Task**: Implement physical location tracking and observation logs for the Trade vertical.
+- **Model**: Created `Store` and `StoreNote` tables. `Store` tracks address and contact info; `StoreNote` implements the "Dossier" system for recording risks, opportunities, and actions.
+- **Relationship**: Linked `Store` to `BusinessProfile` (1:N) and `StoreNote` to `Store` (1:N).
+- **Migration**: Applied manual migration (`8f423ae0a403`) with explicit PostgreSQL ENUM handling.
+- **Validation**: Verified data persistence and relationship integrity via a verification script.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.
