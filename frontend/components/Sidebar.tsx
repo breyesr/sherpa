@@ -12,7 +12,8 @@ import {
   MessageSquare, 
   Settings, 
   LogOut,
-  Store
+  Store,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -21,15 +22,35 @@ export default function Sidebar() {
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
 
+  // Fetch current user for admin check
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
   const { data: business } = useQuery({
     queryKey: ['business'],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch business');
-      return res.json();
+      try {
+        if (!token) return null;
+        const res = await fetch(`${API_BASE_URL}/business/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 404) return { vertical_type: 'BASIC' };
+        if (!res.ok) throw new Error('Failed to fetch business');
+        return res.json();
+      } catch (err) {
+        console.error('Sidebar: Error fetching business:', err);
+        return { vertical_type: 'BASIC' };
+      }
     },
     enabled: !!token,
     staleTime: 60 * 1000,
@@ -53,6 +74,12 @@ export default function Sidebar() {
   }
 
   menuItems.push({ name: 'Settings', href: '/settings', icon: Settings });
+
+  // Add Admin Panel for admins
+  const isAdmin = user?.is_admin || user?.role === 'admin' || user?.role === 'super_admin';
+  if (isAdmin) {
+    menuItems.push({ name: 'Admin Panel', href: '/admin', icon: ShieldCheck });
+  }
 
   return (
     <div className="w-64 bg-white border-r min-h-screen flex flex-col">
