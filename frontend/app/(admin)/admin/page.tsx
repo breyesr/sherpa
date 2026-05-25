@@ -27,7 +27,13 @@ export default function AdminSettingsPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
-  const [userForm, setUserForm] = useState({ email: '', password: '', role: 'member', is_active: true });
+  const [userForm, setUserForm] = useState({ 
+    email: '', 
+    password: '', 
+    role: 'member', 
+    is_active: true,
+    vertical_type: 'BASIC'
+  });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -133,7 +139,7 @@ export default function AdminSettingsPage() {
         }
         setShowUserModal(false);
         setEditingUser(null);
-        setUserForm({ email: '', password: '', role: 'member', is_active: true });
+        setUserForm({ email: '', password: '', role: 'member', is_active: true, vertical_type: 'BASIC' });
         setMessage({ type: 'success', text: `User ${editingUser ? 'updated' : 'created'} successfully!` });
       }
     } catch (err) {
@@ -363,6 +369,7 @@ export default function AdminSettingsPage() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">User</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Business / Vertical</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Role</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
@@ -374,6 +381,20 @@ export default function AdminSettingsPage() {
                     <td className="px-6 py-4">
                       <div className="font-bold text-gray-900">{user.email}</div>
                       <div className="text-xs text-gray-400 font-mono">{user.id}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.business_profile ? (
+                        <>
+                          <div className="text-sm font-bold text-gray-900">{user.business_profile.name}</div>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                            user.business_profile.vertical_type === 'TRADE' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                          }`}>
+                            {user.business_profile.vertical_type}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No business linked</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${
@@ -391,7 +412,13 @@ export default function AdminSettingsPage() {
                       <button
                         onClick={() => {
                           setEditingUser(user);
-                          setUserForm({ email: user.email, password: '', role: user.role, is_active: user.is_active });
+                          setUserForm({ 
+                            email: user.email, 
+                            password: '', 
+                            role: user.role, 
+                            is_active: user.is_active,
+                            vertical_type: user.business_profile?.vertical_type || 'BASIC'
+                          });
                           setShowUserModal(true);
                         }}
                         className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
@@ -467,6 +494,21 @@ export default function AdminSettingsPage() {
                   </select>
                 </div>
               </div>
+              
+              {editingUser?.business_profile && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Business Vertical</label>
+                  <select
+                    value={userForm.vertical_type}
+                    onChange={e => setUserForm({...userForm, vertical_type: e.target.value})}
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none"
+                  >
+                    <option value="BASIC">Basic (Scheduling)</option>
+                    <option value="TRADE">Trade (Stores & Inventory)</option>
+                  </select>
+                  <p className="text-[10px] text-gray-400 italic">This will unlock Trade-specific features for {editingUser.business_profile.name}.</p>
+                </div>
+              )}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"

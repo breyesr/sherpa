@@ -211,17 +211,6 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
                 ))}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Vertical Type</label>
-              <select 
-                value={editBusiness.vertical_type}
-                onChange={e => setEditBusiness({...editBusiness, vertical_type: e.target.value})}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium appearance-none"
-              >
-                <option value="BASIC">Basic (Scheduling)</option>
-                <option value="TRADE">Trade (Stores & Inventory)</option>
-              </select>
-            </div>
           </div>
           <div className="flex justify-end pt-4">
             <button 

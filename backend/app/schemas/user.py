@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Any
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -12,6 +12,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+    vertical_type: Optional[str] = None
 
 class UserCreateAdmin(UserBase):
     password: str
@@ -24,9 +25,11 @@ class UserResponse(UserBase):
     is_active: Optional[bool] = True
     is_admin: Optional[bool] = False
     role: Optional[str] = "member"
+    business_profile: Optional[Any] = None # Avoid circular import, use Any for now or import later
 
     class Config:
         from_attributes = True
+
 
 class Token(BaseModel):
     access_token: str

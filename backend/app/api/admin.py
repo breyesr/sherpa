@@ -2,9 +2,11 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.user import User
+from app.models.business import BusinessProfile, VerticalType
 from app.api.auth import get_current_user, get_password_hash
 from app.core.system_config import ConfigService
 from app.schemas.user import UserResponse, UserCreateAdmin, UserUpdate
@@ -24,9 +26,29 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin)
 ) -> Any:
-    """List all users (Admin only)."""
-    result = await db.execute(select(User))
+    """List all users with their business profiles (Admin only)."""
+    result = await db.execute(
+        select(User).options(selectinload(User.business_profile))
+    )
     return result.scalars().all()
+
+@router.patch("/businesses/{business_id}/vertical", response_model=Dict[str, str])
+async def update_business_vertical(
+    business_id: str,
+    vertical_type: VerticalType,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+) -> Any:
+    """Update a business vertical type (Admin only)."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.id == business_id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    business.vertical_type = vertical_type
+    db.add(business)
+    await db.commit()
+    return {"status": "success", "vertical_type": vertical_type.value}
 
 @router.post("/users", response_model=UserResponse)
 async def create_user_admin(
@@ -58,8 +80,12 @@ async def update_user_admin(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin)
 ) -> Any:
-    """Update a user (Admin only)."""
-    result = await db.execute(select(User).where(User.id == user_id))
+    """Update a user and their business vertical (Admin only)."""
+    result = await db.execute(
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.business_profile))
+    )
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -73,6 +99,10 @@ async def update_user_admin(
         user.is_admin = user_in.role in ["super_admin", "admin"]
     if user_in.is_active is not None:
         user.is_active = user_in.is_active
+    
+    # Handle vertical type update for linked business
+    if user_in.vertical_type and user.business_profile:
+        user.business_profile.vertical_type = user_in.vertical_type
         
     db.add(user)
     await db.commit()
