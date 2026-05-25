@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Any
+from app.models.business import VerticalType
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -20,16 +21,23 @@ class UserCreateAdmin(UserBase):
     is_active: bool = True
     is_admin: bool = False
 
+class BusinessProfileMinimal(BaseModel):
+    id: str
+    name: str
+    vertical_type: VerticalType
+
+    class Config:
+        from_attributes = True
+
 class UserResponse(UserBase):
     id: str
     is_active: Optional[bool] = True
     is_admin: Optional[bool] = False
     role: Optional[str] = "member"
-    business_profile: Optional[Any] = None # Avoid circular import, use Any for now or import later
+    business_profile: Optional[BusinessProfileMinimal] = None
 
     class Config:
         from_attributes = True
-
 
 class Token(BaseModel):
     access_token: str

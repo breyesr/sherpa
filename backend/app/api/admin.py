@@ -70,8 +70,14 @@ async def create_user_admin(
     )
     db.add(user)
     await db.commit()
-    await db.refresh(user)
-    return user
+    
+    # Reload with business profile for the response
+    res_final = await db.execute(
+        select(User)
+        .where(User.id == user.id)
+        .options(selectinload(User.business_profile))
+    )
+    return res_final.scalars().first()
 
 @router.patch("/users/{user_id}", response_model=UserResponse)
 async def update_user_admin(
@@ -106,8 +112,14 @@ async def update_user_admin(
         
     db.add(user)
     await db.commit()
-    await db.refresh(user)
-    return user
+    
+    # Reload with business profile for the response
+    res_final = await db.execute(
+        select(User)
+        .where(User.id == user.id)
+        .options(selectinload(User.business_profile))
+    )
+    return res_final.scalars().first()
 
 @router.delete("/users/{user_id}")
 async def delete_user_admin(

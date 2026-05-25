@@ -1633,7 +1633,7 @@
           "admin"
         ],
         "summary": "List Users",
-        "description": "List all users (Admin only).",
+        "description": "List all users with their business profiles (Admin only).",
         "operationId": "list_users_api_v1_admin_users_get",
         "responses": {
           "200": {
@@ -1703,13 +1703,73 @@
         ]
       }
     },
+    "/api/v1/admin/businesses/{business_id}/vertical": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Business Vertical",
+        "description": "Update a business vertical type (Admin only).",
+        "operationId": "update_business_vertical_api_v1_admin_businesses__business_id__vertical_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Business Id"
+            }
+          },
+          {
+            "name": "vertical_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/VerticalType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Update Business Vertical Api V1 Admin Businesses  Business Id  Vertical Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users/{user_id}": {
       "patch": {
         "tags": [
           "admin"
         ],
         "summary": "Update User Admin",
-        "description": "Update a user (Admin only).",
+        "description": "Update a user and their business vertical (Admin only).",
         "operationId": "update_user_admin_api_v1_admin_users__user_id__patch",
         "security": [
           {
@@ -1885,6 +1945,124 @@
             "OAuth2PasswordBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/data-gateway/me/imports": {
+      "get": {
+        "tags": [
+          "data-gateway"
+        ],
+        "summary": "Get My Imports",
+        "description": "List all data imports for the current business.",
+        "operationId": "get_my_imports_api_v1_data_gateway_me_imports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DataImportResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get My Imports Api V1 Data Gateway Me Imports Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "data-gateway"
+        ],
+        "summary": "Create Data Import",
+        "description": "Upload a file and initiate a background data import.",
+        "operationId": "create_data_import_api_v1_data_gateway_me_imports_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_data_import_api_v1_data_gateway_me_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataImportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/data-gateway/sync": {
+      "post": {
+        "tags": [
+          "data-gateway"
+        ],
+        "summary": "Sync Data",
+        "description": "Real-time data ingestion endpoint.",
+        "operationId": "sync_data_api_v1_data_gateway_sync_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataGatewaySyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Sync Data Api V1 Data Gateway Sync Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/health": {
@@ -2439,6 +2617,30 @@
         "type": "object",
         "title": "AppointmentUpdate"
       },
+      "Body_create_data_import_api_v1_data_gateway_me_imports_post": {
+        "properties": {
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "mapping_json": {
+            "type": "string",
+            "title": "Mapping Json"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_type",
+          "mapping_json",
+          "file"
+        ],
+        "title": "Body_create_data_import_api_v1_data_gateway_me_imports_post"
+      },
       "Body_login_api_v1_auth_login_post": {
         "properties": {
           "grant_type": {
@@ -2555,6 +2757,28 @@
           "name"
         ],
         "title": "BusinessProfileCreate"
+      },
+      "BusinessProfileMinimal": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "vertical_type": {
+            "$ref": "#/components/schemas/VerticalType"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "vertical_type"
+        ],
+        "title": "BusinessProfileMinimal"
       },
       "BusinessProfileResponse": {
         "properties": {
@@ -3019,6 +3243,114 @@
         ],
         "title": "ConversationResponse"
       },
+      "DataGatewaySyncRequest": {
+        "properties": {
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "mapping": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_type",
+          "data"
+        ],
+        "title": "DataGatewaySyncRequest"
+      },
+      "DataImportResponse": {
+        "properties": {
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "mapping": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Mapping"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportStatus"
+          },
+          "results": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_name",
+          "entity_type",
+          "mapping",
+          "id",
+          "business_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DataImportResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3031,6 +3363,16 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImportStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "processing",
+          "completed",
+          "failed"
+        ],
+        "title": "ImportStatus"
       },
       "IntegrationResponse": {
         "properties": {
@@ -3464,6 +3806,16 @@
             ],
             "title": "Role",
             "default": "member"
+          },
+          "business_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessProfileMinimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -3519,6 +3871,17 @@
               }
             ],
             "title": "Is Active"
+          },
+          "vertical_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vertical Type"
           }
         },
         "type": "object",

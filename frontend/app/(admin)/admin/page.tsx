@@ -76,10 +76,17 @@ export default function AdminSettingsPage() {
       });
       if (res.ok) {
         const userData = await res.json();
-        setUsers(userData);
+        console.log('Admin: Fetched users:', userData);
+        if (Array.isArray(userData)) {
+          setUsers(userData);
+        } else {
+          console.error('Admin: Users response is not an array:', userData);
+        }
+      } else {
+        console.error('Admin: Failed to fetch users. Status:', res.status);
       }
     } catch (err) {
-      console.error('Failed to fetch users', err);
+      console.error('Admin: Error fetching users:', err);
     }
   };
 

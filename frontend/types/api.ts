@@ -192,7 +192,7 @@ export interface paths {
   "/api/v1/admin/users": {
     /**
      * List Users
-     * @description List all users (Admin only).
+     * @description List all users with their business profiles (Admin only).
      */
     get: operations["list_users_api_v1_admin_users_get"];
     /**
@@ -200,6 +200,13 @@ export interface paths {
      * @description Create a new user (Admin only).
      */
     post: operations["create_user_admin_api_v1_admin_users_post"];
+  };
+  "/api/v1/admin/businesses/{business_id}/vertical": {
+    /**
+     * Update Business Vertical
+     * @description Update a business vertical type (Admin only).
+     */
+    patch: operations["update_business_vertical_api_v1_admin_businesses__business_id__vertical_patch"];
   };
   "/api/v1/admin/users/{user_id}": {
     /**
@@ -209,7 +216,7 @@ export interface paths {
     delete: operations["delete_user_admin_api_v1_admin_users__user_id__delete"];
     /**
      * Update User Admin
-     * @description Update a user (Admin only).
+     * @description Update a user and their business vertical (Admin only).
      */
     patch: operations["update_user_admin_api_v1_admin_users__user_id__patch"];
   };
@@ -224,6 +231,25 @@ export interface paths {
      * @description Update system settings (Admin only).
      */
     post: operations["update_admin_settings_api_v1_admin_settings_post"];
+  };
+  "/api/v1/data-gateway/me/imports": {
+    /**
+     * Get My Imports
+     * @description List all data imports for the current business.
+     */
+    get: operations["get_my_imports_api_v1_data_gateway_me_imports_get"];
+    /**
+     * Create Data Import
+     * @description Upload a file and initiate a background data import.
+     */
+    post: operations["create_data_import_api_v1_data_gateway_me_imports_post"];
+  };
+  "/api/v1/data-gateway/sync": {
+    /**
+     * Sync Data
+     * @description Real-time data ingestion endpoint.
+     */
+    post: operations["sync_data_api_v1_data_gateway_sync_post"];
   };
   "/health": {
     /** Health Check */
@@ -415,6 +441,18 @@ export interface components {
       /** Notes */
       notes?: string | null;
     };
+    /** Body_create_data_import_api_v1_data_gateway_me_imports_post */
+    Body_create_data_import_api_v1_data_gateway_me_imports_post: {
+      /** Entity Type */
+      entity_type: string;
+      /** Mapping Json */
+      mapping_json: string;
+      /**
+       * File
+       * Format: binary
+       */
+      file: string;
+    };
     /** Body_login_api_v1_auth_login_post */
     Body_login_api_v1_auth_login_post: {
       /** Grant Type */
@@ -455,6 +493,14 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+    };
+    /** BusinessProfileMinimal */
+    BusinessProfileMinimal: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      vertical_type: components["schemas"]["VerticalType"];
     };
     /** BusinessProfileResponse */
     BusinessProfileResponse: {
@@ -609,11 +655,61 @@ export interface components {
       updated_at: string;
       client?: components["schemas"]["ClientResponse"] | null;
     };
+    /** DataGatewaySyncRequest */
+    DataGatewaySyncRequest: {
+      /** Entity Type */
+      entity_type: string;
+      /** Data */
+      data: {
+        [key: string]: unknown;
+      };
+      /** Mapping */
+      mapping?: {
+        [key: string]: string;
+      } | null;
+    };
+    /** DataImportResponse */
+    DataImportResponse: {
+      /** File Name */
+      file_name: string;
+      /** Entity Type */
+      entity_type: string;
+      /** Mapping */
+      mapping: {
+        [key: string]: string;
+      };
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      status: components["schemas"]["ImportStatus"];
+      /** Results */
+      results?: {
+        [key: string]: unknown;
+      } | null;
+      /** Error Message */
+      error_message?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
     };
+    /**
+     * ImportStatus
+     * @enum {string}
+     */
+    ImportStatus: "pending" | "processing" | "completed" | "failed";
     /** IntegrationResponse */
     IntegrationResponse: {
       /** Id */
@@ -803,6 +899,7 @@ export interface components {
        * @default member
        */
       role?: string | null;
+      business_profile?: components["schemas"]["BusinessProfileMinimal"] | null;
     };
     /** UserUpdate */
     UserUpdate: {
@@ -814,6 +911,8 @@ export interface components {
       role?: string | null;
       /** Is Active */
       is_active?: boolean | null;
+      /** Vertical Type */
+      vertical_type?: string | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -1637,7 +1736,7 @@ export interface operations {
   };
   /**
    * List Users
-   * @description List all users (Admin only).
+   * @description List all users with their business profiles (Admin only).
    */
   list_users_api_v1_admin_users_get: {
     responses: {
@@ -1675,6 +1774,36 @@ export interface operations {
     };
   };
   /**
+   * Update Business Vertical
+   * @description Update a business vertical type (Admin only).
+   */
+  update_business_vertical_api_v1_admin_businesses__business_id__vertical_patch: {
+    parameters: {
+      query: {
+        vertical_type: components["schemas"]["VerticalType"];
+      };
+      path: {
+        business_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * Delete User Admin
    * @description Delete a user (Admin only).
    */
@@ -1701,7 +1830,7 @@ export interface operations {
   };
   /**
    * Update User Admin
-   * @description Update a user (Admin only).
+   * @description Update a user and their business vertical (Admin only).
    */
   update_user_admin_api_v1_admin_users__user_id__patch: {
     parameters: {
@@ -1755,6 +1884,70 @@ export interface operations {
         "application/json": {
           [key: string]: string;
         };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get My Imports
+   * @description List all data imports for the current business.
+   */
+  get_my_imports_api_v1_data_gateway_me_imports_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DataImportResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Data Import
+   * @description Upload a file and initiate a background data import.
+   */
+  create_data_import_api_v1_data_gateway_me_imports_post: {
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_create_data_import_api_v1_data_gateway_me_imports_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DataImportResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Sync Data
+   * @description Real-time data ingestion endpoint.
+   */
+  sync_data_api_v1_data_gateway_sync_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DataGatewaySyncRequest"];
       };
     };
     responses: {
