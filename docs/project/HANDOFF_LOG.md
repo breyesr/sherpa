@@ -57,6 +57,14 @@
 - **Contract**: Regenerated `openapi.json` and synchronized frontend TypeScript types.
 - **Validation**: Verified that the new endpoints correctly handle business-level scoping and relationship eager loading.
 
+## [2026-05-25] - Trade Hub: Dossier UI & Detail Management
+- **Feature**: Implemented the full operational cycle for the Store Dossier system.
+- **Backend**: Added `GET /trade/stores/{id}` and `POST /trade/stores/{id}/notes` endpoints with author tracking.
+- **Frontend**: Created the **Store Detail Page** (`/trade/stores/[id]`) featuring:
+    - **Visual Dossier**: A categorized list of observations (Risk, Opportunity, Action).
+    - **Interactive Notes**: Real-time addition of field notes with color-coded context.
+    - **Navigation**: Integrated seamless routing from the Trade Hub list.
+
 ## [2026-05-25] - Trade Hub: Interactive Management UI (Task 23.5)
 - **Feature**: Transformed the Trade Hub placeholder into a fully functional operational dashboard.
 - **Components**: Developed and integrated `AddStoreModal`, `AddCategoryModal`, and `AddProductModal`.

@@ -6,7 +6,8 @@
 
 ## Recently Completed
 - **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
-- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema (Stores, Orders, Products, Competitors).
+- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema.
+- **Dossier System (COMPLETE)**: Built the Store Detail page and interactive observation system.
 - **Trade Hub (COMPLETE)**: Built fully interactive management UI for Stores, Categories, and Products.
 - **Admin Control**: Moved `vertical_type` management to the Admin Dashboard.
 - **Stability Verified**: Ran regression and upgrade path tests.

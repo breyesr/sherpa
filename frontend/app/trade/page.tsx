@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
@@ -10,7 +11,6 @@ import {
   ShoppingCart, 
   TrendingUp, 
   MapPin, 
-  ClipboardList,
   Plus,
   Search,
   ChevronRight,
@@ -162,9 +162,12 @@ export default function TradeHubPage() {
                         {store.external_id}
                       </span>
                     )}
-                    <button className="p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all active:scale-90">
+                    <Link 
+                      href={`/trade/stores/${store.id}`}
+                      className="p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all active:scale-90"
+                    >
                       <ChevronRight size={20} />
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))}

@@ -265,10 +265,22 @@ export interface paths {
   };
   "/api/v1/trade/stores/{store_id}": {
     /**
+     * Get Store
+     * @description Fetch a single store with its notes.
+     */
+    get: operations["get_store_api_v1_trade_stores__store_id__get"];
+    /**
      * Update Store
      * @description Update a store.
      */
     patch: operations["update_store_api_v1_trade_stores__store_id__patch"];
+  };
+  "/api/v1/trade/stores/{store_id}/notes": {
+    /**
+     * Create Store Note
+     * @description Add a note (observation) to a store.
+     */
+    post: operations["create_store_note_api_v1_trade_stores__store_id__notes_post"];
   };
   "/api/v1/trade/categories": {
     /**
@@ -954,6 +966,13 @@ export interface components {
       contact_phone?: string | null;
       /** External Id */
       external_id?: string | null;
+    };
+    /** StoreNoteCreate */
+    StoreNoteCreate: {
+      /** @default general */
+      type?: components["schemas"]["StoreNoteType"];
+      /** Content */
+      content: string;
     };
     /** StoreNoteResponse */
     StoreNoteResponse: {
@@ -2206,6 +2225,31 @@ export interface operations {
     };
   };
   /**
+   * Get Store
+   * @description Fetch a single store with its notes.
+   */
+  get_store_api_v1_trade_stores__store_id__get: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * Update Store
    * @description Update a store.
    */
@@ -2225,6 +2269,36 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Store Note
+   * @description Add a note (observation) to a store.
+   */
+  create_store_note_api_v1_trade_stores__store_id__notes_post: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreNoteCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreNoteResponse"];
         };
       };
       /** @description Validation Error */

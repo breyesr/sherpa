@@ -2142,6 +2142,52 @@
       }
     },
     "/api/v1/trade/stores/{store_id}": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Get Store",
+        "description": "Fetch a single store with its notes.",
+        "operationId": "get_store_api_v1_trade_stores__store_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "trade"
@@ -2182,6 +2228,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/stores/{store_id}/notes": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Create Store Note",
+        "description": "Add a note (observation) to a store.",
+        "operationId": "create_store_note_api_v1_trade_stores__store_id__notes_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreNoteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreNoteResponse"
                 }
               }
             }
@@ -4185,6 +4289,23 @@
           "name"
         ],
         "title": "StoreCreate"
+      },
+      "StoreNoteCreate": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/StoreNoteType",
+            "default": "general"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "StoreNoteCreate"
       },
       "StoreNoteResponse": {
         "properties": {

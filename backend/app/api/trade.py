@@ -55,6 +55,48 @@ async def create_store(
     await db.refresh(store)
     return store
 
+@router.get("/stores/{store_id}", response_model=StoreResponse)
+async def get_store(
+    store_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Fetch a single store with its notes."""
+    business = await get_business(db, current_user.id)
+    result = await db.execute(
+        select(Store)
+        .where(Store.id == store_id, Store.business_id == business.id)
+        .options(selectinload(Store.notes))
+    )
+    store = result.scalars().first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return store
+
+@router.post("/stores/{store_id}/notes", response_model=StoreNoteResponse)
+async def create_store_note(
+    store_id: str,
+    note_in: StoreNoteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Add a note (observation) to a store."""
+    business = await get_business(db, current_user.id)
+    # Verify store belongs to business
+    res_store = await db.execute(select(Store).where(Store.id == store_id, Store.business_id == business.id))
+    if not res_store.scalars().first():
+        raise HTTPException(status_code=404, detail="Store not found")
+        
+    note = StoreNote(
+        store_id=store_id,
+        author_id=current_user.id,
+        **note_in.model_dump()
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+    return note
+
 @router.patch("/stores/{store_id}", response_model=StoreResponse)
 async def update_store(
     store_id: str,

@@ -163,7 +163,7 @@
 - [x] Task 22.4: Implement Token-Aware Context Assembler (Prompt Pruning & Summarization Logic).
 
 ## Epic 23: Trade Vertical Implementation (Relational)
-- [x] Task 23.1: Implement Store and Store_notes tables (Dossier System).
+- [x] Task 23.1: Implement Store and Store_notes tables (Dossier System fully functional).
 - [x] Task 23.2: Implement Orders, Products, and Categories tables for inventory tracking.
 - [x] Task 23.2.1: Implement CRUD API for Stores, Categories, and Products.
 - [x] Task 23.3: Implement Competitors and Customer_Notes tables.
