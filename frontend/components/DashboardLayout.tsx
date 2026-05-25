@@ -12,22 +12,22 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const token = useAuthStore((state) => state.token);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    console.log('DashboardLayout: Mounted, token state:', token ? 'Exists' : 'Empty');
-    setMounted(true);
-  }, [token]);
+    setIsClient(true);
+  }, []);
 
-  // If we are in auth or onboarding, don't show sidebar
+  // Standard Public Routes
   if (pathname.startsWith('/auth') || pathname.startsWith('/onboarding')) {
     return <>{children}</>;
   }
 
-  // Only show sidebar if we are mounted and have a token
-  const showSidebar = mounted && !!token;
-  
-  console.log('DashboardLayout: Render, showSidebar:', showSidebar, 'pathname:', pathname);
+  // If not on a public route, we expect to be logged in
+  // We wait for hydration (isClient) to check the token
+  if (!isClient) return null; // Prevent flash of unstyled/unauth content
+
+  const showSidebar = !!token;
 
   return (
     <div className="flex bg-gray-50 min-h-screen text-gray-900">
