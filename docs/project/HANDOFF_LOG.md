@@ -51,6 +51,12 @@
 - **Migration**: Applied manual migration (`44af8f82f483`) for the new tables.
 - **Validation**: Verified deep contextual retrieval via automated script.
 
+## [2026-05-25] - Trade Vertical: Admin Control & Stability Validation
+- **Feature**: Refactored `vertical_type` into an Admin-controlled feature. Admins now assign the `BASIC` or `TRADE` vertical to businesses via the User Management dashboard.
+- **Backend**: Updated `Admin API` and schemas to handle business vertical transitions and eager loading of profiles.
+- **Testing**: Conducted an "Upgrade Path" integration test. Confirmed that upgrading from Basic to Trade preserves all appointments and clients, and allows linking existing clients to new Trade entities (Stores/Notes).
+- **Frontend**: Implemented the Admin vertical selector and reactive sidebar navigation.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.

@@ -1,20 +1,20 @@
 # Handoff State
 
 ## Current Focus
-- **Priority**: Implementing the Trade Vertical (AI & Agents).
-- **Secondary**: Specialized "Visit Briefer" and "Lead Qualifier" logic.
+- **Priority**: Implementing the Trade Vertical (API & UI).
+- **Secondary**: Building CRUD endpoints for Stores and Inventory.
 
 ## Recently Completed
 - **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
 - **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema (Stores, Orders, Products, Competitors).
-- **Frontend Visibility**: 
-    - Added `vertical_type` selector in General Settings.
-    - Updated Sidebar to show/hide "Trade Hub" based on active vertical.
-    - Created foundational "Trade Hub" page placeholder.
+- **Admin Control**: Moved `vertical_type` management to the Admin Dashboard. Standard users can no longer change their tier.
+- **Stability Verified**: Ran regression and upgrade path tests. Confirmed pre-existing "Basic" data is preserved and linkable to "Trade" entities after upgrade.
+- **Frontend Visibility**: Added dynamic sidebar and foundational Trade Hub page.
 
 ## Next Steps (Trade Pivot)
+- **Task 23.2.1 (API)**: Implement CRUD endpoints for Stores, Categories, and Products.
+- **Task 23.5 (UI Expansion)**: Build interactive management views (Modals/Forms) for Trade Hub.
 - **Task 23.4**: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
-- **Task 23.5 (Expansion)**: Build out Store Management, Order History, and Product Catalog views in the Trade Hub.
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
