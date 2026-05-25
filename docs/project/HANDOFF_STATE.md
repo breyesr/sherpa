@@ -1,16 +1,21 @@
 # Handoff State
 
 ## Current Focus
-- **Priority**: Initializing the Modular "Plug & Play" Pivot (Trade Vertical Focus).
-- **Secondary**: Building the "Universal Data Gateway" for Data Ingestion.
+- **Priority**: Implementing the Trade Vertical (Relational Schema).
+- **Secondary**: Building the Dossier System (Store and Store_notes).
 
 ## Recently Completed
-- **Task 22.1**: Implemented `vertical_type` (BASIC, TRADE) migration for `BusinessProfile`.
-- **Task 22.2**: Refactored the backend to support a 1:N `Agent` architecture. Created `Agent` model and migrated `AssistantConfig`. Verified with integration tests and updated frontend types.
+- **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
+    - Implemented `vertical_type` discriminator.
+    - Refactored to 1:N `Agent` architecture.
+    - Built the "Universal Data Gateway" for bulk CSV imports.
+    - Implemented "Token-Aware Context Assembler" with Redis-backed summarization.
+- **Task 22.4**: Verified history summarization and surgical context pruning.
 
 ## Next Steps (Trade Pivot)
-- **Task 22.3**: Build "Universal Data Gateway" for CSV bulk imports and REST API ingestion.
-- **Task 22.4**: Implement Token-Aware Context Assembler (Prompt Pruning & Summarization Logic).
+- **Task 23.1**: Implement Store and Store_notes tables (Dossier System).
+- **Task 23.2**: Implement Orders, Products, and Categories tables for inventory tracking.
+- **Task 23.3**: Implement Competitors and Customer_Notes tables.
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
