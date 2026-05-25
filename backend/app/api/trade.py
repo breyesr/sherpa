@@ -37,7 +37,10 @@ async def list_stores(
     result = await db.execute(
         select(Store)
         .where(Store.business_id == business.id)
-        .options(selectinload(Store.notes))
+        .options(
+            selectinload(Store.notes),
+            selectinload(Store.client)
+        )
     )
     return result.scalars().all()
 
@@ -49,6 +52,16 @@ async def create_store(
 ) -> Any:
     """Create a new store."""
     business = await get_business(db, current_user.id)
+    
+    # Verify client exists and belongs to business if client_id is provided
+    if store_in.client_id:
+        from app.models.crm import Client
+        res_client = await db.execute(
+            select(Client).where(Client.id == store_in.client_id, Client.business_id == business.id)
+        )
+        if not res_client.scalars().first():
+            raise HTTPException(status_code=400, detail="Invalid client ID for this business")
+
     store = Store(business_id=business.id, **store_in.model_dump())
     db.add(store)
     await db.commit()
@@ -66,7 +79,10 @@ async def get_store(
     result = await db.execute(
         select(Store)
         .where(Store.id == store_id, Store.business_id == business.id)
-        .options(selectinload(Store.notes))
+        .options(
+            selectinload(Store.notes),
+            selectinload(Store.client)
+        )
     )
     store = result.scalars().first()
     if not store:
@@ -111,6 +127,15 @@ async def update_store(
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
+    # Verify client belongs to business if changing client_id
+    if store_in.client_id and store_in.client_id != store.client_id:
+        from app.models.crm import Client
+        res_client = await db.execute(
+            select(Client).where(Client.id == store_in.client_id, Client.business_id == business.id)
+        )
+        if not res_client.scalars().first():
+            raise HTTPException(status_code=400, detail="Invalid client ID for this business")
+
     update_data = store_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(store, field, value)

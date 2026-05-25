@@ -73,6 +73,13 @@
 - **Data Binding**: Connected the dashboard to real backend endpoints using TanStack Query for reactive stats and list updates.
 - **UX**: Implemented automated category-selection logic in the product creator and added immediate feedback for inventory creation.
 
+## [2026-05-25] - Unified Trade CRM: Client-Store Linking (Task 24.1)
+- **Model**: Added `client_id` foreign key to `Store` model to allow direct linking between stores and CRM clients.
+- **Schema**: Updated `Store` schemas (`Create`, `Update`, `Response`) and added `ClientMinimal` to return contact details in store responses.
+- **API**: Modified `POST` and `PATCH` endpoints for Stores to support and validate client linking. Added eager loading for linked clients.
+- **Migration**: Applied database migration (`18ca30515994`) to update the `stores` table.
+- **Validation**: Verified the relationship and data retrieval via automated script.
+
 ## [2026-05-25] - Trade Vertical: Admin Control & Stability Validation
 - **Feature**: Refactored `vertical_type` into an Admin-controlled feature. Admins now assign the `BASIC` or `TRADE` vertical to businesses via the User Management dashboard.
 - **Backend**: Updated `Admin API` and schemas to handle business vertical transitions and eager loading of profiles.

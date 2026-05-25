@@ -39,6 +39,7 @@ class StoreBase(BaseModel):
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     external_id: Optional[str] = None
+    client_id: Optional[str] = None
 
 class StoreCreate(StoreBase):
     pass
@@ -49,6 +50,16 @@ class StoreUpdate(BaseModel):
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     external_id: Optional[str] = None
+    client_id: Optional[str] = None
+
+class ClientMinimal(BaseModel):
+    id: str
+    name: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class StoreResponse(StoreBase):
     id: str
@@ -56,6 +67,7 @@ class StoreResponse(StoreBase):
     created_at: datetime
     updated_at: datetime
     notes: List[StoreNoteResponse] = []
+    client: Optional[ClientMinimal] = None
 
     class Config:
         from_attributes = True

@@ -52,6 +52,7 @@ class Store(Base):
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    client_id = Column(String, ForeignKey("clients.id"), nullable=True) # Linked to Store Owner/Retailer
     
     name = Column(String, nullable=False, index=True)
     address = Column(String, nullable=True)
@@ -65,6 +66,7 @@ class Store(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile", back_populates="stores")
+    client = relationship("Client")
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
 
 class StoreNote(Base):
