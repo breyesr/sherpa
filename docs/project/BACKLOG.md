@@ -176,6 +176,12 @@
 - [ ] Task 24.3: Trade Hub "Retailers" View: Create a unified view in Trade Hub showing CRM clients associated with Stores.
 - [ ] Task 24.4: Client Profile Trade Context: Add a conditional "Trade Context" tab to the client profile showing Store notes and Orders.
 
+## Epic 25: Trade Operational Loop (Commercial Lifecycle)
+- [ ] Task 25.1: Build the "New Order" Modal with Product Search, Quantity selectors, and automatic total calculation.
+- [ ] Task 25.2: Implement the "Competitor Check" UI within the Store Detail page to record rival presence levels.
+- [ ] Task 25.3: Create the "Global Activity Feed" in the Trade Hub dashboard showing recent observations across all stores.
+- [ ] Task 25.4: Design and implement the "Active Visit" mode (Check-in to Check-out progress stepper).
+
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
 - No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).
