@@ -12,10 +12,10 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const token = useAuthStore((state) => state.token);
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    setMounted(true);
   }, []);
 
   // Standard Public Routes
@@ -23,11 +23,9 @@ export default function DashboardLayout({
     return <>{children}</>;
   }
 
-  // If not on a public route, we expect to be logged in
-  // We wait for hydration (isClient) to check the token
-  if (!isClient) return null; // Prevent flash of unstyled/unauth content
-
-  const showSidebar = !!token;
+  // Only show sidebar if we have a token
+  // We use the mounted flag to avoid hydration mismatches
+  const showSidebar = mounted && !!token;
 
   return (
     <div className="flex bg-gray-50 min-h-screen text-gray-900">
