@@ -125,7 +125,7 @@ export interface paths {
   "/api/v1/whatsapp/webhook": {
     /**
      * Verify Whatsapp
-     * @description WhatsApp Webhook verification.
+     * @description WhatsApp Cloud API Webhook verification.
      */
     get: operations["verify_whatsapp_api_v1_whatsapp_webhook_get"];
     /**
@@ -134,10 +134,30 @@ export interface paths {
      */
     post: operations["whatsapp_webhook_api_v1_whatsapp_webhook_post"];
   };
+  "/api/v1/whatsapp/debug/twilio": {
+    /**
+     * Debug Twilio
+     * @description Simple endpoint to verify Twilio is actually reaching the server.
+     */
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    /**
+     * Debug Twilio
+     * @description Simple endpoint to verify Twilio is actually reaching the server.
+     */
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+  };
+  "/api/v1/whatsapp/webhook/twilio": {
+    /**
+     * Twilio Whatsapp Webhook
+     * @description Multi-tenant Twilio Webhook (ISV Platform Model).
+     */
+    post: operations["twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post"];
+  };
   "/api/v1/whatsapp/setup": {
     /**
      * Setup Whatsapp
-     * @description Save WhatsApp Cloud API credentials.
+     * @description Simplified Setup (Option B): Users only provide their number.
+     * The Platform's master keys are used automatically.
      */
     post: operations["setup_whatsapp_api_v1_whatsapp_setup_post"];
   };
@@ -215,6 +235,117 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    /** AgentResponse */
+    AgentResponse: {
+      /** Name */
+      name: string;
+      /**
+       * Role
+       * @default general
+       */
+      role?: string;
+      /**
+       * Is Active
+       * @default true
+       */
+      is_active?: boolean;
+      /** Tone */
+      tone: string;
+      /** Greeting */
+      greeting: string;
+      /**
+       * Personalized Greeting
+       * @default Hola {name}, ¿en qué puedo ayudarte hoy?
+       */
+      personalized_greeting?: string;
+      /**
+       * Logic Template
+       * @default standard
+       */
+      logic_template?: string;
+      /** Custom Steps */
+      custom_steps?: string | null;
+      /**
+       * Require Reason
+       * @default true
+       */
+      require_reason?: boolean | null;
+      /**
+       * Confirm Details
+       * @default true
+       */
+      confirm_details?: boolean | null;
+      /**
+       * Strict Guardrails
+       * @default true
+       */
+      strict_guardrails?: boolean | null;
+      /**
+       * Enable Honesty
+       * @default true
+       */
+      enable_honesty?: boolean;
+      /**
+       * Enable Internal Alert
+       * @default false
+       */
+      enable_internal_alert?: boolean;
+      /**
+       * Enable Lead Capture
+       * @default true
+       */
+      enable_lead_capture?: boolean;
+      /**
+       * Enable Emergency Phone
+       * @default false
+       */
+      enable_emergency_phone?: boolean;
+      /** Working Hours */
+      working_hours?: {
+        [key: string]: string[];
+      } | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+    };
+    /** AgentUpdate */
+    AgentUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Is Active */
+      is_active?: boolean | null;
+      /** Tone */
+      tone?: string | null;
+      /** Greeting */
+      greeting?: string | null;
+      /** Personalized Greeting */
+      personalized_greeting?: string | null;
+      /** Logic Template */
+      logic_template?: string | null;
+      /** Custom Steps */
+      custom_steps?: string | null;
+      /** Require Reason */
+      require_reason?: boolean | null;
+      /** Confirm Details */
+      confirm_details?: boolean | null;
+      /** Strict Guardrails */
+      strict_guardrails?: boolean | null;
+      /** Enable Honesty */
+      enable_honesty?: boolean | null;
+      /** Enable Internal Alert */
+      enable_internal_alert?: boolean | null;
+      /** Enable Lead Capture */
+      enable_lead_capture?: boolean | null;
+      /** Enable Emergency Phone */
+      enable_emergency_phone?: boolean | null;
+      /** Working Hours */
+      working_hours?: {
+        [key: string]: string[];
+      } | null;
+    };
     /** AppointmentCreate */
     AppointmentCreate: {
       /** Client Id */
@@ -284,103 +415,6 @@ export interface components {
       /** Notes */
       notes?: string | null;
     };
-    /** AssistantConfigResponse */
-    AssistantConfigResponse: {
-      /** Name */
-      name: string;
-      /** Tone */
-      tone: string;
-      /** Greeting */
-      greeting: string;
-      /**
-       * Personalized Greeting
-       * @default Hola {name}, ¿en qué puedo ayudarte hoy?
-       */
-      personalized_greeting?: string;
-      /**
-       * Logic Template
-       * @default standard
-       */
-      logic_template?: string;
-      /** Custom Steps */
-      custom_steps?: string | null;
-      /**
-       * Require Reason
-       * @default true
-       */
-      require_reason?: boolean | null;
-      /**
-       * Confirm Details
-       * @default true
-       */
-      confirm_details?: boolean | null;
-      /**
-       * Strict Guardrails
-       * @default true
-       */
-      strict_guardrails?: boolean | null;
-      /**
-       * Enable Honesty
-       * @default true
-       */
-      enable_honesty?: boolean;
-      /**
-       * Enable Internal Alert
-       * @default false
-       */
-      enable_internal_alert?: boolean;
-      /**
-       * Enable Lead Capture
-       * @default true
-       */
-      enable_lead_capture?: boolean;
-      /**
-       * Enable Emergency Phone
-       * @default false
-       */
-      enable_emergency_phone?: boolean;
-      /** Working Hours */
-      working_hours?: {
-        [key: string]: string[];
-      } | null;
-      /** Id */
-      id: string;
-      /** Business Id */
-      business_id: string;
-    };
-    /** AssistantConfigUpdate */
-    AssistantConfigUpdate: {
-      /** Name */
-      name?: string | null;
-      /** Tone */
-      tone?: string | null;
-      /** Greeting */
-      greeting?: string | null;
-      /** Personalized Greeting */
-      personalized_greeting?: string | null;
-      /** Logic Template */
-      logic_template?: string | null;
-      /** Custom Steps */
-      custom_steps?: string | null;
-      /** Require Reason */
-      require_reason?: boolean | null;
-      /** Confirm Details */
-      confirm_details?: boolean | null;
-      /** Strict Guardrails */
-      strict_guardrails?: boolean | null;
-      /** Enable Honesty */
-      enable_honesty?: boolean | null;
-      /** Enable Internal Alert */
-      enable_internal_alert?: boolean | null;
-      /** Enable Lead Capture */
-      enable_lead_capture?: boolean | null;
-      /** Enable Emergency Phone */
-      enable_emergency_phone?: boolean | null;
-      /** Working Hours */
-      working_hours?: {
-        [key: string]: string[];
-      } | null;
-    };
     /** Body_login_api_v1_auth_login_post */
     Body_login_api_v1_auth_login_post: {
       /** Grant Type */
@@ -412,6 +446,8 @@ export interface components {
        * @default UTC
        */
       timezone?: string;
+      /** @default BASIC */
+      vertical_type?: components["schemas"]["VerticalType"];
       /**
        * Crm Config
        * @default []
@@ -433,6 +469,8 @@ export interface components {
        * @default UTC
        */
       timezone?: string;
+      /** @default BASIC */
+      vertical_type?: components["schemas"]["VerticalType"];
       /**
        * Crm Config
        * @default []
@@ -448,7 +486,12 @@ export interface components {
       trial_expires_at?: string | null;
       /** Is Active */
       is_active: boolean;
-      assistant_config?: components["schemas"]["AssistantConfigResponse"] | null;
+      /**
+       * Agents
+       * @default []
+       */
+      agents?: components["schemas"]["AgentResponse"][];
+      assistant_config?: components["schemas"]["AgentResponse"] | null;
       /**
        * Integrations
        * @default []
@@ -465,6 +508,7 @@ export interface components {
       contact_phone?: string | null;
       /** Timezone */
       timezone?: string | null;
+      vertical_type?: components["schemas"]["VerticalType"] | null;
       /** Crm Config */
       crm_config?: {
           [key: string]: unknown;
@@ -528,6 +572,43 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ConversationResponse */
+    ConversationResponse: {
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /** Client Id */
+      client_id: string;
+      /** Platform */
+      platform: string;
+      /** Platform Chat Id */
+      platform_chat_id: string;
+      /** Last Message At */
+      last_message_at?: string | null;
+      /** Is Active */
+      is_active: boolean;
+      /** Ai Enabled */
+      ai_enabled: boolean;
+      /**
+       * Extra Data
+       * @default {}
+       */
+      extra_data?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      client?: components["schemas"]["ClientResponse"] | null;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -543,6 +624,24 @@ export interface components {
       settings?: {
         [key: string]: unknown;
       } | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** MessageResponse */
+    MessageResponse: {
+      /** Id */
+      id: string;
+      /** Conversation Id */
+      conversation_id: string;
+      /** Role */
+      role: string;
+      /** Content */
+      content: string;
+      /** Platform Message Id */
+      platform_message_id?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -636,7 +735,7 @@ export interface components {
     TestChatRequest: {
       /** Message */
       message: string;
-      assistant_config?: components["schemas"]["AssistantConfigUpdate"] | null;
+      assistant_config?: components["schemas"]["AgentUpdate"] | null;
     };
     /** Token */
     Token: {
@@ -725,6 +824,11 @@ export interface components {
       /** Error Type */
       type: string;
     };
+    /**
+     * VerticalType
+     * @enum {string}
+     */
+    VerticalType: "BASIC" | "TRADE";
   };
   responses: never;
   parameters: never;
@@ -919,14 +1023,14 @@ export interface operations {
   update_assistant_me_api_v1_business_me_assistant_patch: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AssistantConfigUpdate"];
+        "application/json": components["schemas"]["AgentUpdate"];
       };
     };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": components["schemas"]["BusinessProfileResponse"];
+          "application/json": components["schemas"]["AgentResponse"];
         };
       };
       /** @description Validation Error */
@@ -1298,7 +1402,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["ConversationResponse"][];
         };
       };
     };
@@ -1314,7 +1418,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["MessageResponse"][];
         };
       };
       /** @description Validation Error */
@@ -1343,7 +1447,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["ConversationResponse"];
         };
       };
       /** @description Validation Error */
@@ -1356,7 +1460,7 @@ export interface operations {
   };
   /**
    * Verify Whatsapp
-   * @description WhatsApp Webhook verification.
+   * @description WhatsApp Cloud API Webhook verification.
    */
   verify_whatsapp_api_v1_whatsapp_webhook_get: {
     parameters: {
@@ -1396,8 +1500,37 @@ export interface operations {
     };
   };
   /**
+   * Debug Twilio
+   * @description Simple endpoint to verify Twilio is actually reaching the server.
+   */
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Twilio Whatsapp Webhook
+   * @description Multi-tenant Twilio Webhook (ISV Platform Model).
+   */
+  twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
    * Setup Whatsapp
-   * @description Save WhatsApp Cloud API credentials.
+   * @description Simplified Setup (Option B): Users only provide their number.
+   * The Platform's master keys are used automatically.
    */
   setup_whatsapp_api_v1_whatsapp_setup_post: {
     requestBody: {

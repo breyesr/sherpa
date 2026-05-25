@@ -81,7 +81,7 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     result = await db.execute(
                         select(BusinessProfile)
                         .where(BusinessProfile.id == integration.business_id)
-                        .options(selectinload(BusinessProfile.assistant_config))
+                        .options(selectinload(BusinessProfile.agents))
                     )
                     business = result.scalars().first()
                     if not business:
@@ -215,7 +215,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == integration.business_id)
-            .options(selectinload(BusinessProfile.assistant_config))
+            .options(selectinload(BusinessProfile.agents))
         )
         business = result.scalars().first()
         if not business:

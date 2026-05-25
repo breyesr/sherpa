@@ -12,7 +12,7 @@ async def test_business_me():
         result = await db.execute(
             select(BusinessProfile)
             .options(
-                selectinload(BusinessProfile.assistant_config),
+                selectinload(BusinessProfile.agents),
                 selectinload(BusinessProfile.integrations)
             )
         )

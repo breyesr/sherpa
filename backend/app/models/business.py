@@ -27,19 +27,30 @@ class BusinessProfile(Base):
     crm_config = Column(JSON, nullable=True, default=list)
 
     user = relationship("User", back_populates="business_profile")
-    assistant_config = relationship("AssistantConfig", back_populates="business_profile", uselist=False, cascade="all, delete-orphan")
+    agents = relationship("Agent", back_populates="business_profile", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="business_profile", cascade="all, delete-orphan")
     clients = relationship("Client", back_populates="business_profile", cascade="all, delete-orphan")
     appointments = relationship("Appointment", back_populates="business_profile", cascade="all, delete-orphan")
     services = relationship("Service", back_populates="business_profile", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business_profile", cascade="all, delete-orphan")
 
-class AssistantConfig(Base):
-    __tablename__ = "assistant_configs"
+    @property
+    def assistant_config(self):
+        """Backward compatibility for AIService and single-agent logic."""
+        if not self.agents:
+            return None
+        # Return the general agent if it exists, otherwise the first one
+        return next((a for a in self.agents if a.role == "general"), self.agents[0])
+
+class Agent(Base):
+    __tablename__ = "agents"
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), unique=True, nullable=False)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     name = Column(String, nullable=False, default="Sherpa Assistant")
+    role = Column(String, nullable=False, default="general") # general, briefer, qualifier
+    is_active = Column(Boolean, default=True)
+    
     tone = Column(String, nullable=False, default="Professional")
     greeting = Column(String, nullable=False, default="Hello! How can I help you today?")
     personalized_greeting = Column(String, nullable=False, default="Hola {name}, ¿en qué puedo ayudarte hoy?")
@@ -59,4 +70,4 @@ class AssistantConfig(Base):
     
     working_hours = Column(JSON, nullable=True) # e.g., {"mon": ["09:00", "18:00"], ...}
 
-    business_profile = relationship("BusinessProfile", back_populates="assistant_config")
+    business_profile = relationship("BusinessProfile", back_populates="agents")

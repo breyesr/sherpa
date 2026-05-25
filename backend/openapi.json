@@ -380,7 +380,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssistantConfigUpdate"
+                "$ref": "#/components/schemas/AgentUpdate"
               }
             }
           },
@@ -392,7 +392,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BusinessProfileResponse"
+                  "$ref": "#/components/schemas/AgentResponse"
                 }
               }
             }
@@ -1906,6 +1906,331 @@
   },
   "components": {
     "schemas": {
+      "AgentResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "general"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "tone": {
+            "type": "string",
+            "title": "Tone"
+          },
+          "greeting": {
+            "type": "string",
+            "title": "Greeting"
+          },
+          "personalized_greeting": {
+            "type": "string",
+            "title": "Personalized Greeting",
+            "default": "Hola {name}, \u00bfen qu\u00e9 puedo ayudarte hoy?"
+          },
+          "logic_template": {
+            "type": "string",
+            "title": "Logic Template",
+            "default": "standard"
+          },
+          "custom_steps": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Steps"
+          },
+          "require_reason": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Reason",
+            "default": true
+          },
+          "confirm_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirm Details",
+            "default": true
+          },
+          "strict_guardrails": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict Guardrails",
+            "default": true
+          },
+          "enable_honesty": {
+            "type": "boolean",
+            "title": "Enable Honesty",
+            "default": true
+          },
+          "enable_internal_alert": {
+            "type": "boolean",
+            "title": "Enable Internal Alert",
+            "default": false
+          },
+          "enable_lead_capture": {
+            "type": "boolean",
+            "title": "Enable Lead Capture",
+            "default": true
+          },
+          "enable_emergency_phone": {
+            "type": "boolean",
+            "title": "Enable Emergency Phone",
+            "default": false
+          },
+          "working_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Working Hours"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "tone",
+          "greeting",
+          "id",
+          "business_id"
+        ],
+        "title": "AgentResponse"
+      },
+      "AgentUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "tone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tone"
+          },
+          "greeting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Greeting"
+          },
+          "personalized_greeting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personalized Greeting"
+          },
+          "logic_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logic Template"
+          },
+          "custom_steps": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Steps"
+          },
+          "require_reason": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Reason"
+          },
+          "confirm_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirm Details"
+          },
+          "strict_guardrails": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict Guardrails"
+          },
+          "enable_honesty": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Honesty"
+          },
+          "enable_internal_alert": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Internal Alert"
+          },
+          "enable_lead_capture": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Lead Capture"
+          },
+          "enable_emergency_phone": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Emergency Phone"
+          },
+          "working_hours": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Working Hours"
+          }
+        },
+        "type": "object",
+        "title": "AgentUpdate"
+      },
       "AppointmentCreate": {
         "properties": {
           "client_id": {
@@ -2114,299 +2439,6 @@
         "type": "object",
         "title": "AppointmentUpdate"
       },
-      "AssistantConfigResponse": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "tone": {
-            "type": "string",
-            "title": "Tone"
-          },
-          "greeting": {
-            "type": "string",
-            "title": "Greeting"
-          },
-          "personalized_greeting": {
-            "type": "string",
-            "title": "Personalized Greeting",
-            "default": "Hola {name}, \u00bfen qu\u00e9 puedo ayudarte hoy?"
-          },
-          "logic_template": {
-            "type": "string",
-            "title": "Logic Template",
-            "default": "standard"
-          },
-          "custom_steps": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Custom Steps"
-          },
-          "require_reason": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Require Reason",
-            "default": true
-          },
-          "confirm_details": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confirm Details",
-            "default": true
-          },
-          "strict_guardrails": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Strict Guardrails",
-            "default": true
-          },
-          "enable_honesty": {
-            "type": "boolean",
-            "title": "Enable Honesty",
-            "default": true
-          },
-          "enable_internal_alert": {
-            "type": "boolean",
-            "title": "Enable Internal Alert",
-            "default": false
-          },
-          "enable_lead_capture": {
-            "type": "boolean",
-            "title": "Enable Lead Capture",
-            "default": true
-          },
-          "enable_emergency_phone": {
-            "type": "boolean",
-            "title": "Enable Emergency Phone",
-            "default": false
-          },
-          "working_hours": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Working Hours"
-          },
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "business_id": {
-            "type": "string",
-            "title": "Business Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "tone",
-          "greeting",
-          "id",
-          "business_id"
-        ],
-        "title": "AssistantConfigResponse"
-      },
-      "AssistantConfigUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "tone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tone"
-          },
-          "greeting": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Greeting"
-          },
-          "personalized_greeting": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Personalized Greeting"
-          },
-          "logic_template": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Logic Template"
-          },
-          "custom_steps": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Custom Steps"
-          },
-          "require_reason": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Require Reason"
-          },
-          "confirm_details": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confirm Details"
-          },
-          "strict_guardrails": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Strict Guardrails"
-          },
-          "enable_honesty": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enable Honesty"
-          },
-          "enable_internal_alert": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enable Internal Alert"
-          },
-          "enable_lead_capture": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enable Lead Capture"
-          },
-          "enable_emergency_phone": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enable Emergency Phone"
-          },
-          "working_hours": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Working Hours"
-          }
-        },
-        "type": "object",
-        "title": "AssistantConfigUpdate"
-      },
       "Body_login_api_v1_auth_login_post": {
         "properties": {
           "grant_type": {
@@ -2601,10 +2633,18 @@
             "type": "boolean",
             "title": "Is Active"
           },
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentResponse"
+            },
+            "type": "array",
+            "title": "Agents",
+            "default": []
+          },
           "assistant_config": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/AssistantConfigResponse"
+                "$ref": "#/components/schemas/AgentResponse"
               },
               {
                 "type": "null"
@@ -3293,7 +3333,7 @@
           "assistant_config": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/AssistantConfigUpdate"
+                "$ref": "#/components/schemas/AgentUpdate"
               },
               {
                 "type": "null"

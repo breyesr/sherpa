@@ -7,6 +7,13 @@
 - **Validation**: Verified the schema serialization and DB values via integration test script.
 - **Parity**: Updated `openapi.json` to reflect backend changes for frontend consumers.
 
+## [2026-05-25] - 1:N Agent Architecture Implementation
+- **Task**: Refactor the backend to support multiple specialized agents per business.
+- **Action**: Renamed `AssistantConfig` to `Agent` and converted the relationship in `BusinessProfile` from 1:1 to 1:N.
+- **Backward Compatibility**: Implemented a `@property` in `BusinessProfile` to preserve the `assistant_config` accessor for existing AI and API logic.
+- **Migration**: Applied manual migration (`0f5d75b24d21`) to rename the table, update constraints, and add `role` and `is_active` columns.
+- **Parity**: Synchronized `openapi.json` and updated frontend TypeScript types.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.

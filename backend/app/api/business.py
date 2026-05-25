@@ -8,11 +8,15 @@ from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
-from app.models.business import BusinessProfile, AssistantConfig
+from app.models.business import BusinessProfile, Agent
 from app.schemas.business import (
-    BusinessProfileCreate, BusinessProfileUpdate, BusinessProfileResponse,
-    AssistantConfigUpdate
+    BusinessProfileCreate,
+    BusinessProfileUpdate,
+    BusinessProfileResponse,
+    AgentUpdate,
+    AgentResponse
 )
+
 from app.schemas.crm import AppointmentResponse
 from app.api.auth import get_current_user
 from app.core.limiter import limiter
@@ -25,9 +29,10 @@ async def get_full_business(db: AsyncSession, user_id: str) -> BusinessProfile:
         select(BusinessProfile)
         .where(BusinessProfile.user_id == user_id)
         .options(
-            selectinload(BusinessProfile.assistant_config),
+            selectinload(BusinessProfile.agents),
             selectinload(BusinessProfile.integrations)
         )
+
     )
     return result.scalars().first()
 
@@ -36,7 +41,7 @@ from app.core.ai_service import AIService
 
 class TestChatRequest(BaseModel):
     message: str
-    assistant_config: Optional[AssistantConfigUpdate] = None
+    assistant_config: Optional[AgentUpdate] = None
 
 from sqlalchemy import func
 from app.models.crm import Client, Appointment
@@ -185,9 +190,9 @@ async def create_business_me(
             db.add(business)
             await db.flush() # Get the ID without committing yet
             
-            # Auto-create default assistant config
-            assistant = AssistantConfig(business_id=business.id)
-            db.add(assistant)
+            # Auto-create default agent
+            agent = Agent(business_id=business.id)
+            db.add(agent)
         else:
             business.name = business_in.name
             business.category = business_in.category
@@ -243,9 +248,9 @@ async def update_business_me(
         db.add(business)
         await db.flush()
         
-        # Also auto-create the assistant config
-        assistant = AssistantConfig(business_id=business.id)
-        db.add(assistant)
+        # Also auto-create the default agent
+        agent = Agent(business_id=business.id)
+        db.add(agent)
     else:
         # Standard update
         update_data = business_in.dict(exclude_unset=True)
@@ -261,26 +266,26 @@ async def update_business_me(
         
     return await get_full_business(db, current_user.id)
 
-@router.patch("/me/assistant", response_model=BusinessProfileResponse)
+@router.patch("/me/assistant", response_model=AgentResponse)
 async def update_assistant_me(
-    assistant_in: AssistantConfigUpdate,
+    agent_in: AgentUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    # Need to load assistant_config to update it
+    # Need to load agents to update the default one
     result = await db.execute(
         select(BusinessProfile)
         .where(BusinessProfile.user_id == current_user.id)
-        .options(selectinload(BusinessProfile.assistant_config))
+        .options(selectinload(BusinessProfile.agents))
     )
     business = result.scalars().first()
     if not business or not business.assistant_config:
         raise HTTPException(status_code=404, detail="Assistant config not found")
     
-    update_data = assistant_in.dict(exclude_unset=True)
+    update_data = agent_in.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(business.assistant_config, field, value)
     
     db.add(business.assistant_config)
     await db.commit()
-    return await get_full_business(db, current_user.id)
+    return business.assistant_config

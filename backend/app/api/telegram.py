@@ -42,7 +42,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == integration.business_id)
-            .options(selectinload(BusinessProfile.assistant_config))
+            .options(selectinload(BusinessProfile.agents))
         )
         business = result.scalars().first()
         if not business:

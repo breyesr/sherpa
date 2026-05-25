@@ -7,8 +7,10 @@ class VerticalType(str, enum.Enum):
     BASIC = "BASIC"
     TRADE = "TRADE"
 
-class AssistantConfigBase(BaseModel):
+class AgentBase(BaseModel):
     name: str
+    role: str = "general"
+    is_active: bool = True
     tone: str
     greeting: str
     personalized_greeting: str = "Hola {name}, ¿en qué puedo ayudarte hoy?"
@@ -26,11 +28,13 @@ class AssistantConfigBase(BaseModel):
     
     working_hours: Optional[Dict[str, List[str]]] = None
 
-class AssistantConfigCreate(AssistantConfigBase):
+class AgentCreate(AgentBase):
     pass
 
-class AssistantConfigUpdate(BaseModel):
+class AgentUpdate(BaseModel):
     name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
     tone: Optional[str] = None
     greeting: Optional[str] = None
     personalized_greeting: Optional[str] = None
@@ -45,7 +49,7 @@ class AssistantConfigUpdate(BaseModel):
     enable_emergency_phone: Optional[bool] = None
     working_hours: Optional[Dict[str, List[str]]] = None
 
-class AssistantConfigResponse(AssistantConfigBase):
+class AgentResponse(AgentBase):
     id: str
     business_id: str
 
@@ -85,7 +89,8 @@ class BusinessProfileResponse(BusinessProfileBase):
     user_id: str
     trial_expires_at: Optional[datetime] = None
     is_active: bool
-    assistant_config: Optional[AssistantConfigResponse] = None
+    agents: List[AgentResponse] = []
+    assistant_config: Optional[AgentResponse] = None # Support backward compatibility property
     integrations: List[IntegrationResponse] = []
 
     class Config:
