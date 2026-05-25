@@ -17,7 +17,7 @@ import {
   Phone,
   LayoutGrid
 } from 'lucide-react';
-import AddStoreModal from '@/components/AddStoreModal';
+import StoreModal from '@/components/StoreModal';
 import AddCategoryModal from '@/components/AddCategoryModal';
 import AddProductModal from '@/components/AddProductModal';
 
@@ -236,7 +236,7 @@ export default function TradeHubPage() {
       </div>
 
       {/* Modals */}
-      <AddStoreModal 
+      <StoreModal 
         isOpen={isAddStoreOpen}
         onClose={() => setIsAddStoreOpen(false)}
         onSuccess={() => {

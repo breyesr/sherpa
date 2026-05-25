@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
-interface AddStoreModalProps {
+interface StoreModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   token: string | null;
+  store?: any; // Optional store object for editing
 }
 
-export default function AddStoreModal({ isOpen, onClose, onSuccess, token }: AddStoreModalProps) {
+export default function StoreModal({ isOpen, onClose, onSuccess, token, store }: StoreModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -22,6 +23,22 @@ export default function AddStoreModal({ isOpen, onClose, onSuccess, token }: Add
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isEditing = !!store;
+
+  useEffect(() => {
+    if (store && isOpen) {
+      setFormData({
+        name: store.name || '',
+        address: store.address || '',
+        contact_name: store.contact_name || '',
+        contact_phone: store.contact_phone || '',
+        external_id: store.external_id || ''
+      });
+    } else if (!isEditing && isOpen) {
+      setFormData({ name: '', address: '', contact_name: '', contact_phone: '', external_id: '' });
+    }
+  }, [store, isOpen, isEditing]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,8 +47,11 @@ export default function AddStoreModal({ isOpen, onClose, onSuccess, token }: Add
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        method: 'POST',
+      const url = isEditing ? `${API_BASE_URL}/trade/stores/${store.id}` : `${API_BASE_URL}/trade/stores`;
+      const method = isEditing ? 'PATCH' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -40,13 +60,12 @@ export default function AddStoreModal({ isOpen, onClose, onSuccess, token }: Add
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: 'Failed to create store' }));
-        throw new Error(errorData.detail || 'Failed to create store');
+        const errorData = await res.json().catch(() => ({ detail: `Failed to ${isEditing ? 'update' : 'create'} store` }));
+        throw new Error(errorData.detail || `Failed to ${isEditing ? 'update' : 'create'} store`);
       }
 
       onSuccess();
       onClose();
-      setFormData({ name: '', address: '', contact_name: '', contact_phone: '', external_id: '' });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -59,8 +78,10 @@ export default function AddStoreModal({ isOpen, onClose, onSuccess, token }: Add
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-8 border-b flex justify-between items-center bg-gray-50">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Add New Store</h2>
-            <p className="text-sm text-gray-500 font-medium">Create a new retail location or retailer entry.</p>
+            <h2 className="text-2xl font-bold text-gray-900">{isEditing ? 'Edit Store' : 'Add New Store'}</h2>
+            <p className="text-sm text-gray-500 font-medium">
+              {isEditing ? 'Update your retail location details.' : 'Create a new retail location or retailer entry.'}
+            </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-all p-2 hover:bg-gray-100 rounded-full">
             <X size={24} />
@@ -141,7 +162,7 @@ export default function AddStoreModal({ isOpen, onClose, onSuccess, token }: Add
               type="submit"
               className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Create Store'}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? 'Save Changes' : 'Create Store')}
             </button>
           </div>
         </form>

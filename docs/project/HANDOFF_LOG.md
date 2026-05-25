@@ -64,8 +64,10 @@
     - **Visual Dossier**: A categorized list of observations (Risk, Opportunity, Action).
     - **Interactive Notes**: Real-time addition of field notes with color-coded context.
     - **Navigation**: Integrated seamless routing from the Trade Hub list.
+    - **Fix**: Refactored `AddStoreModal` into a generic `StoreModal` and enabled the "Edit Store" functionality on the Detail page, allowing users to update location and contact information.
 
-## [2026-05-25] - Trade Hub: Interactive Management UI (Task 23.5)
+    ## [2026-05-25] - Trade Hub: Interactive Management UI (Task 23.5)
+
 - **Feature**: Transformed the Trade Hub placeholder into a fully functional operational dashboard.
 - **Components**: Developed and integrated `AddStoreModal`, `AddCategoryModal`, and `AddProductModal`.
 - **Data Binding**: Connected the dashboard to real backend endpoints using TanStack Query for reactive stats and list updates.

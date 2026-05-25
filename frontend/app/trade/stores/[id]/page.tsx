@@ -21,6 +21,7 @@ import {
   Trash2,
   Clock
 } from 'lucide-react';
+import StoreModal from '@/components/StoreModal';
 
 export default function StoreDetailPage() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function StoreDetailPage() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
   
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [noteType, setNoteType] = useState('general');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
@@ -129,7 +131,10 @@ export default function StoreDetailPage() {
         </div>
         
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-white border border-gray-200 px-6 py-3 rounded-2xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+          <button 
+            onClick={() => setIsEditModalOpen(true)}
+            className="flex items-center gap-2 bg-white border border-gray-200 px-6 py-3 rounded-2xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-all active:scale-95"
+          >
             Edit Store
           </button>
           <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
@@ -260,6 +265,16 @@ export default function StoreDetailPage() {
           </div>
         </div>
       </div>
+
+      <StoreModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['store', id] });
+        }}
+        token={token}
+        store={store}
+      />
     </div>
   );
 }
