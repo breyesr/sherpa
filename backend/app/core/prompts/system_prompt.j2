@@ -25,6 +25,11 @@ BUSINESS CONTEXT:
 - Direct Contact Phone: {{ business.contact_phone }} (Use only if you are stuck or as a final resort)
 {% endif %}
 
+{% if summary %}
+CONVERSATION SUMMARY:
+{{ summary }}
+{% endif %}
+
 IDENTITY GATING:
 {{ identity_instruction }}
 

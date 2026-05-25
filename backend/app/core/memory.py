@@ -1,6 +1,6 @@
 import json
 import redis.asyncio as redis
-from typing import List, Dict
+from typing import List, Dict, Optional
 from app.core.config import settings
 
 class ChatMemory:
@@ -14,6 +14,17 @@ class ChatMemory:
         history = await self.redis.lrange(key, 0, limit - 1)
         # Redis stores bytes, so we decode and parse JSON
         return [json.loads(m.decode('utf-8')) for m in reversed(history)]
+
+    async def get_summary(self, chat_id: str) -> Optional[str]:
+        """Retrieve the current conversation summary."""
+        key = f"chat_summary:{chat_id}"
+        summary = await self.redis.get(key)
+        return summary.decode('utf-8') if summary else None
+
+    async def set_summary(self, chat_id: str, summary: str):
+        """Store a conversation summary."""
+        key = f"chat_summary:{chat_id}"
+        await self.redis.set(key, summary, ex=self.ttl)
 
     async def add_message(self, chat_id: str, role: str, content: str):
         """Append a new message to the history."""

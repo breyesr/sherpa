@@ -21,6 +21,13 @@
 - **Worker**: Developed a Celery task (`process_data_import`) that handles asynchronous CSV processing, entity mapping, and idempotent database updates (Create/Update).
 - **Validation**: Verified with a test suite using `Client` entities and custom field mapping.
 
+## [2026-05-25] - Token-Aware Context Assembler & Prompt Optimization (Task 22.4)
+- **Feature**: Implemented `ContextAssembler` to optimize LLM token usage and context relevance.
+- **Summarization**: Added Redis-backed sliding window summarization logic. History turns exceeding the threshold are automatically compressed using a low-cost LLM (`gpt-4o-mini`).
+- **Pruning**: Integrated surgical context injection for business services, ensuring only relevant data is sent to the LLM.
+- **Intent**: Added lightweight intent detection to optimize response flows for noise and simple greetings.
+- **Prompt**: Updated `system_prompt.j2` to support the persistent `CONVERSATION_SUMMARY` field.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.

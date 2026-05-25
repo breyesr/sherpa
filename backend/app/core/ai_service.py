@@ -18,6 +18,7 @@ from app.models.messaging import Conversation, Message
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
+from app.core.context_assembler import ContextAssembler
 
 # Setup prompt template environment
 try:
@@ -36,6 +37,7 @@ class AIService:
         self.db = db
         self.assistant_config = business_profile.assistant_config
         self.memory = ChatMemory()
+        self.assembler = ContextAssembler(db)
 
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
@@ -177,7 +179,13 @@ class AIService:
             await self.db.commit()
 
             # 3. Memory Stage (Redis for quick LLM context)
-            history = await self.memory.get_history(normalized_id)
+            history = await self.memory.get_history(normalized_id, limit=20)
+            
+            # 3.1 Token Optimization: Summarization & Intent Detection
+            optimized = await self.assembler.get_optimized_context(normalized_id, history, user_message)
+            history = optimized["history"]
+            summary = optimized["summary"]
+            intent = optimized["intent"]
             
             # 4. Prompt Construction Stage (Jinja2)
             try:
@@ -191,6 +199,9 @@ class AIService:
                     select(Service).where(Service.business_id == self.business.id, Service.is_active == True)
                 )
                 services = res_services.scalars().all()
+                
+                # Surgical Context Injection: Prune services to relevant ones
+                services = self.assembler.prune_services(services, user_message)
                 
                 # Prepare context for template
                 working_hours = self.assistant_config.working_hours or {}
@@ -258,7 +269,9 @@ class AIService:
                     identity_instruction=identity_instruction,
                     is_known=is_known,
                     missing_fields=missing_fields,
-                    current_time=local_now.strftime('%Y-%m-%d %H:%M')
+                    current_time=local_now.strftime('%Y-%m-%d %H:%M'),
+                    summary=summary,
+                    intent=intent
                 )
             except Exception as e:
                 print(f"CRITICAL: Prompt Construction Stage (Jinja2) Failed: {e}")
