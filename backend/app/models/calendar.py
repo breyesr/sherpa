@@ -8,8 +8,8 @@ class BusySlot(Base):
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
+    start_time = Column(DateTime, nullable=False, index=True)
+    end_time = Column(DateTime, nullable=False, index=True)
     source = Column(String, default="google") # 'google', 'manual'
     
     # Provider-specific ID to avoid duplicates

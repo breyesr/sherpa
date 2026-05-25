@@ -100,8 +100,8 @@ class Appointment(Base):
     client_id = Column(String, ForeignKey("clients.id"), nullable=False)
     service_id = Column(String, ForeignKey("services.id"), nullable=True)
     
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
+    start_time = Column(DateTime, nullable=False, index=True)
+    end_time = Column(DateTime, nullable=False, index=True)
     status = Column(String, default="scheduled") # scheduled, confirmed, cancelled, completed
     reminder_sent = Column(Boolean, default=False)
     notes = Column(String, nullable=True) # Reason for booking
