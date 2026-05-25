@@ -15,8 +15,9 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    console.log('DashboardLayout: Mounted, token state:', token ? 'Exists' : 'Empty');
     setMounted(true);
-  }, []);
+  }, [token]);
 
   // If we are in auth or onboarding, don't show sidebar
   if (pathname.startsWith('/auth') || pathname.startsWith('/onboarding')) {
@@ -24,8 +25,9 @@ export default function DashboardLayout({
   }
 
   // Only show sidebar if we are mounted and have a token
-  // This prevents the "Ghost Sidebar" on the landing page for unauthenticated users
   const showSidebar = mounted && !!token;
+  
+  console.log('DashboardLayout: Render, showSidebar:', showSidebar, 'pathname:', pathname);
 
   return (
     <div className="flex bg-gray-50 min-h-screen text-gray-900">

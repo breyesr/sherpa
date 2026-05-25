@@ -22,45 +22,51 @@ export default function Sidebar() {
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
 
-  // Fetch current user for admin check
+  console.log('Sidebar: Rendering, token exists?', !!token);
+
+  // Fetch current user and business with very safe fallbacks
   const { data: user } = useQuery({
     queryKey: ['me'],
     queryFn: async () => {
       if (!token) return null;
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return null;
-      return res.json();
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return null;
+        return res.json();
+      } catch (e) { return null; }
     },
     enabled: !!token,
+    retry: 1
   });
 
   const { data: business } = useQuery({
     queryKey: ['business'],
     queryFn: async () => {
+      if (!token) return null;
       try {
-        if (!token) return null;
         const res = await fetch(`${API_BASE_URL}/business/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.status === 404) return { vertical_type: 'BASIC' };
-        if (!res.ok) throw new Error('Failed to fetch business');
-        return res.json();
+        if (res.ok) return res.json();
+        return { vertical_type: 'BASIC' };
       } catch (err) {
-        console.error('Sidebar: Error fetching business:', err);
         return { vertical_type: 'BASIC' };
       }
     },
     enabled: !!token,
     staleTime: 60 * 1000,
+    retry: 1
   });
 
   const handleLogout = () => {
+    console.log('Sidebar: Handling logout');
     logout();
     router.push('/auth/login');
   };
 
+  // Base Menu (Always visible if token exists)
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Inbox', href: '/conversations', icon: MessageSquare },
@@ -68,14 +74,13 @@ export default function Sidebar() {
     { name: 'Clients', href: '/crm', icon: Users },
   ];
 
-  // Add Trade Hub if vertical is TRADE
+  // Conditional Items (Safely added)
   if (business?.vertical_type === 'TRADE') {
     menuItems.push({ name: 'Trade Hub', href: '/trade', icon: Store });
   }
 
   menuItems.push({ name: 'Settings', href: '/settings', icon: Settings });
 
-  // Add Admin Panel for admins
   const isAdmin = user?.is_admin || user?.role === 'admin' || user?.role === 'super_admin';
   if (isAdmin) {
     menuItems.push({ name: 'Admin Panel', href: '/admin', icon: ShieldCheck });
