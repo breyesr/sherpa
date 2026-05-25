@@ -74,12 +74,105 @@ async def _process_row(db: Any, data_import: DataImport, row: Dict[str, str], re
             field_name = model_field.split(".")[1]
             custom_fields[field_name] = value
         else:
+            # Data Type Casting for numeric fields
+            if model_field in ["price", "unit_price"]:
+                try:
+                    value = float(value)
+                except ValueError:
+                    value = 0.0
+            elif model_field in ["quantity", "duration_minutes"]:
+                try:
+                    value = int(value)
+                except ValueError:
+                    value = 0
+                    
             entity_data[model_field] = value
             
     if entity_type == "client":
         await _sync_client(db, data_import.business_id, entity_data, custom_fields, results)
+    elif entity_type == "store":
+        await _sync_store(db, data_import.business_id, entity_data, results)
+    elif entity_type == "category":
+        await _sync_category(db, data_import.business_id, entity_data, results)
+    elif entity_type == "product":
+        await _sync_product(db, data_import.business_id, entity_data, results)
     else:
         raise ValueError(f"Unsupported entity type: {entity_type}")
+
+async def _sync_store(db: Any, business_id: str, data: Dict[str, Any], results: Dict[str, Any]):
+    """Sync a single store record."""
+    from app.models.trade import Store
+    
+    # Identify by external_id or name
+    query = select(Store).where(Store.business_id == business_id)
+    if "external_id" in data:
+        query = query.where(Store.external_id == data["external_id"])
+    else:
+        query = query.where(Store.name == data["name"])
+        
+    res = await db.execute(query)
+    store = res.scalars().first()
+    
+    if store:
+        for k, v in data.items():
+            setattr(store, k, v)
+        results["updated"] += 1
+    else:
+        store = Store(business_id=business_id, **data)
+        db.add(store)
+        results["created"] += 1
+
+async def _sync_category(db: Any, business_id: str, data: Dict[str, Any], results: Dict[str, Any]):
+    """Sync a single category record."""
+    from app.models.trade import Category
+    
+    res = await db.execute(select(Category).where(Category.business_id == business_id, Category.name == data["name"]))
+    category = res.scalars().first()
+    
+    if category:
+        for k, v in data.items():
+            setattr(category, k, v)
+        results["updated"] += 1
+    else:
+        category = Category(business_id=business_id, **data)
+        db.add(category)
+        results["created"] += 1
+
+async def _sync_product(db: Any, business_id: str, data: Dict[str, Any], results: Dict[str, Any]):
+    """Sync a single product record."""
+    from app.models.trade import Product, Category
+    
+    if "category_name" in data:
+        cat_name = data.pop("category_name")
+        res_cat = await db.execute(select(Category).where(Category.business_id == business_id, Category.name == cat_name))
+        cat = res_cat.scalars().first()
+        if not cat:
+            cat = Category(business_id=business_id, name=cat_name)
+            db.add(cat)
+            await db.flush()
+        data["category_id"] = cat.id
+    
+    if "category_id" not in data:
+        raise ValueError("Product missing category_id or category_name")
+
+    # Identify by sku or name
+    query = select(Product).where(Product.category_id == data["category_id"])
+    if "sku" in data:
+        query = query.where(Product.sku == data["sku"])
+    else:
+        query = query.where(Product.name == data["name"])
+        
+    res = await db.execute(query)
+    product = res.scalars().first()
+    
+    if product:
+        for k, v in data.items():
+            setattr(product, k, v)
+        results["updated"] += 1
+    else:
+        product = Product(**data)
+        db.add(product)
+        results["created"] += 1
 
 async def _sync_client(db: Any, business_id: str, data: Dict[str, Any], custom_fields: Dict[str, Any], results: Dict[str, Any]):
     """Sync a single client record."""

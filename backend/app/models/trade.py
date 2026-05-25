@@ -119,3 +119,38 @@ class OrderItem(Base):
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product")
+
+class Competitor(Base):
+    __tablename__ = "competitors"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
+    
+    name = Column(String, nullable=False, index=True)
+    presence_level = Column(String, nullable=True) # e.g., 'high', 'medium', 'low'
+    notes = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
+    store = relationship("Store")
+
+class CustomerNote(Base):
+    __tablename__ = "customer_notes"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    client_id = Column(String, ForeignKey("clients.id"), nullable=False)
+    
+    comm_style = Column(String, nullable=True) # e.g., 'direct', 'formal', 'friendly'
+    visit_frequency = Column(String, nullable=True) # e.g., 'weekly', 'monthly'
+    preferred_actions = Column(Text, nullable=True)
+    general_notes = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
+    client = relationship("Client", back_populates="trade_notes")

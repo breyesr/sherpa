@@ -39,6 +39,7 @@ class Client(Base):
 
     business_profile = relationship("BusinessProfile", back_populates="clients")
     appointments = relationship("Appointment", back_populates="client", cascade="all, delete-orphan")
+    trade_notes = relationship("CustomerNote", back_populates="client", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="client", cascade="all, delete-orphan")
 
     @staticmethod

@@ -1,18 +1,21 @@
 # Handoff State
 
 ## Current Focus
-- **Priority**: Implementing the Trade Vertical (Relational Schema).
-- **Secondary**: Competitors and Customer Notes.
+- **Priority**: Implementing the Trade Vertical (AI & Agents).
+- **Secondary**: Specialized "Visit Briefer" and "Lead Qualifier" logic.
 
 ## Recently Completed
 - **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
-- **Task 23.1**: Implemented Store and Store_notes tables (Dossier System).
-- **Task 23.2**: Implemented Orders, Products, and Categories tables (Inventory & Transactions). Verified full transactional flow.
+- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema.
+    - Stores & Store Notes (Dossier System).
+    - Orders, Products, & Categories (Inventory).
+    - Competitors & Customer Notes (Context).
+- **Universal Data Gateway**: Expanded worker to support all 7 Trade entities.
 
 ## Next Steps (Trade Pivot)
-- **Task 23.3**: Implement Competitors and Customer_Notes tables.
 - **Task 23.4**: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
 - **Task 23.5**: Build Trade Dashboard UI (Store Management, Order History, Product Catalog).
+- **Phase 2 Implementation**: Update multi-channel routing (WhatsApp/Telegram) to use specialized agents.
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.

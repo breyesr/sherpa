@@ -126,3 +126,40 @@ class OrderResponse(OrderBase):
 
     class Config:
         from_attributes = True
+
+class CompetitorBase(BaseModel):
+    name: str
+    store_id: str
+    presence_level: Optional[str] = None
+    notes: Optional[str] = None
+
+class CompetitorCreate(CompetitorBase):
+    pass
+
+class CompetitorResponse(CompetitorBase):
+    id: str
+    business_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class CustomerNoteBase(BaseModel):
+    client_id: str
+    comm_style: Optional[str] = None
+    visit_frequency: Optional[str] = None
+    preferred_actions: Optional[str] = None
+    general_notes: Optional[str] = None
+
+class CustomerNoteCreate(CustomerNoteBase):
+    pass
+
+class CustomerNoteResponse(CustomerNoteBase):
+    id: str
+    business_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

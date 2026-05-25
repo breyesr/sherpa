@@ -43,6 +43,14 @@
 - **Migration**: Applied manual migration (`5ee6d1ad3979`) with explicit `orderstatus` ENUM handling.
 - **Validation**: Verified the full inventory -> order flow via an automated script.
 
+## [2026-05-25] - Trade Vertical: Context & Competition Implementation (Task 23.3)
+- **Task**: Complete the relational Trade schema with competitive and behavioral context.
+- **Model**: Created `Competitor` and `CustomerNote` tables.
+- **Context**: `Competitor` tracks rival brand presence at specific stores; `CustomerNote` tracks communication styles and visit frequencies for clients.
+- **Relationship**: Linked both models to `BusinessProfile` (1:N). Linked `Competitor` to `Store` and `CustomerNote` to `Client`.
+- **Migration**: Applied manual migration (`44af8f82f483`) for the new tables.
+- **Validation**: Verified deep contextual retrieval via automated script.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.
