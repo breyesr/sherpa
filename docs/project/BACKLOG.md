@@ -165,6 +165,7 @@
 ## Epic 23: Trade Vertical Implementation (Relational)
 - [x] Task 23.1: Implement Store and Store_notes tables (Dossier System).
 - [x] Task 23.2: Implement Orders, Products, and Categories tables for inventory tracking.
+- [x] Task 23.2.1: Implement CRUD API for Stores, Categories, and Products.
 - [x] Task 23.3: Implement Competitors and Customer_Notes tables.
 - [ ] Task 23.4: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
 - [x] Task 23.5: Build Trade Dashboard UI (Foundation & Navigation).

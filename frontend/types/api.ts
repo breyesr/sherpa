@@ -139,12 +139,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -250,6 +250,49 @@ export interface paths {
      * @description Real-time data ingestion endpoint.
      */
     post: operations["sync_data_api_v1_data_gateway_sync_post"];
+  };
+  "/api/v1/trade/stores": {
+    /**
+     * List Stores
+     * @description List all stores for the current business.
+     */
+    get: operations["list_stores_api_v1_trade_stores_get"];
+    /**
+     * Create Store
+     * @description Create a new store.
+     */
+    post: operations["create_store_api_v1_trade_stores_post"];
+  };
+  "/api/v1/trade/stores/{store_id}": {
+    /**
+     * Update Store
+     * @description Update a store.
+     */
+    patch: operations["update_store_api_v1_trade_stores__store_id__patch"];
+  };
+  "/api/v1/trade/categories": {
+    /**
+     * List Categories
+     * @description List all product categories.
+     */
+    get: operations["list_categories_api_v1_trade_categories_get"];
+    /**
+     * Create Category
+     * @description Create a new category.
+     */
+    post: operations["create_category_api_v1_trade_categories_post"];
+  };
+  "/api/v1/trade/products": {
+    /**
+     * List Products
+     * @description List all products in the catalog.
+     */
+    get: operations["list_products_api_v1_trade_products_get"];
+    /**
+     * Create Product
+     * @description Create a new product.
+     */
+    post: operations["create_product_api_v1_trade_products_post"];
   };
   "/health": {
     /** Health Check */
@@ -560,6 +603,34 @@ export interface components {
           [key: string]: unknown;
         }[] | null;
     };
+    /** CategoryCreate */
+    CategoryCreate: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+    };
+    /** CategoryResponse */
+    CategoryResponse: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** ClientCreate */
     ClientCreate: {
       /** Name */
@@ -744,6 +815,50 @@ export interface components {
        */
       created_at: string;
     };
+    /** ProductCreate */
+    ProductCreate: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Price
+       * @default 0
+       */
+      price?: number;
+      /** Sku */
+      sku?: string | null;
+      /** Category Id */
+      category_id: string;
+    };
+    /** ProductResponse */
+    ProductResponse: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Price
+       * @default 0
+       */
+      price?: number;
+      /** Sku */
+      sku?: string | null;
+      /** Id */
+      id: string;
+      /** Category Id */
+      category_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** ServiceCreate */
     ServiceCreate: {
       /** Name */
@@ -826,6 +941,92 @@ export interface components {
       } | null;
       /** Is Active */
       is_active?: boolean | null;
+    };
+    /** StoreCreate */
+    StoreCreate: {
+      /** Name */
+      name: string;
+      /** Address */
+      address?: string | null;
+      /** Contact Name */
+      contact_name?: string | null;
+      /** Contact Phone */
+      contact_phone?: string | null;
+      /** External Id */
+      external_id?: string | null;
+    };
+    /** StoreNoteResponse */
+    StoreNoteResponse: {
+      /** @default general */
+      type?: components["schemas"]["StoreNoteType"];
+      /** Content */
+      content: string;
+      /** Id */
+      id: string;
+      /** Store Id */
+      store_id: string;
+      /** Author Id */
+      author_id?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * StoreNoteType
+     * @enum {string}
+     */
+    StoreNoteType: "risk" | "opportunity" | "action" | "general";
+    /** StoreResponse */
+    StoreResponse: {
+      /** Name */
+      name: string;
+      /** Address */
+      address?: string | null;
+      /** Contact Name */
+      contact_name?: string | null;
+      /** Contact Phone */
+      contact_phone?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Notes
+       * @default []
+       */
+      notes?: components["schemas"]["StoreNoteResponse"][];
+    };
+    /** StoreUpdate */
+    StoreUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Contact Name */
+      contact_name?: string | null;
+      /** Contact Phone */
+      contact_phone?: string | null;
+      /** External Id */
+      external_id?: string | null;
     };
     /** TestChatRequest */
     TestChatRequest: {
@@ -1602,7 +1803,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -1955,6 +2156,153 @@ export interface operations {
       200: {
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Stores
+   * @description List all stores for the current business.
+   */
+  list_stores_api_v1_trade_stores_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Store
+   * @description Create a new store.
+   */
+  create_store_api_v1_trade_stores_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Store
+   * @description Update a store.
+   */
+  update_store_api_v1_trade_stores__store_id__patch: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Categories
+   * @description List all product categories.
+   */
+  list_categories_api_v1_trade_categories_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CategoryResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Category
+   * @description Create a new category.
+   */
+  create_category_api_v1_trade_categories_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CategoryCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CategoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Products
+   * @description List all products in the catalog.
+   */
+  list_products_api_v1_trade_products_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Product
+   * @description Create a new product.
+   */
+  create_product_api_v1_trade_products_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProductCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"];
         };
       };
       /** @description Validation Error */

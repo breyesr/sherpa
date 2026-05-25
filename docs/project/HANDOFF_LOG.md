@@ -51,6 +51,12 @@
 - **Migration**: Applied manual migration (`44af8f82f483`) for the new tables.
 - **Validation**: Verified deep contextual retrieval via automated script.
 
+## [2026-05-25] - Trade Vertical: CRUD API Implementation (Task 23.2.1)
+- **API**: Implemented full CRUD endpoints for `Stores`, `Categories`, and `Products` in `backend/app/api/trade.py`.
+- **Router**: Registered the `trade` router in the main API entry point.
+- **Contract**: Regenerated `openapi.json` and synchronized frontend TypeScript types.
+- **Validation**: Verified that the new endpoints correctly handle business-level scoping and relationship eager loading.
+
 ## [2026-05-25] - Trade Vertical: Admin Control & Stability Validation
 - **Feature**: Refactored `vertical_type` into an Admin-controlled feature. Admins now assign the `BASIC` or `TRADE` vertical to businesses via the User Management dashboard.
 - **Backend**: Updated `Admin API` and schemas to handle business vertical transitions and eager loading of profiles.
