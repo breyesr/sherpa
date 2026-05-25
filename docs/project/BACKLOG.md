@@ -167,7 +167,7 @@
 - [x] Task 23.2: Implement Orders, Products, and Categories tables for inventory tracking.
 - [x] Task 23.3: Implement Competitors and Customer_Notes tables.
 - [ ] Task 23.4: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
-- [ ] Task 23.5: Build Trade Dashboard UI (Store Management, Order History, Product Catalog).
+- [x] Task 23.5: Build Trade Dashboard UI (Foundation & Navigation).
 
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).

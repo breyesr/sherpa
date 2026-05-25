@@ -6,16 +6,15 @@
 
 ## Recently Completed
 - **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
-- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema.
-    - Stores & Store Notes (Dossier System).
-    - Orders, Products, & Categories (Inventory).
-    - Competitors & Customer Notes (Context).
-- **Universal Data Gateway**: Expanded worker to support all 7 Trade entities.
+- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema (Stores, Orders, Products, Competitors).
+- **Frontend Visibility**: 
+    - Added `vertical_type` selector in General Settings.
+    - Updated Sidebar to show/hide "Trade Hub" based on active vertical.
+    - Created foundational "Trade Hub" page placeholder.
 
 ## Next Steps (Trade Pivot)
 - **Task 23.4**: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
-- **Task 23.5**: Build Trade Dashboard UI (Store Management, Order History, Product Catalog).
-- **Phase 2 Implementation**: Update multi-channel routing (WhatsApp/Telegram) to use specialized agents.
+- **Task 23.5 (Expansion)**: Build out Store Management, Order History, and Product Catalog views in the Trade Hub.
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
