@@ -34,6 +34,7 @@ class BusinessProfile(Base):
     services = relationship("Service", back_populates="business_profile", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business_profile", cascade="all, delete-orphan")
     stores = relationship("Store", back_populates="business_profile", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="business_profile", cascade="all, delete-orphan")
 
     @property
     def assistant_config(self):

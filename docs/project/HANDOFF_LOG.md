@@ -35,6 +35,14 @@
 - **Migration**: Applied manual migration (`8f423ae0a403`) with explicit PostgreSQL ENUM handling.
 - **Validation**: Verified data persistence and relationship integrity via a verification script.
 
+## [2026-05-25] - Trade Vertical: Inventory & Orders Implementation (Task 23.2)
+- **Task**: Expand Trade schema to support product catalogs and transactional restock requests.
+- **Model**: Created `Category`, `Product`, `Order`, and `OrderItem` tables.
+- **Transactional Support**: Implemented `OrderStatus` enum and logic to track total amounts and individual line items.
+- **Relationship**: Linked `Category` and `Order` to `BusinessProfile`. Linked `OrderItem` to `Product` and `Order`.
+- **Migration**: Applied manual migration (`5ee6d1ad3979`) with explicit `orderstatus` ENUM handling.
+- **Validation**: Verified the full inventory -> order flow via an automated script.
+
 ## [2026-05-24] - Modular Pivot Planning & Token Optimization
 - **Task**: Pivot Sherpa to a modular architecture with a focus on a Trade vertical.
 - **Action**: Created `docs/scope/modular_pivot_plan.md` and `docs/project/sprint_plan.md`. Updated `docs/project/BACKLOG.md` with Epics 22 and 23.

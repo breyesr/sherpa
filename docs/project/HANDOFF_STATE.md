@@ -2,17 +2,17 @@
 
 ## Current Focus
 - **Priority**: Implementing the Trade Vertical (Relational Schema).
-- **Secondary**: Orders, Products, and Categories.
+- **Secondary**: Competitors and Customer Notes.
 
 ## Recently Completed
 - **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
-- **Task 23.1**: Implemented Store and Store_notes tables (Dossier System). Verified persistence and relationships.
-- **Task 22.4**: Verified history summarization and surgical context pruning.
+- **Task 23.1**: Implemented Store and Store_notes tables (Dossier System).
+- **Task 23.2**: Implemented Orders, Products, and Categories tables (Inventory & Transactions). Verified full transactional flow.
 
 ## Next Steps (Trade Pivot)
-- **Task 23.2**: Implement Orders, Products, and Categories tables for inventory tracking.
 - **Task 23.3**: Implement Competitors and Customer_Notes tables.
 - **Task 23.4**: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
+- **Task 23.5**: Build Trade Dashboard UI (Store Management, Order History, Product Catalog).
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
