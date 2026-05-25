@@ -19,7 +19,8 @@ import {
   Plus,
   Loader2,
   Trash2,
-  Clock
+  Clock,
+  ClipboardList
 } from 'lucide-react';
 import StoreModal from '@/components/StoreModal';
 

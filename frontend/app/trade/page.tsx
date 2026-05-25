@@ -15,7 +15,8 @@ import {
   Search,
   ChevronRight,
   Phone,
-  LayoutGrid
+  LayoutGrid,
+  ClipboardList
 } from 'lucide-react';
 import StoreModal from '@/components/StoreModal';
 import AddCategoryModal from '@/components/AddCategoryModal';
