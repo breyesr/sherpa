@@ -2,17 +2,15 @@
 
 ## Current Focus
 - **Priority**: Initializing the Modular "Plug & Play" Pivot (Trade Vertical Focus).
-- **Secondary**: Refactoring Assistant Configuration to 1:N Agent Architecture.
+- **Secondary**: Building the "Universal Data Gateway" for Data Ingestion.
 
 ## Recently Completed
-- **Task 22.1**: Implemented `vertical_type` (BASIC, TRADE) migration for `BusinessProfile`. Verified database consistency and OpenAPI parity.
-- **Epic 21 (Partial)**: Fixed the "Ghost Sidebar" and resolved stale server state during login.
-- **Modular Design**: Finalized the `modular_pivot_plan.md` and `sprint_plan.md` for the Trade vertical.
+- **Task 22.1**: Implemented `vertical_type` (BASIC, TRADE) migration for `BusinessProfile`.
+- **Task 22.2**: Refactored the backend to support a 1:N `Agent` architecture. Created `Agent` model and migrated `AssistantConfig`. Verified with integration tests and updated frontend types.
 
 ## Next Steps (Trade Pivot)
-- **Task 22.2**: Refactor the backend to support a 1:N `Agent` architecture. Create `Agent` model and migrate `AssistantConfig`.
-- **Task 22.3**: Begin implementation of the "Universal Data Gateway" for CSV/API ingestion.
-- **Task 22.4**: Implement Token-Aware Context Assembler.
+- **Task 22.3**: Build "Universal Data Gateway" for CSV bulk imports and REST API ingestion.
+- **Task 22.4**: Implement Token-Aware Context Assembler (Prompt Pruning & Summarization Logic).
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
