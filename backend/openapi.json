@@ -1180,6 +1180,10 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationResponse"
+                  },
+                  "type": "array",
                   "title": "Response List Conversations Api V1 Inbox Conversations Get"
                 }
               }
@@ -1222,6 +1226,10 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
                   "title": "Response Get Conversation Messages Api V1 Inbox Conversations  Conversation Id  Messages Get"
                 }
               }
@@ -1281,7 +1289,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Update Conversation Api V1 Inbox Conversations  Conversation Id  Patch"
+                  "$ref": "#/components/schemas/ConversationResponse"
                 }
               }
             }
@@ -1305,7 +1313,7 @@
           "whatsapp"
         ],
         "summary": "Verify Whatsapp",
-        "description": "WhatsApp Webhook verification.",
+        "description": "WhatsApp Cloud API Webhook verification.",
         "operationId": "verify_whatsapp_api_v1_whatsapp_webhook_get",
         "parameters": [
           {
@@ -1376,13 +1384,71 @@
         }
       }
     },
+    "/api/v1/whatsapp/debug/twilio": {
+      "get": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Debug Twilio",
+        "description": "Simple endpoint to verify Twilio is actually reaching the server.",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Debug Twilio",
+        "description": "Simple endpoint to verify Twilio is actually reaching the server.",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/whatsapp/webhook/twilio": {
+      "post": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Twilio Whatsapp Webhook",
+        "description": "Multi-tenant Twilio Webhook (ISV Platform Model).",
+        "operationId": "twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/whatsapp/setup": {
       "post": {
         "tags": [
           "whatsapp"
         ],
         "summary": "Setup Whatsapp",
-        "description": "Save WhatsApp Cloud API credentials.",
+        "description": "Simplified Setup (Option B): Users only provide their number.\nThe Platform's master keys are used automatically.",
         "operationId": "setup_whatsapp_api_v1_whatsapp_setup_post",
         "requestBody": {
           "content": {
@@ -2431,6 +2497,10 @@
             "title": "Timezone",
             "default": "UTC"
           },
+          "vertical_type": {
+            "$ref": "#/components/schemas/VerticalType",
+            "default": "BASIC"
+          },
           "crm_config": {
             "anyOf": [
               {
@@ -2486,6 +2556,10 @@
             "type": "string",
             "title": "Timezone",
             "default": "UTC"
+          },
+          "vertical_type": {
+            "$ref": "#/components/schemas/VerticalType",
+            "default": "BASIC"
           },
           "crm_config": {
             "anyOf": [
@@ -2600,6 +2674,16 @@
               }
             ],
             "title": "Timezone"
+          },
+          "vertical_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerticalType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "crm_config": {
             "anyOf": [
@@ -2805,6 +2889,96 @@
         "type": "object",
         "title": "ClientUpdate"
       },
+      "ConversationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform"
+          },
+          "platform_chat_id": {
+            "type": "string",
+            "title": "Platform Chat Id"
+          },
+          "last_message_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message At"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "ai_enabled": {
+            "type": "boolean",
+            "title": "Ai Enabled"
+          },
+          "extra_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Data",
+            "default": {}
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "business_id",
+          "client_id",
+          "platform",
+          "platform_chat_id",
+          "is_active",
+          "ai_enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2853,6 +3027,51 @@
           "created_at"
         ],
         "title": "IntegrationResponse"
+      },
+      "MessageResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "platform_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Message Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "conversation_id",
+          "role",
+          "content",
+          "created_at"
+        ],
+        "title": "MessageResponse"
       },
       "ServiceCreate": {
         "properties": {
@@ -3297,6 +3516,14 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VerticalType": {
+        "type": "string",
+        "enum": [
+          "BASIC",
+          "TRADE"
+        ],
+        "title": "VerticalType"
       }
     },
     "securitySchemes": {

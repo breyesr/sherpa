@@ -156,6 +156,19 @@
 - [x] Task 21.2: Resolve stale server-side state during login redirection by forcing a router refresh.
 - [ ] Task 21.3: Audit and fix hydration mismatches in authentication-dependent layout components.
 
+## Epic 22: Modular "Plug & Play" Architecture
+- [ ] Task 22.1: Add `vertical_type` (BASIC, TRADE) to BusinessProfile and update schemas.
+- [ ] Task 22.2: Implement 1:N `Agent` architecture to support specialized bots per vertical.
+- [ ] Task 22.3: Build "Universal Data Gateway" for CSV bulk imports and REST API ingestion.
+- [ ] Task 22.4: Implement Token-Aware Context Assembler (Prompt Pruning & Summarization Logic).
+
+## Epic 23: Trade Vertical Implementation (Relational)
+- [ ] Task 23.1: Implement Store and Store_notes tables (Dossier System).
+- [ ] Task 23.2: Implement Orders, Products, and Categories tables for inventory tracking.
+- [ ] Task 23.3: Implement Competitors and Customer_Notes tables.
+- [ ] Task 23.4: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
+- [ ] Task 23.5: Build Trade Dashboard UI (Store Management, Order History, Product Catalog).
+
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
 - No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).

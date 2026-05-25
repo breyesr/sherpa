@@ -1,8 +1,13 @@
-from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey
+import enum
+from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
 from datetime import datetime
+
+class VerticalType(str, enum.Enum):
+    BASIC = "BASIC"
+    TRADE = "TRADE"
 
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
@@ -13,6 +18,7 @@ class BusinessProfile(Base):
     category = Column(String, nullable=True)
     contact_phone = Column(String, nullable=True)
     timezone = Column(String, nullable=False, default="UTC")
+    vertical_type = Column(Enum(VerticalType), nullable=False, default=VerticalType.BASIC, server_default=VerticalType.BASIC.value)
     trial_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
     

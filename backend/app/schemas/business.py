@@ -1,6 +1,11 @@
+import enum
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
+
+class VerticalType(str, enum.Enum):
+    BASIC = "BASIC"
+    TRADE = "TRADE"
 
 class AssistantConfigBase(BaseModel):
     name: str
@@ -61,6 +66,7 @@ class BusinessProfileBase(BaseModel):
     category: Optional[str] = None
     contact_phone: Optional[str] = None
     timezone: str = "UTC"
+    vertical_type: VerticalType = VerticalType.BASIC
     crm_config: Optional[List[Dict]] = []
 
 class BusinessProfileCreate(BusinessProfileBase):
@@ -71,6 +77,7 @@ class BusinessProfileUpdate(BaseModel):
     category: Optional[str] = None
     contact_phone: Optional[str] = None
     timezone: Optional[str] = None
+    vertical_type: Optional[VerticalType] = None
     crm_config: Optional[List[Dict]] = None
 
 class BusinessProfileResponse(BusinessProfileBase):
