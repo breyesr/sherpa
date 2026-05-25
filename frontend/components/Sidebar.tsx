@@ -3,19 +3,37 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config';
 import { 
   LayoutDashboard, 
   Users, 
   Calendar, 
   MessageSquare, 
   Settings, 
-  LogOut 
+  LogOut,
+  Store
 } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
+
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch(`${API_BASE_URL}/business/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch business');
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 60 * 1000,
+  });
 
   const handleLogout = () => {
     logout();
@@ -27,8 +45,14 @@ export default function Sidebar() {
     { name: 'Inbox', href: '/conversations', icon: MessageSquare },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
     { name: 'Clients', href: '/crm', icon: Users },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ];
+
+  // Add Trade Hub if vertical is TRADE
+  if (business?.vertical_type === 'TRADE') {
+    menuItems.push({ name: 'Trade Hub', href: '/trade', icon: Store });
+  }
+
+  menuItems.push({ name: 'Settings', href: '/settings', icon: Settings });
 
   return (
     <div className="w-64 bg-white border-r min-h-screen flex flex-col">

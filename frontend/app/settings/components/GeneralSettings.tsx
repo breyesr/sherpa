@@ -41,6 +41,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     category: business?.category || '', 
     contact_phone: business?.contact_phone || '', 
     timezone: business?.timezone || 'UTC',
+    vertical_type: business?.vertical_type || 'BASIC',
     crm_config: business?.crm_config || []
   };
 
@@ -95,6 +96,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       category: editBusiness.category,
       contact_phone: editBusiness.contact_phone,
       timezone: editBusiness.timezone,
+      vertical_type: editBusiness.vertical_type,
       crm_config: finalCrmConfig 
     };
 
@@ -207,6 +209,17 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
                 {TIMEZONES.map(tz => (
                   <option key={tz.value} value={tz.value}>{tz.label}</option>
                 ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Vertical Type</label>
+              <select 
+                value={editBusiness.vertical_type}
+                onChange={e => setEditBusiness({...editBusiness, vertical_type: e.target.value})}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium appearance-none"
+              >
+                <option value="BASIC">Basic (Scheduling)</option>
+                <option value="TRADE">Trade (Stores & Inventory)</option>
               </select>
             </div>
           </div>
