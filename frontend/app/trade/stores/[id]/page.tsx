@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import SafeDate from '@/components/SafeDate';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Store, 
@@ -246,9 +247,9 @@ export default function StoreDetailPage() {
                         {getNoteIcon(note.type)}
                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">{note.type}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-gray-400 text-xs font-bold uppercase tracking-widest" suppressHydrationWarning>
+                      <div className="flex items-center gap-1.5 text-gray-400 text-xs font-bold uppercase tracking-widest">
                         <Clock size={14} />
-                        {new Date(note.created_at).toLocaleDateString()}
+                        <SafeDate date={note.created_at} />
                       </div>
                     </div>
                     <p className="text-gray-800 font-medium leading-relaxed whitespace-pre-wrap">{note.content}</p>

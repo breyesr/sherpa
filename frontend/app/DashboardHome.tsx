@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import SafeDate from '@/components/SafeDate';
 
 interface DashboardHomeProps {
   initialBusiness: any;
@@ -201,11 +202,14 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className={`px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm border ${isPast ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-gray-900 text-white border-transparent'}`} suppressHydrationWarning>
+                          <div className={`px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm border ${isPast ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-gray-900 text-white border-transparent'}`}>
                             <Clock size={14} className={isPast ? 'text-gray-400' : 'text-blue-400'} />
-                            <span className="font-bold text-sm">
-                              {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <SafeDate 
+                              date={apt.start_time} 
+                              format="time" 
+                              options={{ hour: '2-digit', minute: '2-digit' }} 
+                              className="font-bold text-sm" 
+                            />
                           </div>
                           <div className="mt-2 flex justify-end">
                             <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${statusColors[apt.status] || 'bg-gray-50 text-gray-500 border-gray-100'}`}>
@@ -247,9 +251,11 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                         </div>
                         <div>
                           <p className="font-bold text-sm text-gray-900 line-clamp-1">{apt.client?.name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase" suppressHydrationWarning>
-                            {new Date(apt.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(apt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                          <div className="text-[10px] text-gray-400 font-bold uppercase flex items-center gap-1">
+                            <SafeDate date={apt.start_time} options={{ month: 'short', day: 'numeric' }} />
+                            <span>at</span>
+                            <SafeDate date={apt.start_time} format="time" options={{ hour: '2-digit', minute: '2-digit' }} />
+                          </div>
                         </div>
                       </div>
                       <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-500 transition-colors" />

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, Filter, User, Send, Bot, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import SafeDate from '@/components/SafeDate';
 import { toast } from 'sonner';
 
 interface ConversationsContentProps {
@@ -136,8 +137,12 @@ export default function ConversationsContent({ initialConversations, token }: Co
                           {conv.platform}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 truncate font-medium" suppressHydrationWarning>
-                        {conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No messages'}
+                      <p className="text-xs text-gray-500 truncate font-medium">
+                        {conv.last_message_at ? (
+                          <SafeDate date={conv.last_message_at} format="time" options={{ hour: '2-digit', minute: '2-digit' }} />
+                        ) : (
+                          'No messages'
+                        )}
                       </p>
                     </div>
                     
@@ -212,9 +217,9 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {m.content}
                       </div>
-                      <div className={`flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter ${m.role === 'user' ? 'justify-start' : 'justify-end'}`} suppressHydrationWarning>
+                      <div className={`flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                         {m.role === 'user' ? <User size={10} /> : <Bot size={10} />}
-                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <SafeDate date={m.created_at} format="time" options={{ hour: '2-digit', minute: '2-digit' }} />
                       </div>
                     </div>
                   </div>

@@ -20,6 +20,7 @@ import RescheduleAppointmentModal from '@/components/RescheduleAppointmentModal'
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import SafeDate from '@/components/SafeDate';
 
 interface ClientCalendarProps {
   initialAppointments: any[];
@@ -370,13 +371,26 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                     </td>
                     <td className="px-8 py-5">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-gray-900 font-medium" suppressHydrationWarning>
+                        <div className="flex items-center gap-2 text-gray-900 font-medium">
                           <CalendarIcon size={14} className="text-blue-500" />
-                          {start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })}
+                          <SafeDate 
+                            date={start} 
+                            options={{ weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone }} 
+                          />
                         </div>
-                        <div className="flex items-center gap-2 text-gray-500 text-sm" suppressHydrationWarning>
+                        <div className="flex items-center gap-2 text-gray-500 text-sm">
                           <Clock size={14} />
-                          {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
+                          <SafeDate 
+                            date={start} 
+                            format="time" 
+                            options={{ hour: '2-digit', minute: '2-digit', timeZone: timezone }} 
+                          />
+                          <span> - </span>
+                          <SafeDate 
+                            date={end} 
+                            format="time" 
+                            options={{ hour: '2-digit', minute: '2-digit', timeZone: timezone }} 
+                          />
                         </div>
                       </div>
                     </td>

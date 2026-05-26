@@ -12,10 +12,10 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const token = useAuthStore((state) => state.token);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
   }, []);
 
   // Standard Public Routes
@@ -23,12 +23,12 @@ export default function DashboardLayout({
     return <>{children}</>;
   }
 
-  // Only show sidebar if we have a token
-  // We use the mounted flag to avoid hydration mismatches
-  const showSidebar = mounted && !!token;
+  // Sidebar should only show if we have a token
+  // But the flex container should always be there to provide the base background/text styles
+  const showSidebar = isClient && !!token;
 
   return (
-    <div className="flex bg-gray-50 min-h-screen text-gray-900">
+    <div className="flex bg-gray-50 min-h-screen text-gray-900 w-full overflow-hidden">
       {showSidebar && <Sidebar />}
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
