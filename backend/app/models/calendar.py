@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, Index
 from app.core.database import Base
 from uuid_extensions import uuid7str
 from datetime import datetime
@@ -16,3 +16,7 @@ class BusySlot(Base):
     external_id = Column(String, nullable=True, index=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('ix_busy_slots_business_id_start_time', 'business_id', 'start_time'),
+    )

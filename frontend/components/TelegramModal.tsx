@@ -81,7 +81,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
               onClick={() => setStep(2)}
               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
             >
-              I'm at @BotFather, next step
+              I&apos;m at @BotFather, next step
             </button>
           </div>
         );
@@ -93,7 +93,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
               <div>
                 <p className="font-bold text-blue-900">Get your API Token</p>
                 <p className="text-sm text-blue-700 mt-1">
-                  Once created, @BotFather will give you a "token" (it looks like <span className="font-mono">12345:ABC...</span>).
+                  Once created, @BotFather will give you a &quot;token&quot; (it looks like <span className="font-mono">12345:ABC...</span>).
                 </p>
               </div>
             </div>

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer
+from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table
 import enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -10,6 +10,14 @@ class StoreNoteType(str, enum.Enum):
     OPPORTUNITY = "opportunity"
     ACTION = "action"
     GENERAL = "general"
+
+# Association table for Many-to-Many Store <-> Client relationship
+store_clients = Table(
+    "store_clients",
+    Base.metadata,
+    Column("store_id", String, ForeignKey("stores.id", ondelete="CASCADE"), primary_key=True),
+    Column("client_id", String, ForeignKey("clients.id", ondelete="CASCADE"), primary_key=True),
+)
 
 class OrderStatus(str, enum.Enum):
     PENDING = "pending"
@@ -52,12 +60,9 @@ class Store(Base):
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    client_id = Column(String, ForeignKey("clients.id"), nullable=True) # Linked to Store Owner/Retailer
     
     name = Column(String, nullable=False, index=True)
     address = Column(String, nullable=True)
-    contact_name = Column(String, nullable=True)
-    contact_phone = Column(String, nullable=True)
     
     # Metadata for trade operations
     external_id = Column(String, nullable=True, index=True)
@@ -66,7 +71,10 @@ class Store(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile", back_populates="stores")
-    client = relationship("Client")
+    
+    # Many-to-Many relationship with Clients (Retailers)
+    clients = relationship("Client", secondary=store_clients, backref="stores")
+    
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
 
 class StoreNote(Base):

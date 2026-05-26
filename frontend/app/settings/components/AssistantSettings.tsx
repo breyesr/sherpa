@@ -5,8 +5,12 @@ import { MessageSquare, Save, Loader2, Send } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+
 interface AssistantSettingsProps {
-  business: any;
+  business: BusinessProfileResponse;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -39,7 +43,7 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
   useEffect(() => {
     const isDirty = JSON.stringify(editAssistant) !== JSON.stringify(initialData);
     onDirtyChange?.(isDirty);
-  }, [editAssistant, business, onDirtyChange]);
+  }, [editAssistant, initialData, onDirtyChange]);
 
   const [sandboxMessages, setSandboxMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [sandboxInput, setSandboxInput] = useState('');

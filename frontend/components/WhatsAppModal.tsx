@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ShieldCheck, ExternalLink, CheckCircle2, ChevronRight, Smartphone, MessageSquare, Copy, Check } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, ChevronRight, MessageSquare, Copy, Check } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
 interface WhatsAppModalProps {
@@ -66,7 +66,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
           <div className="space-y-6 text-left animate-in fade-in duration-300">
             <h3 className="font-bold text-lg text-gray-900">Connect in seconds</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Sherpa uses its own global infrastructure to connect your WhatsApp. You don't need any complex accounts or API keys.
+              Sherpa uses its own global infrastructure to connect your WhatsApp. You don&apos;t need any complex accounts or API keys.
             </p>
             <div className="space-y-3">
               <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
@@ -89,8 +89,8 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
       case 2:
         return (
           <div className="space-y-6 text-left animate-in slide-in-from-right-4 duration-300">
-            <h3 className="font-bold text-lg text-gray-900">What's your number?</h3>
-            <p className="text-gray-600 text-sm">Enter the phone number you'll use for your business.</p>
+            <h3 className="font-bold text-lg text-gray-900">What&apos;s your number?</h3>
+            <p className="text-gray-600 text-sm">Enter the phone number you&apos;ll use for your business.</p>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">WhatsApp Number</label>
@@ -149,7 +149,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
                 disabled={loading}
                 className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
               >
-                {loading ? 'Verifying...' : "I've sent the code"}
+                {loading ? 'Verifying...' : "I\u0027ve sent the code"}
               </button>
             </div>
           </div>

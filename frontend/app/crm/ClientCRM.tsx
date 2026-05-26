@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2, Loader2, AlertCircle, Filter, Settings } from 'lucide-react';
 import ClientModal from '@/components/ClientModal';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import { ClientResponse, BusinessProfileResponse } from '@/types/api';
 
 interface ClientCRMProps {
-  initialClients: any[];
-  initialBusiness: any;
+  initialClients: ClientResponse[];
+  initialBusiness: BusinessProfileResponse;
   token: string | null;
 }
 
@@ -17,11 +18,14 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
   const [searchTerm, setSearchTerm] = useState('');
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientResponse | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const { data: business } = useQuery({
+  const clientIdParam = searchParams.get('id');
+
+  const { data: business } = useQuery<BusinessProfileResponse>({
     queryKey: ['business'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/business/me`, {
@@ -33,7 +37,7 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
     staleTime: 60 * 1000,
   });
 
-  const { data: clients = [], isFetching } = useQuery({
+  const { data: clients = [], isFetching } = useQuery<ClientResponse[]>({
     queryKey: ['clients'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/crm/clients`, {
@@ -46,16 +50,29 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
     staleTime: 30 * 1000, // 30 seconds
   });
 
-  const filteredClients = clients.filter((c: any) => {
+  // Auto-open modal if ID is in URL
+  useEffect(() => {
+    if (clientIdParam && clients.length > 0) {
+      const client = clients.find((c) => c.id === clientIdParam);
+      if (client) {
+        setSelectedClient(client);
+        setIsModalOpen(true);
+      }
+    }
+  }, [clientIdParam, clients]);
+
+  const filteredClients = clients.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         c.phone.includes(searchTerm);
+                         (c.phone && c.phone.includes(searchTerm));
+    // @ts-expect-error custom_fields is unknown
     const matchesFlag = showFlaggedOnly ? c.custom_fields?.needs_review === true : true;
     return matchesSearch && matchesFlag;
   });
 
-  const flaggedCount = clients.filter((c: any) => c.custom_fields?.needs_review === true).length;
+  // @ts-expect-error custom_fields is unknown
+  const flaggedCount = clients.filter((c) => c.custom_fields?.needs_review === true).length;
 
-  const handleEditClient = (client: any) => {
+  const handleEditClient = (client: ClientResponse) => {
     setSelectedClient(client);
     setIsModalOpen(true);
   };
@@ -128,10 +145,12 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
 
       {filteredClients.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClients.map((client: any) => (
+          {filteredClients.map((client) => (
             <div key={client.id} className={`bg-white p-6 rounded-2xl border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative ${
+              // @ts-expect-error custom_fields is unknown
               client.custom_fields?.needs_review ? 'border-red-200 bg-red-50/10' : 'border-gray-100'
             }`}>
+              {/* @ts-expect-error custom_fields is unknown */}
               {client.custom_fields?.needs_review && (
                 <div className="absolute -top-3 -right-2 bg-red-500 text-white p-1.5 rounded-lg shadow-lg z-10 animate-bounce">
                   <AlertCircle size={16} />
@@ -145,10 +164,12 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
               </button>
               <h3 className="text-xl font-bold text-gray-900 mb-4 pr-8 group-hover:text-blue-600 transition-colors truncate">{client.name}</h3>
               
+              {/* @ts-expect-error custom_fields is unknown */}
               {client.custom_fields?.needs_review && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700 font-medium flex gap-2">
                   <AlertCircle size={14} className="shrink-0" />
                   <span>
+                    {/* @ts-expect-error custom_fields is unknown */}
                     <strong>Needs Attention:</strong> {client.custom_fields.review_reason || 'AI requested manual help'}
                   </span>
                 </div>

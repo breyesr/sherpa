@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2, Scissors, User } from 'lucide-react';
+import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2, Scissors } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -13,9 +13,14 @@ import AssistantSettings from './components/AssistantSettings';
 import ServiceCatalog from './components/ServiceCatalog';
 import IntegrationsPanel from './components/IntegrationsPanel';
 
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+type UserResponse = components['schemas']['UserResponse'];
+
 interface SettingsContentProps {
-  initialBusiness: any;
-  initialUser: any;
+  initialBusiness: BusinessProfileResponse;
+  initialUser: UserResponse;
   token: string | null;
 }
 
@@ -61,8 +66,6 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
       setActiveTab(tabParam);
     }
   }, [tabParam, activeTab]);
-  
-  const queryClient = useQueryClient();
   
   const { data: business = initialBusiness, isFetching: isFetchingBiz } = useQuery({
     queryKey: ['business'],

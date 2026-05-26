@@ -1,5 +1,38 @@
 # Handoff Log
 
+## [2026-05-26] - Epic 26: Architectural Refactor - Dedicated Trade Views
+- **Routing Pivot**: Decoupled the Trade Hub from a tab-based system to a multi-route architecture (`/trade`, `/trade/stores`, `/trade/retailers`).
+- **Retailers CRM**: Created a dedicated view for commercial relationship management, migrating the full CRM list and lead-scoring intelligence to its own route.
+- **Stores Management**: Established a specialized view for physical locations, address tracking, and health monitoring.
+- **Dashboard Consolidation**: Refactored the root `/trade` page into a high-level operational dashboard (Pulse) with KPI cards and recent activity feeds.
+- **Maintenance**: Fixed linting regressions and verified deep-linking integrity across the new routes.
+
+## [2026-05-26] - Epic 27: Multi-Retailer Stores & Inline Ops
+- **Many-to-Many Refactor**: Migrated the `Store` model to a many-to-many relationship with `Client` using a junction table (`store_clients`). Dropped the redundant `client_id` column.
+- **Migration**: Applied Alembic migration `475768df9d70` to update the schema.
+- **API Hardening**: Refactored Trade API endpoints to support list-based client linking and enforced eager loading to prevent serialization crashes.
+- **Inline Editing**: Transformed the Store Detail header into a set of inline, auto-saving inputs for Name, Address, and external ID.
+- **Enhanced Stores List**: Updated the physical assets grid with health status (based on dossier entry density) and a list of primary linked contacts.
+- **Multi-Retailer UI**: Implemented a tagging-style relationship picker in the `StoreModal` and Detail views.
+
+## [2026-05-26] - Task 23.4: Specialized Trade AI Agents
+- **AI Service**: Implemented `get_specialized_response` in `AIService` to handle non-conversational AI reports.
+- **Prompts**: Created `visit_briefer.j2` and `lead_qualifier.j2` templates that inject client order history, linked stores, and specialized notes.
+- **Endpoints**: Added `POST /trade/clients/{id}/brief` and `POST /trade/clients/{id}/qualify` to generate actionable sales intelligence.
+- **Frontend**: Integrated AI insights into the `ClientModal` under the "Trade Context" tab, providing sales reps with one-click preparation tools.
+- **Maintenance**: Performed a major "Structural Hardening" pass on the frontend, fixing critical ReferenceErrors (searchParams, useEffect) and reducing 100+ linting errors to a manageable baseline.
+- **Validation**: Verified the specialized agents via integration script (`verify_agents.py`) confirming correct data injection and report structure.
+
+## [2026-05-26] - Epic 24: Unified Trade CRM & Model Cleanup
+- **Task 24.1 (Backend)**: Removed redundant `contact_name` and `contact_phone` fields from the `Store` model.
+- **Task 24.1 (Migration)**: Applied Alembic migration (`4cf7b82a61ea`) to drop the redundant columns.
+- **Maintenance**: Restored missing composite indexes (`ix_appointments_business_id_start_time`, `ix_busy_slots_business_id_start_time`) to SQLAlchemy models to prevent Alembic drift.
+- **Task 24.2 (Frontend)**: Refactored `StoreModal` to enforce strict CRM linking. Implemented "Quick Add Client" in the relationship picker to streamline the retailer creation flow.
+- **Task 24.3 (Frontend)**: Implemented "Retailers" tab in the Trade Hub list view, providing a unified list of CRM clients associated with stores.
+- **Task 24.4 (Backend)**: Added `GET /crm/clients/{id}` endpoint to fetch full trade context (stores, orders, trade notes).
+- **Task 24.4 (Frontend)**: Enhanced `ClientModal` with a "Trade Context" tab for businesses in the TRADE vertical, allowing users to see store history and order data directly from the CRM.
+- **Validation**: Verified the new relational flow via a dedicated integration test script (`verify_trade_integration.py`) and manual verification of the Store creation and Client detail views. Verified that backend unit tests pass. Fixed frontend lint regressions.
+
 ## [2026-05-25] - Vertical Type Implementation & Migration
 - **Task**: Implement the foundational vertical discriminator for the modular pivot.
 - **Action**: Added `vertical_type` (Enum: BASIC, TRADE) to `BusinessProfile` model and schemas.

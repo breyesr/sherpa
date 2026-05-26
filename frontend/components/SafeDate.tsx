@@ -34,7 +34,7 @@ export default function SafeDate({ date, format = 'date', options, className }: 
     } else {
       text = `${d.toLocaleDateString(undefined, options)} ${d.toLocaleTimeString([], options)}`;
     }
-  } catch (e) {
+  } catch {
     text = d.toISOString();
   }
 

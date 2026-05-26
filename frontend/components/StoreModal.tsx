@@ -1,36 +1,41 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2, Search, User, Phone, Check, Plus } from 'lucide-react';
+import { X, Loader2, Search, User, Plus } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQuery } from '@tanstack/react-query';
+
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
 
 interface StoreModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   token: string | null;
-  store?: any; // Optional store object for editing
+  store?: StoreResponse; // Optional store object for editing
 }
 
 export default function StoreModal({ isOpen, onClose, onSuccess, token, store }: StoreModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    contact_name: '',
-    contact_phone: '',
     external_id: '',
-    client_id: ''
+    client_ids: [] as string[]
   });
+  const [selectedClients, setSelectedClients] = useState<ClientResponse[]>([]);
   const [clientSearch, setClientSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [addingClient, setAddingClient] = useState(false);
   const [error, setError] = useState('');
 
   const isEditing = !!store;
 
   // Fetch Clients for the Picker
-  const { data: clients = [], isLoading: loadingClients } = useQuery({
+  const { data: clients = [], isLoading: loadingClients, refetch: refetchClients } = useQuery<ClientResponse[]>({
     queryKey: ['clients-picker'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/crm/clients`, {
@@ -42,9 +47,10 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
     enabled: isOpen && !!token,
   });
 
-  const filteredClients = clients.filter((c: any) => 
-    c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    c.phone.includes(clientSearch)
+  const filteredClients = (clients as ClientResponse[]).filter((c) => 
+    (c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    (c.phone && c.phone.includes(clientSearch))) &&
+    !formData.client_ids.includes(c.id)
   ).slice(0, 5); // Limit to 5 for the dropdown
 
   useEffect(() => {
@@ -52,31 +58,60 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
       setFormData({
         name: store.name || '',
         address: store.address || '',
-        contact_name: store.contact_name || '',
-        contact_phone: store.contact_phone || '',
         external_id: store.external_id || '',
-        client_id: store.client_id || ''
+        client_ids: (store.clients || []).map(c => c.id)
       });
-      if (store.client) {
-        setClientSearch(store.client.name);
-      }
+      setSelectedClients(store.clients || []);
     } else if (!isEditing && isOpen) {
-      setFormData({ name: '', address: '', contact_name: '', contact_phone: '', external_id: '', client_id: '' });
+      setFormData({ name: '', address: '', external_id: '', client_ids: [] });
+      setSelectedClients([]);
       setClientSearch('');
     }
   }, [store, isOpen, isEditing]);
 
   if (!isOpen) return null;
 
-  const handleSelectClient = (client: any) => {
+  const handleSelectClient = (client: ClientResponse) => {
+    if (formData.client_ids.includes(client.id)) return;
+    
     setFormData({
       ...formData,
-      client_id: client.id,
-      contact_name: client.name,
-      contact_phone: client.phone
+      client_ids: [...formData.client_ids, client.id]
     });
-    setClientSearch(client.name);
+    setSelectedClients([...selectedClients, client]);
+    setClientSearch('');
     setShowPicker(false);
+  };
+
+  const handleRemoveClient = (clientId: string) => {
+    setFormData({
+      ...formData,
+      client_ids: formData.client_ids.filter(id => id !== clientId)
+    });
+    setSelectedClients(selectedClients.filter(c => c.id !== clientId));
+  };
+
+  const handleQuickAddClient = async () => {
+    if (!clientSearch) return;
+    setAddingClient(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: clientSearch })
+      });
+      if (!res.ok) throw new Error('Failed to create client');
+      const newClient = await res.json();
+      await refetchClients();
+      handleSelectClient(newClient);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setAddingClient(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,8 +120,8 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
     setError('');
 
     try {
-      const url = isEditing ? `${API_BASE_URL}/trade/stores/${store.id}` : `${API_BASE_URL}/trade/stores`;
-      const method = isEditing ? 'PATCH' : 'POST';
+      const url = (isEditing && store?.id) ? `${API_BASE_URL}/trade/stores/${store.id}` : `${API_BASE_URL}/trade/stores`;
+      const method = (isEditing && store?.id) ? 'PATCH' : 'POST';
       
       const res = await fetch(url, {
         method,
@@ -142,32 +177,47 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
               />
             </div>
 
-            {/* Client Relationship Picker */}
+            {/* Multiple Retailers Picker */}
             <div className="space-y-2 md:col-span-2 relative">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 flex justify-between">
-                Linked Client / Owner
-                {formData.client_id && <span className="text-blue-600 flex items-center gap-1"><Check size={12} /> Linked</span>}
-              </label>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Linked Retailers / Contacts</label>
+              
+              {/* Selected Chips */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {selectedClients.map(client => (
+                  <div key={client.id} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-bold border border-blue-100 group transition-all">
+                    <User size={12} />
+                    {client.name}
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveClient(client.id)}
+                      className="hover:text-red-500 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {selectedClients.length === 0 && <p className="text-xs text-gray-400 italic ml-1">No retailers linked yet.</p>}
+              </div>
+
               <div className="relative group">
                 <input 
                   type="text"
-                  placeholder="Search existing clients..."
+                  placeholder="Search and add retailers..."
                   className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10"
                   value={clientSearch}
                   onChange={e => {
                     setClientSearch(e.target.value);
                     setShowPicker(true);
-                    if (formData.client_id) setFormData({...formData, client_id: ''});
                   }}
                   onFocus={() => setShowPicker(true)}
                 />
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 
                 {showPicker && clientSearch && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto">
                     {loadingClients ? (
-                      <div className="p-4 text-center text-gray-400 text-sm font-bold animate-pulse">Searching clients...</div>
-                    ) : filteredClients.length > 0 ? (
+                      <div className="p-4 text-center text-gray-400 text-sm font-bold animate-pulse">Searching...</div>
+                    ) : (
                       <div className="divide-y divide-gray-50">
                         {filteredClients.map((c: any) => (
                           <button
@@ -182,16 +232,28 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
                               </div>
                               <div>
                                 <p className="font-bold text-gray-900 text-sm">{c.name}</p>
-                                <p className="text-xs text-gray-400">{c.phone}</p>
+                                <p className="text-xs text-gray-400">{c.phone || 'No phone'}</p>
                               </div>
                             </div>
                             <Plus size={16} className="text-gray-300 group-hover:text-blue-500" />
                           </button>
                         ))}
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center">
-                        <p className="text-xs text-gray-400 font-medium italic">No clients found matching "{clientSearch}"</p>
+                        
+                        {/* Quick Add Option */}
+                        <button
+                          type="button"
+                          disabled={addingClient}
+                          onClick={handleQuickAddClient}
+                          className="w-full p-4 flex items-center gap-3 hover:bg-green-50 transition-colors group text-left bg-gray-50/50"
+                        >
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 group-hover:bg-green-200 transition-colors">
+                            {addingClient ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                          </div>
+                          <div>
+                            <p className="font-bold text-green-700 text-sm">Quick Add &quot;{clientSearch}&quot;</p>
+                            <p className="text-xs text-green-600/70">Create and link immediately</p>
+                          </div>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -207,28 +269,6 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
                 value={formData.address}
                 onChange={e => setFormData({...formData, address: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Contact Name</label>
-              <input 
-                type="text"
-                placeholder="Store manager or owner"
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
-                value={formData.contact_name}
-                onChange={e => setFormData({...formData, contact_name: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Contact Phone</label>
-              <input 
-                type="text"
-                placeholder="+1..."
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
-                value={formData.contact_phone}
-                onChange={e => setFormData({...formData, contact_phone: e.target.value})}
               />
             </div>
 

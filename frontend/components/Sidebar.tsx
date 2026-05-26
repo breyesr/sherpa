@@ -32,7 +32,9 @@ export default function Sidebar() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) return res.json();
-      } catch (e) {}
+      } catch {
+        // Silent fail
+      }
       return null;
     },
     enabled: !!token,
@@ -47,7 +49,9 @@ export default function Sidebar() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) return res.json();
-      } catch (e) {}
+      } catch {
+        // Silent fail
+      }
       return { vertical_type: 'BASIC' };
     },
     enabled: !!token,
@@ -70,10 +74,27 @@ export default function Sidebar() {
         <SidebarLink href="/" icon={LayoutDashboard} name="Dashboard" active={pathname === '/'} />
         <SidebarLink href="/conversations" icon={MessageSquare} name="Inbox" active={pathname === '/conversations'} />
         <SidebarLink href="/calendar" icon={Calendar} name="Calendar" active={pathname === '/calendar'} />
-        <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
         
-        {business?.vertical_type === 'TRADE' && (
-          <SidebarLink href="/trade" icon={Store} name="Trade Hub" active={pathname.startsWith('/trade')} />
+        {business?.vertical_type === 'TRADE' ? (
+          <div className="space-y-1">
+            <SidebarLink href="/trade" icon={Store} name="Trade Hub" active={pathname === '/trade'} />
+            <div className="pl-9 space-y-1">
+              <Link 
+                href="/trade/stores"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                • Stores
+              </Link>
+              <Link 
+                href="/trade/retailers"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                • Retailers
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
         )}
 
         <SidebarLink href="/settings" icon={Settings} name="Settings" active={pathname === '/settings'} />

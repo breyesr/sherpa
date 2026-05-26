@@ -79,6 +79,8 @@ export interface paths {
     post: operations["create_client_api_v1_crm_clients_post"];
   };
   "/api/v1/crm/clients/{client_id}": {
+    /** Get Client Detail */
+    get: operations["get_client_detail_api_v1_crm_clients__client_id__get"];
     /** Delete Client */
     delete: operations["delete_client_api_v1_crm_clients__client_id__delete"];
     /** Update Client */
@@ -305,6 +307,20 @@ export interface paths {
      * @description Create a new product.
      */
     post: operations["create_product_api_v1_trade_products_post"];
+  };
+  "/api/v1/trade/clients/{client_id}/brief": {
+    /**
+     * Generate Visit Brief
+     * @description Generate a specialized AI brief for a store visit.
+     */
+    post: operations["generate_visit_brief_api_v1_trade_clients__client_id__brief_post"];
+  };
+  "/api/v1/trade/clients/{client_id}/qualify": {
+    /**
+     * Qualify Lead
+     * @description Generate a lead qualification report for a retailer.
+     */
+    post: operations["qualify_lead_api_v1_trade_clients__client_id__qualify_post"];
   };
   "/health": {
     /** Health Check */
@@ -659,6 +675,17 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ClientMinimal */
+    ClientMinimal: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+    };
     /** ClientResponse */
     ClientResponse: {
       /** Name */
@@ -960,12 +987,13 @@ export interface components {
       name: string;
       /** Address */
       address?: string | null;
-      /** Contact Name */
-      contact_name?: string | null;
-      /** Contact Phone */
-      contact_phone?: string | null;
       /** External Id */
       external_id?: string | null;
+      /**
+       * Client Ids
+       * @default []
+       */
+      client_ids?: string[] | null;
     };
     /** StoreNoteCreate */
     StoreNoteCreate: {
@@ -1008,10 +1036,6 @@ export interface components {
       name: string;
       /** Address */
       address?: string | null;
-      /** Contact Name */
-      contact_name?: string | null;
-      /** Contact Phone */
-      contact_phone?: string | null;
       /** External Id */
       external_id?: string | null;
       /** Id */
@@ -1033,6 +1057,11 @@ export interface components {
        * @default []
        */
       notes?: components["schemas"]["StoreNoteResponse"][];
+      /**
+       * Clients
+       * @default []
+       */
+      clients?: components["schemas"]["ClientMinimal"][];
     };
     /** StoreUpdate */
     StoreUpdate: {
@@ -1040,12 +1069,10 @@ export interface components {
       name?: string | null;
       /** Address */
       address?: string | null;
-      /** Contact Name */
-      contact_name?: string | null;
-      /** Contact Phone */
-      contact_phone?: string | null;
       /** External Id */
       external_id?: string | null;
+      /** Client Ids */
+      client_ids?: string[] | null;
     };
     /** TestChatRequest */
     TestChatRequest: {
@@ -1470,6 +1497,30 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ClientResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Client Detail */
+  get_client_detail_api_v1_crm_clients__client_id__get: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
       };
       /** @description Validation Error */
@@ -2377,6 +2428,56 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Generate Visit Brief
+   * @description Generate a specialized AI brief for a store visit.
+   */
+  generate_visit_brief_api_v1_trade_clients__client_id__brief_post: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Qualify Lead
+   * @description Generate a lead qualification report for a retailer.
+   */
+  qualify_lead_api_v1_trade_clients__client_id__qualify_post: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

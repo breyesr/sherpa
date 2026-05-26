@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Search, Filter, User, Send, Bot, AlertCircle, Loader2, Clock } from 'lucide-react';
+import { MessageSquare, Search, User, Bot, AlertCircle, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import SafeDate from '@/components/SafeDate';
 import { toast } from 'sonner';
+import { ConversationResponse, MessageResponse } from '@/types/api';
 
 interface ConversationsContentProps {
-  initialConversations: any[];
+  initialConversations: ConversationResponse[];
   token: string | null;
 }
 
@@ -19,7 +20,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 1. Fetch Conversations
-  const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery({
+  const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery<ConversationResponse[]>({
     queryKey: ['conversations'],
     queryFn: async () => {
       console.log("DEBUG INBOX: Fetching conversations...");
@@ -35,7 +36,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
   });
 
   // 2. Fetch Messages for selected conversation
-  const { data: messages = [], isLoading: isLoadingMsgs } = useQuery({
+  const { data: messages = [], isLoading: isLoadingMsgs } = useQuery<MessageResponse[]>({
     queryKey: ['messages', selectedConvId],
     queryFn: async () => {
       if (!selectedConvId) return [];
@@ -74,12 +75,12 @@ export default function ConversationsContent({ initialConversations, token }: Co
     }
   }, [messages]);
 
-  const filteredConvs = conversations.filter((c: any) => 
+  const filteredConvs = conversations.filter((c) => 
     c.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.platform_chat_id?.includes(searchTerm)
   );
 
-  const selectedConv = conversations.find((c: any) => c.id === selectedConvId);
+  const selectedConv = conversations.find((c) => c.id === selectedConvId);
 
   return (
     <div className="h-[calc(100vh-10rem)] flex flex-col gap-6 animate-in fade-in duration-500">
@@ -109,7 +110,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             {filteredConvs.length > 0 ? (
               <div className="divide-y divide-gray-50">
-                {filteredConvs.map((conv: any) => (
+                {filteredConvs.map((conv) => (
                   <div 
                     key={conv.id} 
                     onClick={() => setSelectedConvId(conv.id)}
@@ -123,6 +124,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {conv.client?.name?.charAt(0) || '?'}
                       </div>
+                      {/* @ts-expect-error custom_fields is unknown */}
                       {conv.client?.custom_fields?.needs_review && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-pulse" />
                       )}
@@ -181,6 +183,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
                 </div>
                 
                 <div className="flex items-center gap-3">
+                  {/* @ts-expect-error custom_fields is unknown */}
                   {selectedConv.client?.custom_fields?.needs_review && (
                     <span className="flex items-center gap-1.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-100">
                       <AlertCircle size={12} />
@@ -207,7 +210,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
 
               {/* Messages Area */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-gray-50/20">
-                {messages.map((m: any) => (
+                {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                     <div className="max-w-[70%] space-y-1.5">
                       <div className={`px-5 py-3.5 rounded-[1.5rem] text-sm font-medium shadow-sm leading-relaxed ${

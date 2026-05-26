@@ -7,7 +7,6 @@ import {
   MessageSquare, 
   ChevronRight,
   PlusCircle,
-  Bell,
   Loader2,
   Clock,
   User as UserIcon,
@@ -19,10 +18,21 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import SafeDate from '@/components/SafeDate';
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+type AppointmentResponse = components['schemas']['AppointmentResponse'];
+
+interface DashboardStats {
+  today_appointments: number;
+  total_clients: number;
+  flagged_clients: number;
+  upcoming: AppointmentResponse[];
+}
 
 interface DashboardHomeProps {
-  initialBusiness: any;
-  initialStats: any;
+  initialBusiness: BusinessProfileResponse;
+  initialStats: DashboardStats;
   token: string | null;
 }
 
@@ -69,7 +79,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
             {getGreeting()}, {business?.name?.split(' ')[0] || 'there'}!
             {isFetchingStats && <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />}
           </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg">Here's your business briefing for today.</p>
+          <p className="text-gray-500 mt-2 font-medium text-lg">Here&apos;s your business briefing for today.</p>
         </div>
         <div className="flex items-center gap-3">
           <Link 
@@ -118,7 +128,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
           </div>
           <div className="space-y-1">
             <p className="text-4xl font-black text-gray-900">{stats.today_appointments}</p>
-            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Today's Agenda</p>
+            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Today&apos;s Agenda</p>
           </div>
           <Link href="/calendar" className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all mt-6">
             Go to Calendar <ArrowUpRight size={16} />
@@ -160,21 +170,21 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
           <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
               <div className="flex items-center gap-3">
-                <h3 className="font-bold text-xl text-gray-900">Today's Agenda</h3>
+                <h3 className="font-bold text-xl text-gray-900">Today&apos;s Agenda</h3>
                 <span className="bg-blue-100 text-blue-700 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-tighter">
-                  {stats.upcoming?.filter((a: any) => new Date(a.start_time).toDateString() === new Date().toDateString()).length || 0}
+                  {stats.upcoming?.filter((a: AppointmentResponse) => new Date(a.start_time).toDateString() === new Date().toDateString()).length || 0}
                 </span>
               </div>
               <Link href="/calendar" className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full transition-colors">See full calendar</Link>
             </div>
             
-            {stats.upcoming?.some((a: any) => new Date(a.start_time).toDateString() === new Date().toDateString()) ? (
+            {stats.upcoming?.some((a: AppointmentResponse) => new Date(a.start_time).toDateString() === new Date().toDateString()) ? (
               <div className="divide-y divide-gray-50">
                 {stats.upcoming
-                  .filter((apt: any) => new Date(apt.start_time).toDateString() === new Date().toDateString())
-                  .map((apt: any) => {
+                  .filter((apt: AppointmentResponse) => new Date(apt.start_time).toDateString() === new Date().toDateString())
+                  .map((apt: AppointmentResponse) => {
                     const isPast = new Date(apt.start_time) < new Date();
-                    const statusColors: any = {
+                    const statusColors: Record<string, string> = {
                       scheduled: 'bg-blue-50 text-blue-600 border-blue-100',
                       confirmed: 'bg-emerald-50 text-emerald-600 border-emerald-100',
                       cancelled: 'bg-red-50 text-red-600 border-red-100',
@@ -233,7 +243,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
           </div>
 
           {/* Coming Up */}
-          {stats.upcoming?.some((a: any) => new Date(a.start_time).toDateString() !== new Date().toDateString()) && (
+          {stats.upcoming?.some((a: AppointmentResponse) => new Date(a.start_time).toDateString() !== new Date().toDateString()) && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-900 px-2 flex items-center gap-2">
                 <CalendarIcon size={18} className="text-gray-400" />
@@ -241,9 +251,9 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {stats.upcoming
-                  .filter((apt: any) => new Date(apt.start_time).toDateString() !== new Date().toDateString())
+                  .filter((apt: AppointmentResponse) => new Date(apt.start_time).toDateString() !== new Date().toDateString())
                   .slice(0, 4)
-                  .map((apt: any) => (
+                  .map((apt: AppointmentResponse) => (
                     <div key={apt.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
@@ -280,7 +290,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
             <div className="space-y-2">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Greeting</p>
               <p className="text-sm text-gray-600 italic bg-gray-50 p-4 rounded-xl border border-gray-100 leading-relaxed">
-                "{business?.assistant_config?.greeting}"
+                &quot;{business?.assistant_config?.greeting}&quot;
               </p>
             </div>
             <Link href="/settings?tab=assistant" className="block text-center py-3 bg-gray-900 text-white hover:bg-gray-800 rounded-2xl text-sm font-bold transition-all shadow-lg active:scale-95">

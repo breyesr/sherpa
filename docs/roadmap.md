@@ -10,7 +10,7 @@ This roadmap outlines the prioritized path to a scalable, production-ready SaaS.
 - [x] **AI Brain Upgrade (Task 12.4)**: Service Catalog awareness and duration-based availability.
 - [x] **Human-in-the-Loop Safety**: "Flagged for Review" UI and manual resolution.
 
-## Phase 2: Operational Visibility & UX Polish (CURRENT)
+## Phase 2: Operational Visibility & UX Polish (COMPLETED)
 *Goal: Provide professional tools for business owners to manage their AI and services.*
 
 - [x] **Tabbed Settings Redesign (Task 14.1)**: Modular navigation for settings.
@@ -18,22 +18,21 @@ This roadmap outlines the prioritized path to a scalable, production-ready SaaS.
     - **Smart Dashboard**: Initial briefing widgets.
     - **Unified Inbox**: Persistent chat management for Telegram/WhatsApp.
 - [x] **AI Metadata Autopilot (Task 13.4)**: Autonomous data extraction during chat.
-- [ ] **Dashboard & Calendar Integrity (Tasks 17.8 & 17.10)**:
-    - Fix chronological sorting and strict "Today vs. Upcoming" logic.
-    - Dim past appointments and implement status-based color coding.
-- [ ] **Smart Context Awareness (Task 12.7)**: Skip 'Ask for Reason' when service is pre-selected.
-- [ ] **CRM & Settings Safety (Task 17.5 & 17.6)**:
-    - Unsaved changes guardian and two-stage field deletion.
-- [ ] **Service Manager UI (Task 12.2)**: Full CRUD for services with custom attributes.
+- [x] **Modular Pivot (Trade Vertical)**:
+    - **Physical Assets**: Stores and physical locations management.
+    - **Inventory & Orders**: Relational structure for products and sales.
+    - **Specialized Intelligence**: Visit Briefer and Lead Qualifier AI agents.
+- [x] **System Hardening**: Frontend "Zero Noise" pass and backend schema locking.
 
-## Phase 3: Business Viability (Production & Growth)
-*Goal: Enable revenue generation and reliable messaging.*
+## Phase 3: Trade Operational Loop & Growth (CURRENT)
+*Goal: Enable revenue generation and reliable field operations.*
 
 - [ ] **Official WhatsApp Integration (Task 16.1)**:
     - Migrate from Sandbox to Twilio/Meta production API.
-    - Implement Message Credit engine for tenant-specific cost limiting.
+- [ ] **Order Management UI (Epic 25)**:
+    - "New Order" flow with calculation and inventory tracking.
 - [ ] **Stripe Monetization (Task 8.2)**: Tiered subscription management.
-- [ ] **Boss Mode (Epic 15)**: Internal AI chat for reporting.
+- [ ] **KPI Dashboard (Task 8.1)**: Visual analytics for conversion and sales performance.
 
 ## Phase 4: Scale & Optimization
 *Goal: Prepare the system for high-volume multi-tenancy.*

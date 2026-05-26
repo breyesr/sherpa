@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, HelpCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, AlertCircle, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -23,9 +23,14 @@ const TIMEZONES = [
   { value: 'Europe/Berlin', label: 'Berlin' },
 ];
 
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+type UserResponse = components['schemas']['UserResponse'];
+
 interface GeneralSettingsProps {
-  business: any;
-  user: any;
+  business: BusinessProfileResponse;
+  user: UserResponse;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -42,7 +47,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     contact_phone: business?.contact_phone || '', 
     timezone: business?.timezone || 'UTC',
     vertical_type: business?.vertical_type || 'BASIC',
-    crm_config: business?.crm_config || []
+    crm_config: (business?.crm_config as any[]) || []
   };
 
   const initialUserData = { 
@@ -58,7 +63,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     const isBizDirty = JSON.stringify(editBusiness) !== JSON.stringify(initialBusinessData);
     const isUserDirty = JSON.stringify(editUser) !== JSON.stringify(initialUserData);
     onDirtyChange?.(isBizDirty || isUserDirty);
-  }, [editBusiness, editUser, business, user, onDirtyChange]);
+  }, [editBusiness, editUser, initialBusinessData, initialUserData, onDirtyChange]);
 
   const handleAddField = () => {
     setEditBusiness({
@@ -318,7 +323,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
             <div className="flex items-center gap-2 p-4 bg-red-50 rounded-2xl border border-red-100">
               <AlertCircle size={18} className="text-red-500 shrink-0" />
               <p className="text-xs text-red-800 font-medium">
-                Fields marked for deletion will be permanently removed after you click "Save". Historical data for these fields in existing clients will be preserved.
+                Fields marked for deletion will be permanently removed after you click &quot;Save&quot;. Historical data for these fields in existing clients will be preserved.
               </p>
             </div>
           )}

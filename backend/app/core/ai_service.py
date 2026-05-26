@@ -303,6 +303,69 @@ class AIService:
             traceback.print_exc()
             return "I'm having unexpected trouble. Please try again later."
 
+    async def get_specialized_response(self, client_id: str, role: str) -> str:
+        """Generates a specialized AI report (Briefer or Qualifier)."""
+        try:
+            # 1. Fetch Client
+            res_client = await self.db.execute(
+                select(Client).where(Client.id == client_id, Client.business_id == self.business.id)
+            )
+            client_obj = res_client.scalars().first()
+            if not client_obj:
+                return "Client not found."
+
+            # 2. Fetch Trade Context (Stores, Notes, Orders)
+            from app.models.trade import Store, CustomerNote, Order
+            
+            res_stores = await self.db.execute(select(Store).where(Store.client_id == client_id))
+            stores = res_stores.scalars().all()
+
+            res_notes = await self.db.execute(select(CustomerNote).where(CustomerNote.client_id == client_id))
+            trade_notes = res_notes.scalars().all()
+
+            res_orders = await self.db.execute(
+                select(Order).where(Order.client_id == client_id).order_by(Order.created_at.desc()).limit(10)
+            )
+            orders = res_orders.scalars().all()
+
+            # 3. Prompt Construction
+            try:
+                template_name = "visit_briefer.j2" if role == "briefer" else "lead_qualifier.j2"
+                template = prompt_env.get_template(template_name)
+                
+                system_prompt = template.render(
+                    business=self.business,
+                    client=client_obj,
+                    stores=stores,
+                    trade_notes=trade_notes,
+                    orders=orders
+                )
+            except Exception as e:
+                print(f"ERROR: Template rendering failed for {role}: {e}")
+                return "Failed to generate specialized prompt."
+
+            # 4. Generation (Direct LLM call, no history or tools needed for reports)
+            provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+            api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+            model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
+
+            if not api_key:
+                return "API Key missing for specialized report."
+
+            response = await litellm.acompletion(
+                model=f"{provider}/{model}" if "/" not in model else model,
+                messages=[{"role": "user", "content": system_prompt}],
+                api_key=api_key,
+                timeout=30.0
+            )
+
+            return response.choices[0].message.content or "No response generated."
+
+        except Exception as e:
+            print(f"CRITICAL: Specialized Response Failed: {e}")
+            traceback.print_exc()
+            return "Internal error during report generation."
+
     def _get_tools_definition(self):
         return [
             {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}, "days_ahead": {"type": "integer", "default": 3}}}}},

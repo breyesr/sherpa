@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
+
 interface AddAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,7 +19,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
   const [clientId, setClientId] = useState('');
   const [startTime, setStartTime] = useState('');
   const [duration, setDuration] = useState('60'); // minutes
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -67,7 +71,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
         try {
           const errorData = await res.json();
           errorMessage = errorData.detail || errorMessage;
-        } catch (e) {
+        } catch {
           // If JSON parsing fails, use the status text
           errorMessage = `${res.status}: ${res.statusText}`;
         }
@@ -107,7 +111,7 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
               onChange={(e) => setClientId(e.target.value)}
             >
               <option value="">Choose a client...</option>
-              {clients.map(c => (
+              {clients.map((c: ClientResponse) => (
                 <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
               ))}
             </select>

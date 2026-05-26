@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.api.auth import get_current_user
+from app.core.ai_service import AIService
 from app.models.user import User
 from app.models.business import BusinessProfile
 from app.models.trade import Store, StoreNote, Category, Product, Order
@@ -39,7 +40,7 @@ async def list_stores(
         .where(Store.business_id == business.id)
         .options(
             selectinload(Store.notes),
-            selectinload(Store.client)
+            selectinload(Store.clients)
         )
     )
     return result.scalars().all()
@@ -53,20 +54,34 @@ async def create_store(
     """Create a new store."""
     business = await get_business(db, current_user.id)
     
-    # Verify client exists and belongs to business if client_id is provided
-    if store_in.client_id:
+    store = Store(
+        business_id=business.id, 
+        name=store_in.name,
+        address=store_in.address,
+        external_id=store_in.external_id
+    )
+    
+    # Handle multiple client_ids
+    if store_in.client_ids:
         from app.models.crm import Client
-        res_client = await db.execute(
-            select(Client).where(Client.id == store_in.client_id, Client.business_id == business.id)
+        res_clients = await db.execute(
+            select(Client).where(Client.id.in_(store_in.client_ids), Client.business_id == business.id)
         )
-        if not res_client.scalars().first():
-            raise HTTPException(status_code=400, detail="Invalid client ID for this business")
+        valid_clients = res_clients.scalars().all()
+        if len(valid_clients) != len(store_in.client_ids):
+            raise HTTPException(status_code=400, detail="One or more invalid client IDs for this business")
+        store.clients = valid_clients
 
-    store = Store(business_id=business.id, **store_in.model_dump())
     db.add(store)
     await db.commit()
-    await db.refresh(store)
-    return store
+    
+    # Reload with relationships for the response
+    result = await db.execute(
+        select(Store)
+        .where(Store.id == store.id)
+        .options(selectinload(Store.notes), selectinload(Store.clients))
+    )
+    return result.scalars().first()
 
 @router.get("/stores/{store_id}", response_model=StoreResponse)
 async def get_store(
@@ -81,7 +96,7 @@ async def get_store(
         .where(Store.id == store_id, Store.business_id == business.id)
         .options(
             selectinload(Store.notes),
-            selectinload(Store.client)
+            selectinload(Store.clients)
         )
     )
     store = result.scalars().first()
@@ -122,28 +137,43 @@ async def update_store(
 ) -> Any:
     """Update a store."""
     business = await get_business(db, current_user.id)
-    result = await db.execute(select(Store).where(Store.id == store_id, Store.business_id == business.id))
+    result = await db.execute(
+        select(Store)
+        .where(Store.id == store_id, Store.business_id == business.id)
+        .options(selectinload(Store.notes), selectinload(Store.clients))
+    )
     store = result.scalars().first()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
-    # Verify client belongs to business if changing client_id
-    if store_in.client_id and store_in.client_id != store.client_id:
+    # Handle multiple client_ids
+    if store_in.client_ids is not None:
         from app.models.crm import Client
-        res_client = await db.execute(
-            select(Client).where(Client.id == store_in.client_id, Client.business_id == business.id)
-        )
-        if not res_client.scalars().first():
-            raise HTTPException(status_code=400, detail="Invalid client ID for this business")
+        if not store_in.client_ids:
+            store.clients = []
+        else:
+            res_clients = await db.execute(
+                select(Client).where(Client.id.in_(store_in.client_ids), Client.business_id == business.id)
+            )
+            valid_clients = res_clients.scalars().all()
+            if len(valid_clients) != len(store_in.client_ids):
+                raise HTTPException(status_code=400, detail="One or more invalid client IDs for this business")
+            store.clients = valid_clients
 
-    update_data = store_in.model_dump(exclude_unset=True)
+    update_data = store_in.model_dump(exclude_unset=True, exclude={"client_ids"})
     for field, value in update_data.items():
         setattr(store, field, value)
         
     db.add(store)
     await db.commit()
-    await db.refresh(store)
-    return store
+    
+    # Reload with relationships for the response
+    res_final = await db.execute(
+        select(Store)
+        .where(Store.id == store.id)
+        .options(selectinload(Store.notes), selectinload(Store.clients))
+    )
+    return res_final.scalars().first()
 
 # --- CATEGORIES ---
 
@@ -207,3 +237,29 @@ async def create_product(
     await db.commit()
     await db.refresh(product)
     return product
+
+# --- AI INSIGHTS ---
+
+@router.post("/clients/{client_id}/brief")
+async def generate_visit_brief(
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Generate a specialized AI brief for a store visit."""
+    business = await get_business(db, current_user.id)
+    ai_service = AIService(business, db)
+    report = await ai_service.get_specialized_response(client_id, "briefer")
+    return {"report": report}
+
+@router.post("/clients/{client_id}/qualify")
+async def qualify_lead(
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Generate a lead qualification report for a retailer."""
+    business = await get_business(db, current_user.id)
+    ai_service = AIService(business, db)
+    report = await ai_service.get_specialized_response(client_id, "qualifier")
+    return {"report": report}

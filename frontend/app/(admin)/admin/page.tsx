@@ -1,14 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Plus, Trash2, Edit2, UserPlus, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
+import { components } from '@/types/api';
+
+type UserResponse = components['schemas']['UserResponse'];
+
+interface SystemSettings {
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_REDIRECT_URI: string;
+  FRONTEND_URL: string;
+  OPENAI_API_KEY: string;
+  GEMINI_API_KEY: string;
+  CLAUDE_API_KEY: string;
+  ACTIVE_AI_PROVIDER: string;
+  WHATSAPP_VERIFY_TOKEN: string;
+  TWILIO_ACCOUNT_SID: string;
+  TWILIO_AUTH_TOKEN: string;
+  TWILIO_WHATSAPP_NUMBER: string;
+}
 
 export default function AdminSettingsPage() {
   const token = useAuthStore((state) => state.token);
   const [activeTab, setActiveTab] = useState('settings'); // 'settings' or 'users'
-  const [settings, setSettings] = useState<any>({
+  const [settings, setSettings] = useState<SystemSettings>({
     GOOGLE_CLIENT_ID: '',
     GOOGLE_CLIENT_SECRET: '',
     GOOGLE_REDIRECT_URI: '',
@@ -24,9 +42,9 @@ export default function AdminSettingsPage() {
   });
   
   // User Management State
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserResponse[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [userForm, setUserForm] = useState({ 
     email: '', 
     password: '', 
@@ -55,7 +73,7 @@ export default function AdminSettingsPage() {
         
         if (settingsRes.ok) {
           const data = await settingsRes.json();
-          setSettings((prev: any) => ({ ...prev, ...data }));
+          setSettings((prev: SystemSettings) => ({ ...prev, ...data }));
           setIsAuthorized(true);
         }
 
@@ -69,7 +87,7 @@ export default function AdminSettingsPage() {
     if (token) fetchData();
   }, [token]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -88,13 +106,13 @@ export default function AdminSettingsPage() {
     } catch (err) {
       console.error('Admin: Error fetching users:', err);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (activeTab === 'users' && isAuthorized) {
       fetchUsers();
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthorized, fetchUsers]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,8 +132,9 @@ export default function AdminSettingsPage() {
       } else {
         throw new Error('Failed to update system settings.');
       }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setSaving(false);
     }

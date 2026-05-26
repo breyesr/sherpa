@@ -1,27 +1,27 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import SafeDate from '@/components/SafeDate';
 import { useAuthStore } from '@/store/authStore';
 import { 
-  Store, 
+  Store as StoreIcon, 
   MapPin, 
   Phone, 
   User as UserIcon, 
   ArrowLeft,
-  Calendar,
   AlertTriangle,
   Lightbulb,
   CheckCircle2,
   MessageSquare,
   Plus,
   Loader2,
-  Trash2,
   Clock,
-  ClipboardList
+  ClipboardList,
+  ChevronRight
 } from 'lucide-react';
 import StoreModal from '@/components/StoreModal';
 
@@ -36,17 +36,49 @@ export default function StoreDetailPage() {
   const [noteType, setNoteType] = useState('general');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
 
-  const { data: store, isLoading, error } = useQuery({
+  // Inline Editing States
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editExternalId, setEditExternalId] = useState('');
+  const [isSavingInline, setIsSavingInline] = useState(false);
+
+  const { data: store, isLoading, error } = useQuery<StoreResponse>({
     queryKey: ['store', id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Store not found');
-      return res.json();
+      const data = await res.json();
+      // Initialize inline states
+      setEditName(data.name);
+      setEditAddress(data.address || '');
+      setEditExternalId(data.external_id || '');
+      return data;
     },
     enabled: !!token && !!id,
   });
+
+  const handleUpdateStore = async (fields: any) => {
+    setIsSavingInline(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(fields)
+      });
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ['store', id] });
+      }
+    } catch (err) {
+      console.error('Failed to update store:', err);
+    } finally {
+      setIsSavingInline(false);
+    }
+  };
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,35 +142,56 @@ export default function StoreDetailPage() {
     <div className="space-y-8 pb-12 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1">
           <button 
-            onClick={() => router.push('/trade')}
+            onClick={() => router.push('/trade/stores')}
             className="group flex items-center gap-2 text-gray-400 hover:text-gray-900 transition-colors font-bold text-sm uppercase tracking-widest"
           >
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-            Back to Trade Hub
+            Back to Stores
           </button>
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 bg-white border-2 border-gray-100 rounded-[2rem] flex items-center justify-center shadow-sm text-gray-400">
-              <Store size={40} />
+            <div className="w-20 h-20 bg-white border-2 border-gray-100 rounded-[2rem] flex items-center justify-center shadow-sm text-gray-400 shrink-0">
+              <StoreIcon size={40} />
             </div>
-            <div>
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">{store.name}</h1>
+            <div className="flex-1 space-y-1">
+              <input 
+                type="text"
+                className="text-4xl font-black text-gray-900 tracking-tight bg-transparent border-b border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 outline-none w-full transition-all px-0"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                onBlur={() => editName !== store?.name && handleUpdateStore({ name: editName })}
+              />
               <div className="flex flex-wrap items-center gap-4 mt-2 text-gray-500 font-medium">
-                <span className="flex items-center gap-1.5"><MapPin size={16} className="text-gray-400" /> {store.address || 'No address provided'}</span>
-                {store.external_id && <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-black font-mono uppercase tracking-tighter">ID: {store.external_id}</span>}
+                <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                  <MapPin size={16} className="text-gray-400" />
+                  <input 
+                    type="text"
+                    placeholder="Physical address..."
+                    className="text-sm bg-transparent border-b border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 outline-none w-full transition-all px-0 py-0.5"
+                    value={editAddress}
+                    onChange={e => setEditAddress(e.target.value)}
+                    onBlur={() => editAddress !== store?.address && handleUpdateStore({ address: editAddress })}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">External ID:</span>
+                  <input 
+                    type="text"
+                    placeholder="SKU/ID..."
+                    className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-black font-mono uppercase tracking-tighter border-none focus:ring-2 focus:ring-blue-500 outline-none w-32"
+                    value={editExternalId}
+                    onChange={e => setEditExternalId(e.target.value)}
+                    onBlur={() => editExternalId !== store?.external_id && handleUpdateStore({ external_id: editExternalId })}
+                  />
+                </div>
+                {isSavingInline && <Loader2 className="animate-spin text-blue-500" size={16} />}
               </div>
             </div>
           </div>
         </div>
         
         <div className="flex gap-3">
-          <button 
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-2 bg-white border border-gray-200 px-6 py-3 rounded-2xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-all active:scale-95"
-          >
-            Edit Store
-          </button>
           <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
             Record Visit
           </button>
@@ -146,26 +199,48 @@ export default function StoreDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Details & Stats */}
+        {/* Left Column: Retailers & Health */}
         <div className="space-y-8">
-          {/* Contact Card */}
+          {/* Retailers Card */}
           <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 space-y-6">
-            <h3 className="font-bold text-xl text-gray-900 flex items-center gap-2">
-              <UserIcon size={20} className="text-blue-500" />
-              Primary Contact
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-xl text-gray-900 flex items-center gap-2">
+                <UserIcon size={20} className="text-blue-500" />
+                Linked Retailers
+              </h3>
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest"
+              >
+                Manage
+              </button>
+            </div>
             <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Full Name</p>
-                <p className="font-bold text-gray-900 text-lg">{store.contact_name || 'Not assigned'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone Number</p>
-                <p className="font-bold text-blue-600 text-lg flex items-center gap-2">
-                  <Phone size={18} />
-                  {store.contact_phone || 'None'}
-                </p>
-              </div>
+              {store?.clients && store.clients.length > 0 ? (
+                store.clients.map(client => (
+                  <div key={client.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-100 hover:bg-white transition-all">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{client.name}</p>
+                        <p className="text-xs text-blue-600 font-bold mt-1 flex items-center gap-1">
+                          <Phone size={12} />
+                          {client.phone || 'No phone'}
+                        </p>
+                      </div>
+                      <Link 
+                        href={`/trade/retailers?id=${client.id}`}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      >
+                        <ChevronRight size={16} />
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-4 text-center">
+                  <p className="text-xs text-gray-400 italic">No retailers linked. Click manage to add one.</p>
+                </div>
+              )}
             </div>
           </div>
 

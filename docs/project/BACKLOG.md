@@ -167,20 +167,32 @@
 - [x] Task 23.2: Implement Orders, Products, and Categories tables for inventory tracking.
 - [x] Task 23.2.1: Implement CRUD API for Stores, Categories, and Products.
 - [x] Task 23.3: Implement Competitors and Customer_Notes tables.
-- [ ] Task 23.4: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
+- [x] Task 23.4: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade users.
 - [x] Task 23.5: Build Trade Dashboard UI (Stores, Categories, and Products management).
 
 ## Epic 24: Unified Trade CRM (Clean Relationship Model)
-- [ ] Task 24.1: Model Cleanup: Remove redundant `contact_name` and `contact_phone` from Store model; ensure strict `client_id` linking.
-- [ ] Task 24.2: Smart Store Modal: Implement "Quick Add Client" in the picker and remove manual Name/Phone inputs.
-- [ ] Task 24.3: Trade Hub "Retailers" View: Create a unified view in Trade Hub showing CRM clients associated with Stores.
-- [ ] Task 24.4: Client Profile Trade Context: Add a conditional "Trade Context" tab to the client profile showing Store notes and Orders.
+- [x] Task 24.1: Model Cleanup: Remove redundant `contact_name` and `contact_phone` from Store model; ensure strict `client_id` linking.
+- [x] Task 24.2: Smart Store Modal: Implement "Quick Add Client" in the picker and remove manual Name/Phone inputs.
+- [x] Task 24.3: Trade Hub "Retailers" View: Create a unified view in Trade Hub showing CRM clients associated with Stores.
+- [x] Task 24.4: Client Profile Trade Context: Add a conditional "Trade Context" tab to the client profile showing Store notes and Orders.
 
 ## Epic 25: Trade Operational Loop (Commercial Lifecycle)
 - [ ] Task 25.1: Build the "New Order" Modal with Product Search, Quantity selectors, and automatic total calculation.
 - [ ] Task 25.2: Implement the "Competitor Check" UI within the Store Detail page to record rival presence levels.
 - [ ] Task 25.3: Create the "Global Activity Feed" in the Trade Hub dashboard showing recent observations across all stores.
 - [ ] Task 25.4: Design and implement the "Active Visit" mode (Check-in to Check-out progress stepper).
+
+## Epic 26: Architectural Refactor - Dedicated Trade Views
+- [x] Task 26.1: Navigation Refactor: Map Sidebar links directly to physical routes instead of query parameters.
+- [x] Task 26.2: Dedicated Retailers View: Migrate CRM list logic to `/trade/retailers`.
+- [x] Task 26.3: Dedicated Stores View: Migrate location management logic to `/trade/stores`.
+- [x] Task 26.4: Trade Hub Dashboard: Refactor `/trade` into a high-level operational pulse (Dashboard).
+
+## Epic 27: Multi-Retailer Stores & Inline Ops
+- [x] Task 27.1: Many-to-Many Backend Refactor: Implement `store_clients` association table.
+- [x] Task 27.2: Multi-Retailer UI: Implement tagging-style picker in StoreModal.
+- [x] Task 27.3: Inline Store Editing: Enable auto-saving header inputs in Store Detail view.
+- [x] Task 27.4: Enhanced Metadata: Add Health indicators and Retailer names to the Stores grid.
 
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).

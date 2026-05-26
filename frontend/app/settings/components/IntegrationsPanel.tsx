@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, MessageSquare, CheckCircle2, RefreshCw, Send, Trash2, Loader2 } from 'lucide-react';
+import { Calendar, MessageSquare, CheckCircle2, RefreshCw, Send, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 import WhatsAppModal from '@/components/WhatsAppModal';
 import TelegramModal from '@/components/TelegramModal';
 
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+
 interface IntegrationsPanelProps {
-  business: any;
+  business: BusinessProfileResponse;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
 }
@@ -67,17 +71,17 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
         queryClient.invalidateQueries({ queryKey: ['business'] });
         setIsSyncing(false);
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setIsSyncing(false);
     }
   };
 
-  const isGoogleConnected = business?.integrations?.some((i: any) => i.provider === 'google');
-  const telegramBot = business?.integrations?.find((i: any) => i.provider === 'telegram');
-  const whatsappIntegration = business?.integrations?.find((i: any) => i.provider === 'whatsapp');
+  const isGoogleConnected = (business?.integrations as any[])?.some((i: any) => i.provider === 'google');
+  const telegramBot = (business?.integrations as any[])?.find((i: any) => i.provider === 'telegram');
+  const whatsappIntegration = (business?.integrations as any[])?.find((i: any) => i.provider === 'whatsapp');
   const isWhatsAppConnected = !!whatsappIntegration;
-  const whatsappProvider = whatsappIntegration?.settings?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
+  const whatsappProvider = (whatsappIntegration?.settings as any)?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
 
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">

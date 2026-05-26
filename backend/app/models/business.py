@@ -53,7 +53,7 @@ class Agent(Base):
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     name = Column(String, nullable=False, default="Sherpa Assistant")
     role = Column(String, nullable=False, default="general") # general, briefer, qualifier
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, nullable=False, default=True)
     
     tone = Column(String, nullable=False, default="Professional")
     greeting = Column(String, nullable=False, default="Hello! How can I help you today?")

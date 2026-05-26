@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, UniqueConstraint, JSON
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, UniqueConstraint, JSON, Index
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -116,3 +116,7 @@ class Appointment(Base):
     business_profile = relationship("BusinessProfile", back_populates="appointments")
     client = relationship("Client", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")
+
+    __table_args__ = (
+        Index('ix_appointments_business_id_start_time', 'business_id', 'start_time'),
+    )

@@ -22,9 +22,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import SafeDate from '@/components/SafeDate';
 
+import { components } from '@/types/api';
+
+type AppointmentResponse = components['schemas']['AppointmentResponse'];
+
+interface BusySlot {
+  id: string;
+  start: string;
+  end: string;
+  summary?: string;
+}
+
 interface ClientCalendarProps {
-  initialAppointments: any[];
-  initialBusySlots: any[];
+  initialAppointments: AppointmentResponse[];
+  initialBusySlots: BusySlot[];
   token: string | null;
   timezone: string;
 }
@@ -32,7 +43,7 @@ interface ClientCalendarProps {
 export default function ClientCalendar({ initialAppointments, initialBusySlots, token, timezone }: ClientCalendarProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentResponse | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +52,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: appointments = [], isFetching: isFetchingApts } = useQuery({
+  const { data: appointments = [], isFetching: isFetchingApts } = useQuery<AppointmentResponse[]>({
     queryKey: ['appointments'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/crm/appointments`, {
@@ -54,7 +65,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     staleTime: 30 * 1000,
   });
 
-  const { data: busySlots = [], isFetching: isFetchingBusy } = useQuery({
+  const { data: busySlots = [], isFetching: isFetchingBusy } = useQuery<BusySlot[]>({
     queryKey: ['busy_slots'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/integrations/google/availability`, {
@@ -106,18 +117,18 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     }
   };
 
-  const handleRescheduleClick = (apt: any) => {
+  const handleRescheduleClick = (apt: AppointmentResponse) => {
     setSelectedAppointment(apt);
     setIsRescheduleModalOpen(true);
   };
 
   // Aggressive Deduplicate
-  const googleEventIds = new Set(appointments.map((a: any) => a.google_event_id).filter(Boolean));
+  const googleEventIds = new Set(appointments.map((a) => a.google_event_id).filter(Boolean));
   
   // Track appointment times for fallback fuzzy matching (within 1 minute)
-  const appointmentTimestamps = appointments.map((a: any) => new Date(a.start_time).getTime());
+  const appointmentTimestamps = appointments.map((a) => new Date(a.start_time).getTime());
 
-  const filteredBusySlots = busySlots.filter((b: any) => {
+  const filteredBusySlots = busySlots.filter((b) => {
     // 1. Check by ID
     if (googleEventIds.has(b.id)) return false;
     
@@ -134,21 +145,25 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
 
   const now = new Date();
 
-  const allEvents = [
-    ...appointments.map((a: any) => ({ ...a, type: 'appointment' })),
-    ...filteredBusySlots.map((b: any) => ({ ...b, type: 'google_busy' }))
+  interface UnifiedEvent extends Partial<AppointmentResponse>, Partial<BusySlot> {
+    type: 'appointment' | 'google_busy';
+  }
+
+  const allEvents: UnifiedEvent[] = [
+    ...appointments.map((a) => ({ ...a, type: 'appointment' as const })),
+    ...filteredBusySlots.map((b) => ({ ...b, type: 'google_busy' as const }))
   ];
 
   const upcomingEvents = allEvents
-    .filter(e => new Date(e.start_time || e.start) >= now)
-    .sort((a, b) => new Date(a.start_time || a.start).getTime() - new Date(b.start_time || b.start).getTime());
+    .filter(e => new Date(e.start_time || e.start || '') >= now)
+    .sort((a, b) => new Date(a.start_time || a.start || '').getTime() - new Date(b.start_time || b.start || '').getTime());
 
   const pastEvents = allEvents
-    .filter(e => new Date(e.start_time || e.start) < now)
-    .sort((a, b) => new Date(b.start_time || b.start).getTime() - new Date(a.start_time || a.start).getTime());
+    .filter(e => new Date(e.start_time || e.start || '') < now)
+    .sort((a, b) => new Date(b.start_time || b.start || '').getTime() - new Date(a.start_time || a.start || '').getTime());
 
-  const applyFiltersAndSort = (events: any[]) => {
-    let filtered = events.filter(e => {
+  const applyFiltersAndSort = (events: UnifiedEvent[]) => {
+    const filtered = events.filter(e => {
       // 1. Search filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery || 
@@ -178,6 +193,8 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
       } else if (sortConfig.key === 'status') {
         valA = a.status || 'busy';
         valB = b.status || 'busy';
+      } else {
+        return 0;
       }
 
       if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -193,7 +210,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   // Auto-switch sort direction when changing tabs to maintain Agenda focus
   useEffect(() => {
     setSortConfig({ key: 'time', direction: activeTab === 'upcoming' ? 'asc' : 'desc' });
-  }, [activeTab, activeTab]); // Just to be safe with dependencies
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">

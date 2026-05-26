@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -58,6 +58,50 @@ async def create_client(
     await db.commit()
     await db.refresh(client)
     return client
+
+@router.get("/clients/{client_id}", response_model=Dict[str, Any])
+async def get_client_detail(
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    business = await get_user_business(db, current_user.id)
+    
+    # 1. Fetch Client
+    client_res = await db.execute(
+        select(Client).where(Client.id == client_id, Client.business_id == business.id)
+    )
+    client = client_res.scalars().first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # 2. Fetch Linked Stores
+    from app.models.trade import Store
+    stores_res = await db.execute(
+        select(Store).where(Store.client_id == client_id)
+    )
+    stores = stores_res.scalars().all()
+
+    # 3. Fetch Trade Notes
+    from app.models.trade import CustomerNote
+    notes_res = await db.execute(
+        select(CustomerNote).where(CustomerNote.client_id == client_id)
+    )
+    trade_notes = notes_res.scalars().all()
+
+    # 4. Fetch Recent Orders
+    from app.models.trade import Order
+    orders_res = await db.execute(
+        select(Order).where(Order.client_id == client_id).order_by(Order.created_at.desc()).limit(10)
+    )
+    orders = orders_res.scalars().all()
+
+    return {
+        "client": client,
+        "stores": stores,
+        "trade_notes": trade_notes,
+        "orders": orders
+    }
 
 @router.patch("/clients/{client_id}", response_model=ClientResponse)
 async def update_client(

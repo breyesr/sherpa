@@ -5,6 +5,10 @@ import { Plus, Trash2, Edit2, Save, X, Loader2, Scissors, Clock, DollarSign } fr
 import { API_BASE_URL } from '@/config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { components } from '@/types/api';
+
+type ServiceResponse = components['schemas']['ServiceResponse'];
+
 interface ServiceCatalogProps {
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
@@ -38,9 +42,9 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
     // For simplicity, if isAdding is true, we consider it dirty if form is not empty
     const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
     onDirtyChange?.(isDirty);
-  }, [form, isAdding, editingId, onDirtyChange]);
+  }, [form, isAdding, editingId, onDirtyChange, initialForm]);
 
-  const { data: services = [], isLoading } = useQuery({
+  const { data: services = [], isLoading } = useQuery<ServiceResponse[]>({
     queryKey: ['services'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/services/`, {
@@ -99,14 +103,14 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
     }
   };
 
-  const startEdit = (service: any) => {
+  const startEdit = (service: ServiceResponse) => {
     setEditingId(service.id);
     setForm({
       name: service.name,
       description: service.description || '',
       duration_minutes: service.duration_minutes,
       price: service.price || '',
-      attributes: service.attributes || {}
+      attributes: (service.attributes as any) || {}
     });
     setIsAdding(true);
   };
@@ -213,7 +217,7 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
               <p className="text-gray-400 font-medium">Your catalog is empty. Add your first service to start booking!</p>
             </div>
           )}
-          {services.map((svc: any) => (
+          {services.map((svc: ServiceResponse) => (
             <div key={svc.id} className="group flex items-center justify-between p-5 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-md hover:border-blue-100 transition-all">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white rounded-xl border border-gray-100 flex items-center justify-center text-blue-500 shadow-sm">

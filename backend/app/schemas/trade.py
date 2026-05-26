@@ -36,21 +36,16 @@ class StoreNoteResponse(StoreNoteBase):
 class StoreBase(BaseModel):
     name: str
     address: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
     external_id: Optional[str] = None
-    client_id: Optional[str] = None
 
 class StoreCreate(StoreBase):
-    pass
+    client_ids: Optional[List[str]] = []
 
 class StoreUpdate(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
     external_id: Optional[str] = None
-    client_id: Optional[str] = None
+    client_ids: Optional[List[str]] = None
 
 class ClientMinimal(BaseModel):
     id: str
@@ -67,7 +62,7 @@ class StoreResponse(StoreBase):
     created_at: datetime
     updated_at: datetime
     notes: List[StoreNoteResponse] = []
-    client: Optional[ClientMinimal] = None
+    clients: List[ClientMinimal] = []
 
     class Config:
         from_attributes = True

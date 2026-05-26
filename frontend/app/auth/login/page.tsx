@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/config';
 
@@ -9,7 +8,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
   const setToken = useAuthStore((state) => state.setToken);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,8 +34,8 @@ export default function LoginPage() {
       // Force a full page reload to the root to ensure the server component 
       // in app/page.tsx picks up the new 'sherpa_token' cookie immediately.
       window.location.href = '/';
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     }
   };
 
@@ -72,7 +70,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="text-center text-sm">
-          Don't have an account? <a href="/auth/register" className="text-blue-600">Register</a>
+          Don&apos;t have an account? <a href="/auth/register" className="text-blue-600">Register</a>
         </p>
       </div>
     </div>

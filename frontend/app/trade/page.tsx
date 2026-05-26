@@ -6,33 +6,35 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
 import { 
-  Store as StoreIcon, 
   Package, 
   ShoppingCart, 
   TrendingUp, 
   MapPin, 
   Plus,
-  Search,
   ChevronRight,
-  Phone,
   LayoutGrid,
   ClipboardList
 } from 'lucide-react';
 import StoreModal from '@/components/StoreModal';
 import AddCategoryModal from '@/components/AddCategoryModal';
 import AddProductModal from '@/components/AddProductModal';
+import { 
+  StoreResponse, 
+  CategoryResponse, 
+  ProductResponse 
+} from '@/types/api';
 
 export default function TradeHubPage() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
-  
+
   // Modal States
   const [isAddStoreOpen, setIsAddStoreOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
 
   // Fetch Stores
-  const { data: stores = [], isLoading: loadingStores } = useQuery({
+  const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/trade/stores`, {
@@ -45,7 +47,7 @@ export default function TradeHubPage() {
   });
 
   // Fetch Categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<CategoryResponse[]>({
     queryKey: ['categories'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/trade/categories`, {
@@ -58,7 +60,7 @@ export default function TradeHubPage() {
   });
 
   // Fetch Products
-  const { data: products = [] } = useQuery({
+  const { data: products = [] } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/trade/products`, {
@@ -71,10 +73,10 @@ export default function TradeHubPage() {
   });
 
   const stats = [
-    { name: 'Total Stores', value: stores.length.toString(), icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { name: 'Active Products', value: products.length.toString(), icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { name: 'Pending Orders', value: '0', icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { name: 'Competitors', value: '0', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { name: 'Total Stores', value: stores.length.toString(), icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-50', link: '/trade/stores' },
+    { name: 'Active Products', value: products.length.toString(), icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50', link: '#' },
+    { name: 'Pending Orders', value: '0', icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50', link: '#' },
+    { name: 'Trade Retailers', value: '...', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50', link: '/trade/retailers' },
   ];
 
   return (
@@ -83,9 +85,9 @@ export default function TradeHubPage() {
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
             Trade Hub
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full uppercase tracking-tighter">BETA</span>
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full uppercase tracking-tighter">Pulse</span>
           </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg">Manage your field operations, inventory, and stores.</p>
+          <p className="text-gray-500 mt-2 font-medium text-lg">Central nervous system for your field operations.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
@@ -121,76 +123,60 @@ export default function TradeHubPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.name} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+          <Link href={stat.link} key={stat.name} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group block">
             <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
               <stat.icon size={24} />
             </div>
-            <p className="text-3xl font-black text-gray-900">{stat.value}</p>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{stat.name}</p>
-          </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-3xl font-black text-gray-900">{stat.value}</p>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{stat.name}</p>
+              </div>
+              <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 mb-1" />
+            </div>
+          </Link>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Store List */}
-        <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-            <h3 className="font-bold text-xl text-gray-900">Your Stores</h3>
-            <button className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full transition-colors">Manage All</button>
-          </div>
-          
-          {loadingStores ? (
-            <div className="p-16 text-center animate-pulse text-gray-400 font-bold">Loading stores...</div>
-          ) : stores.length > 0 ? (
-            <div className="divide-y divide-gray-50">
-              {stores.map((store: any) => (
-                <div key={store.id} className="p-8 flex items-center justify-between hover:bg-gray-50/50 transition-all group">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-white border border-gray-100 text-gray-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:border-blue-200 group-hover:text-blue-500 transition-all">
-                      <StoreIcon size={24} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-lg text-gray-900 line-clamp-1">{store.name}</p>
-                      <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 font-medium">
-                        <span className="flex items-center gap-1"><MapPin size={14} className="text-gray-400" /> {store.address || 'No address'}</span>
-                        {store.contact_phone && <span className="flex items-center gap-1"><Phone size={14} className="text-gray-400" /> {store.contact_phone}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {store.external_id && (
-                      <span className="text-[10px] font-black font-mono bg-gray-100 text-gray-500 px-2 py-1 rounded border border-gray-200">
-                        {store.external_id}
-                      </span>
-                    )}
-                    <Link 
-                      href={`/trade/stores/${store.id}`}
-                      className="p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all active:scale-90"
-                    >
-                      <ChevronRight size={20} />
-                    </Link>
-                  </div>
-                </div>
-              ))}
+        {/* Recent Activity / Observations */}
+        <div className="lg:col-span-2 space-y-8">
+          <section className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="font-bold text-2xl text-gray-900 flex items-center gap-2">
+                <TrendingUp size={24} className="text-blue-500" />
+                Recent Observations
+              </h3>
+              <Link href="/trade/stores" className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full">View All Stores</Link>
             </div>
-          ) : (
-            <div className="p-16 text-center">
-              <div className="w-16 h-16 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <StoreIcon size={32} />
+
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
+                <ClipboardList size={32} />
               </div>
-              <h4 className="text-lg font-bold text-gray-900">No Stores Found</h4>
-              <p className="text-gray-500 text-sm font-medium mt-1">Start by adding your first retail location or retailer.</p>
-              <button 
-                onClick={() => setIsAddStoreOpen(true)}
-                className="mt-6 px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-all"
-              >
-                Add Your First Store
-              </button>
+              <p className="text-gray-400 font-medium max-w-xs mx-auto">No recent observations found. Notes recorded during field visits will appear here.</p>
             </div>
-          )}
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <section className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8">
+               <h3 className="font-bold text-xl text-gray-900 mb-6 flex items-center gap-2">
+                <Package size={20} className="text-emerald-500" />
+                Product Pulse
+              </h3>
+              <p className="text-gray-400 text-sm font-medium italic">Detailed restock intelligence coming soon.</p>
+            </section>
+            <section className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8">
+               <h3 className="font-bold text-xl text-gray-900 mb-6 flex items-center gap-2">
+                <ShoppingCart size={20} className="text-amber-500" />
+                Sales Velocity
+              </h3>
+              <p className="text-gray-400 text-sm font-medium italic">Transactional insights coming soon.</p>
+            </section>
+          </div>
         </div>
 
-        {/* Recent Dossiers / Categories */}
+        {/* Categories Sidebar (Simplified) */}
         <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 space-y-6">
           <div className="flex justify-between items-center border-b border-gray-50 pb-4">
             <h3 className="font-bold text-xl text-gray-900">Categories</h3>
@@ -204,7 +190,7 @@ export default function TradeHubPage() {
           
           {categories.length > 0 ? (
             <div className="space-y-3">
-              {categories.map((cat: any) => (
+              {categories.slice(0, 5).map((cat) => (
                 <div key={cat.id} className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-blue-50 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-blue-500 shadow-sm">
@@ -212,17 +198,14 @@ export default function TradeHubPage() {
                     </div>
                     <span className="font-bold text-sm text-gray-700">{cat.name}</span>
                   </div>
-                  <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-300" />
                 </div>
               ))}
+              {categories.length > 5 && (
+                <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest pt-2">+{categories.length - 5} more</p>
+              )}
             </div>
           ) : (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LayoutGrid size={24} />
-              </div>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest leading-relaxed">No categories<br/>defined yet</p>
-            </div>
+            <div className="p-12 text-center text-gray-400 text-xs font-bold">No categories defined.</div>
           )}
           
           <div className="pt-4 border-t border-gray-50">

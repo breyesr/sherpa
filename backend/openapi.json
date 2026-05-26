@@ -669,6 +669,53 @@
       }
     },
     "/api/v1/crm/clients/{client_id}": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Get Client Detail",
+        "operationId": "get_client_detail_api_v1_crm_clients__client_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Client Detail Api V1 Crm Clients  Client Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "crm"
@@ -2455,6 +2502,102 @@
         ]
       }
     },
+    "/api/v1/trade/clients/{client_id}/brief": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Generate Visit Brief",
+        "description": "Generate a specialized AI brief for a store visit.",
+        "operationId": "generate_visit_brief_api_v1_trade_clients__client_id__brief_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Generate Visit Brief Api V1 Trade Clients  Client Id  Brief Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/clients/{client_id}/qualify": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Qualify Lead",
+        "description": "Generate a lead qualification report for a retailer.",
+        "operationId": "qualify_lead_api_v1_trade_clients__client_id__qualify_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Qualify Lead Api V1 Trade Clients  Client Id  Qualify Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health Check",
@@ -3476,6 +3619,46 @@
         ],
         "title": "ClientCreate"
       },
+      "ClientMinimal": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ClientMinimal"
+      },
       "ClientResponse": {
         "properties": {
           "name": {
@@ -4250,28 +4433,6 @@
             ],
             "title": "Address"
           },
-          "contact_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Name"
-          },
-          "contact_phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Phone"
-          },
           "external_id": {
             "anyOf": [
               {
@@ -4282,6 +4443,21 @@
               }
             ],
             "title": "External Id"
+          },
+          "client_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Ids",
+            "default": []
           }
         },
         "type": "object",
@@ -4384,28 +4560,6 @@
             ],
             "title": "Address"
           },
-          "contact_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Name"
-          },
-          "contact_phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Phone"
-          },
           "external_id": {
             "anyOf": [
               {
@@ -4441,6 +4595,14 @@
             },
             "type": "array",
             "title": "Notes",
+            "default": []
+          },
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/ClientMinimal"
+            },
+            "type": "array",
+            "title": "Clients",
             "default": []
           }
         },
@@ -4478,28 +4640,6 @@
             ],
             "title": "Address"
           },
-          "contact_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Name"
-          },
-          "contact_phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Phone"
-          },
           "external_id": {
             "anyOf": [
               {
@@ -4510,6 +4650,20 @@
               }
             ],
             "title": "External Id"
+          },
+          "client_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Ids"
           }
         },
         "type": "object",

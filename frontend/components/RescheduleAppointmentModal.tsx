@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
+import { components } from '@/types/api';
+
+type AppointmentResponse = components['schemas']['AppointmentResponse'];
+
 interface RescheduleAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   token: string | null;
-  appointment: any;
+  appointment: AppointmentResponse | null;
 }
 
 export default function RescheduleAppointmentModal({ isOpen, onClose, onSuccess, token, appointment }: RescheduleAppointmentModalProps) {
@@ -58,7 +62,7 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, onSuccess,
         try {
           const errorData = await res.json();
           errorMessage = errorData.detail || errorMessage;
-        } catch (e) {
+        } catch {
           errorMessage = `${res.status}: ${res.statusText}`;
         }
         throw new Error(errorMessage);

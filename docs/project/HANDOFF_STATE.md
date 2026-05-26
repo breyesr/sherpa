@@ -1,25 +1,23 @@
 # Handoff State
 
 ## Current Focus
-- **Priority**: Implementing the "Clean Relationship" CRM Model (Epic 24).
-- **Secondary**: Specialized Trade Agents (Task 23.4).
+- **Priority**: Trade Operational Loop (Epic 25).
+- **Secondary**: Multi-Retailer Refined Ops (Epic 27).
 
 ## Recently Completed
-- **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
-- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema (Stores, Orders, Products, Competitors, etc.).
-- **Trade Hub UI**: Built the functional dashboard for Store management and Inventory catalog.
-- **Stability Fixes**: Resolved hydration crashes using `SafeDate` component and hardened the Sidebar menu.
-- **Strategy Redefinition**: Redefined Epic 24 to remove redundant Name/Phone fields in the Store model in favor of strict CRM linking with "Quick Add" shortcuts.
+- **Epic 27 (COMPLETE)**: Multi-Retailer Stores & Inline Ops.
+    - **Backend Many-to-Many**: Replaced single `client_id` in Store model with a `store_clients` association table.
+    - **API Hardening**: Refactored `create_store` and `update_store` to handle lists of `client_ids` and prevent serialization crashes with eager loading.
+    - **Inline Store Editing**: Implemented auto-saving header inputs for Store Name, Address, and External ID in the detail view.
+    - **Multi-Retailer UI**: Updated `StoreModal` and `StoreDetailPage` with a tagging-style selector for linking multiple CRM contacts.
+    - **Enhanced Store List**: Added health indicators and primary contact names to the `/trade/stores` grid.
+- **Task 23.4 (COMPLETE)**: AI: Implemented specialized "Visit Briefer" and "Lead Qualifier" agents.
+- **Epic 26 (COMPLETE)**: Architectural Refactor - Dedicated Trade Views.
 
 ## Next Steps (Trade Pivot)
-- **Task 24.1**: Backend: Remove `contact_name` and `contact_phone` from Store model; apply migration.
-- **Task 24.2**: Frontend: Refactor Store Modal to implement "Quick Add Client" in the relationship picker and remove manual inputs.
-- **Task 24.3**: Frontend: Create "Retailers" view in the Trade Hub.
-- **Task 23.4**: AI: Implement specialized "Visit Briefer" and "Lead Qualifier" agents.
-
-## Next Steps (General Maintenance)
-- **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
-- **Epic 8**: Implement remaining KPI displays on the Dashboard.
+- **Task 25.1**: Build the "New Order" Modal with Product Search and automatic calculation.
+- **Task 25.2**: Implement "Competitor Check" UI within the Store Detail page.
+- **Task 25.3**: Create "Global Activity Feed" in Trade Hub.
 
 ## Blocking Issues
-- None. System is stable and synchronized with `staging`.
+- None. System is synchronized and stable.
