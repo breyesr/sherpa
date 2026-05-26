@@ -170,9 +170,9 @@
 - [ ] Task 23.4: Create specialized "Visit Briefer" and "Lead Qualifier" agents for Trade vertical.
 - [x] Task 23.5: Build Trade Dashboard UI (Stores, Categories, and Products management).
 
-## Epic 24: Unified Trade CRM (Client-Store Integration)
-- [x] Task 24.1: API Enhancement: Add `client_id` to Store model and modify `POST /trade/stores` to support linking.
-- [x] Task 24.2: Smart Store Modal: Implement searchable Combobox in UI to link existing CRM clients when creating a Store.
+## Epic 24: Unified Trade CRM (Clean Relationship Model)
+- [ ] Task 24.1: Model Cleanup: Remove redundant `contact_name` and `contact_phone` from Store model; ensure strict `client_id` linking.
+- [ ] Task 24.2: Smart Store Modal: Implement "Quick Add Client" in the picker and remove manual Name/Phone inputs.
 - [ ] Task 24.3: Trade Hub "Retailers" View: Create a unified view in Trade Hub showing CRM clients associated with Stores.
 - [ ] Task 24.4: Client Profile Trade Context: Add a conditional "Trade Context" tab to the client profile showing Store notes and Orders.
 
