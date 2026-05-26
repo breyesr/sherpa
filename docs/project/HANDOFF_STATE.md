@@ -1,26 +1,25 @@
 # Handoff State
 
 ## Current Focus
-- **Priority**: Refactoring to the "Clean Relationship" CRM Model (Epic 24).
-- **Secondary**: Implementing "Quick Add Client" in Store Modal.
+- **Priority**: Implementing the "Clean Relationship" CRM Model (Epic 24).
+- **Secondary**: Specialized Trade Agents (Task 23.4).
 
 ## Recently Completed
 - **Epic 22 (COMPLETE)**: Finalized the Modular "Plug & Play" Architecture.
-- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema (Stores, Orders, Products, Competitors).
-- **Task 23.5 (COMPLETE)**: Built fully interactive management UI for Stores, Categories, and Products.
-- **Strategy Shift**: Decided to remove redundant manual contact fields in favor of a strict CRM-linked model with inline creation shortcuts.
-- **Documentation**: Redefined Epic 24 in the backlog to reflect the "Clean Relationship" strategy.
+- **Epic 23 (Relational COMPLETE)**: Implemented the full Trade schema (Stores, Orders, Products, Competitors, etc.).
+- **Trade Hub UI**: Built the functional dashboard for Store management and Inventory catalog.
+- **Stability Fixes**: Resolved hydration crashes using `SafeDate` component and hardened the Sidebar menu.
+- **Strategy Redefinition**: Redefined Epic 24 to remove redundant Name/Phone fields in the Store model in favor of strict CRM linking with "Quick Add" shortcuts.
 
 ## Next Steps (Trade Pivot)
-- **Task 24.1**: Remove legacy `contact_name` and `contact_phone` columns from Store model/API.
-- **Task 24.2**: Implement "Quick Add Client" inside the Store picker and remove manual inputs from UI.
-- **Task 24.3**: Trade Hub "Retailers" View.
-- **Task 23.4**: Create specialized "Visit Briefer" and "Lead Qualifier" agents.
+- **Task 24.1**: Backend: Remove `contact_name` and `contact_phone` from Store model; apply migration.
+- **Task 24.2**: Frontend: Refactor Store Modal to implement "Quick Add Client" in the relationship picker and remove manual inputs.
+- **Task 24.3**: Frontend: Create "Retailers" view in the Trade Hub.
+- **Task 23.4**: AI: Implement specialized "Visit Briefer" and "Lead Qualifier" agents.
 
 ## Next Steps (General Maintenance)
 - **Task 21.3**: Audit other layout-dependent components for potential hydration mismatches.
 - **Epic 8**: Implement remaining KPI displays on the Dashboard.
-- **Epic 19**: Begin work on the Operational Hub (Unified Inbox).
 
 ## Blocking Issues
-- None currently identified.
+- None. System is stable and synchronized with `staging`.
