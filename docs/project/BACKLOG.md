@@ -1,4 +1,38 @@
-# Sherpa MVP Backlog
+# Sherpa B2B Sales Intelligence Pivot (PRIMARY)
+
+## Epic 100: Environment & Backup (Pivot Foundation)
+- [x] Task 100.1: Create Legacy Snapshot (`cp -r` to `../sherpa-legacy-b2c`).
+- [x] Task 100.2: Create and checkout `feature/b2b-pivot` branch.
+- [x] Task 100.3: Update `GEMINI.md` and project docs to reflect the B2B Sales Intelligence focus.
+
+## Epic 101: Codebase Audit & Decoupling
+- [x] Task 101.1: Audit `ai_service.py` for orchestration efficiency (LangChain/LlamaIndex evaluation). **RESULT: Transition to modular Orchestrator recommended.**
+- [x] Task 101.2: Audit Messaging Webhooks (`whatsapp.py`, `telegram.py`) for domain logic separation. **RESULT: Decoupling into MessagingService recommended.**
+- [x] Task 101.3: Audit Database patterns for async efficiency and `uuid7str` consistency. **RESULT: High consistency; ready for pgvector.**
+
+## Epic 102: Schema Evolution & Vector Infrastructure
+- [ ] Task 102.1: Add `pgvector` and related dependencies to `backend/requirements.txt`.
+- [ ] Task 102.2: Configure Alembic to support the `vector` extension.
+- [ ] Task 102.3: Implement B2B Relational Models: `Store`, `Customer` (Contact), `Categories`, `Products`, `Orders`, `Competitors`.
+- [ ] Task 102.4: Implement Intelligence Models: `Store_Notes`, `Customer_Notes` (with `pgvector` columns).
+- [ ] Task 102.5: Refactor `Appointment` model to link to `Store` and `Customer`.
+- [ ] Task 102.6: Execute Alembic migrations for the new B2B schema.
+
+## Epic 103: Multi-Agent AI System (The Orchestrator)
+- [ ] Task 103.1: Implement AI State Router (Ingestion vs. Retrieval vs. Scheduling).
+- [ ] Task 103.2: Build entity-extraction pipeline for unstructured Field Intelligence (Ingestion).
+- [ ] Task 103.3: Implement GraphRAG querying logic (Similarity Search + SQL Joins).
+- [ ] Task 103.4: Develop "Pre-visit Brief" synthesis prompt.
+
+## Epic 104: Frontend Dashboard Transformation
+- [ ] Task 104.1: Synchronize frontend types with new OpenAPI spec (`npm run gen:api`).
+- [ ] Task 104.2: Refactor CRM views to "Accounts" (Stores) and "Contacts" (Customers).
+- [ ] Task 104.3: Implement "Intelligence Timeline" view for Store/Account profiles.
+- [ ] Task 104.4: Update Appointment/Calendar modals for B2B entities.
+
+---
+
+# Sherpa MVP Backlog (Legacy/Base)
 
 ## Epic 1: Infrastructure & Architecture
 - [x] Task 1.1: Initialize monorepo structure (frontend, backend, infra, docs).
