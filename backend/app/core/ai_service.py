@@ -18,6 +18,7 @@ from app.models.messaging import Conversation, Message
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
+from app.services.orchestrator import B2BOrchestrator
 
 # Setup prompt template environment
 try:
@@ -36,6 +37,7 @@ class AIService:
         self.db = db
         self.assistant_config = business_profile.assistant_config
         self.memory = ChatMemory()
+        self.orchestrator = B2BOrchestrator(db)
 
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
@@ -179,7 +181,14 @@ class AIService:
             # 3. Memory Stage (Redis for quick LLM context)
             history = await self.memory.get_history(normalized_id)
             
-            # 4. Prompt Construction Stage (Jinja2)
+            # 4. B2B Orchestration Stage (Intent Classification)
+            # This determines if the rep is Reporting, Querying, or Scheduling.
+            b2b_routing_response = await self.orchestrator.route_message(
+                self.business, client_obj, user_message, metadata
+            )
+            print(f"DEBUG B2B: {b2b_routing_response}")
+            
+            # 5. Prompt Construction Stage (Jinja2)
             try:
                 if not prompt_env:
                     raise Exception("Jinja2 environment not initialized")
