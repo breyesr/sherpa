@@ -19,9 +19,9 @@
 - [ ] Task 102.6: Execute Alembic migrations for the new B2B schema.
 
 ## Epic 103: Multi-Agent AI System (The Orchestrator)
-- [ ] Task 103.1: Implement AI State Router (Ingestion vs. Retrieval vs. Scheduling).
-- [ ] Task 103.2: Build entity-extraction pipeline for unstructured Field Intelligence (Ingestion).
-- [ ] Task 103.3: Implement logic for automated Vector generation on note save.
+- [x] Task 103.1: Implement AI State Router (Ingestion vs. Retrieval vs. Scheduling).
+- [x] Task 103.2: Build entity-extraction pipeline for unstructured Field Intelligence (Ingestion).
+- [x] Task 103.3: Implement logic for automated Vector generation on note save.
 - [ ] Task 103.4: Implement GraphRAG querying logic (Similarity Search + SQL Joins).
 - [ ] Task 103.5: Develop "Pre-visit Brief" synthesis prompt.
 
