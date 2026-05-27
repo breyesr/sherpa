@@ -101,7 +101,7 @@ class GoogleCalendarService:
             
         return data.get('items', [])
 
-    async def create_event(self, summary: str, start_time: datetime, end_time: datetime, description: str = ""):
+    async def create_event(self, summary: str, start_time: datetime, end_time: datetime, description: str = "", location: str = ""):
         """Create an event in the primary Google calendar."""
         token = await self._get_access_token()
         
@@ -109,6 +109,7 @@ class GoogleCalendarService:
         body = {
             'summary': summary,
             'description': description,
+            'location': location,
             'start': {
                 'dateTime': start_time.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             },
@@ -128,7 +129,7 @@ class GoogleCalendarService:
             
         return data.get('id')
 
-    async def update_event(self, event_id: str, summary: str, start_time: datetime, end_time: datetime, description: str = ""):
+    async def update_event(self, event_id: str, summary: str, start_time: datetime, end_time: datetime, description: str = "", location: str = ""):
         """Update an existing event in Google Calendar."""
         token = await self._get_access_token()
         
@@ -136,6 +137,7 @@ class GoogleCalendarService:
         body = {
             'summary': summary,
             'description': description,
+            'location': location,
             'start': {
                 'dateTime': start_time.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             },

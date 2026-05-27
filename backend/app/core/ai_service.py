@@ -384,12 +384,14 @@ class AIService:
             {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}}, "required": ["start_time"]}}},
             {"type": "function", "function": {
                 "name": "create_appointment", 
-                "description": "FINAL STEP: Book the appointment in the system. PRE-CONDITION: You MUST have already asked for the 'reason' and received user 'confirmation' of their contact info as per system instructions. Do NOT call this early.", 
+                "description": "FINAL STEP: Book the appointment/visit in the system. PRE-CONDITION: You MUST have already asked for the 'reason' and received user 'confirmation' of their contact info as per system instructions. Do NOT call this early.", 
                 "parameters": {
                     "type": "object", 
                     "properties": {
                         "start_time": {"type": "string", "description": "ISO format"}, 
                         "service_id": {"type": "string", "description": "The ID of the service selected by the user"},
+                        "store_id": {"type": "string", "description": "The ID of the Store/Account to visit"},
+                        "customer_id": {"type": "string", "description": "The ID of the Customer/Contact at the store"},
                         "notes": {"type": "string", "description": "Reason for visit or additional details"}
                     }, 
                     "required": ["start_time", "notes"]
@@ -406,7 +408,15 @@ class AIService:
         elif name == "check_availability":
             available = await self._check_availability_tool(args['start_time'], args.get('duration_minutes'))
             return "Available" if available else "Busy. Suggest another time."
-        elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('service_id'), args.get('notes'))
+        elif name == "create_appointment": 
+            return await self._create_appointment_tool(
+                identifier, 
+                args['start_time'], 
+                args.get('service_id'), 
+                args.get('notes'),
+                store_id=args.get('store_id'),
+                customer_id=args.get('customer_id')
+            )
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
         elif name == "get_client_appointments": return await self._get_client_appointments_tool(identifier)
         elif name == "update_client_metadata": return await self._update_client_metadata_tool(identifier, args.get('metadata'))
@@ -542,7 +552,7 @@ class AIService:
         client, _ = await self._get_client(identifier)
         return client
 
-    async def _create_appointment_tool(self, identifier: str, start_iso: str, service_id: str = None, notes: str = None) -> str:
+    async def _create_appointment_tool(self, identifier: str, start_iso: str, service_id: str = None, notes: str = None, store_id: str = None, customer_id: str = None) -> str:
         try:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             # Parse ISO string.
@@ -566,6 +576,16 @@ class AIService:
             end_utc = start_utc + timedelta(minutes=duration)
             
             client_obj = await self._check_client_direct(identifier)
+            
+            # Fetch Store/Customer names for Google Calendar if provided
+            location_str = ""
+            if store_id:
+                from app.models.store import Store
+                res_store = await self.db.execute(select(Store).where(Store.id == store_id))
+                store = res_store.scalars().first()
+                if store:
+                    service_name = f"Visit: {store.name}"
+                    location_str = store.address or ""
             
             # 1. Check for existing 'scheduled' appointment for this client
             res = await self.db.execute(
@@ -595,38 +615,57 @@ class AIService:
                 existing_apt.end_time = end_utc
                 if service_id: existing_apt.service_id = service_id
                 if notes: existing_apt.notes = notes
+                if store_id: existing_apt.store_id = store_id
+                if customer_id: existing_apt.customer_id = customer_id
                 
                 if service and existing_apt.google_event_id:
                     try:
                         await service.update_event(
                             event_id=existing_apt.google_event_id,
-                            summary=f"Sherpa: {client_obj.name} ({service_name})",
+                            summary=f"Sherpa: {service_name}",
                             start_time=start_utc,
                             end_time=end_utc,
-                            description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI"
+                            description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI",
+                            location=location_str
                         )
                     except Exception as e:
                         print(f"WARNING: Google Reschedule failed: {e}")
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
-                return f"SUCCESS: Your appointment for {service_name} has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                return f"SUCCESS: Your visit to {service_name} has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
             
             else:
                 # NEW BOOKING MODE
-                apt = Appointment(business_id=self.business.id, client_id=client_obj.id, service_id=service_id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
+                apt = Appointment(
+                    business_id=self.business.id, 
+                    client_id=client_obj.id, 
+                    service_id=service_id, 
+                    store_id=store_id,
+                    customer_id=customer_id,
+                    start_time=start_utc, 
+                    end_time=end_utc, 
+                    status="scheduled", 
+                    notes=notes
+                )
                 self.db.add(apt)
                 
                 if service:
                     try:
-                        google_id = await service.create_event(f"Sherpa: {client_obj.name} ({service_name})", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
+                        google_id = await service.create_event(
+                            summary=f"Sherpa: {service_name}", 
+                            start_time=start_utc, 
+                            end_time=end_utc, 
+                            description=f"Reason: {notes}\nBooked via AI",
+                            location=location_str
+                        )
                         apt.google_event_id = google_id
                     except Exception as e:
                         print(f"WARNING: Google Booking failed: {e}")
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
-                return f"SUCCESS: Booked {service_name} for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                return f"SUCCESS: Visit scheduled for {service_name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
                 
         except Exception as e: 
             traceback.print_exc()

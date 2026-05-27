@@ -26,7 +26,7 @@
 - [x] Task 103.5: Develop "Pre-visit Brief" synthesis prompt.
 
 ## Epic 104: Scheduling & Frontend Transformation
-- [ ] Task 104.1: Enhance Google Calendar sync with Store/Address metadata.
+- [x] Task 104.1: Enhance Google Calendar sync with Store/Address metadata.
 - [ ] Task 104.2: Synchronize frontend types with new OpenAPI spec (`npm run gen:api`).
 - [ ] Task 104.3: Refactor CRM views to "Accounts" (Stores) and "Contacts" (Customers).
 - [ ] Task 104.4: Build "Intelligence Timeline" view for Store/Account profiles.
