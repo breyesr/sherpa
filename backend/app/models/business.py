@@ -24,6 +24,8 @@ class BusinessProfile(Base):
     assistant_config = relationship("AssistantConfig", back_populates="business_profile", uselist=False, cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="business_profile", cascade="all, delete-orphan")
     clients = relationship("Client", back_populates="business_profile", cascade="all, delete-orphan")
+    stores = relationship("Store", back_populates="business_profile", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="business_profile", cascade="all, delete-orphan")
     appointments = relationship("Appointment", back_populates="business_profile", cascade="all, delete-orphan")
     services = relationship("Service", back_populates="business_profile", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business_profile", cascade="all, delete-orphan")

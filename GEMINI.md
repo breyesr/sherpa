@@ -6,6 +6,7 @@
 - **File Structure**: Monorepo split into /backend and /frontend.
 - **Core Docs**:
   - /docs/project/BACKLOG.md: Prioritized epics and tasks (Owned by PM).
+  - /docs/project/NORTH_STAR.md: The B2B Sales Intelligence vision and "Marco" persona (The North Star).
   - /docs/project/HANDOFF_STATE.md: MANDATORY state file for session continuity.
   - /docs/project/HANDOFF_LOG.md: Historical audit of session accomplishments.
   - /docs/project/PRODUCTION_STATUS.md: Current state of Railway services.
