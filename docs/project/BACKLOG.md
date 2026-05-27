@@ -22,8 +22,8 @@
 - [x] Task 103.1: Implement AI State Router (Ingestion vs. Retrieval vs. Scheduling).
 - [x] Task 103.2: Build entity-extraction pipeline for unstructured Field Intelligence (Ingestion).
 - [x] Task 103.3: Implement logic for automated Vector generation on note save.
-- [ ] Task 103.4: Implement GraphRAG querying logic (Similarity Search + SQL Joins).
-- [ ] Task 103.5: Develop "Pre-visit Brief" synthesis prompt.
+- [x] Task 103.4: Implement GraphRAG querying logic (Similarity Search + SQL Joins).
+- [x] Task 103.5: Develop "Pre-visit Brief" synthesis prompt.
 
 ## Epic 104: Scheduling & Frontend Transformation
 - [ ] Task 104.1: Enhance Google Calendar sync with Store/Address metadata.

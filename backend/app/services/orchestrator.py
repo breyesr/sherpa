@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
+from app.services.graphrag import GraphRAGService
 
 # Setup prompt template environment
 prompt_env = Environment(
@@ -14,6 +15,7 @@ prompt_env = Environment(
 class B2BOrchestrator:
     def __init__(self, db: Any):
         self.db = db
+        self.graphrag = GraphRAGService(db)
 
     async def classify_intent(self, user_message: str) -> Dict[str, Any]:
         """Classify the rep's message into REPORT, QUERY, SCHEDULE, or CHAT."""
@@ -67,7 +69,7 @@ class B2BOrchestrator:
         
         elif intent == "QUERY":
             # Session 3 Goal: Hand off to GraphRAGAgent
-            return f"[ORCHESTRATOR] Routing to QUERY pipeline. Reasoning: {classification.get('reasoning')}"
+            return await self.graphrag.generate_brief(user_message, business.id)
             
         elif intent == "SCHEDULE":
             # Session 4 Goal: Use existing Scheduling tools
