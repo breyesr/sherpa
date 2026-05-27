@@ -49,7 +49,7 @@ Before every session wrap-up or whenever context limits approach, you MUST:
 - **Verify Documentation**: Ensure BACKLOG.md reflects the actual work remaining.
 
 ## Project Context
-Sherpa automates appointment scheduling via WhatsApp/Telegram and Google Calendar for service businesses.
+Sherpa is a B2B Sales Intelligence platform that empowers field representatives with GraphRAG-driven account insights. It automates data ingestion from messaging platforms (WhatsApp/Telegram) into a structured sales graph and provides contextual briefs for field visits, while maintaining robust calendar and appointment integration.
 
 
 ## Roles & Responsibilities
