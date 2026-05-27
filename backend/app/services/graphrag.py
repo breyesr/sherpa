@@ -1,9 +1,7 @@
 from typing import List, Dict, Any, Optional
 from sqlalchemy.future import select
 from sqlalchemy import text
-from app.models.store import Store
-from app.models.customer import Customer
-from app.models.intelligence import StoreNote, CustomerNote
+from app.models.trade import Store, StoreNote, CustomerNote
 from app.core.embeddings import EmbeddingService
 from pgvector.sqlalchemy import Vector
 import json

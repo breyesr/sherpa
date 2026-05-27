@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.api.auth import get_current_user
 from app.core.ai_service import AIService
+from app.services.graphrag import GraphRAGService
 from app.models.user import User
 from app.models.business import BusinessProfile
 from app.models.trade import Store, StoreNote, Category, Product, Order
@@ -239,6 +240,25 @@ async def create_product(
     return product
 
 # --- AI INSIGHTS ---
+
+@router.get("/stores/{store_id}/brief")
+async def get_strategic_brief(
+    store_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Generate a strategic pre-visit brief for a specific store using GraphRAG."""
+    business = await get_business(db, current_user.id)
+    # Verify store belongs to business
+    res_store = await db.execute(select(Store).where(Store.id == store_id, Store.business_id == business.id))
+    store = res_store.scalars().first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+        
+    rag_service = GraphRAGService(db)
+    # In B2B mode, we use the store name as the primary context for the brief
+    brief = await rag_service.generate_brief(f"Brief for {store.name}", business.id)
+    return {"report": brief}
 
 @router.post("/clients/{client_id}/brief")
 async def generate_visit_brief(

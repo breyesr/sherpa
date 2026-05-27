@@ -17,28 +17,30 @@ interface AddAppointmentModalProps {
 
 export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token }: AddAppointmentModalProps) {
   const [clientId, setClientId] = useState('');
+  const [storeId, setStoreId] = useState('');
+  const [customerId, setCustomerId] = useState('');
   const [startTime, setStartTime] = useState('');
   const [duration, setDuration] = useState('60'); // minutes
   const [clients, setClients] = useState<ClientResponse[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function fetchClients() {
+    async function fetchData() {
       if (!isOpen) return;
       try {
-        const res = await fetch(`${API_BASE_URL}/crm/clients`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setClients(data);
-        }
+        const [clientsRes, storesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/crm/clients`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE_URL}/trade/stores`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        if (clientsRes.ok) setClients(await clientsRes.json());
+        if (storesRes.ok) setStores(await storesRes.json());
       } catch (err) {
         console.error(err);
       }
     }
-    fetchClients();
+    fetchData();
   }, [isOpen, token]);
 
   if (!isOpen) return null;
@@ -59,7 +61,9 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
-          client_id: clientId, 
+          client_id: clientId || null, 
+          store_id: storeId || null,
+          customer_id: customerId || null,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
           status: 'scheduled'
@@ -81,6 +85,8 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
       onSuccess();
       onClose();
       setClientId('');
+      setStoreId('');
+      setCustomerId('');
       setStartTime('');
     } catch (err: any) {
       setError(err.message === 'Failed to fetch' ? 'Cannot reach server. Is the backend running?' : err.message);
@@ -103,7 +109,21 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
           {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</p>}
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Client *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Store (Account) - Optional</label>
+            <select 
+              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+              value={storeId}
+              onChange={(e) => setStoreId(e.target.value)}
+            >
+              <option value="">No store linked</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Contact (Retailer) *</label>
             <select 
               required
               className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"

@@ -19,11 +19,9 @@ from app.models.integration import Integration
 from app.models.calendar import BusySlot
 from app.models.crm import Client, Appointment
 from app.models.system import SystemConfiguration
-from app.models.store import Store
-from app.models.customer import Customer
-from app.models.intelligence import StoreNote, CustomerNote, Competitor
-from app.models.catalog import Category, Product, Order
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, CustomerNote
 from app.core.database import Base
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

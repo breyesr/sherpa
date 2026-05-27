@@ -21,7 +21,9 @@ import {
   Loader2,
   Clock,
   ClipboardList,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import StoreModal from '@/components/StoreModal';
 
@@ -41,6 +43,7 @@ export default function StoreDetailPage() {
   const [editAddress, setEditAddress] = useState('');
   const [editExternalId, setEditExternalId] = useState('');
   const [isSavingInline, setIsSavingInline] = useState(false);
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
 
   const { data: store, isLoading, error } = useQuery<StoreResponse>({
     queryKey: ['store', id],
@@ -57,6 +60,19 @@ export default function StoreDetailPage() {
       return data;
     },
     enabled: !!token && !!id,
+  });
+
+  const { data: brief, refetch: refetchBrief, isFetching: isFetchingBrief } = useQuery<{ report: string }>({
+    queryKey: ['store-brief', id],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/trade/stores/${id}/brief`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Brief not available');
+      return res.json();
+    },
+    enabled: !!token && !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const handleUpdateStore = async (fields: any) => {
@@ -201,6 +217,44 @@ export default function StoreDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Retailers & Health */}
         <div className="space-y-8">
+          {/* AI Strategic Brief */}
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden group min-h-[200px]">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+              <Sparkles size={120} />
+            </div>
+            <div className="relative z-10">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-black text-xl uppercase tracking-tighter flex items-center gap-2">
+                  <Zap size={20} className="text-yellow-400 fill-yellow-400" />
+                  Strategic Brief
+                </h3>
+                <button 
+                  onClick={() => refetchBrief()}
+                  disabled={isFetchingBrief}
+                  className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
+                >
+                  <Clock size={16} className={isFetchingBrief ? 'animate-spin' : ''} />
+                </button>
+              </div>
+              
+              {isFetchingBrief && !brief ? (
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-4 bg-white/20 rounded w-3/4"></div>
+                  <div className="h-4 bg-white/20 rounded w-full"></div>
+                  <div className="h-4 bg-white/20 rounded w-5/6"></div>
+                </div>
+              ) : brief?.report ? (
+                <div className="prose prose-invert prose-sm">
+                  <p className="font-medium leading-relaxed opacity-90 italic">
+                    "{brief.report}"
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm opacity-60">No intelligence gathered yet. Record a visit to generate insights.</p>
+              )}
+            </div>
+          </div>
+
           {/* Retailers Card */}
           <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 space-y-6">
             <div className="flex justify-between items-center">

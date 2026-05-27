@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
 from datetime import datetime
+from pgvector.sqlalchemy import Vector
 
 class StoreNoteType(str, enum.Enum):
     RISK = "risk"
@@ -83,8 +84,13 @@ class StoreNote(Base):
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     store_id = Column(String, ForeignKey("stores.id"), nullable=False)
     
-    type = Column(SQLEnum(StoreNoteType), default=StoreNoteType.GENERAL, nullable=False)
-    content = Column(Text, nullable=False)
+    note = Column(Text, nullable=False)
+    risks = Column(Text, nullable=True)
+    opportunities = Column(Text, nullable=True)
+    preferred_actions = Column(Text, nullable=True)
+    
+    # Vector embedding for GraphRAG
+    embedding = Column(Vector(1536), nullable=True)
     
     # Optional: Author of the note (User ID)
     author_id = Column(String, ForeignKey("users.id"), nullable=True)
@@ -158,6 +164,9 @@ class CustomerNote(Base):
     visit_frequency = Column(String, nullable=True) # e.g., 'weekly', 'monthly'
     preferred_actions = Column(Text, nullable=True)
     general_notes = Column(Text, nullable=True)
+    
+    # Vector embedding for GraphRAG
+    embedding = Column(Vector(1536), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -77,19 +77,19 @@ export default function Sidebar() {
         
         {business?.vertical_type === 'TRADE' ? (
           <div className="space-y-1">
-            <SidebarLink href="/trade" icon={Store} name="Trade Hub" active={pathname === '/trade'} />
+            <SidebarLink href="/trade" icon={Store} name="B2B Hub" active={pathname === '/trade'} />
             <div className="pl-9 space-y-1">
               <Link 
                 href="/trade/stores"
                 className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
-                • Stores
+                • Accounts (Stores)
               </Link>
               <Link 
                 href="/trade/retailers"
                 className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
-                • Retailers
+                • Contacts (Retailers)
               </Link>
             </div>
           </div>

@@ -5,9 +5,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
 from app.core.database import SessionLocal
-from app.models.store import Store
-from app.models.customer import Customer
-from app.models.intelligence import StoreNote, Competitor
+from app.models.trade import Store, StoreNote, Competitor
 from app.core.embeddings import EmbeddingService
 from sqlalchemy.future import select
 from sqlalchemy import or_

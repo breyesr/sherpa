@@ -12,11 +12,11 @@
 
 ## Epic 102: Schema Evolution & Vector Infrastructure
 - [x] Task 102.1: Add `pgvector` and related dependencies to `backend/requirements.txt`.
-- [ ] Task 102.2: Configure Alembic to support the `vector` extension.
-- [ ] Task 102.3: Implement B2B Relational Models: `Store`, `Customer` (Contact), `Categories`, `Products`, `Orders`, `Competitors`.
-- [ ] Task 102.4: Implement Intelligence Models: `Store_Notes`, `Customer_Notes` (with `pgvector` columns).
-- [ ] Task 102.5: Refactor `Appointment` model to link to `Store` and `Customer`.
-- [ ] Task 102.6: Execute Alembic migrations for the new B2B schema.
+- [x] Task 102.2: Configure Alembic to support the `vector` extension.
+- [x] Task 102.3: Implement B2B Relational Models: `Store`, `Customer` (Contact), `Categories`, `Products`, `Orders`, `Competitors`.
+- [x] Task 102.4: Implement Intelligence Models: `Store_Notes`, `Customer_Notes` (with `pgvector` columns).
+- [x] Task 102.5: Refactor `Appointment` model to link to `Store` and `Customer`.
+- [x] Task 102.6: Execute Alembic migrations for the new B2B schema.
 
 ## Epic 103: Multi-Agent AI System (The Orchestrator)
 - [x] Task 103.1: Implement AI State Router (Ingestion vs. Retrieval vs. Scheduling).
@@ -27,10 +27,10 @@
 
 ## Epic 104: Scheduling & Frontend Transformation
 - [x] Task 104.1: Enhance Google Calendar sync with Store/Address metadata.
-- [ ] Task 104.2: Synchronize frontend types with new OpenAPI spec (`npm run gen:api`).
-- [ ] Task 104.3: Refactor CRM views to "Accounts" (Stores) and "Contacts" (Customers).
-- [ ] Task 104.4: Build "Intelligence Timeline" view for Store/Account profiles.
-- [ ] Task 104.5: Update Appointment/Calendar modals and filters for B2B entities.
+- [x] Task 104.2: Synchronize frontend types with new OpenAPI spec (`npm run gen:api`).
+- [x] Task 104.3: Refactor CRM views to "Accounts" (Stores) and "Contacts" (Customers).
+- [x] Task 104.4: Build "Intelligence Timeline" view for Store/Account profiles.
+- [x] Task 104.5: Update Appointment/Calendar modals and filters for B2B entities.
 
 ---
 
