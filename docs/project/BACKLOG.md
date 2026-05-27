@@ -11,7 +11,7 @@
 - [x] Task 101.3: Audit Database patterns for async efficiency and `uuid7str` consistency. **RESULT: High consistency; ready for pgvector.**
 
 ## Epic 102: Schema Evolution & Vector Infrastructure
-- [ ] Task 102.1: Add `pgvector` and related dependencies to `backend/requirements.txt`.
+- [x] Task 102.1: Add `pgvector` and related dependencies to `backend/requirements.txt`.
 - [ ] Task 102.2: Configure Alembic to support the `vector` extension.
 - [ ] Task 102.3: Implement B2B Relational Models: `Store`, `Customer` (Contact), `Categories`, `Products`, `Orders`, `Competitors`.
 - [ ] Task 102.4: Implement Intelligence Models: `Store_Notes`, `Customer_Notes` (with `pgvector` columns).
@@ -21,14 +21,16 @@
 ## Epic 103: Multi-Agent AI System (The Orchestrator)
 - [ ] Task 103.1: Implement AI State Router (Ingestion vs. Retrieval vs. Scheduling).
 - [ ] Task 103.2: Build entity-extraction pipeline for unstructured Field Intelligence (Ingestion).
-- [ ] Task 103.3: Implement GraphRAG querying logic (Similarity Search + SQL Joins).
-- [ ] Task 103.4: Develop "Pre-visit Brief" synthesis prompt.
+- [ ] Task 103.3: Implement logic for automated Vector generation on note save.
+- [ ] Task 103.4: Implement GraphRAG querying logic (Similarity Search + SQL Joins).
+- [ ] Task 103.5: Develop "Pre-visit Brief" synthesis prompt.
 
-## Epic 104: Frontend Dashboard Transformation
-- [ ] Task 104.1: Synchronize frontend types with new OpenAPI spec (`npm run gen:api`).
-- [ ] Task 104.2: Refactor CRM views to "Accounts" (Stores) and "Contacts" (Customers).
-- [ ] Task 104.3: Implement "Intelligence Timeline" view for Store/Account profiles.
-- [ ] Task 104.4: Update Appointment/Calendar modals for B2B entities.
+## Epic 104: Scheduling & Frontend Transformation
+- [ ] Task 104.1: Enhance Google Calendar sync with Store/Address metadata.
+- [ ] Task 104.2: Synchronize frontend types with new OpenAPI spec (`npm run gen:api`).
+- [ ] Task 104.3: Refactor CRM views to "Accounts" (Stores) and "Contacts" (Customers).
+- [ ] Task 104.4: Build "Intelligence Timeline" view for Store/Account profiles.
+- [ ] Task 104.5: Update Appointment/Calendar modals and filters for B2B entities.
 
 ---
 

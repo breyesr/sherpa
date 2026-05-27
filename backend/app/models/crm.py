@@ -98,7 +98,9 @@ class Appointment(Base):
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    client_id = Column(String, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(String, ForeignKey("clients.id"), nullable=True) # Optional for B2B
+    store_id = Column(String, ForeignKey("stores.id"), nullable=True) # New B2B Account
+    customer_id = Column(String, ForeignKey("customers.id"), nullable=True) # New B2B Contact
     service_id = Column(String, ForeignKey("services.id"), nullable=True)
     
     start_time = Column(DateTime, nullable=False, index=True)
@@ -115,6 +117,8 @@ class Appointment(Base):
 
     business_profile = relationship("BusinessProfile", back_populates="appointments")
     client = relationship("Client", back_populates="appointments")
+    store = relationship("Store", back_populates="appointments")
+    customer = relationship("Customer", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")
 
     __table_args__ = (
