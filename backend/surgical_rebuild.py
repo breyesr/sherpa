@@ -39,6 +39,13 @@ async def surgical_rebuild():
             await conn.execute(text("DROP TYPE IF EXISTS importstatus CASCADE"))
         except: pass
 
+        print("\nEnsuring pgvector extension is installed on remote database...")
+        try:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector CASCADE;"))
+            print("✅ pgvector extension is active.")
+        except Exception as e:
+            print(f"❌ Error creating vector extension (Railway Postgres might need manual activation if it's an old instance): {e}")
+
         print("\nRe-creating clean B2B infrastructure...")
         # create_all uses current Python models as source of truth
         await conn.run_sync(Base.metadata.create_all)

@@ -14,7 +14,7 @@ Sherpa uses a **Multi-service Project** on Railway. All services point to the sa
 - **Role**: Celery Background Tasks (Reminders, Calendar Sync, & B2B AI Ingestion)
 - **Root Directory**: `/backend`
 - **Builder**: Nixpacks
-- **Start Command**: `celery -A app.core.celery_app worker --loglevel=info`
+- **Start Command**: `celery -A app.core.celery_app worker --loglevel=warning`
 - **Dependencies**: Requires `OPENAI_API_KEY` for B2B intelligence extraction.
 
 ### 3. Service: `Frontend Dashboard` (formerly 'web')
