@@ -35,7 +35,6 @@ export default function StoreDetailPage() {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
-  const [noteType, setNoteType] = useState('general');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
 
   // Inline Editing States
@@ -109,14 +108,12 @@ export default function StoreDetailPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          type: noteType,
-          content: newNote
+          note: newNote
         })
       });
 
       if (res.ok) {
         setNewNote('');
-        setNoteType('general');
         queryClient.invalidateQueries({ queryKey: ['store', id] });
       }
     } catch (err) {
@@ -322,34 +319,14 @@ export default function StoreDetailPage() {
                 <h3 className="font-bold text-2xl text-gray-900">Store Dossier</h3>
                 <p className="text-sm text-gray-500 font-medium">Record observations, risks, and local opportunities.</p>
               </div>
-              <div className="flex items-center gap-2 bg-white p-1 rounded-xl border shadow-sm">
-                {['general', 'risk', 'opportunity', 'action'].map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setNoteType(type)}
-                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                      noteType === type 
-                        ? 'bg-gray-900 text-white shadow-md scale-105' 
-                        : 'text-gray-400 hover:text-gray-600'
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Note Input */}
             <div className="p-8 border-b border-gray-50">
               <form onSubmit={handleAddNote} className="relative">
                 <textarea
-                  placeholder={`Write a ${noteType} observation...`}
-                  className={`w-full p-6 pb-16 border-2 rounded-3xl outline-none focus:ring-4 transition-all font-medium text-lg resize-none ${
-                    noteType === 'risk' ? 'border-red-100 focus:ring-red-500/10 focus:border-red-200' :
-                    noteType === 'opportunity' ? 'border-amber-100 focus:ring-amber-500/10 focus:border-amber-200' :
-                    noteType === 'action' ? 'border-emerald-100 focus:ring-emerald-500/10 focus:border-emerald-200' :
-                    'border-blue-100 focus:ring-blue-500/10 focus:border-blue-200'
-                  }`}
+                  placeholder="Write a field observation..."
+                  className="w-full p-6 pb-16 border-2 rounded-3xl outline-none focus:ring-4 transition-all font-medium text-lg resize-none border-blue-100 focus:ring-blue-500/10 focus:border-blue-200"
                   rows={3}
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
@@ -370,18 +347,50 @@ export default function StoreDetailPage() {
             <div className="flex-1 p-8 space-y-6 overflow-y-auto max-h-[500px]">
               {store.notes && store.notes.length > 0 ? (
                 [...store.notes].reverse().map((note: any) => (
-                  <div key={note.id} className={`p-6 rounded-3xl border-2 transition-all hover:scale-[1.01] ${getNoteBg(note.type)}`}>
+                  <div key={note.id} className={`p-6 rounded-3xl border-2 transition-all hover:scale-[1.01] bg-gray-50 border-gray-100`}>
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border shadow-sm">
-                        {getNoteIcon(note.type)}
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">{note.type}</span>
+                        <MessageSquare className="text-blue-500" size={18} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">FIELD REPORT</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-gray-400 text-xs font-bold uppercase tracking-widest">
                         <Clock size={14} />
                         <SafeDate date={note.created_at} />
                       </div>
                     </div>
-                    <p className="text-gray-800 font-medium leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                    <div className="space-y-4">
+                      <p className="text-gray-800 font-medium leading-relaxed whitespace-pre-wrap">{note.note}</p>
+                      
+                      {note.risks && (
+                        <div className="flex items-start gap-2 bg-red-50 p-3 rounded-xl border border-red-100">
+                          <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={16} />
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-0.5">Identified Risk</p>
+                            <p className="text-sm font-medium text-red-900">{note.risks}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {note.opportunities && (
+                        <div className="flex items-start gap-2 bg-amber-50 p-3 rounded-xl border border-amber-100">
+                          <Lightbulb className="text-amber-500 shrink-0 mt-0.5" size={16} />
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-0.5">Opportunity</p>
+                            <p className="text-sm font-medium text-amber-900">{note.opportunities}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {note.preferred_actions && (
+                        <div className="flex items-start gap-2 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                          <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={16} />
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-0.5">Suggested Action</p>
+                            <p className="text-sm font-medium text-emerald-900">{note.preferred_actions}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))
               ) : (
