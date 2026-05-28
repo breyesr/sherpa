@@ -147,6 +147,13 @@ async def test_chat(
     
     # If the user is previewing new config, temporarily override it
     if payload.assistant_config:
+        if not business.assistant_config:
+            # Create a temporary agent if none exists
+            from app.models.business import Agent
+            temp_agent = Agent(business_id=business.id, role="general")
+            # We don't add it to DB, just use it for the session
+            business.agents.append(temp_agent)
+            
         for field, value in payload.assistant_config.dict(exclude_unset=True).items():
             setattr(business.assistant_config, field, value)
     

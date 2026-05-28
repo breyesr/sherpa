@@ -482,14 +482,22 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
       <AddAppointmentModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
-        onSuccess={() => router.refresh()}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['appointments'] });
+          queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
+          router.refresh();
+        }}
         token={token || ''}
       />
 
       <RescheduleAppointmentModal 
         isOpen={isRescheduleModalOpen}
         onClose={() => setIsRescheduleModalOpen(false)}
-        onSuccess={() => router.refresh()}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['appointments'] });
+          queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
+          router.refresh();
+        }}
         token={token || ''}
         appointment={selectedAppointment}
       />

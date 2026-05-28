@@ -195,8 +195,9 @@ class AIService:
                 self.business, client_obj, user_message, metadata
             )
             
-            # If the orchestrator handled the response (e.g., triggered ingestion), return that
-            if not b2b_routing_response.startswith("[ORCHESTRATOR] Routing to CHAT"):
+            # If the orchestrator handled the response (e.g., triggered ingestion), return that.
+            # We ignore any response starting with the [ORCHESTRATOR] Routing tag to let it fall through to chat.
+            if b2b_routing_response and not b2b_routing_response.startswith("[ORCHESTRATOR] Routing"):
                 return b2b_routing_response
 
             # 5. Prompt Construction Stage (Jinja2)
@@ -204,6 +205,16 @@ class AIService:
                 if not prompt_env:
                     raise Exception("Jinja2 environment not initialized")
                 
+                if not self.assistant_config:
+                    print(f"ERROR: No agent configured for business {self.business.id}. Falling back to default behavior.")
+                    # Provide a minimal default config if missing to prevent crashes
+                    from app.models.business import Agent
+                    self.assistant_config = Agent(
+                        name="Sherpa",
+                        greeting="Hello! I am your AI assistant. How can I help you?",
+                        tone="Professional"
+                    )
+
                 template = prompt_env.get_template("system_prompt.j2")
                 
                 # Fetch Active Services for the business

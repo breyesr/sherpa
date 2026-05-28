@@ -43,6 +43,11 @@ class ContextAssembler:
         provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
         api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
         
+        # Determine low-cost model based on provider
+        model_name = "gpt-4o-mini"
+        if provider == "gemini": model_name = "gemini-1.5-flash"
+        elif provider == "anthropic": model_name = "claude-3-haiku-20240307"
+        
         history_text = "\n".join([f"{m['role']}: {m['content']}" for m in messages])
         
         prompt = f"Summarize the following conversation concisely. "
@@ -52,7 +57,7 @@ class ContextAssembler:
 
         try:
             response = await litellm.acompletion(
-                model=f"{provider}/gpt-4o-mini", # Hardcoded low-cost model for optimization
+                model=f"{provider}/{model_name}" if "/" not in model_name else model_name,
                 messages=[{"role": "user", "content": prompt}],
                 api_key=api_key,
                 max_tokens=200
