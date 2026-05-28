@@ -32,6 +32,12 @@
 - [x] Task 104.4: Build "Intelligence Timeline" view for Store/Account profiles.
 - [x] Task 104.5: Update Appointment/Calendar modals and filters for B2B entities.
 
+## Epic 105: Audio Ingestion & Transcription (NEXT)
+- [ ] Task 105.1: Implement OpenAI Whisper API utility (`core/audio_service.py`) to transcribe voice notes.
+- [ ] Task 105.2: Update WhatsApp Webhook to download and process `audio/ogg` media messages.
+- [ ] Task 105.3: Update Telegram Webhook to download and process `voice` messages.
+- [ ] Task 105.4: Route transcribed text automatically into the B2B Ingestion Agent.
+
 ---
 
 # Sherpa MVP Backlog (Legacy/Base)
