@@ -17,8 +17,10 @@ class OrderStatus(str, enum.Enum):
     CANCELLED = "cancelled"
 
 class StoreNoteBase(BaseModel):
-    type: StoreNoteType = StoreNoteType.GENERAL
-    content: str
+    note: str
+    risks: Optional[str] = None
+    opportunities: Optional[str] = None
+    preferred_actions: Optional[str] = None
 
 class StoreNoteCreate(StoreNoteBase):
     pass

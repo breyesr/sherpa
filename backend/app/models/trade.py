@@ -144,10 +144,13 @@ class Competitor(Base):
     store_id = Column(String, ForeignKey("stores.id"), nullable=False)
     
     name = Column(String, nullable=False, index=True)
-    presence_level = Column(String, nullable=True) # e.g., 'high', 'medium', 'low'
+    presence_level = Column(String, nullable=True) # e.g., 'high', 'low'
     notes = Column(Text, nullable=True)
-    
+    strengths = Column(Text, nullable=True)
+    weaknesses = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
+
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile")
