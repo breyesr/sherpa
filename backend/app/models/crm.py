@@ -99,27 +99,25 @@ class Appointment(Base):
     id = Column(String, primary_key=True, index=True, default=uuid7str)
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     client_id = Column(String, ForeignKey("clients.id"), nullable=True) # Optional for B2B
-    store_id = Column(String, ForeignKey("stores.id"), nullable=True) # New B2B Account
-    customer_id = Column(String, ForeignKey("customers.id"), nullable=True) # New B2B Contact
+    # Removed store_id and customer_id from here to avoid circularity with Trade vertical
     service_id = Column(String, ForeignKey("services.id"), nullable=True)
-    
-    start_time = Column(DateTime, nullable=False, index=True)
-    end_time = Column(DateTime, nullable=False, index=True)
+
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
     status = Column(String, default="scheduled") # scheduled, confirmed, cancelled, completed
     reminder_sent = Column(Boolean, default=False)
     notes = Column(String, nullable=True) # Reason for booking
-    
+
     # Link to Google Calendar event if synced
     google_event_id = Column(String, nullable=True)
-    
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile", back_populates="appointments")
     client = relationship("Client", back_populates="appointments")
-    store = relationship("Store", back_populates="appointments")
-    customer = relationship("Customer", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")
+
 
     __table_args__ = (
         Index('ix_appointments_business_id_start_time', 'business_id', 'start_time'),

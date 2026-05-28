@@ -32,6 +32,8 @@ def create_access_token(subject: str, expires_delta: timedelta = None) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
+from sqlalchemy.orm import selectinload
+...
 async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,7 +48,11 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
     except JWTError:
         raise credentials_exception
     
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.business_profile))
+    )
     user = result.scalars().first()
     if user is None:
         raise credentials_exception
@@ -74,8 +80,13 @@ async def update_user_me(
     
     db.add(current_user)
     await db.commit()
-    await db.refresh(current_user)
-    return current_user
+    # Refresh with eager load
+    result = await db.execute(
+        select(User)
+        .where(User.id == current_user.id)
+        .options(selectinload(User.business_profile))
+    )
+    return result.scalars().first()
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> Any:
@@ -95,8 +106,13 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     )
     db.add(user)
     await db.commit()
-    await db.refresh(user)
-    return user
+    # Refresh with eager load
+    result = await db.execute(
+        select(User)
+        .where(User.id == user.id)
+        .options(selectinload(User.business_profile))
+    )
+    return result.scalars().first()
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")
