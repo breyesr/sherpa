@@ -5,8 +5,6 @@
   },
   "deploy": {
     "startCommand": "npm run start",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "resources": {
       "cpu": 0.5,
