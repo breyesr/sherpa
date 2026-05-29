@@ -60,3 +60,5 @@ Sherpa is a B2B Sales Intelligence platform that empowers field representatives 
 - **Frontend Dev**: Implements Next.js 14 App Router, Tailwind design system, and Zustand state. Owns `/frontend`.
 - **DevOps**: Configures Docker, environment variables, and GitHub Actions CI/CD. Owns `infra/` and `.github/`.
 - **UX/UI Expert**: Translates MVP requirements into accessible user flows and interface guidelines using Tailwind/shadcn conventions. Owns `docs/design_system.md`.
+- **AI_Engineer**: AI Systems Engineer focused on GraphRAG, RAG, and custom persona model training.
+- **LLMOps**: Focused on API rate limits, loop prevention, and token management.

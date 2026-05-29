@@ -20,14 +20,25 @@ class CompetitorInfo(BaseModel):
     name: str = Field(..., description="Name of the competitor")
     strengths: Optional[str] = Field(None, description="Reported strengths")
     weaknesses: Optional[str] = Field(None, description="Reported weaknesses")
+    region: Optional[str] = Field(None, description="Region of the competitor")
+    market: Optional[str] = Field(None, description="Market type of the competitor")
+    presence_level: Optional[str] = Field(None, description="Presence level (high, low, medium)")
 
 class ExtractionResult(BaseModel):
     store_name: Optional[str] = Field(None, description="Name of the store or account")
+    store_region: Optional[str] = Field(None, description="Region of the store")
+    store_market: Optional[str] = Field(None, description="Market type of the store")
+    store_segment: Optional[str] = Field(None, description="Segment of the store")
+    
     contact_name: Optional[str] = Field(None, description="Name of the contact person")
+    contact_role: Optional[str] = Field(None, description="Job role of the contact")
+    
     general_note: str = Field(..., description="Main takeaway of the visit")
     risks: Optional[str] = Field(None, description="Identified risks or threats")
     opportunities: Optional[str] = Field(None, description="Identified opportunities")
     preferred_actions: Optional[str] = Field(None, description="Suggested next steps")
+    execution_level: Optional[str] = Field(None, description="Execution level (high, medium, low)")
+    
     competitors: List[CompetitorInfo] = Field(default_factory=list)
 
 class IngestionAgent:
@@ -64,12 +75,12 @@ class IngestionAgent:
             raise
 
     async def process_report(self, business_id: str, user_message: str) -> Dict[str, Any]:
-        """The full ingestion pipeline: Extract -> Link -> Save."""
+        """The full ingestion pipeline: Extract -> Link -> Save -> Sync."""
         # 1. Extraction
         extracted = await self.extract_intelligence(user_message)
         
         # 2. Entity Linking (Fuzzy match store)
-        store_id = None
+        store = None
         if extracted.store_name:
             res = await self.db.execute(
                 select(Store).where(
@@ -78,35 +89,56 @@ class IngestionAgent:
                 )
             )
             store = res.scalars().first()
-            if store:
-                store_id = store.id
 
         # 3. Save to Database
-        if store_id:
+        if store:
+            # Update Store Metadata if missing
+            if extracted.store_region and not store.region: store.region = extracted.store_region
+            if extracted.store_market and not store.market: store.market = extracted.store_market
+            if extracted.store_segment and not store.segment: store.segment = extracted.store_segment
+            
             # Generate Embedding for RAG
             vector = await self.embeddings.get_embedding(extracted.general_note)
             
             new_note = StoreNote(
-                store_id=store_id,
+                store_id=store.id,
                 note=extracted.general_note,
                 risks=extracted.risks,
                 opportunities=extracted.opportunities,
                 preferred_actions=extracted.preferred_actions,
+                execution_level=extracted.execution_level,
                 embedding=vector
             )
             self.db.add(new_note)
             
-            # Save Competitors
+            # Save/Update Competitors
             for comp in extracted.competitors:
-                new_comp = Competitor(
-                    store_id=store_id,
-                    name=comp.name,
-                    strengths=comp.strengths,
-                    weaknesses=comp.weaknesses
+                # Fuzzy match existing competitor for this store
+                comp_res = await self.db.execute(
+                    select(Competitor).where(Competitor.store_id == store.id, Competitor.name.ilike(f"%{comp.name}%"))
                 )
-                self.db.add(new_comp)
+                existing_comp = comp_res.scalars().first()
+                
+                if existing_comp:
+                    if comp.strengths: existing_comp.strengths = comp.strengths
+                    if comp.weaknesses: existing_comp.weaknesses = comp.weaknesses
+                    if comp.region: existing_comp.region = comp.region
+                    if comp.market: existing_comp.market = comp.market
+                    if comp.presence_level: existing_comp.presence_level = comp.presence_level
+                else:
+                    new_comp = Competitor(
+                        business_id=business_id,
+                        store_id=store.id,
+                        name=comp.name,
+                        strengths=comp.strengths,
+                        weaknesses=comp.weaknesses,
+                        region=comp.region,
+                        market=comp.market,
+                        presence_level=comp.presence_level
+                    )
+                    self.db.add(new_comp)
             
             await self.db.commit()
-            return {"status": "success", "store": extracted.store_name, "note_id": new_note.id}
+            return {"status": "success", "store": store.name, "note_id": new_note.id}
         
         return {"status": "partial", "reason": "Store not found", "extracted": extracted.dict()}

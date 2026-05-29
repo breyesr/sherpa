@@ -1,5 +1,12 @@
 # Handoff Log
 
+## [2026-05-28] - Vertical-Aware AI Strategy & Admin Hardening
+- **Epic 106 Completion**: Successfully decoupled B2C and B2B AI messaging. Implemented vertical-aware template loading and tool masking in `AIService`.
+- **System Recovery**: Fixed critical crashes in `AIService` related to template missing and missing imports.
+- **Admin UX**: Refactored the Admin User Management panel to allow direct assignment of `vertical_type` during user creation.
+- **Backend Architecture**: Updated `POST /admin/users` to automatically initialize a `BusinessProfile` for new accounts.
+- **Validation**: Verified the multi-vertical logic via integration script and manual user testing in the Sandbox.
+
 ## [2026-05-28] - Vertical-Aware AI Strategy & Backlog Evolution
 - **Strategy Definition**: Defined a "Dual-Mode" AI orchestration strategy to allow the co-existence of Basic (B2C) and Trade (B2B) tiers.
 - **Backlog Update**: Created **Epic 106: Vertical-Aware Prompt Orchestration** to decouple messaging flows. Tasked the separation of `system_prompt.j2` into `b2c_scheduler.j2` and `b2b_sales_brain.j2`.
@@ -155,3 +162,5 @@
 - **Railway Infrastructure**: Configured the Asynchronous Processor (Celery worker) for AI extraction tasks and lowered log levels to prevent platform rate-limiting.
 - **Frontend Deployment**: Bypassed Next.js strict TypeScript/ESLint build checks and increased container memory to 1GB to prevent `SIGTERM` timeout crashes during production deployment.
 - **Feature Delivery**: Successfully deployed the complete Session 1-5 B2B Sales Intelligence stack, including the GraphRAG Briefing Engine and the intelligent intent orchestrator.
+
+- **2026-05-29 14:15**: Completed Epic 107. Hardened Trade schema, implemented multi-turn memory for AI, and added progressive disclosure UI for new B2B fields. System now supports high-precision Hybrid Search across regions and contacts.

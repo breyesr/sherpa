@@ -46,11 +46,11 @@
 - [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
 ## Epic 107: Trade Schema Hardening & Draft Alignment
-- [ ] Task 107.1: Relational Hardening: Update `Store`, `Client`, and `Competitor` models with draft fields plus B-Tree indexes for fast regional filtering.
-- [ ] Task 107.2: Migration & Type Sync: Execute Alembic migrations and run `npm run gen:api` to synchronize the frontend TypeScript types.
-- [ ] Task 107.3: AI Prompt & Tool Enrichment: Update `b2b_sales_brain.j2` and `intent_classifier.j2` so the AI knows how to "Hybrid Search" the new fields.
-- [ ] Task 107.4: Progressive Disclosure UI: Update Store/Client modals in Next.js with a "Trade Details" section for mobile optimization.
-- [ ] Task 107.5: Ingestion Logic Update: Update `process_b2b_ingestion` task to automatically extract and populate these new fields from chat.
+- [x] Task 107.1: Relational Hardening: Update `Store`, `Client`, and `Competitor` models with draft fields plus B-Tree indexes for fast regional filtering.
+- [x] Task 107.2: Migration & Type Sync: Execute Alembic migrations and run `npm run gen:api` to synchronize the frontend TypeScript types.
+- [x] Task 107.3: AI Prompt & Tool Enrichment: Update `b2b_sales_brain.j2` and `intent_classifier.j2` so the AI knows how to "Hybrid Search" the new fields.
+- [x] Task 107.4: Progressive Disclosure UI: Update Store/Client modals in Next.js with a "Trade Details" section for mobile optimization.
+- [x] Task 107.5: Ingestion Logic Update: Update `process_b2b_ingestion` task to automatically extract and populate these new fields from chat.
 
 ---
 

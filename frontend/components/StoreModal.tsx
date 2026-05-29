@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2, Search, User, Plus } from 'lucide-react';
+import { X, Loader2, Search, User, Plus, ChevronDown, ChevronUp, MapPin, Phone, Mail, Tag, Layers, Globe, Calendar } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQuery } from '@tanstack/react-query';
 
@@ -22,9 +22,16 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
   const [formData, setFormData] = useState({
     name: '',
     address: '',
+    phone: '',
+    email: '',
+    market: '',
+    segment: '',
+    region: '',
+    opening_date: '',
     external_id: '',
     client_ids: [] as string[]
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedClients, setSelectedClients] = useState<ClientResponse[]>([]);
   const [clientSearch, setClientSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -58,12 +65,29 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
       setFormData({
         name: store.name || '',
         address: store.address || '',
+        phone: store.phone || '',
+        email: store.email || '',
+        market: store.market || '',
+        segment: store.segment || '',
+        region: store.region || '',
+        opening_date: store.opening_date || '',
         external_id: store.external_id || '',
         client_ids: (store.clients || []).map(c => c.id)
       });
       setSelectedClients(store.clients || []);
     } else if (!isEditing && isOpen) {
-      setFormData({ name: '', address: '', external_id: '', client_ids: [] });
+      setFormData({ 
+        name: '', 
+        address: '', 
+        phone: '',
+        email: '',
+        market: '',
+        segment: '',
+        region: '',
+        opening_date: '',
+        external_id: '', 
+        client_ids: [] 
+      });
       setSelectedClients([]);
       setClientSearch('');
     }
@@ -123,13 +147,18 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
       const url = (isEditing && store?.id) ? `${API_BASE_URL}/trade/stores/${store.id}` : `${API_BASE_URL}/trade/stores`;
       const method = (isEditing && store?.id) ? 'PATCH' : 'POST';
       
+      const payload = {
+        ...formData,
+        opening_date: formData.opening_date || null
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -263,14 +292,116 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
 
             <div className="space-y-2 md:col-span-2">
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Physical Address</label>
-              <input 
-                type="text"
-                placeholder="Full address or location name"
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
-                value={formData.address}
-                onChange={e => setFormData({...formData, address: e.target.value})}
-              />
+              <div className="relative">
+                <input 
+                  type="text"
+                  placeholder="Full address or location name"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10"
+                  value={formData.address}
+                  onChange={e => setFormData({...formData, address: e.target.value})}
+                />
+                <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
             </div>
+
+            {/* Advanced Details Toggle */}
+            <div className="md:col-span-2 pt-2">
+              <button 
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-xs font-bold text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors"
+              >
+                {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {showAdvanced ? 'Hide Advanced Details' : 'Show Advanced Details (Region, Market, etc.)'}
+              </button>
+            </div>
+
+            {showAdvanced && (
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-[10px]">Store Phone</label>
+                  <div className="relative">
+                    <input 
+                      type="tel"
+                      placeholder="e.g. 811-000-1122"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10 text-sm"
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                    />
+                    <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-[10px]">Store Email</label>
+                  <div className="relative">
+                    <input 
+                      type="email"
+                      placeholder="store@example.com"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10 text-sm"
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                    />
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-[10px]">Market Type</label>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="e.g. Supermarket, DIY"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10 text-sm"
+                      value={formData.market}
+                      onChange={e => setFormData({...formData, market: e.target.value})}
+                    />
+                    <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-[10px]">Region</label>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="e.g. North, South"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10 text-sm"
+                      value={formData.region}
+                      onChange={e => setFormData({...formData, region: e.target.value})}
+                    />
+                    <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-[10px]">Market Segment</label>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="e.g. Premium, Value"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10 text-sm"
+                      value={formData.segment}
+                      onChange={e => setFormData({...formData, segment: e.target.value})}
+                    />
+                    <Layers size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 text-[10px]">Opening Date</label>
+                  <div className="relative">
+                    <input 
+                      type="date"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10 text-sm"
+                      value={formData.opening_date}
+                      onChange={e => setFormData({...formData, opening_date: e.target.value})}
+                    />
+                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2 md:col-span-2">
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">External ID / SKU</label>

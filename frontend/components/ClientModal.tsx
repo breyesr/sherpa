@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Trash2, AlertCircle, CheckCircle, Store, ClipboardList, ShoppingCart, ChevronRight, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
+import { X, Trash2, AlertCircle, CheckCircle, Store, ClipboardList, ShoppingCart, ChevronRight, Sparkles, BrainCircuit, Loader2, UserCircle, Calendar, Users } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -21,6 +21,9 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [gender, setGender] = useState('');
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -39,11 +42,17 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
       setName(client.name || '');
       setPhone(client.phone || '');
       setEmail(client.email || '');
+      setRole(client.role || '');
+      setBirthday(client.birthday || '');
+      setGender(client.gender || '');
       setCustomFields((client.custom_fields as Record<string, any>) || {});
     } else {
       setName('');
       setPhone('');
       setEmail('');
+      setRole('');
+      setBirthday('');
+      setGender('');
       setCustomFields({});
     }
     setActiveTab('info');
@@ -107,7 +116,15 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ name, phone, email, custom_fields: customFields })
+        body: JSON.stringify({ 
+          name, 
+          phone, 
+          email, 
+          role,
+          birthday: birthday || null,
+          gender,
+          custom_fields: customFields 
+        })
       });
 
       if (!res.ok) throw new Error(`Failed to ${client ? 'update' : 'create'} client`);
@@ -268,6 +285,56 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+              </div>
+
+              {/* B2B Specific Fields */}
+              <div className="pt-4 space-y-6 border-t border-gray-100">
+                <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest">B2B Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Job Role</label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10"
+                        placeholder="e.g. Owner, Manager"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                      />
+                      <UserCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Birthday</label>
+                    <div className="relative">
+                      <input 
+                        type="date" 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10"
+                        value={birthday}
+                        onChange={(e) => setBirthday(e.target.value)}
+                      />
+                      <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Gender</label>
+                    <div className="relative">
+                      <select 
+                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10 appearance-none"
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                      >
+                        <option value="">Select gender</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                        <option value="Otro">Otro</option>
+                      </select>
+                      <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Dynamic Custom Fields */}
