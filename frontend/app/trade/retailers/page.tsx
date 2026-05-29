@@ -131,7 +131,7 @@ export default function RetailersPage() {
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 font-medium">
                       <span className="flex items-center gap-1"><Phone size={14} className="text-gray-400" /> {retailer.phone || 'No phone'}</span>
                       <span className="flex items-center gap-1 text-indigo-600 font-bold">
-                        {stores.filter((s) => s.client_id === retailer.id).length} Linked Stores
+                        {stores.filter((s) => s.clients?.some((c) => c.id === retailer.id)).length} Linked Stores
                       </span>
                     </div>
                   </div>
