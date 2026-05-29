@@ -45,6 +45,13 @@
 - [x] Task 106.4: Remove hardcoded "Marco" persona and genericize `B2BOrchestrator` routing messages.
 - [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
+## Epic 107: Trade Schema Hardening & Draft Alignment
+- [ ] Task 107.1: Update `Store` model with Phone, Email, Market, Segment, Region, and Opening Date.
+- [ ] Task 107.2: Update `Client` (Customer) model with explicit Role, Birthday, and Gender fields.
+- [ ] Task 107.3: Update `Competitor` model with Phone, Address, Market, and Region.
+- [ ] Task 107.4: Update `StoreNote` with Execution Level and `CustomerNote` with Visit Tracking (Last/Next).
+- [ ] Task 107.5: Synchronize `GraphRAGService` and `B2BOrchestrator` to utilize these new structured fields.
+
 ---
 
 # Sherpa MVP Backlog (Legacy/Base)
@@ -242,13 +249,6 @@
 - [x] Task 27.2: Multi-Retailer UI: Implement tagging-style picker in StoreModal.
 - [x] Task 27.3: Inline Store Editing: Enable auto-saving header inputs in Store Detail view.
 - [x] Task 27.4: Enhanced Metadata: Add Health indicators and Retailer names to the Stores grid.
-
-## Epic 28: Trade Schema Hardening & Draft Alignment
-- [ ] Task 28.1: Update `Store` model with Phone, Email, Market, Segment, Region, and Opening Date.
-- [ ] Task 28.2: Update `Client` (Customer) model with explicit Role, Birthday, and Gender fields.
-- [ ] Task 28.3: Update `Competitor` model with Phone, Address, Market, and Region.
-- [ ] Task 28.4: Update `StoreNote` with Execution Level and `CustomerNote` with Visit Tracking (Last/Next).
-- [ ] Task 28.5: Synchronize `GraphRAGService` and `B2BOrchestrator` to utilize these new structured fields.
 
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
