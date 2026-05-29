@@ -105,17 +105,26 @@ class GraphRAGService:
             return "Lo siento, tuve un problema al generar el reporte de inteligencia."
 
     async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None) -> List[Dict[str, Any]]:
-        """Perform vector similarity search strictly filtered by store_id."""
+        """Perform vector similarity search strictly filtered by store_id with keyword boosting for contacts."""
         try:
-            # 1. Generate Query Embedding
+            # 1. Identify if a specific contact name is mentioned in the query or context
+            # (We look at the query_text for common names of contacts in this store)
+            boosted_clients = []
+            if store_id:
+                res_clients = await self.db.execute(
+                    select(Client).join(store_clients, store_clients.c.client_id == Client.id)
+                    .where(store_clients.c.store_id == store_id)
+                )
+                for c in res_clients.scalars().all():
+                    if c.name.lower() in query_text.lower():
+                        boosted_clients.append(c)
+
+            # 2. Generate Query Embedding
             query_vector = await self.embeddings.get_embedding(query_text)
             
-            # 2. Search Store Notes
-            # We use L2 distance (<->) or Cosine distance (<=>)
+            # 3. Search Store Notes
             stmt = select(StoreNote, Store.name.label("store_name")).join(Store)
             filters = [Store.business_id == business_id]
-            
-            # CRITICAL: If a store is identified, ONLY search notes for that store
             if store_id:
                 filters.append(StoreNote.store_id == store_id)
 
@@ -137,12 +146,11 @@ class GraphRAGService:
                     "date": note.created_at.isoformat()
                 })
             
-            # 3. Search Customer Notes for the same context
+            # 4. Search Customer Notes (Semantic)
             cust_stmt = select(CustomerNote, Client.name.label("client_name")).join(Client)
             cust_filters = [CustomerNote.business_id == business_id]
             
             if store_id:
-                from app.models.trade import store_clients
                 cust_stmt = cust_stmt.join(store_clients, store_clients.c.client_id == Client.id).where(store_clients.c.store_id == store_id)
 
             cust_res = await self.db.execute(
@@ -151,8 +159,11 @@ class GraphRAGService:
                 .limit(3)
             )
 
+            found_note_ids = set()
             for c_note, client_name in cust_res.all():
+                found_note_ids.add(c_note.id)
                 results.append({
+                    "id": c_note.id,
                     "type": "customer_note",
                     "client": client_name,
                     "content": c_note.general_notes,
@@ -160,6 +171,23 @@ class GraphRAGService:
                     "frequency": c_note.visit_frequency,
                     "date": c_note.created_at.isoformat()
                 })
+
+            # 5. Keyword Boost: If we identified a client by name, pull ALL their notes even if not semantically matching
+            if boosted_clients:
+                for bc in boosted_clients:
+                    boost_res = await self.db.execute(
+                        select(CustomerNote).where(CustomerNote.client_id == bc.id, CustomerNote.id.not_in(found_note_ids))
+                    )
+                    for bn in boost_res.scalars().all():
+                        results.append({
+                            "type": "customer_note",
+                            "client": bc.name,
+                            "content": bn.general_notes,
+                            "comm_style": bn.comm_style,
+                            "frequency": bn.visit_frequency,
+                            "date": bn.created_at.isoformat(),
+                            "boosted": True
+                        })
                 
             return results
         except Exception as e:
@@ -172,7 +200,7 @@ class GraphRAGService:
             select(Store)
             .where(Store.id == store_id)
             .options(
-                selectinload(Store.clients),
+                selectinload(Store.clients).selectinload(Client.trade_notes),
                 selectinload(Store.notes),
                 selectinload(Store.business_profile)
             )
@@ -181,8 +209,24 @@ class GraphRAGService:
         if not store:
             return {}
 
-        # Fetch Contacts from Many-to-Many
-        contacts = [{"name": c.name, "role": c.role} for c in store.clients]
+        # Fetch Contacts from Many-to-Many with full structured data
+        contacts = []
+        for c in store.clients:
+            contact_info = {
+                "name": c.name,
+                "role": c.role or "Personal de la tienda",
+                "birthday": c.birthday.strftime("%Y-%m-%d") if c.birthday else "Desconocido",
+                "gender": c.gender or "No especificado",
+                "trade_notes": [
+                    {
+                        "comm_style": n.comm_style,
+                        "frequency": n.visit_frequency,
+                        "notes": n.general_notes,
+                        "last_visit": n.last_visit_date.strftime("%Y-%m-%d") if n.last_visit_date else None
+                    } for n in c.trade_notes
+                ]
+            }
+            contacts.append(contact_info)
         
         # Fetch Latest Notes
         notes = [{
