@@ -76,9 +76,9 @@ async def get_client_detail(
         raise HTTPException(status_code=404, detail="Client not found")
 
     # 2. Fetch Linked Stores
-    from app.models.trade import Store
+    from app.models.trade import Store, store_clients
     stores_res = await db.execute(
-        select(Store).where(Store.client_id == client_id)
+        select(Store).join(store_clients).where(store_clients.c.client_id == client_id)
     )
     stores = stores_res.scalars().all()
 

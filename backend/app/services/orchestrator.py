@@ -1,5 +1,6 @@
 import json
 import traceback
+import unicodedata
 from typing import Dict, Any, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
@@ -18,6 +19,13 @@ class B2BOrchestrator:
     def __init__(self, db: Any):
         self.db = db
         self.graphrag = GraphRAGService(db)
+
+    def _normalize_str(self, text: str) -> str:
+        """Remove accents and normalize string for comparison."""
+        if not text: return ""
+        # Normalize to NFKD and remove non-spacing mark (accents)
+        normalized = unicodedata.normalize('NFKD', text)
+        return "".join([c for c in normalized if not unicodedata.combining(c)]).lower().strip()
 
     async def classify_intent(self, user_message: str, history: list = None) -> Dict[str, Any]:
         """Classify the rep's message into REPORT, QUERY, SCHEDULE, or CHAT."""
@@ -79,19 +87,19 @@ class B2BOrchestrator:
             res_contacts = await self.db.execute(select(Client).where(Client.business_id == business.id))
             contacts = res_contacts.scalars().all()
             
-            msg_lower = user_message.lower()
+            msg_norm = self._normalize_str(user_message)
             detected_store_id = None
             
             # Check Store Names
             for s in stores:
-                if s.name.lower() in msg_lower:
+                if self._normalize_str(s.name) in msg_norm:
                     detected_store_id = s.id
                     break
             
             # Check Contact Names (Resolve to store)
             if not detected_store_id:
                 for c in contacts:
-                    if c.name.lower() in msg_lower:
+                    if self._normalize_str(c.name) in msg_norm:
                         # Find store linked to this contact
                         res_link = await self.db.execute(
                             select(store_clients.c.store_id).where(store_clients.c.client_id == c.id)
