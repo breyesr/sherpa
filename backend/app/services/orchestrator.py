@@ -65,30 +65,63 @@ class B2BOrchestrator:
     async def route_message(self, business: Any, client: Any, user_message: str, history: list = None, metadata: Optional[Dict] = None, identifier: str = None) -> str:
         """
         Main entry point for routing with Topic Sensitivity. 
-        Detects shifts between stores to prevent "Summary Anchoring".
+        Detects shifts between stores/contacts to prevent "Summary Anchoring".
         """
-        # 1. Topic Shift Detection: If a new store is mentioned, clear stale summaries
+        # 1. Topic Shift Detection: Resolve Store/Contact from message
         try:
-            # We use the GraphRAG store identifier to see if the user is switching topics
-            res = await self.db.execute(select(Store).where(Store.business_id == business.id))
-            all_stores = res.scalars().all()
+            from app.models.crm import Client
+            from app.models.trade import store_clients
             
-            new_store_detected = False
-            for s in all_stores:
-                if s.name.lower() in user_message.lower():
-                    # High confidence shift detected
-                    new_store_detected = True
+            # Fetch names of all stores and contacts for this business
+            res_stores = await self.db.execute(select(Store).where(Store.business_id == business.id))
+            stores = res_stores.scalars().all()
+            
+            res_contacts = await self.db.execute(select(Client).where(Client.business_id == business.id))
+            contacts = res_contacts.scalars().all()
+            
+            msg_lower = user_message.lower()
+            detected_store_id = None
+            
+            # Check Store Names
+            for s in stores:
+                if s.name.lower() in msg_lower:
+                    detected_store_id = s.id
                     break
             
-            if new_store_detected and identifier:
+            # Check Contact Names (Resolve to store)
+            if not detected_store_id:
+                for c in contacts:
+                    if c.name.lower() in msg_lower:
+                        # Find store linked to this contact
+                        res_link = await self.db.execute(
+                            select(store_clients.c.store_id).where(store_clients.c.client_id == c.id)
+                        )
+                        detected_store_id = res_link.scalars().first()
+                        break
+            
+            # 2. Store-Locking Logic
+            if detected_store_id and identifier:
                 from app.core.memory import ChatMemory
                 memory = ChatMemory()
-                await memory.clear_summary(identifier)
-                print(f"DEBUG ORCHESTRATOR: Topic shift detected. Cleared summary for {identifier}.")
+                
+                # Check what store is currently locked in session
+                locked_store_key = f"locked_store:{identifier}"
+                current_locked_id = await memory.redis.get(locked_store_key)
+                if current_locked_id:
+                    current_locked_id = current_locked_id.decode('utf-8')
+
+                if current_locked_id != detected_store_id:
+                    # Topic Shift! Nuke the summary and the history to force a clean slate
+                    await memory.clear_summary(identifier)
+                    # We don't necessarily clear history, but clearing summary removes the "Anchor"
+                    await memory.redis.set(locked_store_key, detected_store_id, ex=3600)
+                    print(f"DEBUG ORCHESTRATOR: Topic shift detected. Switched lock to {detected_store_id}. Cleared summary.")
+        
         except Exception as te:
             print(f"WARNING: Topic shift detection failed: {te}")
+            traceback.print_exc()
 
-        # 2. Proceed with normal classification and routing
+        # 3. Proceed with normal classification and routing
         classification = await self.classify_intent(user_message, history)
         intent = classification.get("intent", "CHAT")
         

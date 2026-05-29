@@ -38,19 +38,34 @@ class GraphRAGService:
             
             target_store = None
             
-            # Helper to search for store in a string
-            def find_store_in_text(text: str) -> Optional[Store]:
+            # Helper to search for store in a string (Now with contact resolution)
+            async def find_store_in_text(text: str) -> Optional[Store]:
                 if not text: return None
-                # Prioritize Exact Name Match
+                text_lower = text.lower()
+                
+                # 1. Direct Store Name Match (Highest Confidence)
                 for s in all_stores:
-                    if s.name.lower() in text.lower():
+                    if s.name.lower() in text_lower:
                         return s
                 
-                # Fallback: Region/Market match if only one store exists in that context
+                # 2. Contact Name Match (High Confidence)
+                # Resolve: If I say "Sofia", find the store she belongs to
+                res_contacts = await self.db.execute(
+                    select(Client, store_clients.c.store_id)
+                    .join(store_clients, store_clients.c.client_id == Client.id)
+                    .where(Client.business_id == business_id)
+                )
+                for client, s_id in res_contacts.all():
+                    if client.name.lower() in text_lower:
+                        # Found the contact, return the linked store
+                        res_s = await self.db.execute(select(Store).where(Store.id == s_id))
+                        return res_s.scalars().first()
+                
+                # 3. Fallback: Region/Market match if only one store exists in that context
                 stores_in_context = []
                 for s in all_stores:
-                    if (s.region and s.region.lower() in text.lower()) or \
-                       (s.market and s.market.lower() in text.lower()):
+                    if (s.region and s.region.lower() in text_lower) or \
+                       (s.market and s.market.lower() in text_lower):
                         stores_in_context.append(s)
                 
                 if len(stores_in_context) == 1:
@@ -58,13 +73,13 @@ class GraphRAGService:
                 return None
 
             # Search in current query first
-            target_store = find_store_in_text(query_text)
+            target_store = await find_store_in_text(query_text)
 
             # If not found, look back in history
             if not target_store and history:
                 # Iterate history backwards (most recent first)
                 for m in reversed(history[-5:]):
-                    target_store = find_store_in_text(m["content"])
+                    target_store = await find_store_in_text(m["content"])
                     if target_store:
                         print(f"DEBUG GRAPHRAG: Identified store '{target_store.name}' from conversation history.")
                         break
