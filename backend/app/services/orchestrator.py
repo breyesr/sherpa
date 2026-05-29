@@ -65,7 +65,7 @@ class B2BOrchestrator:
             # Session 2 Goal: Hand off to IngestionAgent via Celery
             from app.tasks.ingestion import process_b2b_ingestion
             process_b2b_ingestion.delay(business.id, user_message)
-            return "¡Entendido, Marco! Estoy analizando tu reporte y actualizando la base de datos ahora mismo. Te avisaré cuando termine."
+            return "¡Entendido! Estoy analizando tu reporte y actualizando la base de datos ahora mismo. Te avisaré cuando termine."
         
         elif intent == "QUERY":
             # Session 3 Goal: Hand off to GraphRAGAgent

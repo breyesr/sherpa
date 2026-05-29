@@ -1,5 +1,18 @@
 # Handoff Log
 
+## [2026-05-28] - Vertical-Aware AI Strategy & Backlog Evolution
+- **Strategy Definition**: Defined a "Dual-Mode" AI orchestration strategy to allow the co-existence of Basic (B2C) and Trade (B2B) tiers.
+- **Backlog Update**: Created **Epic 106: Vertical-Aware Prompt Orchestration** to decouple messaging flows. Tasked the separation of `system_prompt.j2` into `b2c_scheduler.j2` and `b2b_sales_brain.j2`.
+- **Operational Shift**: Paused **Epic 105 (Audio Ingestion)** to prioritize architectural stability and prevent B2B logic leakage into the Basic tier.
+- **Handoff Update**: Refreshed `HANDOFF_STATE.md` and `BACKLOG.md` to reflect the new implementation sequence.
+
+## [2026-05-28] - System Stabilization & Bug Fixes
+- **AI Service Hardening**: Resolved critical crashes in the Live Test Sandbox and Telegram by adding safety checks for businesses without configured agents.
+- **Context Optimization**: Fixed a "hardcoded model" bug in `ContextAssembler` that caused crashes when using Gemini or Anthropic providers.
+- **Calendar UI Reactivity**: Implemented query invalidation in `ClientCalendar.tsx` to ensure new and rescheduled appointments appear instantly without a page refresh.
+- **Sync Diagnostics**: Added detailed `DEBUG GOOGLE` logging to `GoogleCalendarService` to track token refreshes and capture API errors for ongoing sync troubleshooting.
+- **Maintenance**: Unified orchestrator routing logic to prevent internal system tags from leaking to user-facing messages.
+
 ## [2026-05-26] - Epic 26: Architectural Refactor - Dedicated Trade Views
 - **Routing Pivot**: Decoupled the Trade Hub from a tab-based system to a multi-route architecture (`/trade`, `/trade/stores`, `/trade/retailers`).
 - **Retailers CRM**: Created a dedicated view for commercial relationship management, migrating the full CRM list and lead-scoring intelligence to its own route.

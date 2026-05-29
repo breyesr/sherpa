@@ -32,11 +32,18 @@
 - [x] Task 104.4: Build "Intelligence Timeline" view for Store/Account profiles.
 - [x] Task 104.5: Update Appointment/Calendar modals and filters for B2B entities.
 
-## Epic 105: Audio Ingestion & Transcription (NEXT)
+## Epic 105: Audio Ingestion & Transcription (PAUSED)
 - [ ] Task 105.1: Implement OpenAI Whisper API utility (`core/audio_service.py`) to transcribe voice notes.
 - [ ] Task 105.2: Update WhatsApp Webhook to download and process `audio/ogg` media messages.
 - [ ] Task 105.3: Update Telegram Webhook to download and process `voice` messages.
 - [ ] Task 105.4: Route transcribed text automatically into the B2B Ingestion Agent.
+
+## Epic 106: Vertical-Aware Prompt Orchestration (IN PROGRESS)
+- [x] Task 106.1: Separate system prompts into `b2c_scheduler.j2` and `b2b_sales_brain.j2`.
+- [x] Task 106.2: Refactor `AIService.get_response` to load templates based on `vertical_type`.
+- [x] Task 106.3: Implement "Tool Masking" to hide B2B-specific tools from B2C (Basic) businesses.
+- [x] Task 106.4: Remove hardcoded "Marco" persona and genericize `B2BOrchestrator` routing messages.
+- [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
 ---
 

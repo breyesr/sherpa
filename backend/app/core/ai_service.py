@@ -390,29 +390,49 @@ class AIService:
             return "Internal error during report generation."
 
     def _get_tools_definition(self):
-        return [
+        from app.models.business import VerticalType
+        
+        # Base tools available to all verticals
+        tools = [
             {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}, "days_ahead": {"type": "integer", "default": 3}}}}},
             {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}}, "required": ["start_time"]}}},
-            {"type": "function", "function": {
-                "name": "create_appointment", 
-                "description": "FINAL STEP: Book the appointment/visit in the system. PRE-CONDITION: You MUST have already asked for the 'reason' and received user 'confirmation' of their contact info as per system instructions. Do NOT call this early.", 
-                "parameters": {
-                    "type": "object", 
-                    "properties": {
-                        "start_time": {"type": "string", "description": "ISO format"}, 
-                        "service_id": {"type": "string", "description": "The ID of the service selected by the user"},
-                        "store_id": {"type": "string", "description": "The ID of the Store/Account to visit"},
-                        "customer_id": {"type": "string", "description": "The ID of the Customer/Contact at the store"},
-                        "notes": {"type": "string", "description": "Reason for visit or additional details"}
-                    }, 
-                    "required": ["start_time", "notes"]
-                }
-            }},
-            {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}},
             {"type": "function", "function": {"name": "get_client_appointments", "description": "List all future scheduled appointments for the current user.", "parameters": {"type": "object", "properties": {}}}},
-            {"type": "function", "function": {"name": "update_client_metadata", "description": "SAVE CLIENT INFO: Store specific custom details about the client (e.g., Pet Name, Allergies, Preferences) as you discover them during chat.", "parameters": {"type": "object", "properties": {"metadata": {"type": "object", "description": "Key-value pairs of information to save"}}}}},
-            {"type": "function", "function": {"name": "flag_for_review", "description": "INTERNAL ALERT: Notify the manager that this client needs human assistance because you are stuck or don't have the info requested.", "parameters": {"type": "object", "properties": {"reason": {"type": "string", "description": "What the user asked that you didn't know"}}}}}
+            {"type": "function", "function": {"name": "flag_for_review", "description": "INTERNAL ALERT: Notify the manager that this client needs human assistance.", "parameters": {"type": "object", "properties": {"reason": {"type": "string", "description": "Reason for the alert"}}}}}
         ]
+
+        # Vertical-Specific Tool: Create Appointment
+        create_apt_params = {
+            "type": "object",
+            "properties": {
+                "start_time": {"type": "string", "description": "ISO format"},
+                "service_id": {"type": "string", "description": "The ID of the service selected"},
+                "notes": {"type": "string", "description": "Reason for visit or additional details"}
+            },
+            "required": ["start_time", "notes"]
+        }
+
+        # Add B2B specific fields to appointment tool if in TRADE vertical
+        if self.business.vertical_type == VerticalType.TRADE:
+            create_apt_params["properties"]["store_id"] = {"type": "string", "description": "The ID of the Store/Account to visit"}
+            create_apt_params["properties"]["customer_id"] = {"type": "string", "description": "The ID of the Customer/Contact at the store"}
+        
+        tools.append({
+            "type": "function", 
+            "function": {
+                "name": "create_appointment", 
+                "description": "Book the appointment/visit in the system.",
+                "parameters": create_apt_params
+            }
+        })
+
+        # B2C Specific Tools
+        if self.business.vertical_type == VerticalType.BASIC:
+            tools.append({"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone. Mandatory for new users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}})
+        
+        # Common but useful tool for metadata
+        tools.append({"type": "function", "function": {"name": "update_client_metadata", "description": "SAVE INFO: Store specific custom details about the client/lead discovered during chat.", "parameters": {"type": "object", "properties": {"metadata": {"type": "object", "description": "Key-value pairs to save"}} or {"type": "object"}}}})
+
+        return tools
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
         if name == "get_available_slots": return await self._get_available_slots_tool(args.get('date'), args.get('duration_minutes'), args.get('days_ahead', 3))
