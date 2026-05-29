@@ -1,7 +1,8 @@
 from typing import List, Dict, Any, Optional
 from sqlalchemy.future import select
 from sqlalchemy import text
-from app.models.trade import Store, StoreNote, CustomerNote
+from sqlalchemy.orm import selectinload
+from app.models.trade import Store, StoreNote, CustomerNote, Competitor
 from app.core.embeddings import EmbeddingService
 from pgvector.sqlalchemy import Vector
 import json
@@ -25,19 +26,35 @@ class GraphRAGService:
     async def generate_brief(self, query_text: str, business_id: str) -> str:
         """Generate a strategic pre-visit brief using Hybrid RAG."""
         try:
-            # 1. Identify Store from Query (Fuzzy match)
-            # For MVP, we look for store names in the query text
-            res = await self.db.execute(select(Store).where(Store.business_id == business_id))
+            # 1. Identify Store from Query (Intelligent fuzzy match)
+            # We look for store names, regions, or markets in the query text
+            res = await self.db.execute(
+                select(Store)
+                .where(Store.business_id == business_id)
+                .options(selectinload(Store.clients), selectinload(Store.notes))
+            )
             all_stores = res.scalars().all()
             
             target_store = None
+            # Prioritize Exact Name Match
             for s in all_stores:
                 if s.name.lower() in query_text.lower():
                     target_store = s
                     break
             
+            # Fallback: Region/Market match if only one store exists in that context
             if not target_store:
-                return "No pude identificar la tienda. ¿Podrías ser más específico con el nombre?"
+                stores_in_context = []
+                for s in all_stores:
+                    if (s.region and s.region.lower() in query_text.lower()) or \
+                       (s.market and s.market.lower() in query_text.lower()):
+                        stores_in_context.append(s)
+                
+                if len(stores_in_context) == 1:
+                    target_store = stores_in_context[0]
+
+            if not target_store:
+                return "No pude identificar la tienda específica. ¿Podrías darme el nombre, la región o el mercado?"
 
             # 2. Fetch Relational Context
             context = await self.get_store_context(target_store.id)
@@ -105,28 +122,39 @@ class GraphRAGService:
     async def get_store_context(self, store_id: str) -> Dict[str, Any]:
         """Fetch full relational context for a specific store (Account)."""
         res = await self.db.execute(
-            select(Store).where(Store.id == store_id)
+            select(Store)
+            .where(Store.id == store_id)
+            .options(
+                selectinload(Store.clients),
+                selectinload(Store.notes),
+                selectinload(Store.business_profile)
+            )
         )
         store = res.scalars().first()
         if not store:
             return {}
 
-        # Fetch Contacts
-        contacts = [{"name": c.name, "role": c.role} for c in store.contacts]
+        # Fetch Contacts from Many-to-Many
+        contacts = [{"name": c.name, "role": c.role} for c in store.clients]
         
         # Fetch Latest Notes
         notes = [{
             "content": n.note, 
+            "execution_level": n.execution_level,
             "date": n.created_at.strftime("%Y-%m-%d")
         } for n in store.notes[:5]]
 
-        # Fetch Competitors
-        competitors = [{"name": c.name} for c in store.competitors]
+        # Fetch Competitors linked to this store
+        comp_res = await self.db.execute(
+            select(Competitor).where(Competitor.store_id == store_id)
+        )
+        competitors = [{"name": c.name, "presence": c.presence_level} for c in comp_res.scalars().all()]
 
         return {
             "name": store.name,
             "market": store.market,
             "region": store.region,
+            "segment": store.segment,
             "contacts": contacts,
             "history": notes,
             "competitors": competitors
