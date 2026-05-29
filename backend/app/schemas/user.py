@@ -20,6 +20,7 @@ class UserCreateAdmin(UserBase):
     role: str = "member"
     is_active: bool = True
     is_admin: bool = False
+    vertical_type: Optional[str] = "BASIC"
 
 class BusinessProfileMinimal(BaseModel):
     id: str

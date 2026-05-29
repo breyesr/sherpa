@@ -56,7 +56,7 @@ async def create_user_admin(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin)
 ) -> Any:
-    """Create a new user (Admin only)."""
+    """Create a new user and their associated business profile (Admin only)."""
     result = await db.execute(select(User).where(User.email == user_in.email))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="User already exists")
@@ -69,6 +69,15 @@ async def create_user_admin(
         is_admin=user_in.is_admin or user_in.role in ["super_admin", "admin"]
     )
     db.add(user)
+    await db.flush() # Get user ID
+    
+    # Create associated BusinessProfile
+    business = BusinessProfile(
+        user_id=user.id,
+        name=f"Business of {user.email.split('@')[0]}",
+        vertical_type=user_in.vertical_type or VerticalType.BASIC
+    )
+    db.add(business)
     await db.commit()
     
     # Reload with business profile for the response

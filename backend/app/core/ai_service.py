@@ -15,6 +15,7 @@ from app.models.crm import Appointment, Client
 from app.models.service import Service
 from app.models.integration import Integration
 from app.models.messaging import Conversation, Message
+from app.models.business import VerticalType
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
@@ -189,16 +190,17 @@ class AIService:
             summary = optimized["summary"]
             intent = optimized["intent"]
             
-            # 4. B2B Orchestration Stage (Intent Classification)
-            # This determines if the rep is Reporting, Querying, or Scheduling.
-            b2b_routing_response = await self.orchestrator.route_message(
-                self.business, client_obj, user_message, metadata
-            )
-            
-            # If the orchestrator handled the response (e.g., triggered ingestion), return that.
-            # We ignore any response starting with the [ORCHESTRATOR] Routing tag to let it fall through to chat.
-            if b2b_routing_response and not b2b_routing_response.startswith("[ORCHESTRATOR] Routing"):
-                return b2b_routing_response
+            # 4. B2B Orchestration Stage (ONLY for TRADE vertical)
+            if self.business.vertical_type == VerticalType.TRADE:
+                b2b_routing_response = await self.orchestrator.route_message(
+                    self.business, client_obj, user_message, metadata
+                )
+                # If the orchestrator handled the response (e.g., triggered ingestion), return that.
+                if b2b_routing_response and not b2b_routing_response.startswith("[ORCHESTRATOR] Routing"):
+                    return b2b_routing_response
+            else:
+                # Basic flows don't use the complex B2B orchestrator
+                print(f"DEBUG AISERVICE: Basic vertical detected. Skipping B2B Orchestration.")
 
             # 5. Prompt Construction Stage (Jinja2)
             try:
@@ -207,7 +209,6 @@ class AIService:
                 
                 if not self.assistant_config:
                     print(f"ERROR: No agent configured for business {self.business.id}. Falling back to default behavior.")
-                    # Provide a minimal default config if missing to prevent crashes
                     from app.models.business import Agent
                     self.assistant_config = Agent(
                         name="Sherpa",
@@ -215,7 +216,9 @@ class AIService:
                         tone="Professional"
                     )
 
-                template = prompt_env.get_template("system_prompt.j2")
+                # CHOOSE TEMPLATE BASED ON VERTICAL
+                template_name = "b2b_sales_brain.j2" if self.business.vertical_type == VerticalType.TRADE else "b2c_scheduler.j2"
+                template = prompt_env.get_template(template_name)
                 
                 # Fetch Active Services for the business
                 res_services = await self.db.execute(

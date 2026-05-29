@@ -527,20 +527,18 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
               
-              {editingUser?.business_profile && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Business Vertical</label>
-                  <select
-                    value={userForm.vertical_type}
-                    onChange={e => setUserForm({...userForm, vertical_type: e.target.value})}
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none"
-                  >
-                    <option value="BASIC">Basic (Scheduling)</option>
-                    <option value="TRADE">Trade (Stores & Inventory)</option>
-                  </select>
-                  <p className="text-[10px] text-gray-400 italic">This will unlock Trade-specific features for {editingUser.business_profile.name}.</p>
-                </div>
-              )}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Business Vertical</label>
+                <select
+                  value={userForm.vertical_type}
+                  onChange={e => setUserForm({...userForm, vertical_type: e.target.value})}
+                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none"
+                >
+                  <option value="BASIC">Basic (Scheduling)</option>
+                  <option value="TRADE">Trade (Stores & Inventory)</option>
+                </select>
+                <p className="text-[10px] text-gray-400 italic">This will set the default operating mode for the business profile.</p>
+              </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
