@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table
+from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index
 import enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -64,8 +64,14 @@ class Store(Base):
     
     name = Column(String, nullable=False, index=True)
     address = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
     
     # Metadata for trade operations
+    market = Column(String, nullable=True, index=True)
+    segment = Column(String, nullable=True, index=True)
+    region = Column(String, nullable=True, index=True)
+    opening_date = Column(Date, nullable=True)
     external_id = Column(String, nullable=True, index=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -78,6 +84,11 @@ class Store(Base):
     
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
 
+    __table_args__ = (
+        Index('ix_stores_business_region', 'business_id', 'region'),
+        Index('ix_stores_business_market', 'business_id', 'market'),
+    )
+
 class StoreNote(Base):
     __tablename__ = "store_notes"
 
@@ -88,6 +99,7 @@ class StoreNote(Base):
     risks = Column(Text, nullable=True)
     opportunities = Column(Text, nullable=True)
     preferred_actions = Column(Text, nullable=True)
+    execution_level = Column(String, nullable=True) # e.g., 'high', 'medium', 'low'
     
     # Vector embedding for GraphRAG
     embedding = Column(Vector(1536), nullable=True)
@@ -144,17 +156,26 @@ class Competitor(Base):
     store_id = Column(String, ForeignKey("stores.id"), nullable=False)
     
     name = Column(String, nullable=False, index=True)
+    phone = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    market = Column(String, nullable=True, index=True)
+    region = Column(String, nullable=True, index=True)
+    
     presence_level = Column(String, nullable=True) # e.g., 'high', 'low'
     notes = Column(Text, nullable=True)
     strengths = Column(Text, nullable=True)
     weaknesses = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
-
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile")
     store = relationship("Store")
+
+    __table_args__ = (
+        Index('ix_competitors_business_region', 'business_id', 'region'),
+        Index('ix_competitors_business_market', 'business_id', 'market'),
+    )
 
 class CustomerNote(Base):
     __tablename__ = "customer_notes"
@@ -165,6 +186,8 @@ class CustomerNote(Base):
     
     comm_style = Column(String, nullable=True) # e.g., 'direct', 'formal', 'friendly'
     visit_frequency = Column(String, nullable=True) # e.g., 'weekly', 'monthly'
+    last_visit_date = Column(Date, nullable=True)
+    next_visit_date = Column(Date, nullable=True)
     preferred_actions = Column(Text, nullable=True)
     general_notes = Column(Text, nullable=True)
     

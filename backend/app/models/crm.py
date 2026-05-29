@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, UniqueConstraint, JSON, Index
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, UniqueConstraint, JSON, Index, Date
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -17,6 +17,9 @@ class Client(Base):
     name = Column(String, nullable=False)
     phone = Column(String, nullable=True, index=True)
     email = Column(String, nullable=True)
+    role = Column(String, nullable=True)
+    birthday = Column(Date, nullable=True)
+    gender = Column(String, nullable=True)
     
     # Flexible custom fields (Epic 13)
     custom_fields = Column(JSON, nullable=True, default=dict)
