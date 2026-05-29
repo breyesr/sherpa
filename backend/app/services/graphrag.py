@@ -8,6 +8,7 @@ from app.core.embeddings import EmbeddingService
 from pgvector.sqlalchemy import Vector
 import json
 import traceback
+import unicodedata
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
@@ -24,6 +25,13 @@ class GraphRAGService:
         self.db = db
         self.embeddings = EmbeddingService(db)
 
+    def _normalize_str(self, text: str) -> str:
+        """Remove accents and normalize string for comparison."""
+        if not text: return ""
+        # Normalize to NFKD and remove non-spacing mark (accents)
+        normalized = unicodedata.normalize('NFKD', text)
+        return "".join([c for c in normalized if not unicodedata.combining(c)]).lower().strip()
+
     async def generate_brief(self, query_text: str, business_id: str, history: list = None) -> str:
         """Generate a strategic pre-visit brief using Hybrid RAG."""
         try:
@@ -38,34 +46,32 @@ class GraphRAGService:
             
             target_store = None
             
-            # Helper to search for store in a string (Now with contact resolution)
+            # Helper to search for store in a string (Now with accent normalization)
             async def find_store_in_text(text: str) -> Optional[Store]:
                 if not text: return None
-                text_lower = text.lower()
+                norm_text = self._normalize_str(text)
                 
-                # 1. Direct Store Name Match (Highest Confidence)
+                # 1. Direct Store Name Match
                 for s in all_stores:
-                    if s.name.lower() in text_lower:
+                    if self._normalize_str(s.name) in norm_text:
                         return s
                 
-                # 2. Contact Name Match (High Confidence)
-                # Resolve: If I say "Sofia", find the store she belongs to
+                # 2. Contact Name Match
                 res_contacts = await self.db.execute(
                     select(Client, store_clients.c.store_id)
                     .join(store_clients, store_clients.c.client_id == Client.id)
                     .where(Client.business_id == business_id)
                 )
                 for client, s_id in res_contacts.all():
-                    if client.name.lower() in text_lower:
-                        # Found the contact, return the linked store
+                    if self._normalize_str(client.name) in norm_text:
                         res_s = await self.db.execute(select(Store).where(Store.id == s_id))
                         return res_s.scalars().first()
                 
-                # 3. Fallback: Region/Market match if only one store exists in that context
+                # 3. Fallback: Region/Market match
                 stores_in_context = []
                 for s in all_stores:
-                    if (s.region and s.region.lower() in text_lower) or \
-                       (s.market and s.market.lower() in text_lower):
+                    if (s.region and self._normalize_str(s.region) in norm_text) or \
+                       (s.market and self._normalize_str(s.market) in norm_text):
                         stores_in_context.append(s)
                 
                 if len(stores_in_context) == 1:
