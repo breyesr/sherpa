@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, date
 import enum
 
 class StoreNoteType(str, enum.Enum):
@@ -21,6 +21,7 @@ class StoreNoteBase(BaseModel):
     risks: Optional[str] = None
     opportunities: Optional[str] = None
     preferred_actions: Optional[str] = None
+    execution_level: Optional[str] = None
 
 class StoreNoteCreate(StoreNoteBase):
     pass
@@ -38,6 +39,12 @@ class StoreNoteResponse(StoreNoteBase):
 class StoreBase(BaseModel):
     name: str
     address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    market: Optional[str] = None
+    segment: Optional[str] = None
+    region: Optional[str] = None
+    opening_date: Optional[date] = None
     external_id: Optional[str] = None
 
 class StoreCreate(StoreBase):
@@ -46,6 +53,12 @@ class StoreCreate(StoreBase):
 class StoreUpdate(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    market: Optional[str] = None
+    segment: Optional[str] = None
+    region: Optional[str] = None
+    opening_date: Optional[date] = None
     external_id: Optional[str] = None
     client_ids: Optional[List[str]] = None
 
@@ -139,6 +152,10 @@ class OrderResponse(OrderBase):
 class CompetitorBase(BaseModel):
     name: str
     store_id: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    market: Optional[str] = None
+    region: Optional[str] = None
     presence_level: Optional[str] = None
     notes: Optional[str] = None
 
@@ -158,6 +175,8 @@ class CustomerNoteBase(BaseModel):
     client_id: str
     comm_style: Optional[str] = None
     visit_frequency: Optional[str] = None
+    last_visit_date: Optional[date] = None
+    next_visit_date: Optional[date] = None
     preferred_actions: Optional[str] = None
     general_notes: Optional[str] = None
 

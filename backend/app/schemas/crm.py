@@ -1,12 +1,15 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from app.schemas.service import ServiceResponse
 
 class ClientBase(BaseModel):
     name: str
     phone: Optional[str] = None
     email: Optional[str] = None
+    role: Optional[str] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
     custom_fields: Optional[dict] = {}
 
 class ClientCreate(ClientBase):
@@ -16,6 +19,9 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    role: Optional[str] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
     custom_fields: Optional[dict] = None
 
 class ClientResponse(ClientBase):

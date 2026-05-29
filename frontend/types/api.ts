@@ -199,7 +199,7 @@ export interface paths {
     get: operations["list_users_api_v1_admin_users_get"];
     /**
      * Create User Admin
-     * @description Create a new user (Admin only).
+     * @description Create a new user and their associated business profile (Admin only).
      */
     post: operations["create_user_admin_api_v1_admin_users_post"];
   };
@@ -307,6 +307,13 @@ export interface paths {
      * @description Create a new product.
      */
     post: operations["create_product_api_v1_trade_products_post"];
+  };
+  "/api/v1/trade/stores/{store_id}/brief": {
+    /**
+     * Get Strategic Brief
+     * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
+     */
+    get: operations["get_strategic_brief_api_v1_trade_stores__store_id__brief_get"];
   };
   "/api/v1/trade/clients/{client_id}/brief": {
     /**
@@ -667,6 +674,12 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Birthday */
+      birthday?: string | null;
+      /** Gender */
+      gender?: string | null;
       /**
        * Custom Fields
        * @default {}
@@ -694,6 +707,12 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Birthday */
+      birthday?: string | null;
+      /** Gender */
+      gender?: string | null;
       /**
        * Custom Fields
        * @default {}
@@ -723,6 +742,12 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Birthday */
+      birthday?: string | null;
+      /** Gender */
+      gender?: string | null;
       /** Custom Fields */
       custom_fields?: {
         [key: string]: unknown;
@@ -987,6 +1012,18 @@ export interface components {
       name: string;
       /** Address */
       address?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Segment */
+      segment?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Opening Date */
+      opening_date?: string | null;
       /** External Id */
       external_id?: string | null;
       /**
@@ -997,17 +1034,29 @@ export interface components {
     };
     /** StoreNoteCreate */
     StoreNoteCreate: {
-      /** @default general */
-      type?: components["schemas"]["StoreNoteType"];
-      /** Content */
-      content: string;
+      /** Note */
+      note: string;
+      /** Risks */
+      risks?: string | null;
+      /** Opportunities */
+      opportunities?: string | null;
+      /** Preferred Actions */
+      preferred_actions?: string | null;
+      /** Execution Level */
+      execution_level?: string | null;
     };
     /** StoreNoteResponse */
     StoreNoteResponse: {
-      /** @default general */
-      type?: components["schemas"]["StoreNoteType"];
-      /** Content */
-      content: string;
+      /** Note */
+      note: string;
+      /** Risks */
+      risks?: string | null;
+      /** Opportunities */
+      opportunities?: string | null;
+      /** Preferred Actions */
+      preferred_actions?: string | null;
+      /** Execution Level */
+      execution_level?: string | null;
       /** Id */
       id: string;
       /** Store Id */
@@ -1025,17 +1074,24 @@ export interface components {
        */
       updated_at: string;
     };
-    /**
-     * StoreNoteType
-     * @enum {string}
-     */
-    StoreNoteType: "risk" | "opportunity" | "action" | "general";
     /** StoreResponse */
     StoreResponse: {
       /** Name */
       name: string;
       /** Address */
       address?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Segment */
+      segment?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Opening Date */
+      opening_date?: string | null;
       /** External Id */
       external_id?: string | null;
       /** Id */
@@ -1069,6 +1125,18 @@ export interface components {
       name?: string | null;
       /** Address */
       address?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Segment */
+      segment?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Opening Date */
+      opening_date?: string | null;
       /** External Id */
       external_id?: string | null;
       /** Client Ids */
@@ -1121,6 +1189,11 @@ export interface components {
        * @default false
        */
       is_admin?: boolean;
+      /**
+       * Vertical Type
+       * @default BASIC
+       */
+      vertical_type?: string | null;
     };
     /** UserResponse */
     UserResponse: {
@@ -2021,7 +2094,7 @@ export interface operations {
   };
   /**
    * Create User Admin
-   * @description Create a new user (Admin only).
+   * @description Create a new user and their associated business profile (Admin only).
    */
   create_user_admin_api_v1_admin_users_post: {
     requestBody: {
@@ -2428,6 +2501,31 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Strategic Brief
+   * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
+   */
+  get_strategic_brief_api_v1_trade_stores__store_id__brief_get: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
