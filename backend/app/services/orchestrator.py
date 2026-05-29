@@ -4,6 +4,8 @@ from typing import Dict, Any, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
+from sqlalchemy.future import select
+from app.models.trade import Store
 from app.services.graphrag import GraphRAGService
 
 # Setup prompt template environment
@@ -60,11 +62,33 @@ class B2BOrchestrator:
             # Default to CHAT on failure to be safe
             return {"intent": "CHAT", "reasoning": "Fallback due to error"}
 
-    async def route_message(self, business: Any, client: Any, user_message: str, history: list = None, metadata: Optional[Dict] = None) -> str:
+    async def route_message(self, business: Any, client: Any, user_message: str, history: list = None, metadata: Optional[Dict] = None, identifier: str = None) -> str:
         """
-        Main entry point for routing. 
-        In Session 2, we focus on classification and the REPORT ingestion.
+        Main entry point for routing with Topic Sensitivity. 
+        Detects shifts between stores to prevent "Summary Anchoring".
         """
+        # 1. Topic Shift Detection: If a new store is mentioned, clear stale summaries
+        try:
+            # We use the GraphRAG store identifier to see if the user is switching topics
+            res = await self.db.execute(select(Store).where(Store.business_id == business.id))
+            all_stores = res.scalars().all()
+            
+            new_store_detected = False
+            for s in all_stores:
+                if s.name.lower() in user_message.lower():
+                    # High confidence shift detected
+                    new_store_detected = True
+                    break
+            
+            if new_store_detected and identifier:
+                from app.core.memory import ChatMemory
+                memory = ChatMemory()
+                await memory.clear_summary(identifier)
+                print(f"DEBUG ORCHESTRATOR: Topic shift detected. Cleared summary for {identifier}.")
+        except Exception as te:
+            print(f"WARNING: Topic shift detection failed: {te}")
+
+        # 2. Proceed with normal classification and routing
         classification = await self.classify_intent(user_message, history)
         intent = classification.get("intent", "CHAT")
         

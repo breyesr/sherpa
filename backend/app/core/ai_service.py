@@ -193,7 +193,7 @@ class AIService:
             # 4. B2B Orchestration Stage (ONLY for TRADE vertical)
             if self.business.vertical_type == VerticalType.TRADE:
                 b2b_routing_response = await self.orchestrator.route_message(
-                    self.business, client_obj, user_message, history=history, metadata=metadata
+                    self.business, client_obj, user_message, history=history, metadata=metadata, identifier=normalized_id
                 )
 
                 # If the orchestrator handled the response (e.g., triggered ingestion), return that.

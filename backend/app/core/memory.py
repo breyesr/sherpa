@@ -35,6 +35,11 @@ class ChatMemory:
         await self.redis.expire(key, self.ttl)
 
     async def clear_history(self, chat_id: str):
-        """Wipe the memory for a specific chat."""
+        """Wipe the history for a specific chat."""
         key = f"chat_history:{chat_id}"
+        await self.redis.delete(key)
+
+    async def clear_summary(self, chat_id: str):
+        """Wipe the summary for a specific chat."""
+        key = f"chat_summary:{chat_id}"
         await self.redis.delete(key)
