@@ -23,11 +23,11 @@ class GraphRAGService:
         self.db = db
         self.embeddings = EmbeddingService(db)
 
-    async def generate_brief(self, query_text: str, business_id: str) -> str:
+    async def generate_brief(self, query_text: str, business_id: str, history: list = None) -> str:
         """Generate a strategic pre-visit brief using Hybrid RAG."""
         try:
             # 1. Identify Store from Query (Intelligent fuzzy match)
-            # We look for store names, regions, or markets in the query text
+            # We look for store names, regions, or markets in the query text OR history
             res = await self.db.execute(
                 select(Store)
                 .where(Store.business_id == business_id)
@@ -36,22 +36,37 @@ class GraphRAGService:
             all_stores = res.scalars().all()
             
             target_store = None
-            # Prioritize Exact Name Match
-            for s in all_stores:
-                if s.name.lower() in query_text.lower():
-                    target_store = s
-                    break
             
-            # Fallback: Region/Market match if only one store exists in that context
-            if not target_store:
+            # Helper to search for store in a string
+            def find_store_in_text(text: str) -> Optional[Store]:
+                if not text: return None
+                # Prioritize Exact Name Match
+                for s in all_stores:
+                    if s.name.lower() in text.lower():
+                        return s
+                
+                # Fallback: Region/Market match if only one store exists in that context
                 stores_in_context = []
                 for s in all_stores:
-                    if (s.region and s.region.lower() in query_text.lower()) or \
-                       (s.market and s.market.lower() in query_text.lower()):
+                    if (s.region and s.region.lower() in text.lower()) or \
+                       (s.market and s.market.lower() in text.lower()):
                         stores_in_context.append(s)
                 
                 if len(stores_in_context) == 1:
-                    target_store = stores_in_context[0]
+                    return stores_in_context[0]
+                return None
+
+            # Search in current query first
+            target_store = find_store_in_text(query_text)
+
+            # If not found, look back in history
+            if not target_store and history:
+                # Iterate history backwards (most recent first)
+                for m in reversed(history[-5:]):
+                    target_store = find_store_in_text(m["content"])
+                    if target_store:
+                        print(f"DEBUG GRAPHRAG: Identified store '{target_store.name}' from conversation history.")
+                        break
 
             if not target_store:
                 return "No pude identificar la tienda específica. ¿Podrías darme el nombre, la región o el mercado?"

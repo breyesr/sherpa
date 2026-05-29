@@ -30,5 +30,10 @@ You MUST respond with a JSON object containing the intent and a brief reasoning.
   "reasoning": "Brief explanation of why this intent was chosen"
 }
 
-## Rep Message:
+{% if history %}
+## Conversation History (Context):
+{{ history }}
+{% endif %}
+
+## Current Rep Message:
 "{{ user_message }}"

@@ -17,11 +17,20 @@ class B2BOrchestrator:
         self.db = db
         self.graphrag = GraphRAGService(db)
 
-    async def classify_intent(self, user_message: str) -> Dict[str, Any]:
+    async def classify_intent(self, user_message: str, history: list = None) -> Dict[str, Any]:
         """Classify the rep's message into REPORT, QUERY, SCHEDULE, or CHAT."""
         try:
             template = prompt_env.get_template("intent_classifier.j2")
-            system_prompt = template.render(user_message=user_message)
+            
+            # Format history for context
+            history_str = ""
+            if history:
+                history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history[-5:]])
+
+            system_prompt = template.render(
+                user_message=user_message,
+                history=history_str
+            )
 
             provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
             default_model = "gpt-4o-mini"
@@ -51,12 +60,12 @@ class B2BOrchestrator:
             # Default to CHAT on failure to be safe
             return {"intent": "CHAT", "reasoning": "Fallback due to error"}
 
-    async def route_message(self, business: Any, client: Any, user_message: str, metadata: Optional[Dict] = None) -> str:
+    async def route_message(self, business: Any, client: Any, user_message: str, history: list = None, metadata: Optional[Dict] = None) -> str:
         """
         Main entry point for routing. 
         In Session 2, we focus on classification and the REPORT ingestion.
         """
-        classification = await self.classify_intent(user_message)
+        classification = await self.classify_intent(user_message, history)
         intent = classification.get("intent", "CHAT")
         
         print(f"DEBUG ORCHESTRATOR: Intent identified as {intent} for message: '{user_message}'")
@@ -69,7 +78,7 @@ class B2BOrchestrator:
         
         elif intent == "QUERY":
             # Session 3 Goal: Hand off to GraphRAGAgent
-            return await self.graphrag.generate_brief(user_message, business.id)
+            return await self.graphrag.generate_brief(user_message, business.id, history=history)
             
         elif intent == "SCHEDULE":
             # Session 4 Goal: Use existing Scheduling tools
