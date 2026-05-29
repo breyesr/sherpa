@@ -243,6 +243,13 @@
 - [x] Task 27.3: Inline Store Editing: Enable auto-saving header inputs in Store Detail view.
 - [x] Task 27.4: Enhanced Metadata: Add Health indicators and Retailer names to the Stores grid.
 
+## Epic 28: Trade Schema Hardening & Draft Alignment
+- [ ] Task 28.1: Update `Store` model with Phone, Email, Market, Segment, Region, and Opening Date.
+- [ ] Task 28.2: Update `Client` (Customer) model with explicit Role, Birthday, and Gender fields.
+- [ ] Task 28.3: Update `Competitor` model with Phone, Address, Market, and Region.
+- [ ] Task 28.4: Update `StoreNote` with Execution Level and `CustomerNote` with Visit Tracking (Last/Next).
+- [ ] Task 28.5: Synchronize `GraphRAGService` and `B2BOrchestrator` to utilize these new structured fields.
+
 ## Hard Constraints (Enforced)
 - No Generic Drag-and-Drop Form Builders (Dynamic niche-attributes only).
 - No Open-Ended Conversational AI (Strict scheduling and internal reporting focus).
