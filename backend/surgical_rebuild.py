@@ -57,6 +57,20 @@ async def surgical_rebuild():
             await conn.execute(text("ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS vertical_type VARCHAR DEFAULT 'TRADE'"))
         except Exception: pass
         
+        # 3. Fail-safe: Manually add missing columns to 'clients' (since it wasn't dropped)
+        print("\nHardening 'clients' table schema...")
+        client_columns = [
+            ("role", "VARCHAR"),
+            ("birthday", "DATE"),
+            ("gender", "VARCHAR")
+        ]
+        for col_name, col_type in client_columns:
+            try:
+                await conn.execute(text(f"ALTER TABLE clients ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+                print(f"  - Ensured clients.{col_name} exists.")
+            except Exception as e:
+                print(f"  - Note: clients.{col_name} update: {e}")
+
         try:
             # We first try dropping default, casting to enum, then setting default
             await conn.execute(text("ALTER TABLE business_profiles ALTER COLUMN vertical_type DROP DEFAULT"))
