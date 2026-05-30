@@ -1,10 +1,9 @@
 # Handoff State - May 29, 2026
 
 ## Current Status
-- **Epic 107 Completed**: Trade Schema Hardening & Draft Alignment is fully implemented.
-- **Hybrid Intelligence**: AI now correctly uses both SQL (for regional/market facts) and Vectors (for semantic insights).
-- **Multi-turn Memory**: Fixed AI memory loss issues in the B2B orchestrator.
-- **Progressive Disclosure**: Frontend modals updated with new B2B fields hidden behind "Advanced Details" to keep mobile UI clean.
+- **Epic 107 Foundation Live**: Relational hardening, multi-turn memory, and robust entity resolution are now stable on staging/production.
+- **Advanced Expansion Pending**: Tasks 107.6 - 107.14 (Catalog Hardening, RRF Search, and Dossiers) are the active next steps.
+- **Production Stable**: Fixed deployment crash caused by "False Head" migration state via manual schema injection in `surgical_rebuild.py`.
 
 ## Recently Completed
 - [x] Hardened `Store`, `Client`, and `Competitor` models with B-Tree indexes.
