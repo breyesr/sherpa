@@ -20,7 +20,7 @@ async def surgical_rebuild():
     tables_to_drop = [
         "store_clients", "order_items", "orders", "store_notes", "customer_notes", 
         "competitors", "products", "categories", "stores", "assistant_configs", 
-        "agents", "data_imports", "alembic_version"
+        "agents", "data_imports"
     ]
     
     async with engine.begin() as conn:
