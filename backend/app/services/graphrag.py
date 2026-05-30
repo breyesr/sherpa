@@ -261,7 +261,14 @@ class GraphRAGService:
         comp_res = await self.db.execute(
             select(Competitor).where(Competitor.store_id == store_id)
         )
-        competitors = [{"name": c.name, "presence": c.presence_level} for c in comp_res.scalars().all()]
+        competitors = [
+            {
+                "name": c.name, 
+                "presence": c.presence_level,
+                "strengths": c.strengths,
+                "weaknesses": c.weaknesses
+            } for c in comp_res.scalars().all()
+        ]
 
         return {
             "name": store.name,

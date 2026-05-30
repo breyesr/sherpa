@@ -10,6 +10,15 @@ Answer the user's specific query using only data from the target store they're a
 - Segment: {{ store.segment or 'Standard' }}
 - Contacts: {% for c in store.contacts %}{{ c.name }} ({{ c.role or 'Staff' }}){% if not loop.last %}, {% endif %}{% endfor %}
 
+**Competitors (Landscape at this store):**
+{% for cp in store.competitors %}
+- {{ cp.name }} (Presence: {{ cp.presence or 'Unknown' }})
+  * Strengths: {{ cp.strengths or 'None noted' }}
+  * Weaknesses: {{ cp.weaknesses or 'None noted' }}
+{% else %}
+- No competitor data recorded for this specific location.
+{% endfor %}
+
 **Available Intelligence:**
 {% for n in notes %}
 - [{{ n.date }} - {% if n.type == 'store_note' %}Store Observation{% else %}Contact Detail{% endif %}]: {{ n.content }}
