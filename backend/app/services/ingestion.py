@@ -97,7 +97,12 @@ class IngestionAgent:
             if extracted.store_market and not store.market: store.market = extracted.store_market
             if extracted.store_segment and not store.segment: store.segment = extracted.store_segment
             
-            # Generate Embedding for RAG
+            # Update Store Persona Embedding (Task 107.8)
+            # This allows GraphRAG to find stores by Region/Market/Segment semantically
+            store_summary = store.get_semantic_summary(include_contacts=True)
+            store.embedding = await self.embeddings.get_embedding(store_summary)
+            
+            # Generate Embedding for RAG (Note Level)
             vector = await self.embeddings.get_embedding(extracted.general_note)
             
             new_note = StoreNote(

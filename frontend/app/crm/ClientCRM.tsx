@@ -162,7 +162,14 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
               >
                 <Edit2 size={18} />
               </button>
-              <h3 className="text-xl font-bold text-gray-900 mb-4 pr-8 group-hover:text-blue-600 transition-colors truncate">{client.name}</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{client.name}</h3>
+                {client.role && (
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md border border-gray-200 shrink-0">
+                    {client.role}
+                  </span>
+                )}
+              </div>
               
               {/* @ts-expect-error custom_fields is unknown */}
               {client.custom_fields?.needs_review && (

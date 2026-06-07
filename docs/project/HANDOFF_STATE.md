@@ -1,15 +1,17 @@
-# Handoff State - May 29, 2026
+# Handoff State - June 7, 2026
 
 ## Current Status
-- **Epic 107 Foundation Live**: Relational hardening, multi-turn memory, and robust entity resolution are now stable on staging/production.
-- **Advanced Expansion Pending**: Tasks 107.6 - 107.14 (Catalog Hardening, RRF Search, and Dossiers) are the active next steps.
-- **Production Stable**: Fixed deployment crash caused by "False Head" migration state via manual schema injection in `surgical_rebuild.py`.
+- **Epic 107 Completed**: B2B Relational hardening, Persona Serialization, and Catalog alignment are now fully implemented and verified.
+- **Actionable Intelligence Pending**: **Epic 108 (Action Ledger)** and **Epic 109 (Context-Aware Intelligence)** are the active next steps for the next session.
+- **Production Stable**: Schema is hardened for Railway; `surgical_rebuild.py` handles B2B metadata injection.
 
 ## Recently Completed
-- [x] Hardened `Store`, `Client`, and `Competitor` models with B-Tree indexes.
-- [x] Implemented "Keyword Boosting" to prioritize contact-specific notes in AI responses.
-- [x] Updated Ingestion pipeline to automatically update store metadata from chat reports.
-- [x] Synchronized frontend TypeScript types with the new 3.1 API contract.
+- [x] Epic 107: Full B2B Hardening & AI Persona awareness.
+- [x] Task 107.8: Persona Serialization (GraphRAG can now "see" store/client profiles).
+- [x] Task 107.7: Dashboard UI Column Expansion (Region, Segment, Role badges).
+- [x] Task 107.6: Catalog Hardening (Products, Categories, and Orders).
+- [x] Fixed store loading regression caused by strict Pydantic validation of null JSON metadata.
+- [x] Populated 2 months of mock history (32 visits) with high-fidelity semantic embeddings.
 
 ## Next Steps
 - [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".

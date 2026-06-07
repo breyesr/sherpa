@@ -164,3 +164,11 @@
 - **Feature Delivery**: Successfully deployed the complete Session 1-5 B2B Sales Intelligence stack, including the GraphRAG Briefing Engine and the intelligent intent orchestrator.
 
 - **2026-05-29 14:15**: Completed Epic 107. Hardened Trade schema, implemented multi-turn memory for AI, and added progressive disclosure UI for new B2B fields. System now supports high-precision Hybrid Search across regions and contacts.
+
+- **2026-05-29 18:30**: Resolved production deployment crash. Identified 'False Head' migration state and implemented manual column injection for the 'clients' table. System is now fully stable on staging/production.
+\n- **2026-06-07**: Completed Task 107.6 (Catalog Hardening). Updated Product, Category, and Order models with specialized draft fields (delivery_id, category_type, etc.) and synchronized frontend API types.
+- **2026-06-07**: Completed Task 107.8 (Persona Serialization). Implemented recursive semantic summaries and vectorized existing Store, Client, and Competitor profiles to enable high-fidelity GraphRAG search.
+- **2026-06-07**: Completed Task 107.7 (Dashboard Column Expansion). Updated Stores, Retailers, and CRM views to display Region, Segment, and Role metadata as badges for immediate visual feedback.
+- **2026-06-07**: Implemented future-proof Action Tracking for StoreNotes. Added structured fields (note_type, is_actionable, action_metadata) to enable the 'Active AI' strategic layer for Marketing and Commercial interventions.
+- **2026-06-07**: Fixed store loading regression. Updated StoreNoteBase schema to make action_metadata optional, resolving Pydantic validation errors caused by NULL values in existing records.
+\n- **2026-06-07 15:00**: Epic 107 Completed. Hardened B2B relational core, implemented full GraphRAG persona awareness, and enabled future-proof action tracking. System is ready for staging merge and Railway deployment.

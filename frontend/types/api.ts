@@ -141,12 +141,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -892,6 +892,14 @@ export interface components {
       price?: number;
       /** Sku */
       sku?: string | null;
+      /** Product Type */
+      product_type?: string | null;
+      /** Brand */
+      brand?: string | null;
+      /** Unit Of Measure */
+      unit_of_measure?: string | null;
+      /** External Id */
+      external_id?: string | null;
       /** Category Id */
       category_id: string;
     };
@@ -908,6 +916,14 @@ export interface components {
       price?: number;
       /** Sku */
       sku?: string | null;
+      /** Product Type */
+      product_type?: string | null;
+      /** Brand */
+      brand?: string | null;
+      /** Unit Of Measure */
+      unit_of_measure?: string | null;
+      /** External Id */
+      external_id?: string | null;
       /** Id */
       id: string;
       /** Category Id */
@@ -1034,6 +1050,8 @@ export interface components {
     };
     /** StoreNoteCreate */
     StoreNoteCreate: {
+      /** Store Id */
+      store_id: string;
       /** Note */
       note: string;
       /** Risks */
@@ -1044,9 +1062,28 @@ export interface components {
       preferred_actions?: string | null;
       /** Execution Level */
       execution_level?: string | null;
+      /**
+       * Note Type
+       * @default general
+       */
+      note_type?: string;
+      /**
+       * Is Actionable
+       * @default false
+       */
+      is_actionable?: boolean;
+      /**
+       * Action Metadata
+       * @default {}
+       */
+      action_metadata?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** StoreNoteResponse */
     StoreNoteResponse: {
+      /** Store Id */
+      store_id: string;
       /** Note */
       note: string;
       /** Risks */
@@ -1057,10 +1094,25 @@ export interface components {
       preferred_actions?: string | null;
       /** Execution Level */
       execution_level?: string | null;
+      /**
+       * Note Type
+       * @default general
+       */
+      note_type?: string;
+      /**
+       * Is Actionable
+       * @default false
+       */
+      is_actionable?: boolean;
+      /**
+       * Action Metadata
+       * @default {}
+       */
+      action_metadata?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
-      /** Store Id */
-      store_id: string;
       /** Author Id */
       author_id?: string | null;
       /**
@@ -1946,7 +1998,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
