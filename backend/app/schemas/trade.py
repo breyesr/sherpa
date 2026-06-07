@@ -15,16 +15,20 @@ class OrderStatus(str, enum.Enum):
     SHIPPED = "shipped"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
-
 class StoreNoteBase(BaseModel):
+    store_id: str
     note: str
     risks: Optional[str] = None
     opportunities: Optional[str] = None
     preferred_actions: Optional[str] = None
     execution_level: Optional[str] = None
+    note_type: str = "general"
+    is_actionable: bool = False
+    action_metadata: Optional[Dict[str, Any]] = {}
 
 class StoreNoteCreate(StoreNoteBase):
     pass
+
 
 class StoreNoteResponse(StoreNoteBase):
     id: str
@@ -103,6 +107,10 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     price: float = 0.0
     sku: Optional[str] = None
+    product_type: Optional[str] = None
+    brand: Optional[str] = None
+    unit_of_measure: Optional[str] = None
+    external_id: Optional[str] = None
 
 class ProductCreate(ProductBase):
     category_id: str
@@ -134,6 +142,10 @@ class OrderBase(BaseModel):
     client_id: Optional[str] = None
     status: OrderStatus = OrderStatus.PENDING
     notes: Optional[str] = None
+    delivery_id: Optional[str] = None
+    delivery_date: Optional[date] = None
+    payment_method: Optional[str] = None
+    shipping_address: Optional[str] = None
 
 class OrderCreate(OrderBase):
     items: List[OrderItemBase]

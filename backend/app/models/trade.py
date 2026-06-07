@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index
+from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index, Boolean
 import enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -35,11 +35,23 @@ class Category(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     
+    # Draft Hardening Fields
+    category_type = Column(String, nullable=True, index=True) # e.g., 'Beverage', 'Snack'
+    external_id = Column(String, nullable=True, index=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile", back_populates="categories")
     products = relationship("Product", back_populates="category", cascade="all, delete-orphan")
+
+    def get_semantic_summary(self) -> str:
+        summary = f"Categoría: {self.name}."
+        if self.category_type:
+            summary += f" Tipo: {self.category_type}."
+        if self.description:
+            summary += f" Descripción: {self.description}."
+        return summary
 
 class Product(Base):
     __tablename__ = "products"
@@ -51,10 +63,32 @@ class Product(Base):
     price = Column(Float, nullable=False, default=0.0)
     sku = Column(String, nullable=True, index=True)
     
+    # Draft Hardening Fields
+    product_type = Column(String, nullable=True, index=True)
+    brand = Column(String, nullable=True, index=True)
+    unit_of_measure = Column(String, nullable=True) # e.g., 'kg', 'unit', 'box'
+    external_id = Column(String, nullable=True, index=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     category = relationship("Category", back_populates="products")
+
+    def get_semantic_summary(self) -> str:
+        summary = f"Producto: {self.name}."
+        if self.brand:
+            summary += f" Marca: {self.brand}."
+        if self.product_type:
+            summary += f" Tipo: {self.product_type}."
+        if self.sku:
+            summary += f" SKU: {self.sku}."
+        if self.unit_of_measure:
+            summary += f" Unidad: {self.unit_of_measure}."
+        if self.price:
+            summary += f" Precio: {self.price}."
+        if self.category:
+            summary += f" {self.category.get_semantic_summary()}"
+        return summary
 
 class Store(Base):
     __tablename__ = "stores"
@@ -74,6 +108,9 @@ class Store(Base):
     opening_date = Column(Date, nullable=True)
     external_id = Column(String, nullable=True, index=True)
     
+    # Vector embedding for profile-level GraphRAG
+    embedding = Column(Vector(1536), nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -83,6 +120,34 @@ class Store(Base):
     clients = relationship("Client", secondary=store_clients, backref="stores")
     
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
+
+    def get_semantic_summary(self, include_notes: bool = False, include_contacts: bool = False) -> str:
+        summary = f"Punto de Venta (Store): {self.name}."
+        if self.region:
+            summary += f" Región: {self.region}."
+        if self.market:
+            summary += f" Mercado: {self.market}."
+        if self.segment:
+            summary += f" Segmento: {self.segment}."
+        if self.address:
+            summary += f" Dirección: {self.address}."
+        if self.phone:
+            summary += f" Teléfono: {self.phone}."
+        if self.email:
+            summary += f" Email: {self.email}."
+        if self.opening_date:
+            summary += f" Fecha de apertura: {self.opening_date.strftime('%Y-%m-%d')}."
+        
+        if include_contacts and self.clients:
+            contact_names = ", ".join([c.name for c in self.clients])
+            summary += f" Contactos principales: {contact_names}."
+            
+        if include_notes and self.notes:
+            # Include only the 3 most recent notes to avoid bloat
+            recent_notes = " | ".join([n.note[:100] for n in self.notes[:3]])
+            summary += f" Notas recientes: {recent_notes}."
+            
+        return summary
 
     __table_args__ = (
         Index('ix_stores_business_region', 'business_id', 'region'),
@@ -101,6 +166,15 @@ class StoreNote(Base):
     preferred_actions = Column(Text, nullable=True)
     execution_level = Column(String, nullable=True) # e.g., 'high', 'medium', 'low'
     
+    # Action Tracking & Future AI Triggers
+    # note_type: 'general', 'marketing', 'commercial', 'threat', 'anniversary'
+    note_type = Column(String, nullable=False, default="general", index=True)
+    is_actionable = Column(Boolean, default=False, index=True)
+    
+    # Structured metadata for the "Active AI" to eventually digest
+    # Stores: { "objective": "...", "outcome": "...", "items_requested": [...], "competitor_move": "..." }
+    action_metadata = Column(JSON, nullable=True, default=dict)
+    
     # Vector embedding for GraphRAG
     embedding = Column(Vector(1536), nullable=True)
     
@@ -112,6 +186,28 @@ class StoreNote(Base):
 
     store = relationship("Store", back_populates="notes")
     author = relationship("User")
+
+    def get_semantic_summary(self) -> str:
+        summary = f"Nota de Tienda (Tipo: {self.note_type}): {self.note}."
+        if self.risks:
+            summary += f" Riesgos: {self.risks}."
+        if self.opportunities:
+            summary += f" Oportunidades: {self.opportunities}."
+        if self.execution_level:
+            summary += f" Nivel de Ejecución: {self.execution_level}."
+        
+        if self.action_metadata:
+            obj = self.action_metadata.get('objective')
+            out = self.action_metadata.get('outcome')
+            if obj: summary += f" Objetivo: {obj}."
+            if out: summary += f" Resultado: {out}."
+            
+        if self.is_actionable:
+            summary += " Esta nota requiere seguimiento o acción inmediata."
+            
+        if self.store:
+            summary += f" Contexto: {self.store.get_semantic_summary()}"
+        return summary
 
 class Order(Base):
     __tablename__ = "orders"
@@ -125,6 +221,12 @@ class Order(Base):
     total_amount = Column(Float, nullable=False, default=0.0)
     notes = Column(Text, nullable=True)
     
+    # Draft Hardening Fields
+    delivery_id = Column(String, nullable=True, index=True)
+    delivery_date = Column(Date, nullable=True)
+    payment_method = Column(String, nullable=True)
+    shipping_address = Column(String, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -132,6 +234,16 @@ class Order(Base):
     store = relationship("Store")
     client = relationship("Client")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+
+    def get_semantic_summary(self) -> str:
+        summary = f"Orden ID: {self.id}. Estado: {self.status}. Total: {self.total_amount}."
+        if self.delivery_id:
+            summary += f" ID Entrega: {self.delivery_id}."
+        if self.store:
+            summary += f" Tienda: {self.store.name}."
+        if self.client:
+            summary += f" Cliente: {self.client.name}."
+        return summary
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -166,11 +278,26 @@ class Competitor(Base):
     strengths = Column(Text, nullable=True)
     weaknesses = Column(Text, nullable=True)
 
+    # Vector embedding for GraphRAG
+    embedding = Column(Vector(1536), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile")
     store = relationship("Store")
+
+    def get_semantic_summary(self) -> str:
+        summary = f"Competidor: {self.name}."
+        if self.presence_level:
+            summary += f" Nivel de Presencia: {self.presence_level}."
+        if self.strengths:
+            summary += f" Fortalezas: {self.strengths}."
+        if self.weaknesses:
+            summary += f" Debilidades: {self.weaknesses}."
+        if self.store:
+            summary += f" Localizado en: {self.store.name}."
+        return summary
 
     __table_args__ = (
         Index('ix_competitors_business_region', 'business_id', 'region'),
@@ -199,3 +326,13 @@ class CustomerNote(Base):
 
     business_profile = relationship("BusinessProfile")
     client = relationship("Client", back_populates="trade_notes")
+
+    def get_semantic_summary(self) -> str:
+        summary = f"Nota de Cliente: {self.general_notes or 'Sin notas generales'}."
+        if self.comm_style:
+            summary += f" Estilo de comunicación: {self.comm_style}."
+        if self.visit_frequency:
+            summary += f" Frecuencia de visita: {self.visit_frequency}."
+        if self.client:
+            summary += f" Relacionado con: {self.client.name} (Rol: {self.client.role})."
+        return summary

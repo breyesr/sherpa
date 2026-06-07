@@ -94,7 +94,19 @@ export default function StoresPage() {
                     <StoreIcon size={24} />
                   </div>
                   <div>
-                    <p className="font-bold text-lg text-gray-900 line-clamp-1">{store.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-lg text-gray-900 line-clamp-1">{store.name}</p>
+                      {store.region && (
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md border border-gray-200">
+                          {store.region}
+                        </span>
+                      )}
+                      {store.segment && (
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
+                          {store.segment}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 font-medium">
                       <span className="flex items-center gap-1"><MapPin size={14} className="text-gray-400" /> {store.address || 'No address'}</span>
                       {store.clients && store.clients.length > 0 ? (

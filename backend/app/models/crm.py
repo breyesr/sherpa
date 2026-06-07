@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
 from datetime import datetime
+from pgvector.sqlalchemy import Vector
 import hashlib
 
 import hashlib
@@ -28,6 +29,9 @@ class Client(Base):
     telegram_id = Column(String, nullable=True)
     whatsapp_id = Column(String, nullable=True)
     
+    # Vector embedding for GraphRAG
+    embedding = Column(Vector(1536), nullable=True)
+    
     # Searchable Hashes (Blind Indexes for privacy-preserving search)
     telegram_id_hash = Column(String, nullable=True, index=True)
     whatsapp_id_hash = Column(String, nullable=True, index=True)
@@ -44,6 +48,20 @@ class Client(Base):
     appointments = relationship("Appointment", back_populates="client", cascade="all, delete-orphan")
     trade_notes = relationship("CustomerNote", back_populates="client", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="client", cascade="all, delete-orphan")
+
+    def get_semantic_summary(self, include_notes: bool = False) -> str:
+        summary = f"Cliente (Contacto): {self.name}."
+        if self.role:
+            summary += f" Rol/Cargo: {self.role}."
+        
+        if include_notes and self.trade_notes:
+            # Include latest trade note context
+            latest_note = self.trade_notes[-1]
+            summary += f" Contexto Comercial: {latest_note.general_notes[:150]}"
+            if latest_note.comm_style:
+                summary += f" (Estilo: {latest_note.comm_style})"
+                
+        return summary
 
     @staticmethod
     def normalize_id(id_val: str) -> str:

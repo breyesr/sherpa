@@ -1438,7 +1438,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1456,7 +1456,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4281,6 +4281,50 @@
             ],
             "title": "Sku"
           },
+          "product_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Type"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "unit_of_measure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Of Measure"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
           "category_id": {
             "type": "string",
             "title": "Category Id"
@@ -4325,6 +4369,50 @@
               }
             ],
             "title": "Sku"
+          },
+          "product_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Type"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "unit_of_measure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Of Measure"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
           },
           "id": {
             "type": "string",
@@ -4685,6 +4773,10 @@
       },
       "StoreNoteCreate": {
         "properties": {
+          "store_id": {
+            "type": "string",
+            "title": "Store Id"
+          },
           "note": {
             "type": "string",
             "title": "Note"
@@ -4732,16 +4824,44 @@
               }
             ],
             "title": "Execution Level"
+          },
+          "note_type": {
+            "type": "string",
+            "title": "Note Type",
+            "default": "general"
+          },
+          "is_actionable": {
+            "type": "boolean",
+            "title": "Is Actionable",
+            "default": false
+          },
+          "action_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Metadata",
+            "default": {}
           }
         },
         "type": "object",
         "required": [
+          "store_id",
           "note"
         ],
         "title": "StoreNoteCreate"
       },
       "StoreNoteResponse": {
         "properties": {
+          "store_id": {
+            "type": "string",
+            "title": "Store Id"
+          },
           "note": {
             "type": "string",
             "title": "Note"
@@ -4790,13 +4910,32 @@
             ],
             "title": "Execution Level"
           },
+          "note_type": {
+            "type": "string",
+            "title": "Note Type",
+            "default": "general"
+          },
+          "is_actionable": {
+            "type": "boolean",
+            "title": "Is Actionable",
+            "default": false
+          },
+          "action_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Metadata",
+            "default": {}
+          },
           "id": {
             "type": "string",
             "title": "Id"
-          },
-          "store_id": {
-            "type": "string",
-            "title": "Store Id"
           },
           "author_id": {
             "anyOf": [
@@ -4822,9 +4961,9 @@
         },
         "type": "object",
         "required": [
+          "store_id",
           "note",
           "id",
-          "store_id",
           "created_at",
           "updated_at"
         ],

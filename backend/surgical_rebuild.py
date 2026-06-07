@@ -62,7 +62,8 @@ async def surgical_rebuild():
         client_columns = [
             ("role", "VARCHAR"),
             ("birthday", "DATE"),
-            ("gender", "VARCHAR")
+            ("gender", "VARCHAR"),
+            ("embedding", "vector(1536)")
         ]
         for col_name, col_type in client_columns:
             try:
@@ -70,6 +71,20 @@ async def surgical_rebuild():
                 print(f"  - Ensured clients.{col_name} exists.")
             except Exception as e:
                 print(f"  - Note: clients.{col_name} update: {e}")
+        
+        # 4. Fail-safe for StoreNotes (which might have been dropped but good to keep for resilience)
+        print("\nHardening 'store_notes' table schema...")
+        note_columns = [
+            ("note_type", "VARCHAR DEFAULT 'general'"),
+            ("is_actionable", "BOOLEAN DEFAULT FALSE"),
+            ("action_metadata", "JSONB DEFAULT '{}'")
+        ]
+        for col_name, col_type in note_columns:
+            try:
+                await conn.execute(text(f"ALTER TABLE store_notes ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+                print(f"  - Ensured store_notes.{col_name} exists.")
+            except Exception as e:
+                print(f"  - Note: store_notes.{col_name} update: {e}")
 
         try:
             # We first try dropping default, casting to enum, then setting default
