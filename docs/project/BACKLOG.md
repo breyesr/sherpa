@@ -74,11 +74,11 @@
 ## Epic 109: Context-Aware Account Intelligence & Discovery
 **Objective**: Resolve AI context confusion and enable global account discovery by implementing stateful session tracking, attributed context injection, and dual-mode semantic search.
 
-- [ ] Task 109.1: **Stateful Session Memory**: Implement Redis-based `active_store_id` tracking in `ChatMemory` to maintain and switch focus between accounts.
-- [ ] Task 109.2: **Attributed Context Labeling**: Update `GraphRAGService` to prefix every retrieved intelligence chunk with its source (e.g., `[SOURCE: Store X]`) to prevent entity mixing.
-- [ ] Task 109.3: **Focus Detection & Reset**: Implement logic in `B2BOrchestrator` to detect when a user mentions a new store and trigger a context reset/announcement.
-- [ ] Task 109.4: **Dual-Mode Search Engine**: Upgrade `GraphRAGService` to support both "Hard-Filtered" (one store) and "Global-Discovery" (all stores) search patterns based on user intent.
-- [ ] Task 109.5: **Regional & Segment Discovery**: Enable the AI to utilize Store profile embeddings (Task 107.8) to answer cross-account questions like "Which stores are in the North region?".
+- [x] Task 109.1: **Stateful Session Memory**: Implement Redis-based `active_store_id` tracking in `ChatMemory` to maintain and switch focus between accounts.
+- [x] Task 109.2: **Attributed Context Labeling**: Update `GraphRAGService` to prefix every retrieved intelligence chunk with its source (e.g., `[SOURCE: Store X]`) to prevent entity mixing.
+- [x] Task 109.3: **Focus Detection & Reset**: Implement logic in `B2BOrchestrator` to detect when a user mentions a new store and trigger a context reset/announcement.
+- [x] Task 109.4: **Dual-Mode Search Engine**: Upgrade `GraphRAGService` to support both "Hard-Filtered" (one store) and "Global-Discovery" (all stores) search patterns based on user intent.
+- [x] Task 109.5: **Regional & Segment Discovery**: Enable the AI to utilize Store profile embeddings (Task 107.8) to answer cross-account questions like "Which stores are in the North region?".
 
 ---
 

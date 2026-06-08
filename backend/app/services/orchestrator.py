@@ -112,18 +112,17 @@ class B2BOrchestrator:
                 from app.core.memory import ChatMemory
                 memory = ChatMemory()
                 
-                # Check what store is currently locked in session
-                locked_store_key = f"locked_store:{identifier}"
-                current_locked_id = await memory.redis.get(locked_store_key)
-                if current_locked_id:
-                    current_locked_id = current_locked_id.decode('utf-8')
+                # Use metadata for stateful tracking (Task 109.1)
+                metadata_session = await memory.get_metadata(identifier)
+                current_locked_id = metadata_session.get("active_store_id")
 
                 if current_locked_id != detected_store_id:
-                    # Topic Shift! Nuke the summary and the history to force a clean slate
+                    # Topic Shift! Nuke the summary to force a clean slate for the new account
                     await memory.clear_summary(identifier)
-                    # We don't necessarily clear history, but clearing summary removes the "Anchor"
-                    await memory.redis.set(locked_store_key, detected_store_id, ex=3600)
-                    print(f"DEBUG ORCHESTRATOR: Topic shift detected. Switched lock to {detected_store_id}. Cleared summary.")
+                    
+                    # Update metadata with the new active store
+                    await memory.update_metadata(identifier, {"active_store_id": detected_store_id})
+                    print(f"DEBUG ORCHESTRATOR: Topic shift detected. Switched active_store_id to {detected_store_id}. Cleared summary.")
         
         except Exception as te:
             print(f"WARNING: Topic shift detection failed: {te}")
@@ -143,7 +142,8 @@ class B2BOrchestrator:
         
         elif intent == "QUERY":
             # Session 3 Goal: Hand off to GraphRAGAgent
-            return await self.graphrag.generate_brief(user_message, business.id, history=history)
+            # Passing identifier (chat_id) for Task 109.1 session awareness
+            return await self.graphrag.generate_brief(user_message, business.id, history=history, chat_id=identifier)
             
         elif intent == "SCHEDULE":
             # Session 4 Goal: Use existing Scheduling tools

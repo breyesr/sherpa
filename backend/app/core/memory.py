@@ -43,3 +43,20 @@ class ChatMemory:
         """Wipe the summary for a specific chat."""
         key = f"chat_summary:{chat_id}"
         await self.redis.delete(key)
+
+    async def get_metadata(self, chat_id: str) -> Dict:
+        """Retrieve session metadata (e.g., active_store_id)."""
+        key = f"chat_metadata:{chat_id}"
+        data = await self.redis.get(key)
+        return json.loads(data.decode('utf-8')) if data else {}
+
+    async def set_metadata(self, chat_id: str, metadata: Dict):
+        """Store session metadata."""
+        key = f"chat_metadata:{chat_id}"
+        await self.redis.set(key, json.dumps(metadata), ex=self.ttl)
+
+    async def update_metadata(self, chat_id: str, updates: Dict):
+        """Merge updates into session metadata."""
+        current = await self.get_metadata(chat_id)
+        current.update(updates)
+        await self.set_metadata(chat_id, current)

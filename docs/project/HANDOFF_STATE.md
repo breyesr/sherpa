@@ -1,11 +1,12 @@
 # Handoff State - June 7, 2026
 
 ## Current Status
-- **Epic 107 Completed**: B2B Relational hardening, Persona Serialization, and Catalog alignment are now fully implemented and verified.
-- **Actionable Intelligence Pending**: **Epic 108 (Action Ledger)** and **Epic 109 (Context-Aware Intelligence)** are the active next steps for the next session.
-- **Production Stable**: Schema is hardened for Railway; `surgical_rebuild.py` handles B2B metadata injection.
+- **Epic 109 Completed**: The "Brain" is now context-aware. AI no longer gets confused between stores and can perform global discovery search.
+- **Actionable Intelligence Pending**: **Epic 108 (Action Ledger)** is the next strategic step.
+- **Production Stable**: Feature branch `feature/backend/epic-109-context-awareness` is ready for merge.
 
 ## Recently Completed
+- [x] Epic 109: Context-Aware Intelligence (Redis State, Source Labeling, Discovery Mode).
 - [x] Epic 107: Full B2B Hardening & AI Persona awareness.
 - [x] Task 107.8: Persona Serialization (GraphRAG can now "see" store/client profiles).
 - [x] Task 107.7: Dashboard UI Column Expansion (Region, Segment, Role badges).
