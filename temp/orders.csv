@@ -1,2 +1,0 @@
-id,business_id,store_id,client_id,status,total_amount,notes,created_at,updated_at,delivery_id,delivery_date,payment_method,shipping_address
-06a277a7-7613-748b-8000-26e7952ff33a,069b397d-5646-70aa-8000-55dbb6e613c4,06a19edc-cd42-7e23-8000-cfbf0cbbd886,06a19edc-cd4c-748a-8000-9b1eedc9231a,DELIVERED,25000.0,Pedido urgente para temporada vacacional.,2026-06-09 02:29:11.379715,2026-06-09 02:29:11.379720,DLV-ESTE-998,2026-06-08,Transferencia,"Avenida Costera 452, Boca del Río, Veracruz"
