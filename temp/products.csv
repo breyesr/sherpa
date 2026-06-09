@@ -1,0 +1,5 @@
+id,category_id,name,description,price,sku,created_at,updated_at,product_type,brand,unit_of_measure,external_id
+06a17a7a-8bb4-7be8-8000-9e8aa7bc755c,06a17a7a-8b8e-74da-8000-bfc9069af61b,PVC Pipe 1/2 inch,,5.5,PVC-12,2026-05-28 02:25:44.731642,2026-05-28 02:25:44.731647,,,,
+06a17a7a-8bb4-7d48-8000-20ae3913f88f,06a17a7a-8b8e-74da-8000-bfc9069af61b,Copper Valve Pro,,45.0,VAL-COP,2026-05-28 02:25:44.731655,2026-05-28 02:25:44.731659,,,,
+06a17a7a-8bb4-7e22-8000-222327c866a0,06a17a7a-8b8e-764b-8000-c002f1275c5e,LED Industrial Panel,,89.99,LED-IND,2026-05-28 02:25:44.731664,2026-05-28 02:25:44.731668,,,,
+06a17a7a-8bb4-7ea8-8000-b3dbe53b61be,06a17a7a-8b8e-76c0-8000-19e54edc1bbd,Matte White Paint 5L,,32.0,PNT-WHT,2026-05-28 02:25:44.731676,2026-05-28 02:25:44.731677,,,,
