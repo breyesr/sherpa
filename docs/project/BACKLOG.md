@@ -45,7 +45,7 @@
 - [x] Task 106.4: Remove hardcoded "Marco" persona and genericize `B2BOrchestrator` routing messages.
 - [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
-## Epic 107: Trade Schema Hardening & Draft Alignment
+## Epic 107: Trade Schema Hardening & Draft Alignment (COMPLETE)
 - [x] Task 107.1: Relational Hardening: Update `Store`, `Client`, and `Competitor` models with draft fields plus B-Tree indexes for fast regional filtering.
 - [x] Task 107.2: Migration & Type Sync: Execute Alembic migrations and run `npm run gen:api` to synchronize the frontend TypeScript types.
 - [x] Task 107.3: AI Prompt & Tool Enrichment: Update `b2b_sales_brain.j2` and `intent_classifier.j2` so the AI knows how to "Hybrid Search" the new fields.
@@ -54,12 +54,12 @@
 - [x] Task 107.6: Catalog Hardening: Update `Product`, `Category`, and `Order` models to align with the draft (Delivery IDs, Category Types, etc.).
 - [x] Task 107.7: Dashboard Column Expansion: Update Stores and CRM tables to show Region, Segment, and Role columns in the main list views.
 - [x] Task 107.8: Persona Serialization: Implement recursive `get_semantic_summary()` for B2B entities (Flattened Entity Mapping).
-- [ ] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
-- [ ] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
-- [ ] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
-- [ ] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
-- [ ] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
-- [ ] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
+- [x] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
+- [x] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
+- [x] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
+- [x] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
+- [x] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
+- [x] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
 
 ## Epic 108: The Actionable Intelligence Ledger (Frictionless CRM)
 **Objective**: Transition from purely narrative visit notes to a structured ledger of Marketing and Commercial actions, automatically extracted by AI to power management dashboards and future "Active AI" interventions.
@@ -71,22 +71,22 @@
 - [ ] Task 108.5: **Frictionless UI Integration**: Implement the "Strategy Desk" view with charts and an "Opportunity Inbox" for proposed AI actions that require Rep approval.
 - [ ] Task 108.6: **Anniversary Trigger**: Implement a background job that automatically generates a `StoreAction` (PROPOSED) when a store's `opening_date` is approaching.
 
-## Epic 109: Context-Aware Account Intelligence & Discovery
+## Epic 109: Context-Aware Account Intelligence & Discovery (COMPLETE)
 **Objective**: Resolve AI context confusion and enable global account discovery by implementing stateful session tracking, attributed context injection, and dual-mode semantic search.
 
 - [x] Task 109.1: **Stateful Session Memory**: Implement Redis-based `active_store_id` tracking in `ChatMemory` to maintain and switch focus between accounts.
 - [x] Task 109.2: **Attributed Context Labeling**: Update `GraphRAGService` to prefix every retrieved intelligence chunk with its source (e.g., `[SOURCE: Store X]`) to prevent entity mixing.
 - [x] Task 109.3: **Focus Detection & Reset**: Implement logic in `B2BOrchestrator` to detect when a user mentions a new store and trigger a context reset/announcement.
 - [x] Task 109.4: **Dual-Mode Search Engine**: Upgrade `GraphRAGService` to support both "Hard-Filtered" (one store) and "Global-Discovery" (all stores) search patterns based on user intent.
-- [ ] Task 109.5: **Regional & Segment Discovery**: Enable the AI to utilize Store profile embeddings (Task 107.8) to answer cross-account questions like "Which stores are in the North region?".
+- [x] Task 109.5: **Regional & Segment Discovery**: Enable the AI to utilize Store profile embeddings (Task 107.8) to answer cross-account questions like "Which stores are in the North region?".
 
-## Epic 110: High-Fidelity Session Isolation (Clean Slate)
+## Epic 110: High-Fidelity Session Isolation (COMPLETE)
 **Objective**: Ensure total data isolation between store visits by wiping short-term chat history and summaries on account switch.
 
 - [x] Task 110.1: **Session Wipe Mechanism**: Implement `clear_session_data` in `ChatMemory` to flush history, summary, and metadata in one atomic operation.
 - [x] Task 110.2: **Auto-Flush Logic**: Trigger the Clean Slate wipe in `B2BOrchestrator` whenever a high-confidence store switch is detected.
 - [x] Task 110.3: **Isolation Handshake**: Update the AI response to explicitly notify the user when a session is isolated (e.g., "Iniciando nueva sesión. Historial reiniciado.").
-- [ ] Task 110.4: **Inactivity Expiration**: Implement a 2-hour TTL for the `active_store_id` lock to prevent accidental context persistence across days.
+- [x] Task 110.4: **Inactivity Expiration**: Implement a 2-hour TTL for the `active_store_id` lock to prevent accidental context persistence across days.
 
 ---
 
