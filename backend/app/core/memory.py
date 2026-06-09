@@ -44,6 +44,15 @@ class ChatMemory:
         key = f"chat_summary:{chat_id}"
         await self.redis.delete(key)
 
+    async def clear_session_data(self, chat_id: str):
+        """Atomically wipe history, summary, and metadata for a clean slate session (Epic 110)."""
+        keys = [
+            f"chat_history:{chat_id}",
+            f"chat_summary:{chat_id}",
+            f"chat_metadata:{chat_id}"
+        ]
+        await self.redis.delete(*keys)
+
     async def get_metadata(self, chat_id: str) -> Dict:
         """Retrieve session metadata (e.g., active_store_id)."""
         key = f"chat_metadata:{chat_id}"

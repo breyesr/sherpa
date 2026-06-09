@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.future import select
 from sqlalchemy import text
 from sqlalchemy.orm import selectinload
@@ -9,6 +9,7 @@ from pgvector.sqlalchemy import Vector
 import json
 import traceback
 import unicodedata
+import re
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
@@ -32,9 +33,28 @@ class GraphRAGService:
         normalized = unicodedata.normalize('NFKD', text)
         return "".join([c for c in normalized if not unicodedata.combining(c)]).lower().strip()
 
+    def _is_exact_match(self, needle: str, haystack: str) -> bool:
+        """Check if needle exists in haystack as a whole word."""
+        if not needle or not haystack: return False
+        # Escape needle for regex and check for word boundaries
+        pattern = r'\b' + re.escape(self._normalize_str(needle)) + r'\b'
+        return bool(re.search(pattern, self._normalize_str(haystack)))
+
     async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None) -> str:
-        """Generate a strategic pre-visit brief using Hybrid RAG with session awareness."""
+        """Generate a strategic pre-visit brief using strict Session Locking."""
         try:
+            is_context_shift = False
+            query_norm = self._normalize_str(query_text)
+            
+            # 0. Termination Logic: Check if the user wants to close the current session
+            termination_cues = ["terminamos", "listo por ahora", "cerrar sesion", "otra tienda", "cambio de tienda", "fin de visita"]
+            if any(cue in query_norm for cue in termination_cues):
+                if chat_id:
+                    from app.core.memory import ChatMemory
+                    memory = ChatMemory()
+                    await memory.clear_session_data(chat_id)
+                    return "Entendido. He cerrado la sesión y reiniciado el historial. ¿A cuál tienda te diriges ahora?"
+
             # 1. Identity Stage: Find Target Store
             res = await self.db.execute(
                 select(Store)
@@ -51,19 +71,17 @@ class GraphRAGService:
                 session_meta = await memory.get_metadata(chat_id)
                 active_store_id = session_meta.get("active_store_id")
 
-            target_store = None
-            
             # Helper to search for store in a string
-            async def find_store_in_text(text: str) -> Optional[Store]:
-                if not text: return None
+            async def find_store_in_text(text: str) -> Tuple[Optional[Store], str]:
+                if not text: return None, "none"
                 norm_text = self._normalize_str(text)
                 
-                # 1. Direct Store Name Match
+                # 1. Direct Store Name Match (High Confidence)
                 for s in all_stores:
                     if self._normalize_str(s.name) in norm_text:
-                        return s
+                        return s, "high"
                 
-                # 2. Contact Name Match
+                # 2. Contact Name Match (High Confidence)
                 res_contacts = await self.db.execute(
                     select(Client, store_clients.c.store_id)
                     .join(store_clients, store_clients.c.client_id == Client.id)
@@ -72,65 +90,65 @@ class GraphRAGService:
                 for client, s_id in res_contacts.all():
                     if self._normalize_str(client.name) in norm_text:
                         res_s = await self.db.execute(select(Store).where(Store.id == s_id))
-                        return res_s.scalars().first()
+                        return res_s.scalars().first(), "high"
                 
-                # 3. Fallback: Region/Market match (Multi-store ambiguity)
+                # 3. Fallback: Region/Market match (Low Confidence)
                 stores_in_context = []
                 for s in all_stores:
-                    if (s.region and self._normalize_str(s.region) in norm_text) or \
-                       (s.market and self._normalize_str(s.market) in norm_text):
+                    if (s.region and self._is_exact_match(s.region, text)) or \
+                       (s.market and self._is_exact_match(s.market, text)):
                         stores_in_context.append(s)
                 
                 if len(stores_in_context) == 1:
-                    return stores_in_context[0]
+                    common_words = {"norte", "sur", "este", "oeste", "centro"}
+                    found_val = stores_in_context[0].region or stores_in_context[0].market
+                    confidence = "low" if self._normalize_str(found_val) in common_words else "medium"
+                    return stores_in_context[0], confidence
                 
-                # Task 109.1 Fix: If multiple stores match a region (e.g. 'Norte'), 
-                # prioritize the one already active in the session.
-                if len(stores_in_context) > 1 and active_store_id:
-                    for s in stores_in_context:
-                        if s.id == active_store_id:
-                            return s
+                return None, "none"
 
-                return None
+            # SEARCH LOGIC: Confidence-aware locking
+            found_store, confidence = await find_store_in_text(query_text)
+            target_store = None
 
-            # Search in current query first
-            target_store = await find_store_in_text(query_text)
-
-            # If not found, check the active session store (Task 109.1)
-            if not target_store and active_store_id:
-                # Does the query contain pronouns or context indicating 'the current store'?
-                # e.g. "qué acciones hemos hecho con ellos", "qué mas sabes"
-                context_cues = ["ellos", "esta tienda", "este local", "esta cuenta", "aquí", "de ellos", "su estado"]
-                query_norm = self._normalize_str(query_text)
-                
-                if any(cue in query_norm for cue in context_cues) or len(query_norm.split()) < 4:
+            if active_store_id:
+                # WE ARE LOCKED: Only switch if the new match is HIGH confidence
+                if found_store and confidence == "high" and found_store.id != active_store_id:
+                    target_store = found_store
+                    is_context_shift = True
+                else:
+                    # Default strictly to the locked store, ignore low-confidence regional noise
                     res_active = await self.db.execute(select(Store).where(Store.id == active_store_id))
                     target_store = res_active.scalars().first()
-                    if target_store:
-                        print(f"DEBUG GRAPHRAG: Using session-locked store '{target_store.name}' based on contextual cues.")
+                    print(f"DEBUG GRAPHRAG: Session is LOCKED to {target_store.name}. Ignoring query noise.")
+            else:
+                # WE ARE UNLOCKED: Any match (even low) can set the lock
+                if found_store:
+                    target_store = found_store
+                    is_context_shift = True
 
-            # Last resort: look back in history
-            if not target_store and history:
+            # If still nothing, look at history (Only if unlocked)
+            if not target_store and not active_store_id and history:
                 for m in reversed(history[-5:]):
-                    target_store = await find_store_in_text(m["content"])
-                    if target_store:
+                    hist_store, hist_conf = await find_store_in_text(m["content"])
+                    if hist_store:
+                        target_store = hist_store
                         break
 
             if not target_store:
-                # Task 109.4: Global Discovery Mode
-                # If no specific store is found, search across ALL store profiles semantically
+                # Task 109.4: Global Discovery Mode (Only if no specific store identified)
                 discovery_results = await self.search_store_profiles(query_text, business_id)
                 if discovery_results:
                     return await self.generate_discovery_response(query_text, discovery_results)
-                
-                return "No pude identificar la tienda específica ni encontré coincidencias regionales. ¿Podrías darme el nombre, la región o el mercado?"
+                return "No pude identificar la tienda específica. ¿A cuál te diriges o de qué región quieres saber?"
             
-            # 2. Update Session Focus (Self-healing session lock)
+            # 2. Update Session Focus
             if chat_id and target_store.id != active_store_id:
                 from app.core.memory import ChatMemory
                 memory = ChatMemory()
                 await memory.update_metadata(chat_id, {"active_store_id": target_store.id})
-                print(f"DEBUG GRAPHRAG: Updated session lock to '{target_store.name}'.")
+                is_context_shift = True
+                print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
 
             # 3. Fetch Relational Context (Strictly for this store)
             context = await self.get_store_context(target_store.id)
@@ -160,9 +178,9 @@ class GraphRAGService:
 
             ai_content = response.choices[0].message.content or "No se pudo generar la respuesta."
             
-            # Task 109.3: Explicit Shift Acknowledgment
+            # Task 109.3 & 110.3: Explicit Shift & Isolation Acknowledgment
             if is_context_shift:
-                ai_content = f"**[Cambiando el enfoque a {target_store.name}]**\n\n{ai_content}"
+                ai_content = f"**[Nueva sesión: {target_store.name} | Historial reiniciado]**\n\n{ai_content}"
                 
             return ai_content
 

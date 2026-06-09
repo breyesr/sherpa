@@ -1,0 +1,4 @@
+id,business_id,name,description,created_at,updated_at,category_type,external_id
+06a17a7a-8b8e-74da-8000-bfc9069af61b,069aa024-d524-781f-8000-2bb1576f3cef,Plumbing,"Pipes, valves, and water systems",2026-05-28 02:25:44.722259,2026-05-28 02:25:44.722263,,
+06a17a7a-8b8e-764b-8000-c002f1275c5e,069aa024-d524-781f-8000-2bb1576f3cef,Electrical,"Wiring, panels, and lighting",2026-05-28 02:25:44.722268,2026-05-28 02:25:44.722268,,
+06a17a7a-8b8e-76c0-8000-19e54edc1bbd,069aa024-d524-781f-8000-2bb1576f3cef,Finishes,"Paints, tiles, and flooring",2026-05-28 02:25:44.722274,2026-05-28 02:25:44.722275,,

@@ -117,12 +117,13 @@ class B2BOrchestrator:
                 current_locked_id = metadata_session.get("active_store_id")
 
                 if current_locked_id != detected_store_id:
-                    # Topic Shift! Nuke the summary to force a clean slate for the new account
-                    await memory.clear_summary(identifier)
+                    # Topic Shift! (Epic 110: Clean Slate)
+                    # Nuke history, summary, and old metadata to prevent context bleeding
+                    await memory.clear_session_data(identifier)
                     
                     # Update metadata with the new active store
                     await memory.update_metadata(identifier, {"active_store_id": detected_store_id})
-                    print(f"DEBUG ORCHESTRATOR: Topic shift detected. Switched active_store_id to {detected_store_id}. Cleared summary.")
+                    print(f"DEBUG ORCHESTRATOR: High-Fidelity Isolation triggered. Switched active_store_id to {detected_store_id}. History wiped.")
         
         except Exception as te:
             print(f"WARNING: Topic shift detection failed: {te}")

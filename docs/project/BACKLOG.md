@@ -78,11 +78,20 @@
 - [x] Task 109.2: **Attributed Context Labeling**: Update `GraphRAGService` to prefix every retrieved intelligence chunk with its source (e.g., `[SOURCE: Store X]`) to prevent entity mixing.
 - [x] Task 109.3: **Focus Detection & Reset**: Implement logic in `B2BOrchestrator` to detect when a user mentions a new store and trigger a context reset/announcement.
 - [x] Task 109.4: **Dual-Mode Search Engine**: Upgrade `GraphRAGService` to support both "Hard-Filtered" (one store) and "Global-Discovery" (all stores) search patterns based on user intent.
-- [x] Task 109.5: **Regional & Segment Discovery**: Enable the AI to utilize Store profile embeddings (Task 107.8) to answer cross-account questions like "Which stores are in the North region?".
+- [ ] Task 109.5: **Regional & Segment Discovery**: Enable the AI to utilize Store profile embeddings (Task 107.8) to answer cross-account questions like "Which stores are in the North region?".
+
+## Epic 110: High-Fidelity Session Isolation (Clean Slate)
+**Objective**: Ensure total data isolation between store visits by wiping short-term chat history and summaries on account switch.
+
+- [x] Task 110.1: **Session Wipe Mechanism**: Implement `clear_session_data` in `ChatMemory` to flush history, summary, and metadata in one atomic operation.
+- [x] Task 110.2: **Auto-Flush Logic**: Trigger the Clean Slate wipe in `B2BOrchestrator` whenever a high-confidence store switch is detected.
+- [x] Task 110.3: **Isolation Handshake**: Update the AI response to explicitly notify the user when a session is isolated (e.g., "Iniciando nueva sesión. Historial reiniciado.").
+- [ ] Task 110.4: **Inactivity Expiration**: Implement a 2-hour TTL for the `active_store_id` lock to prevent accidental context persistence across days.
 
 ---
 
 # Sherpa MVP Backlog (Legacy/Base)
+
 
 ## Epic 1: Infrastructure & Architecture
 - [x] Task 1.1: Initialize monorepo structure (frontend, backend, infra, docs).
