@@ -149,6 +149,14 @@ class Store(Base):
             
         return summary
 
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "region": self.region,
+            "market": self.market,
+            "segment": self.segment,
+            "name": self.name
+        }
+
     __table_args__ = (
         Index('ix_stores_business_region', 'business_id', 'region'),
         Index('ix_stores_business_market', 'business_id', 'market'),
@@ -299,6 +307,15 @@ class Competitor(Base):
             summary += f" Localizado en: {self.store.name}."
         return summary
 
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "presence_level": self.presence_level,
+            "region": self.region,
+            "market": self.market,
+            "name": self.name,
+            "store_id": self.store_id
+        }
+
     __table_args__ = (
         Index('ix_competitors_business_region', 'business_id', 'region'),
         Index('ix_competitors_business_market', 'business_id', 'market'),
@@ -333,6 +350,13 @@ class CustomerNote(Base):
             summary += f" Estilo de comunicación: {self.comm_style}."
         if self.visit_frequency:
             summary += f" Frecuencia de visita: {self.visit_frequency}."
+        if self.client:
+            summary += f" Relacionado con: {self.client.name} (Rol: {self.client.role})."
+        return summary
+le"] = self.client.role
+        return meta
+
+ de visita: {self.visit_frequency}."
         if self.client:
             summary += f" Relacionado con: {self.client.name} (Rol: {self.client.role})."
         return summary

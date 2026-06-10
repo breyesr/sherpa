@@ -90,6 +90,30 @@
 
 ---
 
+## Epic 111: Unified Knowledge Architecture & Global Discovery
+**Objective**: Transition from siloed vector storage (distributed across entity tables) to a centralized knowledge corpus to enable high-performance cross-entity discovery and simplified hybrid search (RRF).
+
+- [ ] Task 111.1: **Schema Implementation**: Create the `knowledge_corpus` table with `entity_type`, `entity_id`, `content`, `embedding`, and `metadata` (JSONB) columns.
+- [ ] Task 111.2: **Entity Serialization Sync**: Standardize the `get_semantic_summary()` methods across all models to ensure high-quality ingestion into the corpus.
+- [ ] Task 111.3: **Migration & Backfill**: Execute an Alembic migration and a script to move all existing embeddings from `stores`, `store_notes`, `customer_notes`, and `competitors` into the unified corpus.
+- [ ] Task 111.4: **Service Refactor**: Update `GraphRAGService` to perform all vector similarity searches against the `knowledge_corpus` table instead of individual model tables.
+- [ ] Task 111.5: **Global Filter Implementation**: Enable the AI to use the `metadata` JSONB column to filter discovery results by Region, Segment, or Role in a single query.
+- [ ] Task 111.6: **Hybrid Search (RRF) Integration**: Implement Parallel Keyword (FTS) + Semantic search on the unified corpus using Reciprocal Rank Fusion.
+
+---
+
+## Epic 112: The Trinity Intelligence Pipeline
+**Objective**: Decouple data retrieval, logical synthesis, and persona-driven delivery into a specialized three-step internal pipeline to maximize factual accuracy and strategic framing.
+
+- [ ] Task 112.1: **Retriever Parallelization**: Refactor `GraphRAGService` to use `asyncio.gather` for simultaneous SQL (Factual) and Vector (Semantic) data retrieval.
+- [ ] Task 112.2: **The Synthesizer Prompt**: Develop `app/core/prompts/synthesizer.j2`, a flavorless, logic-driven template that merges raw data into a structured "Intelligence Dossier".
+- [ ] Task 112.3: **The Sherpa Persona Refactor**: Rewrite `app/core/prompts/visit_briefer.j2` to act as "The Voice", focusing exclusively on strategic framing based on the clean Synthesizer dossier.
+- [ ] Task 112.4: **Trinity Orchestration**: Implement the sequential flow: Fetch (Parallel) -> Synthesis (Flash Model) -> Persona Delivery (Capability Model).
+- [ ] Task 112.5: **Validation Guardrails**: Implement "Identity Locking" checks in the Synthesizer to ensure facts from different stores never bleed into the same dossier.
+- [ ] Task 112.6: **Latency & Token Benchmarking**: Quantify the performance impact of the multi-step pipeline and optimize model selection (e.g., Gemini Flash for Synthesis).
+
+---
+
 # Sherpa MVP Backlog (Legacy/Base)
 
 

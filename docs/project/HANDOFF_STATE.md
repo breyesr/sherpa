@@ -14,7 +14,9 @@
 - [x] **Data Enrichment**: Populated "Distribuidora del Este" with 100% data density (Risks, Opps, Actions, Orders).
 
 ## Next Steps
-- [ ] **Technical Hardening (Epic 107)**: Implement Task 107.9 (RRF Search) and 107.10 (Async Vectorization).
+- [ ] **Unified Knowledge Corpus (Epic 111)**: Implement Task 111.1 (Schema) and 111.3 (Migration). *Pre-requisite for Trinity.*
+- [ ] **The Trinity Pipeline (Epic 112)**: Refactor response generation into Retrieval -> Synthesis -> Persona.
+- [ ] **Technical Hardening (Epic 107)**: Implement Task 107.9 (RRF Search) and 107.10 (Async Vectorization) on the new corpus.
 - [ ] **Epic 108: The Actionable Ledger**: Implement `StoreAction` table and AI auto-extraction logic (The foundation for Dashboards).
 - [ ] **Dashboard API**: Build specialized endpoints for management reporting (Visits, Marketing ROI).
 - [ ] **Task 106.5**: Final validation of B2C/B2B dual-mode logic isolation.
