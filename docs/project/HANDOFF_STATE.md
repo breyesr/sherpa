@@ -9,11 +9,12 @@
 ## Recently Completed
 - [x] **Epic 110: High-Fidelity Session Isolation**: Atomic history/summary wipe on account switch.
 - [x] **Epic 109: Context-Aware Discovery**: Redis session locking and attributed source labeling (`[SOURCE: Store X]`).
-- [x] **Epic 107: B2B Core Hardening**: Hardened Catalog (Products/Orders) and Persona Serialization for GraphRAG.
+- [x] **Epic 107 Foundations**: Hardened Catalog (Products/Orders) and Persona Serialization for GraphRAG.
 - [x] **Bug Fixes**: Resolved `NameError` crash in GraphRAG and fixed Intent Classifier for "on my way" briefing requests.
 - [x] **Data Enrichment**: Populated "Distribuidora del Este" with 100% data density (Risks, Opps, Actions, Orders).
 
 ## Next Steps
+- [ ] **Technical Hardening (Epic 107)**: Implement Task 107.9 (RRF Search) and 107.10 (Async Vectorization).
 - [ ] **Epic 108: The Actionable Ledger**: Implement `StoreAction` table and AI auto-extraction logic (The foundation for Dashboards).
 - [ ] **Dashboard API**: Build specialized endpoints for management reporting (Visits, Marketing ROI).
 - [ ] **Task 106.5**: Final validation of B2C/B2B dual-mode logic isolation.

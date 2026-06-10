@@ -45,7 +45,7 @@
 - [x] Task 106.4: Remove hardcoded "Marco" persona and genericize `B2BOrchestrator` routing messages.
 - [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
-## Epic 107: Trade Schema Hardening & Draft Alignment (COMPLETE)
+## Epic 107: Trade Schema Hardening & Draft Alignment (FOUNDATIONS COMPLETE)
 - [x] Task 107.1: Relational Hardening: Update `Store`, `Client`, and `Competitor` models with draft fields plus B-Tree indexes for fast regional filtering.
 - [x] Task 107.2: Migration & Type Sync: Execute Alembic migrations and run `npm run gen:api` to synchronize the frontend TypeScript types.
 - [x] Task 107.3: AI Prompt & Tool Enrichment: Update `b2b_sales_brain.j2` and `intent_classifier.j2` so the AI knows how to "Hybrid Search" the new fields.
@@ -54,12 +54,12 @@
 - [x] Task 107.6: Catalog Hardening: Update `Product`, `Category`, and `Order` models to align with the draft (Delivery IDs, Category Types, etc.).
 - [x] Task 107.7: Dashboard Column Expansion: Update Stores and CRM tables to show Region, Segment, and Role columns in the main list views.
 - [x] Task 107.8: Persona Serialization: Implement recursive `get_semantic_summary()` for B2B entities (Flattened Entity Mapping).
-- [x] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
-- [x] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
-- [x] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
-- [x] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
-- [x] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
-- [x] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
+- [ ] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
+- [ ] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
+- [ ] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
+- [ ] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
+- [ ] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
+- [ ] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
 
 ## Epic 108: The Actionable Intelligence Ledger (Frictionless CRM)
 **Objective**: Transition from purely narrative visit notes to a structured ledger of Marketing and Commercial actions, automatically extracted by AI to power management dashboards and future "Active AI" interventions.
