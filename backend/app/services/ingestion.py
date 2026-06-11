@@ -4,11 +4,10 @@ from typing import List, Optional, Dict, Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
-from app.core.database import SessionLocal
 from app.models.trade import Store, StoreNote, Competitor
-from app.core.embeddings import EmbeddingService
 from sqlalchemy.future import select
 from sqlalchemy import or_
+from app.tasks.knowledge import sync_vector_task
 
 # Setup prompt template environment
 prompt_env = Environment(
@@ -44,7 +43,6 @@ class ExtractionResult(BaseModel):
 class IngestionAgent:
     def __init__(self, db: Any):
         self.db = db
-        self.embeddings = EmbeddingService(db)
 
     async def extract_intelligence(self, user_message: str) -> ExtractionResult:
         """Extract structured intelligence from unstructured text using Instructor."""
@@ -97,26 +95,19 @@ class IngestionAgent:
             if extracted.store_market and not store.market: store.market = extracted.store_market
             if extracted.store_segment and not store.segment: store.segment = extracted.store_segment
             
-            # Update Store Persona Embedding (Task 107.8)
-            # This allows GraphRAG to find stores by Region/Market/Segment semantically
-            store_summary = store.get_semantic_summary(include_contacts=True)
-            store.embedding = await self.embeddings.get_embedding(store_summary)
-            
-            # Generate Embedding for RAG (Note Level)
-            vector = await self.embeddings.get_embedding(extracted.general_note)
-            
+            # 4. Create Note
             new_note = StoreNote(
                 store_id=store.id,
                 note=extracted.general_note,
                 risks=extracted.risks,
                 opportunities=extracted.opportunities,
                 preferred_actions=extracted.preferred_actions,
-                execution_level=extracted.execution_level,
-                embedding=vector
+                execution_level=extracted.execution_level
             )
             self.db.add(new_note)
             
-            # Save/Update Competitors
+            # 5. Save/Update Competitors
+            competitor_ids = []
             for comp in extracted.competitors:
                 # Fuzzy match existing competitor for this store
                 comp_res = await self.db.execute(
@@ -130,6 +121,7 @@ class IngestionAgent:
                     if comp.region: existing_comp.region = comp.region
                     if comp.market: existing_comp.market = comp.market
                     if comp.presence_level: existing_comp.presence_level = comp.presence_level
+                    competitor_ids.append(existing_comp.id)
                 else:
                     new_comp = Competitor(
                         business_id=business_id,
@@ -142,8 +134,18 @@ class IngestionAgent:
                         presence_level=comp.presence_level
                     )
                     self.db.add(new_comp)
+                    await self.db.flush() # To get the ID
+                    competitor_ids.append(new_comp.id)
             
             await self.db.commit()
+
+            # 6. ASYNC VECTORIZATION (Task 107.10)
+            # Emit tasks for background processing
+            sync_vector_task.delay(store.id, "store", business_id)
+            sync_vector_task.delay(new_note.id, "store_note", business_id)
+            for c_id in competitor_ids:
+                sync_vector_task.delay(c_id, "competitor", business_id)
+
             return {"status": "success", "store": store.name, "note_id": new_note.id}
         
         return {"status": "partial", "reason": "Store not found", "extracted": extracted.dict()}
