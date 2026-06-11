@@ -53,6 +53,13 @@ class Category(Base):
             summary += f" Descripción: {self.description}."
         return summary
 
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "name": self.name,
+            "category_type": self.category_type,
+            "external_id": self.external_id
+        }
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -89,6 +96,14 @@ class Product(Base):
         if self.category:
             summary += f" {self.category.get_semantic_summary()}"
         return summary
+
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "name": self.name,
+            "brand": self.brand,
+            "sku": self.sku,
+            "product_type": self.product_type
+        }
 
 class Store(Base):
     __tablename__ = "stores"
@@ -261,6 +276,18 @@ class Order(Base):
         if self.client:
             summary += f" Cliente: {self.client.name}."
         return summary
+
+    def get_knowledge_metadata(self) -> dict:
+        meta = {
+            "status": self.status.value if hasattr(self.status, 'value') else self.status,
+            "total_amount": self.total_amount,
+            "delivery_id": self.delivery_id
+        }
+        if self.store:
+            meta["store_name"] = self.store.name
+        if self.client:
+            meta["client_name"] = self.client.name
+        return meta
 
 class OrderItem(Base):
     __tablename__ = "order_items"
