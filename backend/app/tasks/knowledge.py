@@ -48,12 +48,11 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
             vector = await embeddings.get_embedding(content)
 
             # 5. Idempotent Upsert into KnowledgeCorpus
-            # Check if entry exists
+            deterministic_id = KnowledgeCorpus.generate_id(entity_type, entity_id)
+            
+            # Check if entry exists (using the deterministic ID)
             corpus_res = await db.execute(
-                select(KnowledgeCorpus).where(
-                    KnowledgeCorpus.entity_id == entity_id,
-                    KnowledgeCorpus.entity_type == entity_type
-                )
+                select(KnowledgeCorpus).where(KnowledgeCorpus.id == deterministic_id)
             )
             corpus_entry = corpus_res.scalars().first()
             
@@ -67,6 +66,7 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
                 corpus_entry.metadata_json = metadata
             else:
                 new_entry = KnowledgeCorpus(
+                    id=deterministic_id,
                     business_id=business_id,
                     entity_type=entity_type,
                     entity_id=entity_id,

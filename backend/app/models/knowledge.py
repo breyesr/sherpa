@@ -2,9 +2,13 @@ from sqlalchemy import Column, String, ForeignKey, DateTime, Text, JSON, Index
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
+import uuid
 from datetime import datetime
 from pgvector.sqlalchemy import Vector
 import enum
+
+# Fixed Namespace for Deterministic Knowledge IDs
+SHERPA_KNOWLEDGE_NAMESPACE = uuid.UUID('f0a29e62-f85e-7eed-8000-0892ab3023d2')
 
 class KnowledgeEntityType(str, enum.Enum):
     STORE = "store"
@@ -17,7 +21,7 @@ class KnowledgeEntityType(str, enum.Enum):
 class KnowledgeCorpus(Base):
     __tablename__ = "knowledge_corpus"
 
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    id = Column(String, primary_key=True, index=True) # Manual deterministic ID
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     
     # Polymorphic Reference
@@ -41,6 +45,12 @@ class KnowledgeCorpus(Base):
 
     def __repr__(self):
         return f"<KnowledgeCorpus(type={self.entity_type}, id={self.entity_id})>"
+
+    @staticmethod
+    def generate_id(entity_type: str, entity_id: str) -> str:
+        """Generate a deterministic v5 UUID for a knowledge entry."""
+        name = f"{entity_type}:{entity_id}"
+        return str(uuid.uuid5(SHERPA_KNOWLEDGE_NAMESPACE, name))
 
     __table_args__ = (
         # Index for scoped searches within a business
