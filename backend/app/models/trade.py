@@ -230,7 +230,10 @@ class StoreNote(Base):
         meta = {
             "note_type": self.note_type,
             "execution_level": self.execution_level,
-            "is_actionable": self.is_actionable
+            "is_actionable": self.is_actionable,
+            "store_id": self.store_id,
+            "risks": self.risks,
+            "opportunities": self.opportunities
         }
         if self.store:
             meta.update({
@@ -387,7 +390,9 @@ class CustomerNote(Base):
     def get_knowledge_metadata(self) -> dict:
         meta = {
             "comm_style": self.comm_style,
-            "visit_frequency": self.visit_frequency
+            "visit_frequency": self.visit_frequency,
+            "client_id": self.client_id,
+            "store_ids": [s.id for s in self.client.stores] if self.client and hasattr(self.client, 'stores') else []
         }
         if self.client:
             meta["client_name"] = self.client.name

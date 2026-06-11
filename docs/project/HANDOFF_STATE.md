@@ -16,9 +16,11 @@
 ## Next Steps
 - [ ] **Unified Knowledge Corpus (Epic 111)**: 
     - **Task 111.3**: Run the backfill in production.
-    - **Task 111.4**: Search Refactor. Update `GraphRAGService` to search the `knowledge_corpus` table exclusively.
-- [ ] **The Trinity Pipeline (Epic 112)**: Refactor response generation into Retrieval -> Synthesis -> Persona.
-- [ ] **Hybrid Search & RRF (Task 107.9)**: Implement Keyword + Semantic search on the unified corpus.
+    - **Task 111.4 (COMPLETE)**: Search Refactor. Updated `GraphRAGService` to search the `knowledge_corpus` table exclusively.
+    - **Task 111.6 (COMPLETE)**: **Hybrid Search (RRF)**. Implemented Parallel Keyword (FTS) + Semantic search using Reciprocal Rank Fusion. Metadata upgraded to JSONB for advanced querying.
+- [ ] **The Trinity Pipeline (Epic 112)**: 
+    - **Task 112.1 (COMPLETE)**: **Retriever Parallelization**. Refactored `GraphRAGService` to use `asyncio.gather` for simultaneous fetching of relational, hybrid semantic, and AI configuration data.
+    - **Next Step**: Refactor response generation into Retrieval -> Synthesis -> Persona.
 - [ ] **Epic 108: The Actionable Ledger**: Implement `StoreAction` table and AI auto-extraction logic (The foundation for Dashboards).
 - [ ] **Dashboard API**: Build specialized endpoints for management reporting (Visits, Marketing ROI).
 - [ ] **Task 106.5**: Final validation of B2C/B2B dual-mode logic isolation.

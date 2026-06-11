@@ -29,8 +29,8 @@ async def backfill_corpus():
             ("store", Store, [selectinload(Store.clients)]),
             ("store_note", StoreNote, [selectinload(StoreNote.store)]),
             ("competitor", Competitor, [selectinload(Competitor.store)]),
-            ("customer_note", CustomerNote, [selectinload(CustomerNote.client)]),
-            ("client", Client, [selectinload(Client.trade_notes)])
+            ("customer_note", CustomerNote, [selectinload(CustomerNote.client).selectinload(Client.stores)]),
+            ("client", Client, [selectinload(Client.trade_notes), selectinload(Client.stores)])
         ]
         
         total_migrated = 0

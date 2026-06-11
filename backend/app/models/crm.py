@@ -63,6 +63,14 @@ class Client(Base):
                 
         return summary
 
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "name": self.name,
+            "role": self.role,
+            "client_id": self.id,
+            "store_ids": [s.id for s in self.stores] if hasattr(self, 'stores') else []
+        }
+
     @staticmethod
     def normalize_id(id_val: str) -> str:
         if not id_val:

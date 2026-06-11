@@ -1,9 +1,10 @@
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.future import select
-from sqlalchemy import text
+from sqlalchemy import text, or_, func
 from sqlalchemy.orm import selectinload
 from app.models.trade import Store, StoreNote, CustomerNote, Competitor, store_clients
 from app.models.crm import Client
+from app.models.knowledge import KnowledgeCorpus
 from app.core.embeddings import EmbeddingService
 from pgvector.sqlalchemy import Vector
 import json
@@ -150,12 +151,30 @@ class GraphRAGService:
                 is_context_shift = True
                 print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
 
-            # 3. Fetch Relational Context (Strictly for this store)
-            context = await self.get_store_context(target_store.id)
+            # 3. Parallel Data Retrieval (Task 112.1: Retriever Parallelization)
+            import asyncio
             
-            # 4. Fetch Similar Notes
-            similar_notes = await self.find_similar_notes(query_text, business_id, store_id=target_store.id)
+            # Fetch Context, Similar Notes, and AI Provider in parallel
+            tasks = [
+                self.get_store_context(target_store.id),
+                self.find_similar_notes(query_text, business_id, store_id=target_store.id),
+                ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+            ]
             
+            results = await asyncio.gather(*tasks)
+            context = results[0]
+            similar_notes = results[1]
+            provider = results[2]
+
+            # Secondary parallel fetch for model and api key
+            config_tasks = [
+                ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini"),
+                ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+            ]
+            config_results = await asyncio.gather(*config_tasks)
+            model = config_results[0]
+            api_key = config_results[1]
+
             # 4. Generate LLM Response (Conversational & Focused)
             template = prompt_env.get_template("visit_briefer.j2")
             prompt = template.render(
@@ -164,10 +183,6 @@ class GraphRAGService:
                 query=query_text,
                 history=history[-3:] if history else []
             )
-
-            provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
-            model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
-            api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
 
             response = await litellm.acompletion(
                 model=f"{provider}/{model}" if "/" not in model else model,
@@ -190,98 +205,82 @@ class GraphRAGService:
             return "Lo siento, tuve un problema al generar el reporte de inteligencia."
 
     async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None) -> List[Dict[str, Any]]:
-        """Perform vector similarity search strictly filtered by store_id with keyword boosting for contacts."""
+        """Perform Hybrid Vector + Keyword search against the unified knowledge corpus (Task 111.6)."""
         try:
-            # 1. Identify if a specific contact name is mentioned in the query or context
-            # (We look at the query_text for common names of contacts in this store)
-            boosted_clients = []
-            if store_id:
-                res_clients = await self.db.execute(
-                    select(Client).join(store_clients, store_clients.c.client_id == Client.id)
-                    .where(store_clients.c.store_id == store_id)
-                )
-                for c in res_clients.scalars().all():
-                    if c.name.lower() in query_text.lower():
-                        boosted_clients.append(c)
-
-            # 2. Generate Query Embedding
+            # 1. Generate Query Embedding for Semantic Search
             query_vector = await self.embeddings.get_embedding(query_text)
             
-            # 3. Search Store Notes
-            stmt = select(StoreNote, Store.name.label("store_name")).join(Store)
-            filters = [Store.business_id == business_id]
+            # Base filters for both searches
+            filters = [KnowledgeCorpus.business_id == business_id]
             if store_id:
-                filters.append(StoreNote.store_id == store_id)
+                filters.append(or_(
+                    KnowledgeCorpus.metadata_json['store_id'].astext == str(store_id),
+                    KnowledgeCorpus.metadata_json['store_ids'].contains([str(store_id)])
+                ))
 
-            store_res = await self.db.execute(
-                stmt.where(*filters)
-                .order_by(StoreNote.embedding.cosine_distance(query_vector))
-                .limit(limit)
-            )
+            # 2. Semantic Search Query
+            semantic_stmt = select(KnowledgeCorpus).where(*filters).order_by(
+                KnowledgeCorpus.embedding.cosine_distance(query_vector)
+            ).limit(25) # Internal limit for re-ranking
             
+            # 3. Keyword Search Query (PostgreSQL FTS)
+            keyword_stmt = select(KnowledgeCorpus).where(
+                *filters,
+                func.to_tsvector('spanish', KnowledgeCorpus.content).op('@@')(func.plainto_tsquery('spanish', query_text))
+            ).limit(25)
+
+            # Execute both in parallel (Task 112.1 foundation)
+            import asyncio
+            semantic_res, keyword_res = await asyncio.gather(
+                self.db.execute(semantic_stmt),
+                self.db.execute(keyword_stmt)
+            )
+
+            semantic_hits = semantic_res.scalars().all()
+            keyword_hits = keyword_res.scalars().all()
+
+            # 4. Reciprocal Rank Fusion (RRF)
+            k = 60
+            scores = {} # corpus_id -> (score, entry)
+
+            for rank, entry in enumerate(semantic_hits):
+                scores[entry.id] = [1.0 / (k + rank + 1), entry]
+
+            for rank, entry in enumerate(keyword_hits):
+                if entry.id in scores:
+                    scores[entry.id][0] += 1.0 / (k + rank + 1)
+                else:
+                    scores[entry.id] = [1.0 / (k + rank + 1), entry]
+
+            # Sort by fused score
+            sorted_hits = sorted(scores.values(), key=lambda x: x[0], reverse=True)
+            
+            # 5. Format results
             results = []
-            for note, store_name in store_res.all():
+            for score, entry in sorted_hits[:limit]:
+                meta = entry.metadata_json or {}
                 results.append({
-                    "type": "store_note",
-                    "store": store_name,
-                    "content": f"[SOURCE: Store {store_name}] {note.note}",
-                    "risks": note.risks,
-                    "opportunities": note.opportunities,
-                    "execution": note.execution_level,
-                    "date": note.created_at.isoformat()
+                    "id": entry.id,
+                    "type": entry.entity_type,
+                    "content": entry.content,
+                    "risks": meta.get("risks"),
+                    "opportunities": meta.get("opportunities"),
+                    "execution": meta.get("execution_level"),
+                    "comm_style": meta.get("comm_style"),
+                    "date": entry.created_at.strftime("%Y-%m-%d"),
+                    "score": round(score, 4)
                 })
             
-            # 4. Search Customer Notes (Semantic)
-            cust_stmt = select(CustomerNote, Client.name.label("client_name")).join(Client)
-            cust_filters = [CustomerNote.business_id == business_id]
-            
-            if store_id:
-                cust_stmt = cust_stmt.join(store_clients, store_clients.c.client_id == Client.id).where(store_clients.c.store_id == store_id)
-
-            cust_res = await self.db.execute(
-                cust_stmt.where(*cust_filters)
-                .order_by(CustomerNote.embedding.cosine_distance(query_vector))
-                .limit(3)
-            )
-
-            found_note_ids = set()
-            for c_note, client_name in cust_res.all():
-                found_note_ids.add(c_note.id)
-                results.append({
-                    "id": c_note.id,
-                    "type": "customer_note",
-                    "client": client_name,
-                    "content": c_note.general_notes,
-                    "comm_style": c_note.comm_style,
-                    "frequency": c_note.visit_frequency,
-                    "date": c_note.created_at.isoformat()
-                })
-
-            # 5. Keyword Boost: If we identified a client by name, pull ALL their notes even if not semantically matching
-            if boosted_clients:
-                for bc in boosted_clients:
-                    boost_res = await self.db.execute(
-                        select(CustomerNote).where(CustomerNote.client_id == bc.id, CustomerNote.id.not_in(found_note_ids))
-                    )
-                    for bn in boost_res.scalars().all():
-                        results.append({
-                            "type": "customer_note",
-                            "client": bc.name,
-                            "content": bn.general_notes,
-                            "comm_style": bn.comm_style,
-                            "frequency": bn.visit_frequency,
-                            "date": bn.created_at.isoformat(),
-                            "boosted": True
-                        })
-                
             return results
         except Exception as e:
-            print(f"ERROR: GraphRAG Similarity Search failed: {e}")
+            print(f"ERROR: hybrid find_similar_notes failed: {e}")
+            traceback.print_exc()
             return []
 
     async def get_store_context(self, store_id: str) -> Dict[str, Any]:
         """Fetch full relational context for a specific store (Account)."""
-        res = await self.db.execute(
+        # Task 112.1: Parallel fetching of Store and Competitors
+        store_stmt = (
             select(Store)
             .where(Store.id == store_id)
             .options(
@@ -290,7 +289,14 @@ class GraphRAGService:
                 selectinload(Store.business_profile)
             )
         )
-        store = res.scalars().first()
+        comp_stmt = select(Competitor).where(Competitor.store_id == store_id)
+
+        store_res, comp_res = await asyncio.gather(
+            self.db.execute(store_stmt),
+            self.db.execute(comp_stmt)
+        )
+        
+        store = store_res.scalars().first()
         if not store:
             return {}
 
@@ -313,17 +319,14 @@ class GraphRAGService:
             }
             contacts.append(contact_info)
         
-        # Fetch Latest Notes
+        # Fetch Latest Notes (Already loaded via selectinload)
         notes = [{
             "content": n.note, 
             "execution_level": n.execution_level,
             "date": n.created_at.strftime("%Y-%m-%d")
         } for n in store.notes[:5]]
 
-        # Fetch Competitors linked to this store
-        comp_res = await self.db.execute(
-            select(Competitor).where(Competitor.store_id == store_id)
-        )
+        # Format Competitors from results
         competitors = [
             {
                 "name": c.name, 
@@ -344,26 +347,29 @@ class GraphRAGService:
         }
 
     async def search_store_profiles(self, query_text: str, business_id: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Perform semantic search across all store profiles (Task 109.5)."""
+        """Perform semantic search across all store profiles via the Knowledge Corpus (Task 111.4)."""
         try:
             query_vector = await self.embeddings.get_embedding(query_text)
             
-            # Search Stores by profile embedding
-            stmt = select(Store).where(Store.business_id == business_id)
+            # Search Corpus for 'store' entity types
+            stmt = select(KnowledgeCorpus).where(
+                KnowledgeCorpus.business_id == business_id,
+                KnowledgeCorpus.entity_type == "store"
+            )
             res = await self.db.execute(
-                stmt.order_by(Store.embedding.cosine_distance(query_vector))
+                stmt.order_by(KnowledgeCorpus.embedding.cosine_distance(query_vector))
                 .limit(limit)
             )
             
-            stores = res.scalars().all()
             results = []
-            for s in stores:
+            for entry in res.scalars().all():
+                meta = entry.metadata_json or {}
                 results.append({
-                    "name": s.name,
-                    "region": s.region,
-                    "market": s.market,
-                    "segment": s.segment,
-                    "address": s.address
+                    "name": meta.get("name"),
+                    "region": meta.get("region"),
+                    "market": meta.get("market"),
+                    "segment": meta.get("segment"),
+                    "address": meta.get("address")
                 })
             return results
         except Exception as e:

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, Text, JSON, Index
+from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Index, text
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from app.core.database import Base
 from uuid_extensions import uuid7str
 import uuid
@@ -36,7 +37,7 @@ class KnowledgeCorpus(Base):
     
     # Structured metadata for fast SQL filtering (Region, Segment, Category, etc.)
     # Example: {"region": "North", "segment": "A", "role": "Manager"}
-    metadata_json = Column(JSON, nullable=True, default=dict)
+    metadata_json = Column(JSONB, nullable=True, default=dict)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -55,4 +56,10 @@ class KnowledgeCorpus(Base):
     __table_args__ = (
         # Index for scoped searches within a business
         Index('ix_knowledge_corpus_business_type', 'business_id', 'entity_type'),
+        # GIN Index for Full-Text Search (Spanish)
+        Index(
+            'ix_knowledge_corpus_content_fts',
+            text("to_tsvector('spanish', content)"),
+            postgresql_using='gin'
+        ),
     )
