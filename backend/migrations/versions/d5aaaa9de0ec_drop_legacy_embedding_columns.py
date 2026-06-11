@@ -20,17 +20,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Drop legacy embedding columns
-    op.drop_column('stores', 'embedding')
-    op.drop_column('store_notes', 'embedding')
-    op.drop_column('customer_notes', 'embedding')
-    op.drop_column('competitors', 'embedding')
+    # Drop legacy embedding columns idempotently
+    op.execute("ALTER TABLE stores DROP COLUMN IF EXISTS embedding")
+    op.execute("ALTER TABLE store_notes DROP COLUMN IF EXISTS embedding")
+    op.execute("ALTER TABLE customer_notes DROP COLUMN IF EXISTS embedding")
+    op.execute("ALTER TABLE competitors DROP COLUMN IF EXISTS embedding")
 
 
 def downgrade() -> None:
-    # Add back legacy embedding columns
-    op.add_column('competitors', sa.Column('embedding', pgvector.sqlalchemy.Vector(dim=1536), nullable=True))
-    op.add_column('customer_notes', sa.Column('embedding', pgvector.sqlalchemy.Vector(dim=1536), nullable=True))
-    op.add_column('store_notes', sa.Column('embedding', pgvector.sqlalchemy.Vector(dim=1536), nullable=True))
-    op.add_column('stores', sa.Column('embedding', pgvector.sqlalchemy.Vector(dim=1536), nullable=True))
+    # Add back legacy embedding columns idempotently
+    op.execute("ALTER TABLE competitors ADD COLUMN IF NOT EXISTS embedding vector(1536)")
+    op.execute("ALTER TABLE customer_notes ADD COLUMN IF NOT EXISTS embedding vector(1536)")
+    op.execute("ALTER TABLE store_notes ADD COLUMN IF NOT EXISTS embedding vector(1536)")
+    op.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS embedding vector(1536)")
 
