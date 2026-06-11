@@ -56,7 +56,7 @@ class IngestionAgent:
             api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
 
             # Initialize Instructor client
-            client = instructor.patch(litellm.completion)
+            client = instructor.from_litellm(litellm.acompletion)
 
             result = await client.chat.completions.create(
                 model=f"{provider}/{model}" if "/" not in model else model,

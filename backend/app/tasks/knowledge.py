@@ -10,6 +10,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from sqlalchemy.orm import selectinload
+
+# ... (rest of imports)
+
 async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str):
     """Internal logic to handle vectorization and corpus updates."""
     async with SessionLocal() as db:
@@ -28,8 +32,19 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
 
             model = model_map[entity_type]
             
-            # 2. Fetch the entity
-            res = await db.execute(select(model).where(model.id == entity_id))
+            # 2. Fetch the entity with necessary relationships for get_semantic_summary
+            stmt = select(model).where(model.id == entity_id)
+            
+            if entity_type == "store":
+                stmt = stmt.options(selectinload(Store.clients))
+            elif entity_type == "store_note":
+                stmt = stmt.options(selectinload(StoreNote.store))
+            elif entity_type == "competitor":
+                stmt = stmt.options(selectinload(Competitor.store))
+            elif entity_type == "customer_note":
+                stmt = stmt.options(selectinload(CustomerNote.client))
+            
+            res = await db.execute(stmt)
             entity = res.scalars().first()
             
             if not entity:
