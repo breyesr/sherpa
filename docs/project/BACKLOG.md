@@ -45,7 +45,7 @@
 - [x] Task 106.4: Remove hardcoded "Marco" persona and genericize `B2BOrchestrator` routing messages.
 - [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
-## Epic 107: Trade Schema Hardening & Draft Alignment (COMPLETE)
+## Epic 107: Trade Schema Hardening & Draft Alignment (FOUNDATIONS COMPLETE)
 - [x] Task 107.1: Relational Hardening: Update `Store`, `Client`, and `Competitor` models with draft fields plus B-Tree indexes for fast regional filtering.
 - [x] Task 107.2: Migration & Type Sync: Execute Alembic migrations and run `npm run gen:api` to synchronize the frontend TypeScript types.
 - [x] Task 107.3: AI Prompt & Tool Enrichment: Update `b2b_sales_brain.j2` and `intent_classifier.j2` so the AI knows how to "Hybrid Search" the new fields.
@@ -54,12 +54,12 @@
 - [x] Task 107.6: Catalog Hardening: Update `Product`, `Category`, and `Order` models to align with the draft (Delivery IDs, Category Types, etc.).
 - [x] Task 107.7: Dashboard Column Expansion: Update Stores and CRM tables to show Region, Segment, and Role columns in the main list views.
 - [x] Task 107.8: Persona Serialization: Implement recursive `get_semantic_summary()` for B2B entities (Flattened Entity Mapping).
-- [x] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
-- [x] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
-- [x] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
-- [x] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
-- [x] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
-- [x] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
+- [ ] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
+- [ ] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
+- [ ] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
+- [ ] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
+- [ ] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
+- [ ] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
 
 ## Epic 108: The Actionable Intelligence Ledger (Frictionless CRM)
 **Objective**: Transition from purely narrative visit notes to a structured ledger of Marketing and Commercial actions, automatically extracted by AI to power management dashboards and future "Active AI" interventions.
@@ -87,6 +87,30 @@
 - [x] Task 110.2: **Auto-Flush Logic**: Trigger the Clean Slate wipe in `B2BOrchestrator` whenever a high-confidence store switch is detected.
 - [x] Task 110.3: **Isolation Handshake**: Update the AI response to explicitly notify the user when a session is isolated (e.g., "Iniciando nueva sesión. Historial reiniciado.").
 - [x] Task 110.4: **Inactivity Expiration**: Implement a 2-hour TTL for the `active_store_id` lock to prevent accidental context persistence across days.
+
+---
+
+## Epic 111: Unified Knowledge Architecture & Global Discovery
+**Objective**: Transition from siloed vector storage (distributed across entity tables) to a centralized knowledge corpus to enable high-performance cross-entity discovery and simplified hybrid search (RRF).
+
+- [ ] Task 111.1: **Schema Implementation**: Create the `knowledge_corpus` table with `entity_type`, `entity_id`, `content`, `embedding`, and `metadata` (JSONB) columns.
+- [ ] Task 111.2: **Entity Serialization Sync**: Standardize the `get_semantic_summary()` methods across all models to ensure high-quality ingestion into the corpus.
+- [ ] Task 111.3: **Migration & Backfill**: Execute an Alembic migration and a script to move all existing embeddings from `stores`, `store_notes`, `customer_notes`, and `competitors` into the unified corpus.
+- [ ] Task 111.4: **Service Refactor**: Update `GraphRAGService` to perform all vector similarity searches against the `knowledge_corpus` table instead of individual model tables.
+- [ ] Task 111.5: **Global Filter Implementation**: Enable the AI to use the `metadata` JSONB column to filter discovery results by Region, Segment, or Role in a single query.
+- [ ] Task 111.6: **Hybrid Search (RRF) Integration**: Implement Parallel Keyword (FTS) + Semantic search on the unified corpus using Reciprocal Rank Fusion.
+
+---
+
+## Epic 112: The Trinity Intelligence Pipeline
+**Objective**: Decouple data retrieval, logical synthesis, and persona-driven delivery into a specialized three-step internal pipeline to maximize factual accuracy and strategic framing.
+
+- [ ] Task 112.1: **Retriever Parallelization**: Refactor `GraphRAGService` to use `asyncio.gather` for simultaneous SQL (Factual) and Vector (Semantic) data retrieval.
+- [ ] Task 112.2: **The Synthesizer Prompt**: Develop `app/core/prompts/synthesizer.j2`, a flavorless, logic-driven template that merges raw data into a structured "Intelligence Dossier".
+- [ ] Task 112.3: **The Sherpa Persona Refactor**: Rewrite `app/core/prompts/visit_briefer.j2` to act as "The Voice", focusing exclusively on strategic framing based on the clean Synthesizer dossier.
+- [ ] Task 112.4: **Trinity Orchestration**: Implement the sequential flow: Fetch (Parallel) -> Synthesis (Flash Model) -> Persona Delivery (Capability Model).
+- [ ] Task 112.5: **Validation Guardrails**: Implement "Identity Locking" checks in the Synthesizer to ensure facts from different stores never bleed into the same dossier.
+- [ ] Task 112.6: **Latency & Token Benchmarking**: Quantify the performance impact of the multi-step pipeline and optimize model selection (e.g., Gemini Flash for Synthesis).
 
 ---
 

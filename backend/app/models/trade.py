@@ -108,9 +108,6 @@ class Store(Base):
     opening_date = Column(Date, nullable=True)
     external_id = Column(String, nullable=True, index=True)
     
-    # Vector embedding for profile-level GraphRAG
-    embedding = Column(Vector(1536), nullable=True)
-    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -149,6 +146,14 @@ class Store(Base):
             
         return summary
 
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "region": self.region,
+            "market": self.market,
+            "segment": self.segment,
+            "name": self.name
+        }
+
     __table_args__ = (
         Index('ix_stores_business_region', 'business_id', 'region'),
         Index('ix_stores_business_market', 'business_id', 'market'),
@@ -174,9 +179,6 @@ class StoreNote(Base):
     # Structured metadata for the "Active AI" to eventually digest
     # Stores: { "objective": "...", "outcome": "...", "items_requested": [...], "competitor_move": "..." }
     action_metadata = Column(JSON, nullable=True, default=dict)
-    
-    # Vector embedding for GraphRAG
-    embedding = Column(Vector(1536), nullable=True)
     
     # Optional: Author of the note (User ID)
     author_id = Column(String, ForeignKey("users.id"), nullable=True)
@@ -208,6 +210,21 @@ class StoreNote(Base):
         if self.store:
             summary += f" Contexto: {self.store.get_semantic_summary()}"
         return summary
+
+    def get_knowledge_metadata(self) -> dict:
+        meta = {
+            "note_type": self.note_type,
+            "execution_level": self.execution_level,
+            "is_actionable": self.is_actionable
+        }
+        if self.store:
+            meta.update({
+                "store_name": self.store.name,
+                "region": self.store.region,
+                "market": self.store.market,
+                "segment": self.store.segment
+            })
+        return meta
 
 class Order(Base):
     __tablename__ = "orders"
@@ -278,9 +295,6 @@ class Competitor(Base):
     strengths = Column(Text, nullable=True)
     weaknesses = Column(Text, nullable=True)
 
-    # Vector embedding for GraphRAG
-    embedding = Column(Vector(1536), nullable=True)
-
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -298,6 +312,15 @@ class Competitor(Base):
         if self.store:
             summary += f" Localizado en: {self.store.name}."
         return summary
+
+    def get_knowledge_metadata(self) -> dict:
+        return {
+            "presence_level": self.presence_level,
+            "region": self.region,
+            "market": self.market,
+            "name": self.name,
+            "store_id": self.store_id
+        }
 
     __table_args__ = (
         Index('ix_competitors_business_region', 'business_id', 'region'),
@@ -318,9 +341,6 @@ class CustomerNote(Base):
     preferred_actions = Column(Text, nullable=True)
     general_notes = Column(Text, nullable=True)
     
-    # Vector embedding for GraphRAG
-    embedding = Column(Vector(1536), nullable=True)
-    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -336,3 +356,14 @@ class CustomerNote(Base):
         if self.client:
             summary += f" Relacionado con: {self.client.name} (Rol: {self.client.role})."
         return summary
+
+    def get_knowledge_metadata(self) -> dict:
+        meta = {
+            "comm_style": self.comm_style,
+            "visit_frequency": self.visit_frequency
+        }
+        if self.client:
+            meta["client_name"] = self.client.name
+            meta["role"] = self.client.role
+        return meta
+
