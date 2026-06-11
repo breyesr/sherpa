@@ -19,8 +19,8 @@
     - **Task 111.4 (COMPLETE)**: Search Refactor. Updated `GraphRAGService` to search the `knowledge_corpus` table exclusively.
     - **Task 111.6 (COMPLETE)**: **Hybrid Search (RRF)**. Implemented Parallel Keyword (FTS) + Semantic search using Reciprocal Rank Fusion. Metadata upgraded to JSONB for advanced querying.
 - [ ] **The Trinity Pipeline (Epic 112)**: 
-    - **Task 112.1 (COMPLETE)**: **Retriever Parallelization**. Refactored `GraphRAGService` to use `asyncio.gather` for simultaneous fetching of relational, hybrid semantic, and AI configuration data.
-    - **Next Step**: Refactor response generation into Retrieval -> Synthesis -> Persona.
+    - **Task 112.1 - 112.5 (COMPLETE)**: **Trinity Intelligence Pipeline**. Implemented a high-fidelity, three-stage pipeline (Parallel Retrieval -> Synthesis -> Persona Delivery). Response generation is now strategically framed and factually grounded in a structured dossier.
+    - **Next Step**: Benchmark latency and optimize model selection (Task 112.6).
 - [ ] **Epic 108: The Actionable Ledger**: Implement `StoreAction` table and AI auto-extraction logic (The foundation for Dashboards).
 - [ ] **Dashboard API**: Build specialized endpoints for management reporting (Visits, Marketing ROI).
 - [ ] **Task 106.5**: Final validation of B2C/B2B dual-mode logic isolation.

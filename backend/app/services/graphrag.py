@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Optional, Tuple
+import asyncio
 from sqlalchemy.future import select
 from sqlalchemy import text, or_, func
 from sqlalchemy.orm import selectinload
@@ -15,10 +16,14 @@ import re
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
+import os
 
-# Setup prompt template environment
+# Setup prompt template environment with absolute path for reliability
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROMPTS_DIR = os.path.join(BASE_DIR, "core", "prompts")
+
 prompt_env = Environment(
-    loader=FileSystemLoader("app/core/prompts"),
+    loader=FileSystemLoader(PROMPTS_DIR),
     autoescape=select_autoescape()
 )
 
@@ -152,7 +157,6 @@ class GraphRAGService:
                 print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
 
             # 3. Parallel Data Retrieval (Task 112.1: Retriever Parallelization)
-            import asyncio
             
             # Fetch Context, Similar Notes, and AI Provider in parallel
             tasks = [
@@ -169,29 +173,49 @@ class GraphRAGService:
             # Secondary parallel fetch for model and api key
             config_tasks = [
                 ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini"),
-                ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+                ConfigService.get(self.db, f"{provider.upper()}_API_KEY"),
+                ConfigService.get(self.db, "SYNTHESIS_MODEL", None) # Optional fast model for synthesis
             ]
             config_results = await asyncio.gather(*config_tasks)
-            model = config_results[0]
+            base_model = config_results[0]
             api_key = config_results[1]
+            synthesis_model = config_results[2] or base_model
 
-            # 4. Generate LLM Response (Conversational & Focused)
-            template = prompt_env.get_template("visit_briefer.j2")
-            prompt = template.render(
+            # --- TRINITY PIPELINE: STAGE 1 - SYNTHESIS (Task 112.4) ---
+            synthesis_template = prompt_env.get_template("synthesizer.j2")
+            synthesis_prompt = synthesis_template.render(
                 store=context,
                 notes=similar_notes,
+                query=query_text
+            )
+
+            # Stage 1 LLM Call (Generates the flavorless dossier)
+            synthesis_response = await litellm.acompletion(
+                model=f"{provider}/{synthesis_model}" if "/" not in synthesis_model else synthesis_model,
+                messages=[{"role": "user", "content": synthesis_prompt}],
+                api_key=api_key,
+                timeout=30.0
+            )
+            dossier = synthesis_response.choices[0].message.content or "No se pudo sintetizar la información."
+
+            # --- TRINITY PIPELINE: STAGE 2 - PERSONA (Task 112.4) ---
+            persona_template = prompt_env.get_template("visit_briefer.j2")
+            persona_prompt = persona_template.render(
+                dossier=dossier,
+                store_name=target_store.name,
                 query=query_text,
                 history=history[-3:] if history else []
             )
 
+            # Stage 2 LLM Call (Generates the conversational response)
             response = await litellm.acompletion(
-                model=f"{provider}/{model}" if "/" not in model else model,
-                messages=[{"role": "user", "content": prompt}],
+                model=f"{provider}/{base_model}" if "/" not in base_model else base_model,
+                messages=[{"role": "user", "content": persona_prompt}],
                 api_key=api_key,
                 timeout=45.0
             )
 
-            ai_content = response.choices[0].message.content or "No se pudo generar la respuesta."
+            ai_content = response.choices[0].message.content or "No se pudo generar la respuesta final."
             
             # Task 109.3 & 110.3: Explicit Shift & Isolation Acknowledgment
             if is_context_shift:
@@ -230,7 +254,6 @@ class GraphRAGService:
             ).limit(25)
 
             # Execute both in parallel (Task 112.1 foundation)
-            import asyncio
             semantic_res, keyword_res = await asyncio.gather(
                 self.db.execute(semantic_stmt),
                 self.db.execute(keyword_stmt)
