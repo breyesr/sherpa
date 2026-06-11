@@ -13,6 +13,7 @@
 - [x] **Epic 110: High-Fidelity Session Isolation**: Atomic history/summary wipe on account switch.
 - [x] **Epic 109: Context-Aware Discovery**: Redis session locking and attributed source labeling (`[SOURCE: Store X]`).
 - [x] **Epic 107 Foundations**: Hardened Catalog (Products/Orders) and Persona Serialization for GraphRAG.
+- [x] **Infrastructure Hardening**: Resolved `openai 2.0.0` build conflict by pinning to `< 2.0.0` and `instructor < 1.15.0`, securing compatibility with the `langchain 0.1` ecosystem.
 - [x] **Async Intelligence (Task 107.10 & 107.11)**: Implemented background vectorization pipeline with deterministic IDs and true idempotent UPSERTs. Ingestion is now lightning fast and duplicate-proof.
 - [x] **Bug Fixes**: Resolved `NameError` crash in GraphRAG, fixed connection pooling in Celery, and addressed lazy-loading crashes in workers.
 

@@ -173,6 +173,11 @@
 - **2026-06-07**: Fixed store loading regression. Updated StoreNoteBase schema to make action_metadata optional, resolving Pydantic validation errors caused by NULL values in existing records.
 \n- **2026-06-08 15:00**: Epic 107 Completed. Hardened B2B relational core, implemented full GraphRAG persona awareness, and enabled future-proof action tracking. System is ready for staging merge and Railway deployment.
 
+## [2026-06-10] - Infrastructure Hardening & Dependency Resolution
+- **Dependency Fix**: Resolved a critical build failure caused by the `openai 2.0.0` release. Pinned `openai < 2.0.0` and `instructor < 1.15.0` to maintain compatibility with the stable `langchain 0.1` stack.
+- **Async Vectorization & Deterministic Knowledge (Task 107.10 & 107.11)**: Successfully merged the async pipeline and deterministic ID logic into `staging`.
+- **Merged**: `feature/backend/task-107.10-async-vectorization` -> `staging`.
+
 ## [2026-06-10] - Async Vectorization & Deterministic Knowledge (Task 107.10 & 107.11)
 - **Async Pipeline (Task 107.10)**: Successfully decoupled embedding generation from the main ingestion flow. Created a Celery-driven `sync_vector_task` with exponential backoff for high-reliability AI processing.
 - **Idempotency (Task 107.11)**: Implemented deterministic v5 UUID generation for the `KnowledgeCorpus`. This ensures that re-processing the same entity (Store, Note, Competitor) results in a single, stable record, preventing AI memory pollution.
