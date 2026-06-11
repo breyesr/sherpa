@@ -9,17 +9,13 @@
 - **Intelligence Ready**: All entities support recursive semantic summaries (`get_semantic_summary`). 2 months of mock history (32 visits) have been semantically indexed.
 
 ## Recently Completed
-- [x] **Infrastructure Fix**: Hardened migrations and secured database persistence by removing automatic rebuilds.
-- [x] **Epic 110: High-Fidelity Session Isolation**: Atomic history/summary wipe on account switch.
-- [x] **Epic 109: Context-Aware Discovery**: Redis session locking and attributed source labeling (`[SOURCE: Store X]`).
-- [x] **Epic 107 Foundations**: Hardened Catalog (Products/Orders) and Persona Serialization for GraphRAG.
+- [x] **Epic 111 Foundations**: Standardized entity metadata and implemented the `migrate_to_corpus.py` backfill pipeline.
 - [x] **Infrastructure Hardening**: Resolved `openai 2.0.0` build conflict by pinning to `< 2.0.0` and `instructor < 1.15.0`, securing compatibility with the `langchain 0.1` ecosystem.
 - [x] **Async Intelligence (Task 107.10 & 107.11)**: Implemented background vectorization pipeline with deterministic IDs and true idempotent UPSERTs. Ingestion is now lightning fast and duplicate-proof.
-- [x] **Bug Fixes**: Resolved `NameError` crash in GraphRAG, fixed connection pooling in Celery, and addressed lazy-loading crashes in workers.
 
 ## Next Steps
 - [ ] **Unified Knowledge Corpus (Epic 111)**: 
-    - **Task 111.3**: The Great Backfill script. Migrate legacy Store/Note/Competitor embeddings into the new corpus.
+    - **Task 111.3**: Run the backfill in production.
     - **Task 111.4**: Search Refactor. Update `GraphRAGService` to search the `knowledge_corpus` table exclusively.
 - [ ] **The Trinity Pipeline (Epic 112)**: Refactor response generation into Retrieval -> Synthesis -> Persona.
 - [ ] **Hybrid Search & RRF (Task 107.9)**: Implement Keyword + Semantic search on the unified corpus.

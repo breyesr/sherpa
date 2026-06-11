@@ -173,6 +173,11 @@
 - **2026-06-07**: Fixed store loading regression. Updated StoreNoteBase schema to make action_metadata optional, resolving Pydantic validation errors caused by NULL values in existing records.
 \n- **2026-06-08 15:00**: Epic 107 Completed. Hardened B2B relational core, implemented full GraphRAG persona awareness, and enabled future-proof action tracking. System is ready for staging merge and Railway deployment.
 
+## [2026-06-10] - Unified Knowledge Foundations (Epic 111)
+- **Model Standardization (Task 111.2)**: Standardized `get_knowledge_metadata()` across all Trade models (Categories, Products, Orders, Stores, Notes). This enables granular AI filtering in the unified corpus.
+- **Migration Pipeline (Task 111.3)**: Implemented `backend/migrate_to_corpus.py` to bridge legacy siloed data into the unified `knowledge_corpus`.
+- **Local Verification**: Successfully executed the backfill script locally, migrating 12 core entity profiles and preparing the pipeline for production notes.
+
 ## [2026-06-10] - Infrastructure Hardening & Dependency Resolution
 - **Dependency Fix**: Resolved a critical build failure caused by the `openai 2.0.0` release. Pinned `openai < 2.0.0` and `instructor < 1.15.0` to maintain compatibility with the stable `langchain 0.1` stack.
 - **Async Vectorization & Deterministic Knowledge (Task 107.10 & 107.11)**: Successfully merged the async pipeline and deterministic ID logic into `staging`.
