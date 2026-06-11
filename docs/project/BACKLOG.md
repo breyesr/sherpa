@@ -56,7 +56,7 @@
 - [x] Task 107.8: Persona Serialization: Implement recursive `get_semantic_summary()` for B2B entities (Flattened Entity Mapping).
 - [ ] Task 107.9: Hybrid Search & RRF: Implement Parallel Keyword (FTS) + Semantic (pgvector) search with Reciprocal Rank Fusion (RRF).
 - [ ] Task 107.10: Async Vectorization: Implement Celery-driven background vector updates with Exponential Backoff reliability.
-- [ ] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
+- [x] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
 - [ ] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
 - [ ] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
 - [ ] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
