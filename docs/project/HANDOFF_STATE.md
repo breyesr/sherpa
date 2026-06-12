@@ -20,6 +20,7 @@
 - [ ] **The Trinity Pipeline (Epic 112)**: 
     - **Task 112.1 - 112.5 (COMPLETE)**: **Trinity Intelligence Pipeline**. Implemented a high-fidelity, three-stage pipeline (Parallel Retrieval -> Synthesis -> Persona Delivery). Response generation is now strategically framed and factually grounded in a structured dossier.
     - **Next Step**: Benchmark latency and optimize model selection (Task 112.6).
+- [ ] **Relational Graph-Enriched RAG (Epic 113)**: Implement structured entity linking and multi-hop SQL traversal.
 - [x] **Sprint 1 COMPLETE: The Actionable Ledger**:
     - Implemented `StoreAction` ledger for structured commercial and marketing events.
     - Upgraded `IngestionAgent` to automatically extract actions from field reports.
