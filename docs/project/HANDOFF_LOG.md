@@ -201,3 +201,4 @@
 - 2026-06-11: Implemented Task 111.4. Refactored GraphRAGService to use KnowledgeCorpus. Hardened metadata in StoreNote, CustomerNote, and Client models.
 - 2026-06-11: Completed the Trinity Intelligence Pipeline (Epic 112). Implemented parallel retrieval, a specialized Synthesizer pass for structured dossiers, and a strategically-framed Persona delivery layer.
 - 2026-06-11: Completed Sprint 1: The Actionable Ledger. Implemented StoreAction and AccountIntelligence models, updated Ingestion logic for structured extraction, stabilized GraphRAG concurrent access, and performed historical backfill.
+- 2026-06-11: Resolved staging deployment failure (DuplicateTableError). Hardened early B2B migrations (091707792b94, 5ee6d1ad3979, 8f423ae0a403, 44af8f82f483) with SQLAlchemy Inspector for full idempotency. Verified successful deployment on staging.
