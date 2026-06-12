@@ -1,8 +1,8 @@
 # Handoff State - June 10, 2026
 
 ## Current Status
-- **Deployment Stabilized**: Resolved a critical "DuplicateColumnError" crash on Railway caused by a conflict between `surgical_rebuild.py` and Alembic.
-- **Migration Hardening**: All recent migrations (2714c91cdb74 to d5aaaa9de0ec) have been made idempotent using raw SQL `IF NOT EXISTS` syntax. This ensures the system can recover from partially applied or out-of-sync schemas without manual intervention.
+- **Deployment Stabilized**: Resolved a critical "DuplicateTableError" crash on Railway caused by a conflict between `surgical_rebuild.py` and Alembic. Refactored early migrations (`091707792b94`, `5ee6d1ad3979`, etc.) to use SQLAlchemy Inspector for idempotency.
+- **Migration Hardening**: Core B2B migrations have been made idempotent. This ensures the system can recover from partially applied or out-of-sync schemas without manual intervention.
 - **Data Safety**: Disabled the `surgical_rebuild.py` script in `pre_deploy.sh` to prevent accidental table drops and data loss on every deployment.
 - **B2B Foundations Hardened**: Relational models (Stores, Clients, Catalog) are now production-grade with full metadata and B-Tree indexes.
 - **Account Isolation Stable**: Implemented strict Session Locking (Redis) and Clean Slate isolation. AI now wipes history on store switch, eliminating context bleeding.
