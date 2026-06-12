@@ -27,6 +27,18 @@ class OrderStatus(str, enum.Enum):
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
 
+class ActionCategory(str, enum.Enum):
+    MARKETING = "marketing"
+    COMMERCIAL = "commercial"
+
+class ActionObjective(str, enum.Enum):
+    THREAT_RESPONSE = "threat_response"
+    ANNIVERSARY = "anniversary"
+    REPLENISHMENT = "replenishment"
+    NEW_PRODUCT = "new_product"
+    RELATIONSHIP = "relationship"
+    GENERAL = "general"
+
 class Category(Base):
     __tablename__ = "categories"
 
@@ -132,6 +144,8 @@ class Store(Base):
     clients = relationship("Client", secondary=store_clients, backref="stores")
     
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
+    actions = relationship("StoreAction", back_populates="store", cascade="all, delete-orphan")
+    intelligence = relationship("AccountIntelligence", back_populates="store", uselist=False, cascade="all, delete-orphan")
 
     def get_semantic_summary(self, include_notes: bool = False, include_contacts: bool = False) -> str:
         summary = f"Punto de Venta (Store): {self.name}."
@@ -404,4 +418,68 @@ class CustomerNote(Base):
                     "segments": list(set([s.segment for s in self.client.stores if s.segment]))
                 })
         return meta
+
+class StoreAction(Base):
+    """
+    Structured ledger of Marketing and Commercial actions (Epic 108).
+    Derived from visit notes or triggered by automated AI heuristics.
+    """
+    __tablename__ = "store_actions"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
+    author_id = Column(String, ForeignKey("users.id"), nullable=True) # The rep who took the action
+    
+    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
+    objective = Column(SQLEnum(ActionObjective), nullable=False, index=True)
+    
+    impact_level = Column(String, nullable=True) # e.g., 'high', 'medium', 'low'
+    note_source_id = Column(String, ForeignKey("store_notes.id"), nullable=True) # Traceability to the raw note
+    
+    # Payload for flexible extraction (e.g., {"discount": 0.05, "product": "Plumbing Line"})
+    details = Column(JSON, nullable=True, default=dict)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
+    store = relationship("Store", back_populates="actions")
+    author = relationship("User")
+    note_source = relationship("StoreNote")
+
+    __table_args__ = (
+        Index('ix_store_actions_business_category', 'business_id', 'category'),
+        Index('ix_store_actions_business_objective', 'business_id', 'objective'),
+    )
+
+class AccountIntelligence(Base):
+    """
+    The 'Fat Table' for pre-calculated Account Dossiers (Epic 107).
+    Stores synthesized strategy, playbooks, and triggers for instant retrieval.
+    """
+    __tablename__ = "account_intelligence"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    store_id = Column(String, ForeignKey("stores.id"), nullable=False, unique=True)
+    
+    # The full synthesized dossier (Vital Signs, Matrix, Threats, Triggers)
+    dossier_json = Column(JSON, nullable=True, default=dict)
+    
+    # Performance & Freshness tracking
+    version = Column(Integer, default=1)
+    last_synthesized_at = Column(DateTime, default=datetime.utcnow)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
+    store = relationship("Store", back_populates="intelligence")
+
+    __table_args__ = (
+        Index('ix_account_intel_business_store', 'business_id', 'store_id'),
+    )
+
+
 

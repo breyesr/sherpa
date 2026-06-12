@@ -20,7 +20,12 @@
 - [ ] **The Trinity Pipeline (Epic 112)**: 
     - **Task 112.1 - 112.5 (COMPLETE)**: **Trinity Intelligence Pipeline**. Implemented a high-fidelity, three-stage pipeline (Parallel Retrieval -> Synthesis -> Persona Delivery). Response generation is now strategically framed and factually grounded in a structured dossier.
     - **Next Step**: Benchmark latency and optimize model selection (Task 112.6).
-- [ ] **Epic 108: The Actionable Ledger**: Implement `StoreAction` table and AI auto-extraction logic (The foundation for Dashboards).
+- [x] **Sprint 1 COMPLETE: The Actionable Ledger**:
+    - Implemented `StoreAction` ledger for structured commercial and marketing events.
+    - Upgraded `IngestionAgent` to automatically extract actions from field reports.
+    - Reprocessed all historical mock data into the new ledger (Task 108.3).
+    - Created the `AccountIntelligence` "Fat Table" and the heuristic inference pipeline for pre-calculated dossiers.
+    - Stabilized `GraphRAGService` by resolving SQLAlchemy async concurrency issues.
 - [ ] **Dashboard API**: Build specialized endpoints for management reporting (Visits, Marketing ROI).
 - [ ] **Task 106.5**: Final validation of B2C/B2B dual-mode logic isolation.
 

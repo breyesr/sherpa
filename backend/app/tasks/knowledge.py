@@ -105,6 +105,18 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
             await db.rollback()
             raise e
 
+async def _update_account_intel_logic(store_id: str, business_id: str):
+    """Internal logic to trigger dossier synthesis and update the fat table."""
+    from app.services.graphrag import GraphRAGService
+    async with SessionLocal() as db:
+        try:
+            rag_service = GraphRAGService(db)
+            await rag_service.update_account_intelligence(store_id, business_id)
+            logger.info(f"Successfully updated account intelligence for store {store_id}")
+        except Exception as e:
+            logger.error(f"Error in _update_account_intel_logic for store {store_id}: {e}")
+            raise e
+
 @celery_app.task(
     bind=True, 
     name="sync_vector_task",
@@ -120,3 +132,20 @@ def sync_vector_task(self, entity_id: str, entity_type: str, business_id: str):
     except Exception as exc:
         logger.error(f"Retrying sync_vector_task for {entity_id} due to: {exc}")
         raise self.retry(exc=exc)
+
+@celery_app.task(
+    bind=True, 
+    name="update_account_intelligence_task",
+    max_retries=3, 
+    default_retry_delay=60,
+    autoretry_for=(Exception,),
+    retry_backoff=True
+)
+def update_account_intelligence_task(self, store_id: str, business_id: str):
+    """Celery task to handle background dossier synthesis (Fat Table)."""
+    try:
+        return asyncio.run(_update_account_intel_logic(store_id, business_id))
+    except Exception as exc:
+        logger.error(f"Retrying update_account_intelligence_task for {store_id} due to: {exc}")
+        raise self.retry(exc=exc)
+

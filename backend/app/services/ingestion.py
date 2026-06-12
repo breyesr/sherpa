@@ -4,16 +4,26 @@ from typing import List, Optional, Dict, Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
-from app.models.trade import Store, StoreNote, Competitor
+from app.models.trade import Store, StoreNote, Competitor, StoreAction, ActionCategory, ActionObjective
 from sqlalchemy.future import select
 from sqlalchemy import or_
-from app.tasks.knowledge import sync_vector_task
+from app.tasks.knowledge import sync_vector_task, update_account_intelligence_task
+import os
 
-# Setup prompt template environment
+# Setup prompt template environment with absolute path for reliability
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROMPTS_DIR = os.path.join(BASE_DIR, "core", "prompts")
+
 prompt_env = Environment(
-    loader=FileSystemLoader("app/core/prompts"),
+    loader=FileSystemLoader(PROMPTS_DIR),
     autoescape=select_autoescape()
 )
+
+class ActionInfo(BaseModel):
+    category: ActionCategory = Field(..., description="Category of the action: marketing or commercial")
+    objective: ActionObjective = Field(..., description="Strategic objective: threat_response, anniversary, replenishment, new_product, relationship, general")
+    impact: str = Field(..., description="Anticipated impact level: high, medium, low")
+    details: Dict[str, Any] = Field(default_factory=dict, description="Structured payload (e.g., {'discount': 0.1, 'item': 'SKU_ABC'})")
 
 class CompetitorInfo(BaseModel):
     name: str = Field(..., description="Name of the competitor")
@@ -39,6 +49,7 @@ class ExtractionResult(BaseModel):
     execution_level: Optional[str] = Field(None, description="Execution level (high, medium, low)")
     
     competitors: List[CompetitorInfo] = Field(default_factory=list)
+    actions: List[ActionInfo] = Field(default_factory=list, description="Structured commercial/marketing actions extracted from the report")
 
 class IngestionAgent:
     def __init__(self, db: Any):
@@ -105,8 +116,22 @@ class IngestionAgent:
                 execution_level=extracted.execution_level
             )
             self.db.add(new_note)
+            await self.db.flush() # To get the note ID for sourcing
             
-            # 5. Save/Update Competitors
+            # 5. Save Structured Actions (Task 108.2)
+            for action_data in extracted.actions:
+                new_action = StoreAction(
+                    business_id=business_id,
+                    store_id=store.id,
+                    category=action_data.category,
+                    objective=action_data.objective,
+                    impact_level=action_data.impact,
+                    details=action_data.details,
+                    note_source_id=new_note.id
+                )
+                self.db.add(new_action)
+
+            # 6. Save/Update Competitors
             competitor_ids = []
             for comp in extracted.competitors:
                 # Fuzzy match existing competitor for this store
@@ -139,12 +164,15 @@ class IngestionAgent:
             
             await self.db.commit()
 
-            # 6. ASYNC VECTORIZATION (Task 107.10)
+            # 7. ASYNC VECTORIZATION & INTELLIGENCE RE-SYNTHESIS
             # Emit tasks for background processing
             sync_vector_task.delay(store.id, "store", business_id)
             sync_vector_task.delay(new_note.id, "store_note", business_id)
             for c_id in competitor_ids:
                 sync_vector_task.delay(c_id, "competitor", business_id)
+            
+            # Trigger Dossier Re-synthesis (Task 107.13)
+            update_account_intelligence_task.delay(store.id, business_id)
 
             return {"status": "success", "store": store.name, "note_id": new_note.id}
         

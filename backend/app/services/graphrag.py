@@ -1,9 +1,10 @@
 from typing import List, Dict, Any, Optional, Tuple
 import asyncio
+from datetime import datetime
 from sqlalchemy.future import select
 from sqlalchemy import text, or_, func
 from sqlalchemy.orm import selectinload
-from app.models.trade import Store, StoreNote, CustomerNote, Competitor, store_clients
+from app.models.trade import Store, StoreNote, CustomerNote, Competitor, store_clients, AccountIntelligence
 from app.models.crm import Client
 from app.models.knowledge import KnowledgeCorpus
 from app.core.embeddings import EmbeddingService
@@ -156,30 +157,18 @@ class GraphRAGService:
                 is_context_shift = True
                 print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
 
-            # 3. Parallel Data Retrieval (Task 112.1: Retriever Parallelization)
-            
-            # Fetch Context, Similar Notes, and AI Provider in parallel
-            tasks = [
-                self.get_store_context(target_store.id),
-                self.find_similar_notes(query_text, business_id, store_id=target_store.id),
-                ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
-            ]
-            
-            results = await asyncio.gather(*tasks)
-            context = results[0]
-            similar_notes = results[1]
-            provider = results[2]
+            # 3. Sequential Data Retrieval (Stabilized for SQLAlchemy Async)
+            # Note: Task 112.1 parallelization was causing concurrent session errors.
+            # Shifting to sequential but optimized fetching.
+            context = await self.get_store_context(target_store.id)
+            similar_notes = await self.find_similar_notes(query_text, business_id, store_id=target_store.id)
+            provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
-            # Secondary parallel fetch for model and api key
-            config_tasks = [
-                ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini"),
-                ConfigService.get(self.db, f"{provider.upper()}_API_KEY"),
-                ConfigService.get(self.db, "SYNTHESIS_MODEL", None) # Optional fast model for synthesis
-            ]
-            config_results = await asyncio.gather(*config_tasks)
-            base_model = config_results[0]
-            api_key = config_results[1]
-            synthesis_model = config_results[2] or base_model
+            # Secondary fetch for model and api key
+            base_model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
+            api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+            synthesis_model = await ConfigService.get(self.db, "SYNTHESIS_MODEL", None)
+            synthesis_model = synthesis_model or base_model
 
             # --- TRINITY PIPELINE: STAGE 1 - SYNTHESIS (Task 112.4) ---
             synthesis_template = prompt_env.get_template("synthesizer.j2")
@@ -265,11 +254,9 @@ class GraphRAGService:
                 func.to_tsvector('spanish', KnowledgeCorpus.content).op('@@')(func.plainto_tsquery('spanish', query_text))
             ).limit(25)
 
-            # Execute both in parallel (Task 112.1 foundation)
-            semantic_res, keyword_res = await asyncio.gather(
-                self.db.execute(semantic_stmt),
-                self.db.execute(keyword_stmt)
-            )
+            # Execute sequentially (Stabilized for SQLAlchemy Async)
+            semantic_res = await self.db.execute(semantic_stmt)
+            keyword_res = await self.db.execute(keyword_stmt)
 
             semantic_hits = semantic_res.scalars().all()
             keyword_hits = keyword_res.scalars().all()
@@ -312,9 +299,74 @@ class GraphRAGService:
             traceback.print_exc()
             return []
 
+    async def update_account_intelligence(self, store_id: str, business_id: str) -> Optional[str]:
+        """
+        Trigger a re-synthesis of the Account Intelligence Dossier (Task 107.13).
+        Calculates a fresh 'Fat Table' entry for the store.
+        """
+        try:
+            # 1. Sequential Retrieval (Stabilized for SQLAlchemy Async)
+            context = await self.get_store_context(store_id)
+            similar_notes = await self.find_similar_notes("General summary and vital signs", business_id, store_id=store_id, limit=10)
+            provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+
+            # 2. Get AI config
+            base_model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
+            api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+            synthesis_model = await ConfigService.get(self.db, "SYNTHESIS_MODEL", None)
+            synthesis_model = synthesis_model or base_model
+
+            # 3. Perform Synthesis
+            synthesis_template = prompt_env.get_template("synthesizer.j2")
+            synthesis_prompt = synthesis_template.render(
+                store=context,
+                notes=similar_notes,
+                query="Generate a complete strategic dossier for this account."
+            )
+
+            synthesis_response = await litellm.acompletion(
+                model=f"{provider}/{synthesis_model}" if "/" not in synthesis_model else synthesis_model,
+                messages=[{"role": "user", "content": synthesis_prompt}],
+                api_key=api_key,
+                timeout=45.0
+            )
+            dossier_text = synthesis_response.choices[0].message.content
+            
+            if not dossier_text:
+                return None
+
+            # 4. Save to Fat Table (UPSERT pattern)
+            res = await self.db.execute(
+                select(AccountIntelligence).where(AccountIntelligence.store_id == store_id)
+            )
+            intel = res.scalars().first()
+            
+            if intel:
+                intel.dossier_json = {"content": dossier_text}
+                intel.version += 1
+                intel.last_synthesized_at = datetime.utcnow()
+            else:
+                intel = AccountIntelligence(
+                    business_id=business_id,
+                    store_id=store_id,
+                    dossier_json={"content": dossier_text},
+                    last_synthesized_at=datetime.utcnow()
+                )
+                self.db.add(intel)
+            
+            await self.db.commit()
+            print(f"✅ SUCCESS: Updated Account Intelligence for store {store_id}")
+            return dossier_text
+
+        except Exception as e:
+            print(f"❌ ERROR: update_account_intelligence failed: {e}")
+            traceback.print_exc()
+            await self.db.rollback()
+            return None
+
     async def get_store_context(self, store_id: str) -> Dict[str, Any]:
         """Fetch full relational context for a specific store (Account)."""
-        # Task 112.1: Parallel fetching of Store and Competitors
+        # Sequential fetching (Stabilized for SQLAlchemy Async)
         store_stmt = (
             select(Store)
             .where(Store.id == store_id)
@@ -324,16 +376,13 @@ class GraphRAGService:
                 selectinload(Store.business_profile)
             )
         )
-        comp_stmt = select(Competitor).where(Competitor.store_id == store_id)
-
-        store_res, comp_res = await asyncio.gather(
-            self.db.execute(store_stmt),
-            self.db.execute(comp_stmt)
-        )
-        
+        store_res = await self.db.execute(store_stmt)
         store = store_res.scalars().first()
         if not store:
             return {}
+
+        comp_stmt = select(Competitor).where(Competitor.store_id == store_id)
+        comp_res = await self.db.execute(comp_stmt)
 
         # Fetch Contacts from Many-to-Many with full structured data
         contacts = []
