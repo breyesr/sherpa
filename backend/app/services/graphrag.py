@@ -228,28 +228,40 @@ class GraphRAGService:
             traceback.print_exc()
             return "Lo siento, tuve un problema al generar el reporte de inteligencia."
 
-    async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None) -> List[Dict[str, Any]]:
+    async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None, filters: Dict[str, str] = None) -> List[Dict[str, Any]]:
         """Perform Hybrid Vector + Keyword search against the unified knowledge corpus (Task 111.6)."""
         try:
             # 1. Generate Query Embedding for Semantic Search
             query_vector = await self.embeddings.get_embedding(query_text)
             
             # Base filters for both searches
-            filters = [KnowledgeCorpus.business_id == business_id]
+            base_filters = [KnowledgeCorpus.business_id == business_id]
             if store_id:
-                filters.append(or_(
+                base_filters.append(or_(
                     KnowledgeCorpus.metadata_json['store_id'].astext == str(store_id),
                     KnowledgeCorpus.metadata_json['store_ids'].contains([str(store_id)])
                 ))
 
+            # Apply Global Filters (Task 111.5)
+            if filters:
+                for key, val in filters.items():
+                    if key in ['region', 'market', 'segment']:
+                        plural_key = f"{key}s"
+                        base_filters.append(or_(
+                            KnowledgeCorpus.metadata_json[key].astext == str(val),
+                            KnowledgeCorpus.metadata_json[plural_key].contains([str(val)])
+                        ))
+                    else:
+                        base_filters.append(KnowledgeCorpus.metadata_json[key].astext == str(val))
+
             # 2. Semantic Search Query
-            semantic_stmt = select(KnowledgeCorpus).where(*filters).order_by(
+            semantic_stmt = select(KnowledgeCorpus).where(*base_filters).order_by(
                 KnowledgeCorpus.embedding.cosine_distance(query_vector)
             ).limit(25) # Internal limit for re-ranking
             
             # 3. Keyword Search Query (PostgreSQL FTS)
             keyword_stmt = select(KnowledgeCorpus).where(
-                *filters,
+                *base_filters,
                 func.to_tsvector('spanish', KnowledgeCorpus.content).op('@@')(func.plainto_tsquery('spanish', query_text))
             ).limit(25)
 
@@ -369,16 +381,23 @@ class GraphRAGService:
             "competitors": competitors
         }
 
-    async def search_store_profiles(self, query_text: str, business_id: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Perform semantic search across all store profiles via the Knowledge Corpus (Task 111.4)."""
+    async def search_store_profiles(self, query_text: str, business_id: str, limit: int = 5, filters: Dict[str, str] = None) -> List[Dict[str, Any]]:
+        """Perform semantic search across all store profiles via the Knowledge Corpus (Task 111.4 & 111.5)."""
         try:
             query_vector = await self.embeddings.get_embedding(query_text)
             
             # Search Corpus for 'store' entity types
-            stmt = select(KnowledgeCorpus).where(
+            base_filters = [
                 KnowledgeCorpus.business_id == business_id,
                 KnowledgeCorpus.entity_type == "store"
-            )
+            ]
+
+            # Apply Global Filters (Task 111.5)
+            if filters:
+                for key, val in filters.items():
+                    base_filters.append(KnowledgeCorpus.metadata_json[key].astext == str(val))
+
+            stmt = select(KnowledgeCorpus).where(*base_filters)
             res = await self.db.execute(
                 stmt.order_by(KnowledgeCorpus.embedding.cosine_distance(query_vector))
                 .limit(limit)

@@ -16,8 +16,7 @@
 ## Next Steps
 - [ ] **Unified Knowledge Corpus (Epic 111)**: 
     - **Task 111.3**: Run the backfill in production.
-    - **Task 111.4 (COMPLETE)**: Search Refactor. Updated `GraphRAGService` to search the `knowledge_corpus` table exclusively.
-    - **Task 111.6 (COMPLETE)**: **Hybrid Search (RRF)**. Implemented Parallel Keyword (FTS) + Semantic search using Reciprocal Rank Fusion. Metadata upgraded to JSONB for advanced querying.
+    - **Task 111.4 - 111.6 (COMPLETE)**: Unified Search. Search refactored to use the knowledge corpus exclusively, with Hybrid RRF and Global Filtering (JSONB) by Region, Segment, and Role.
 - [ ] **The Trinity Pipeline (Epic 112)**: 
     - **Task 112.1 - 112.5 (COMPLETE)**: **Trinity Intelligence Pipeline**. Implemented a high-fidelity, three-stage pipeline (Parallel Retrieval -> Synthesis -> Persona Delivery). Response generation is now strategically framed and factually grounded in a structured dossier.
     - **Next Step**: Benchmark latency and optimize model selection (Task 112.6).

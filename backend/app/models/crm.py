@@ -64,12 +64,19 @@ class Client(Base):
         return summary
 
     def get_knowledge_metadata(self) -> dict:
-        return {
+        meta = {
             "name": self.name,
             "role": self.role,
             "client_id": self.id,
             "store_ids": [s.id for s in self.stores] if hasattr(self, 'stores') else []
         }
+        if hasattr(self, 'stores') and self.stores:
+            meta.update({
+                "regions": list(set([s.region for s in self.stores if s.region])),
+                "markets": list(set([s.market for s in self.stores if s.market])),
+                "segments": list(set([s.segment for s in self.stores if s.segment]))
+            })
+        return meta
 
     @staticmethod
     def normalize_id(id_val: str) -> str:

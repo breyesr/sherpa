@@ -397,5 +397,11 @@ class CustomerNote(Base):
         if self.client:
             meta["client_name"] = self.client.name
             meta["role"] = self.client.role
+            if hasattr(self.client, 'stores') and self.client.stores:
+                meta.update({
+                    "regions": list(set([s.region for s in self.client.stores if s.region])),
+                    "markets": list(set([s.market for s in self.client.stores if s.market])),
+                    "segments": list(set([s.segment for s in self.client.stores if s.segment]))
+                })
         return meta
 
