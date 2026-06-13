@@ -10,12 +10,13 @@ from app.core.ai_service import AIService
 from app.services.graphrag import GraphRAGService
 from app.models.user import User
 from app.models.business import BusinessProfile
-from app.models.trade import Store, StoreNote, Category, Product, Order
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem
 from app.schemas.trade import (
     StoreResponse, StoreCreate, StoreUpdate,
     CategoryResponse, CategoryCreate,
     ProductResponse, ProductCreate,
-    StoreNoteResponse, StoreNoteCreate
+    StoreNoteResponse, StoreNoteCreate,
+    OrderResponse, OrderCreate
 )
 
 router = APIRouter()
@@ -238,6 +239,78 @@ async def create_product(
     await db.commit()
     await db.refresh(product)
     return product
+
+# --- ORDERS ---
+
+@router.get("/orders", response_model=List[OrderResponse])
+async def list_orders(
+    store_id: str = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """List all orders for the business, optionally filtered by store."""
+    business = await get_business(db, current_user.id)
+    query = select(Order).where(Order.business_id == business.id).options(selectinload(Order.items))
+    
+    if store_id:
+        query = query.where(Order.store_id == store_id)
+        
+    result = await db.execute(query)
+    return result.scalars().all()
+
+@router.post("/orders", response_model=OrderResponse)
+async def create_order(
+    order_in: OrderCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Create a new order with items."""
+    business = await get_business(db, current_user.id)
+    
+    # Verify store belongs to business
+    store_res = await db.execute(
+        select(Store).where(Store.id == order_in.store_id, Store.business_id == business.id)
+    )
+    if not store_res.scalars().first():
+        raise HTTPException(status_code=400, detail="Invalid store ID")
+        
+    order = Order(
+        business_id=business.id,
+        store_id=order_in.store_id,
+        client_id=order_in.client_id,
+        status=order_in.status,
+        notes=order_in.notes,
+        delivery_id=order_in.delivery_id,
+        delivery_date=order_in.delivery_date,
+        payment_method=order_in.payment_method,
+        shipping_address=order_in.shipping_address
+    )
+    
+    total_amount = 0.0
+    for item_in in order_in.items:
+        # Verify product exists
+        prod_res = await db.execute(select(Product).where(Product.id == item_in.product_id))
+        product = prod_res.scalars().first()
+        if not product:
+            raise HTTPException(status_code=400, detail=f"Product {item_in.product_id} not found")
+            
+        order_item = OrderItem(
+            product_id=item_in.product_id,
+            quantity=item_in.quantity,
+            unit_price=item_in.unit_price
+        )
+        order.items.append(order_item)
+        total_amount += (item_in.quantity * item_in.unit_price)
+        
+    order.total_amount = total_amount
+    db.add(order)
+    await db.commit()
+    
+    # Reload with items
+    res_final = await db.execute(
+        select(Order).where(Order.id == order.id).options(selectinload(Order.items))
+    )
+    return res_final.scalars().first()
 
 # --- AI INSIGHTS ---
 

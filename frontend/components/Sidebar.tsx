@@ -81,9 +81,15 @@ export default function Sidebar() {
             <div className="pl-9 space-y-1">
               <Link 
                 href="/trade/stores"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') && !pathname.includes('/v2') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 • Accounts (Stores)
+              </Link>
+              <Link 
+                href="/trade/v2/stores"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/v2/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                • Accounts V2 (Beta)
               </Link>
               <Link 
                 href="/trade/retailers"

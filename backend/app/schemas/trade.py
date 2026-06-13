@@ -6,6 +6,8 @@ import enum
 class StoreNoteType(str, enum.Enum):
     RISK = "risk"
     OPPORTUNITY = "opportunity"
+    THREAT = "threat"
+    ANNIVERSARY = "anniversary"
     ACTION = "action"
     GENERAL = "general"
 

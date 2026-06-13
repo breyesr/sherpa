@@ -9,6 +9,8 @@ from pgvector.sqlalchemy import Vector
 class StoreNoteType(str, enum.Enum):
     RISK = "risk"
     OPPORTUNITY = "opportunity"
+    THREAT = "threat"
+    ANNIVERSARY = "anniversary"
     ACTION = "action"
     GENERAL = "general"
 

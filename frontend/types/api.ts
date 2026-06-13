@@ -141,12 +141,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -307,6 +307,18 @@ export interface paths {
      * @description Create a new product.
      */
     post: operations["create_product_api_v1_trade_products_post"];
+  };
+  "/api/v1/trade/orders": {
+    /**
+     * List Orders
+     * @description List all orders for the business, optionally filtered by store.
+     */
+    get: operations["list_orders_api_v1_trade_orders_get"];
+    /**
+     * Create Order
+     * @description Create a new order with items.
+     */
+    post: operations["create_order_api_v1_trade_orders_post"];
   };
   "/api/v1/trade/stores/{store_id}/brief": {
     /**
@@ -879,6 +891,105 @@ export interface components {
        */
       created_at: string;
     };
+    /** OrderCreate */
+    OrderCreate: {
+      /** Store Id */
+      store_id: string;
+      /** Client Id */
+      client_id?: string | null;
+      /** @default pending */
+      status?: components["schemas"]["OrderStatus"];
+      /** Notes */
+      notes?: string | null;
+      /** Delivery Id */
+      delivery_id?: string | null;
+      /** Delivery Date */
+      delivery_date?: string | null;
+      /** Payment Method */
+      payment_method?: string | null;
+      /** Shipping Address */
+      shipping_address?: string | null;
+      /** Items */
+      items: components["schemas"]["OrderItemBase"][];
+    };
+    /** OrderItemBase */
+    OrderItemBase: {
+      /** Product Id */
+      product_id: string;
+      /**
+       * Quantity
+       * @default 1
+       */
+      quantity?: number;
+      /** Unit Price */
+      unit_price: number;
+    };
+    /** OrderItemResponse */
+    OrderItemResponse: {
+      /** Product Id */
+      product_id: string;
+      /**
+       * Quantity
+       * @default 1
+       */
+      quantity?: number;
+      /** Unit Price */
+      unit_price: number;
+      /** Id */
+      id: string;
+      /** Order Id */
+      order_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** OrderResponse */
+    OrderResponse: {
+      /** Store Id */
+      store_id: string;
+      /** Client Id */
+      client_id?: string | null;
+      /** @default pending */
+      status?: components["schemas"]["OrderStatus"];
+      /** Notes */
+      notes?: string | null;
+      /** Delivery Id */
+      delivery_id?: string | null;
+      /** Delivery Date */
+      delivery_date?: string | null;
+      /** Payment Method */
+      payment_method?: string | null;
+      /** Shipping Address */
+      shipping_address?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /** Total Amount */
+      total_amount: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Items
+       * @default []
+       */
+      items?: components["schemas"]["OrderItemResponse"][];
+    };
+    /**
+     * OrderStatus
+     * @enum {string}
+     */
+    OrderStatus: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
     /** ProductCreate */
     ProductCreate: {
       /** Name */
@@ -1998,7 +2109,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -2553,6 +2664,56 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Orders
+   * @description List all orders for the business, optionally filtered by store.
+   */
+  list_orders_api_v1_trade_orders_get: {
+    parameters: {
+      query?: {
+        store_id?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Order
+   * @description Create a new order with items.
+   */
+  create_order_api_v1_trade_orders_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OrderCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"];
         };
       };
       /** @description Validation Error */
