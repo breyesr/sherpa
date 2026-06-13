@@ -14,7 +14,8 @@ from app.models.calendar import BusySlot
 from app.models.integration import Integration
 from app.schemas.crm import (
     ClientCreate, ClientUpdate, ClientResponse, 
-    AppointmentCreate, AppointmentResponse, AppointmentUpdate
+    AppointmentCreate, AppointmentResponse, AppointmentUpdate,
+    ClientDetailResponse
 )
 from app.api.auth import get_current_user
 from app.core.google_calendar import GoogleCalendarService
@@ -59,7 +60,7 @@ async def create_client(
     await db.refresh(client)
     return client
 
-@router.get("/clients/{client_id}", response_model=Dict[str, Any])
+@router.get("/clients/{client_id}", response_model=ClientDetailResponse)
 async def get_client_detail(
     client_id: str,
     db: AsyncSession = Depends(get_db),
@@ -78,7 +79,10 @@ async def get_client_detail(
     # 2. Fetch Linked Stores
     from app.models.trade import Store, store_clients
     stores_res = await db.execute(
-        select(Store).join(store_clients).where(store_clients.c.client_id == client_id)
+        select(Store).join(store_clients).where(store_clients.c.client_id == client_id).options(
+            selectinload(Store.notes),
+            selectinload(Store.clients)
+        )
     )
     stores = stores_res.scalars().all()
 
@@ -92,7 +96,7 @@ async def get_client_detail(
     # 4. Fetch Recent Orders
     from app.models.trade import Order
     orders_res = await db.execute(
-        select(Order).where(Order.client_id == client_id).order_by(Order.created_at.desc()).limit(10)
+        select(Order).where(Order.client_id == client_id).order_by(Order.created_at.desc()).limit(10).options(selectinload(Order.items))
     )
     orders = orders_res.scalars().all()
 

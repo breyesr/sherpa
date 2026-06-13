@@ -93,9 +93,15 @@ export default function Sidebar() {
               </Link>
               <Link 
                 href="/trade/retailers"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') && !pathname.includes('/v2') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 • Contacts (Retailers)
+              </Link>
+              <Link 
+                href="/trade/v2/retailers"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/v2/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                • Contacts V2 (Beta)
               </Link>
             </div>
           </div>

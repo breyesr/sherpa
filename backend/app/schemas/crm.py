@@ -68,3 +68,14 @@ class AppointmentResponse(AppointmentBase):
 
     class Config:
         from_attributes = True
+
+from app.schemas.trade import StoreResponse, CustomerNoteResponse, OrderResponse
+
+class ClientDetailResponse(BaseModel):
+    client: ClientResponse
+    stores: List[StoreResponse]
+    trade_notes: List[CustomerNoteResponse]
+    orders: List[OrderResponse]
+
+    class Config:
+        from_attributes = True
