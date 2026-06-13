@@ -10,13 +10,14 @@ from app.core.ai_service import AIService
 from app.services.graphrag import GraphRAGService
 from app.models.user import User
 from app.models.business import BusinessProfile
-from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor
 from app.schemas.trade import (
     StoreResponse, StoreCreate, StoreUpdate,
     CategoryResponse, CategoryCreate,
     ProductResponse, ProductCreate,
     StoreNoteResponse, StoreNoteCreate,
-    OrderResponse, OrderCreate
+    OrderResponse, OrderCreate,
+    CompetitorResponse, CompetitorCreate
 )
 
 router = APIRouter()
@@ -311,6 +312,49 @@ async def create_order(
         select(Order).where(Order.id == order.id).options(selectinload(Order.items))
     )
     return res_final.scalars().first()
+
+# --- COMPETITORS ---
+
+@router.get("/competitors", response_model=List[CompetitorResponse])
+async def list_competitors(
+    store_id: str = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """List all competitors, optionally filtered by store."""
+    business = await get_business(db, current_user.id)
+    query = select(Competitor).where(Competitor.business_id == business.id)
+    
+    if store_id:
+        query = query.where(Competitor.store_id == store_id)
+        
+    result = await db.execute(query)
+    return result.scalars().all()
+
+@router.post("/competitors", response_model=CompetitorResponse)
+async def create_competitor(
+    competitor_in: CompetitorCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Record a new competitor entry."""
+    business = await get_business(db, current_user.id)
+    
+    # Verify store belongs to business
+    store_res = await db.execute(
+        select(Store).where(Store.id == competitor_in.store_id, Store.business_id == business.id)
+    )
+    if not store_res.scalars().first():
+        raise HTTPException(status_code=400, detail="Invalid store ID")
+        
+    competitor = Competitor(
+        business_id=business.id,
+        **competitor_in.model_dump()
+    )
+    db.add(competitor)
+    await db.commit()
+    await db.refresh(competitor)
+    return competitor
 
 # --- AI INSIGHTS ---
 

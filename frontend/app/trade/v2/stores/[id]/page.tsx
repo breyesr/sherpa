@@ -22,7 +22,7 @@ import {
   Target,
   AlertCircle
 } from 'lucide-react';
-import { StoreResponse, StoreNoteResponse, OrderResponse, ProductResponse } from '@/types/api';
+import { StoreResponse, StoreNoteResponse, OrderResponse, ProductResponse, CompetitorResponse } from '@/types/api';
 
 type TabType = 'details' | 'products' | 'orders' | 'notes';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
@@ -35,7 +35,7 @@ export default function StoreDetailPageV2() {
   const [activeNoteSubTab, setActiveNoteSubTab] = useState<NoteSubTab>('all');
 
   // Fetch Store Detail
-  const { data: store, isLoading } = useQuery<StoreResponse>({
+  const { data: store, isLoading, isFetched } = useQuery<StoreResponse>({
     queryKey: ['store', id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
@@ -57,7 +57,20 @@ export default function StoreDetailPageV2() {
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: !!token && !!id && activeTab === 'orders',
+    enabled: !!token && !!id,
+  });
+
+  // Fetch Competitors
+  const { data: competitors = [] } = useQuery<CompetitorResponse[]>({
+    queryKey: ['competitors', id],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/trade/competitors?store_id=${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token && !!id,
   });
 
   // Fetch Products (Global catalog for now, could be filtered in future)
@@ -70,11 +83,11 @@ export default function StoreDetailPageV2() {
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: !!token && activeTab === 'products',
+    enabled: !!token,
   });
 
-  if (isLoading) return <div className="p-20 text-center font-bold text-gray-400">Loading Account Intelligence...</div>;
-  if (!store) return <div className="p-20 text-center font-bold text-red-500">Account not found</div>;
+  if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400">Loading Account Intelligence...</div>;
+  if (isFetched && !store) return <div className="p-20 text-center font-bold text-red-500">Account not found</div>;
 
   const totalOrderValue = orders.reduce((sum, order) => sum + order.total_amount, 0);
 
@@ -232,6 +245,79 @@ export default function StoreDetailPageV2() {
                       <span className="font-bold text-gray-900 text-lg">{store.region || 'Unknown'}</span>
                     </div>
                   </div>
+                </section>
+
+                <section className="pt-8 border-t border-gray-50">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                      <TrendingUp size={20} className="text-red-500" />
+                      Competitive Matrix
+                    </h3>
+                    <button className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors">
+                      + Add Rival
+                    </button>
+                  </div>
+
+                  {competitors.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {competitors.map((rival) => (
+                        <div key={rival.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:border-red-100 transition-all">
+                          <div className="p-6 bg-gray-50/50 border-b border-gray-50 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-red-500">
+                                <Activity size={20} />
+                              </div>
+                              <div>
+                                <p className="font-black text-gray-900">{rival.name}</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Store Rival</p>
+                              </div>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                              rival.presence_level?.toLowerCase() === 'high' ? 'bg-red-100 text-red-700' :
+                              rival.presence_level?.toLowerCase() === 'medium' ? 'bg-orange-100 text-orange-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {rival.presence_level || 'Low'} Presence
+                            </div>
+                          </div>
+                          
+                          <div className="p-6 grid grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <ArrowUpRight size={12} /> Strengths
+                              </span>
+                              <p className="text-xs font-medium text-gray-600 leading-relaxed italic">
+                                {rival.strengths || 'No specific strengths recorded.'}
+                              </p>
+                            </div>
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <AlertCircle size={12} /> Weaknesses
+                              </span>
+                              <p className="text-xs font-medium text-gray-600 leading-relaxed italic">
+                                {rival.weaknesses || 'No identified weaknesses.'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="px-6 pb-6 mt-auto">
+                            <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-gray-400">Last updated: {new Date(rival.updated_at).toLocaleDateString()}</span>
+                              <button className="text-xs font-black text-gray-900 group-hover:text-red-600 transition-colors">Details</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 py-12 text-center">
+                      <TrendingUp className="mx-auto text-gray-300 mb-4" size={32} />
+                      <p className="text-sm font-bold text-gray-500">No competitors mapped for this account.</p>
+                      <button className="mt-4 bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-gray-100 transition-all">
+                        Map First Rival
+                      </button>
+                    </div>
+                  )}
                 </section>
               </div>
             )}

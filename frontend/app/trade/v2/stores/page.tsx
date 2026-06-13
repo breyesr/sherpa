@@ -98,7 +98,7 @@ export default function StoresPageV2() {
       </div>
 
       {/* Content Area */}
-      {isLoading ? (
+      {isLoading || !token ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="h-48 bg-gray-50 animate-pulse rounded-[2rem]" />

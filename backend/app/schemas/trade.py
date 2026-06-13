@@ -172,6 +172,8 @@ class CompetitorBase(BaseModel):
     region: Optional[str] = None
     presence_level: Optional[str] = None
     notes: Optional[str] = None
+    strengths: Optional[str] = None
+    weaknesses: Optional[str] = None
 
 class CompetitorCreate(CompetitorBase):
     pass

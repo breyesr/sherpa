@@ -202,3 +202,13 @@
 - 2026-06-11: Completed the Trinity Intelligence Pipeline (Epic 112). Implemented parallel retrieval, a specialized Synthesizer pass for structured dossiers, and a strategically-framed Persona delivery layer.
 - 2026-06-11: Completed Sprint 1: The Actionable Ledger. Implemented StoreAction and AccountIntelligence models, updated Ingestion logic for structured extraction, stabilized GraphRAG concurrent access, and performed historical backfill.
 - 2026-06-11: Resolved staging deployment failure (DuplicateTableError). Hardened early B2B migrations (091707792b94, 5ee6d1ad3979, 8f423ae0a403, 44af8f82f483) with SQLAlchemy Inspector for full idempotency. Verified successful deployment on staging.
+- 2026-06-13: Fixed header metric synchronization on Store V2 page. Data now fetches on load rather than tab switch. Verified UI stability and Next.js build.
+
+## [2026-06-13] - Store Pages V2 & Content-Aware Intelligence (Epic 114)
+- **Modernized Account UI (Task 114.1)**: Successfully implemented a tabbed Store Detail page under `/trade/v2/` with distinct views for Details, Products, Orders, and a categorized Timeline.
+- **Content-Aware Intel (Task 114.2)**: Redesigned the Intelligence filter logic to be "label-agnostic." The system now surfaces risks and opportunities regardless of the primary note type, ensuring critical threats (e.g., competitor price drops) are never missed.
+- **Sub-Tab Categorization**: Added sub-tabs to the Timeline view (Commercial, Marketing, Opps/Risks) for improved sales rep focus.
+- **Backend Hardening**: Expanded the `StoreNoteType` enum and added `Order` endpoints to support real-time performance metrics in the Account Header.
+- **Type Sync**: Fully synchronized frontend TypeScript types with the updated backend schema (`npm run gen:api`).
+- **Competitor Score Card (Task 114.3)**: Implemented a "Competitive Matrix" in the Details tab. Added backend support for strengths, weaknesses, and presence levels.
+- **UI Stability & Performance**: Resolved auth-hydration race conditions (preventing "Not Found" flashes) and optimized metric synchronization to fetch order data on initial page load.

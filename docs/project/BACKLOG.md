@@ -334,3 +334,11 @@
 - No Multi-branch setups.
 - No Segmented Marketing CRM (Operational context only).
 - No MercadoPago.
+
+## Epic 114: Modern Account Intelligence UI (V2)
+**Objective**: Overhaul the account management experience with a modern, high-density interface that surfaces pre-calculated Dossiers and actionable intelligence.
+
+- [x] Task 114.1: **V2 Scaffolding**: Implement the modernized Account List and Detail pages under `/trade/v2/` with a tabbed UI.
+- [x] Task 114.2: **Content-Aware Intelligence**: Implement intelligence extraction and filtering that surfaces Risks/Opps regardless of the primary note label.
+- [ ] Task 114.3: **Strategy Desk**: Build the high-level dashboard for management reporting on Marketing and Commercial actions.
+- [ ] Task 114.4: **Mobile-First Ingestion**: Optimize the note-taking flow for mobile users (Quick Actions).
