@@ -141,12 +141,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -319,6 +319,18 @@ export interface paths {
      * @description Create a new order with items.
      */
     post: operations["create_order_api_v1_trade_orders_post"];
+  };
+  "/api/v1/trade/competitors": {
+    /**
+     * List Competitors
+     * @description List all competitors, optionally filtered by store.
+     */
+    get: operations["list_competitors_api_v1_trade_competitors_get"];
+    /**
+     * Create Competitor
+     * @description Record a new competitor entry.
+     */
+    post: operations["create_competitor_api_v1_trade_competitors_post"];
   };
   "/api/v1/trade/stores/{store_id}/brief": {
     /**
@@ -700,6 +712,16 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ClientDetailResponse */
+    ClientDetailResponse: {
+      client: components["schemas"]["ClientResponse"];
+      /** Stores */
+      stores: components["schemas"]["StoreResponse"][];
+      /** Trade Notes */
+      trade_notes: components["schemas"]["CustomerNoteResponse"][];
+      /** Orders */
+      orders: components["schemas"]["OrderResponse"][];
+    };
     /** ClientMinimal */
     ClientMinimal: {
       /** Id */
@@ -765,6 +787,66 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** CompetitorCreate */
+    CompetitorCreate: {
+      /** Name */
+      name: string;
+      /** Store Id */
+      store_id: string;
+      /** Phone */
+      phone?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Presence Level */
+      presence_level?: string | null;
+      /** Notes */
+      notes?: string | null;
+      /** Strengths */
+      strengths?: string | null;
+      /** Weaknesses */
+      weaknesses?: string | null;
+    };
+    /** CompetitorResponse */
+    CompetitorResponse: {
+      /** Name */
+      name: string;
+      /** Store Id */
+      store_id: string;
+      /** Phone */
+      phone?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Presence Level */
+      presence_level?: string | null;
+      /** Notes */
+      notes?: string | null;
+      /** Strengths */
+      strengths?: string | null;
+      /** Weaknesses */
+      weaknesses?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** ConversationResponse */
     ConversationResponse: {
       /** Id */
@@ -801,6 +883,37 @@ export interface components {
        */
       updated_at: string;
       client?: components["schemas"]["ClientResponse"] | null;
+    };
+    /** CustomerNoteResponse */
+    CustomerNoteResponse: {
+      /** Client Id */
+      client_id: string;
+      /** Comm Style */
+      comm_style?: string | null;
+      /** Visit Frequency */
+      visit_frequency?: string | null;
+      /** Last Visit Date */
+      last_visit_date?: string | null;
+      /** Next Visit Date */
+      next_visit_date?: string | null;
+      /** Preferred Actions */
+      preferred_actions?: string | null;
+      /** General Notes */
+      general_notes?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
     };
     /** DataGatewaySyncRequest */
     DataGatewaySyncRequest: {
@@ -1754,9 +1867,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": {
-            [key: string]: unknown;
-          };
+          "application/json": components["schemas"]["ClientDetailResponse"];
         };
       };
       /** @description Validation Error */
@@ -2109,7 +2220,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -2714,6 +2825,56 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Competitors
+   * @description List all competitors, optionally filtered by store.
+   */
+  list_competitors_api_v1_trade_competitors_get: {
+    parameters: {
+      query?: {
+        store_id?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CompetitorResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Competitor
+   * @description Record a new competitor entry.
+   */
+  create_competitor_api_v1_trade_competitors_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompetitorCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CompetitorResponse"];
         };
       };
       /** @description Validation Error */
