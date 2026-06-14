@@ -211,3 +211,7 @@
 - **Type Sync**: Fully synchronized frontend TypeScript types with the updated backend schema (`npm run gen:api`).
 - **Competitor Score Card (Task 114.3)**: Implemented a "Competitive Matrix" in the Details tab. Added backend support for strengths, weaknesses, and presence levels.
 - **UI Stability & Performance**: Resolved auth-hydration race conditions (preventing "Not Found" flashes) and optimized metric synchronization to fetch order data on initial page load.
+- **Deterministic Identity Lock (Task 113.1)**: Hardened GraphRAG with session-based isolation, physically preventing data bleeding between store visits.
+- **Strategic Coach Refactor (Task 107.14)**: Transitioned AI from "Summarizer" to "Advisor" using Cognitive Frame patterns and Ledger-First synthesis.
+- **Orchestration Guardrails**: Added programmatic pronoun and implicit query detection to B2BOrchestrator to stabilize routing across diverse user styles.
+- **Backlog Grooming**: Formalized Epic 115 (Utility-First Architecture) for the next phase of AI proactivity.
