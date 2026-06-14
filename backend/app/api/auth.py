@@ -33,7 +33,7 @@ def create_access_token(subject: str, expires_delta: timedelta = None) -> str:
     return encoded_jwt
 
 from sqlalchemy.orm import selectinload
-...
+
 async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

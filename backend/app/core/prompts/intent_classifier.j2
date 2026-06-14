@@ -18,8 +18,8 @@ The representative is asking for information, data, or intelligence. They are re
 - Asks for briefs, summaries, or status reports about stores, customers, regions, or segments
 - Requests data, metrics, or filtered information
 - Asks comparative or analytical questions
-- **Implicit Briefing Requests**: Representative mentions they are visiting, on the way to, or arriving at a store.
-- Examples: "Give me the brief on Store XYZ." | "What do we know about Carlos?" | "How's the market in the North region?" | "Voy de camino a Tienda La Norteña." | "Estoy llegando a Súper Mercadito." | "Voy a ir a visitar a Ferretería Central."
+- **Implicit Briefing Requests**: Representative mentions they are visiting, on the way to, arriving at, or having a meeting/appointment with a store or contact.
+- Examples: "Give me the brief on Store XYZ." | "What do we know about Carlos?" | "How's the market in the North region?" | "Voy de camino a Tienda La Norteña." | "Estoy llegando a Súper Mercadito." | "Voy a ir a visitar a Ferretería Central." | "Hoy tengo cita con Doña María." | "Tengo una reunión en Tienda del Sol." | "Estoy visitando a Carlos ahora."
 
 **SCHEDULE**
 The representative wants to create, modify, or cancel a visit or appointment.
@@ -45,9 +45,15 @@ Respond with valid JSON only—no additional text or explanation:
 ```json
 {
   "intent": "REPORT" | "QUERY" | "SCHEDULE" | "CHAT",
-  "reasoning": "One sentence explaining why this intent was chosen"
+  "scope": "LOCAL" | "GLOBAL",
+  "reasoning": "One sentence explaining why this intent and scope were chosen"
 }
 ```
+
+## Discovery Scope Rules (New)
+- **LOCAL**: Use when the representative is clearly talking about the current store, asking for a brief of a specific store, or sharing field notes from a visit. If a specific store name is mentioned, it is LOCAL to that store.
+- **GLOBAL**: Use when the representative asks questions about "all stores," "the entire region," "other stores," or comparative questions like "who else," "where else."
+- **Default**: Default to **LOCAL** if a session is active (from history), otherwise default to **GLOBAL** for broad queries.
 
 {% if history %}## Conversation History
 {{ history }}

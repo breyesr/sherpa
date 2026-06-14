@@ -47,7 +47,7 @@ class GraphRAGService:
         pattern = r'\b' + re.escape(self._normalize_str(needle)) + r'\b'
         return bool(re.search(pattern, self._normalize_str(haystack)))
 
-    async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None) -> str:
+    async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None, discovery_scope: str = None) -> str:
         """Generate a strategic pre-visit brief using strict Session Locking."""
         try:
             is_context_shift = False
@@ -77,6 +77,13 @@ class GraphRAGService:
                 memory = ChatMemory()
                 session_meta = await memory.get_metadata(chat_id)
                 active_store_id = session_meta.get("active_store_id")
+
+            # Task 113.1: Explicit Discovery Scope enforcement
+            # If we are locked to a store, scope is LOCAL by default to prevent data bleeding
+            if active_store_id and not discovery_scope:
+                discovery_scope = "LOCAL"
+            elif not discovery_scope:
+                discovery_scope = "GLOBAL"
 
             # Helper to search for store in a string
             async def find_store_in_text(text: str) -> Tuple[Optional[Store], str]:
@@ -123,30 +130,38 @@ class GraphRAGService:
                 if found_store and confidence == "high" and found_store.id != active_store_id:
                     target_store = found_store
                     is_context_shift = True
+                    # If we shift stores, we stay in LOCAL scope but for the NEW store
+                    discovery_scope = "LOCAL"
                 else:
-                    # Default strictly to the locked store, ignore low-confidence regional noise
+                    # Deterministic Rule: If locked, we stay locked. No "GLOBAL" override allowed while in a session.
                     res_active = await self.db.execute(select(Store).where(Store.id == active_store_id))
                     target_store = res_active.scalars().first()
-                    print(f"DEBUG GRAPHRAG: Session is LOCKED to {target_store.name}. Ignoring query noise.")
+                    discovery_scope = "LOCAL"
             else:
                 # WE ARE UNLOCKED: Any match (even low) can set the lock
                 if found_store:
                     target_store = found_store
                     is_context_shift = True
+                    if discovery_scope != "GLOBAL":
+                        discovery_scope = "LOCAL"
 
             # If still nothing, look at history (Only if unlocked)
-            if not target_store and not active_store_id and history:
+            if not target_store and active_store_id is None and history:
                 for m in reversed(history[-5:]):
                     hist_store, hist_conf = await find_store_in_text(m["content"])
                     if hist_store:
                         target_store = hist_store
+                        discovery_scope = "LOCAL"
                         break
 
-            if not target_store:
-                # Task 109.4: Global Discovery Mode (Only if no specific store identified)
+            if not target_store or discovery_scope == "GLOBAL":
+                # Task 109.4: Global Discovery Mode (Only if no specific store identified OR explicit GLOBAL scope)
                 discovery_results = await self.search_store_profiles(query_text, business_id)
                 if discovery_results:
                     return await self.generate_discovery_response(query_text, discovery_results)
+                
+                if discovery_scope == "GLOBAL":
+                    return "No encontré información relevante en la búsqueda global. ¿Podrías ser más específico?"
                 return "No pude identificar la tienda específica. ¿A cuál te diriges o de qué región quieres saber?"
             
             # 2. Update Session Focus
@@ -158,10 +173,13 @@ class GraphRAGService:
                 print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
 
             # 3. Sequential Data Retrieval (Stabilized for SQLAlchemy Async)
-            # Note: Task 112.1 parallelization was causing concurrent session errors.
-            # Shifting to sequential but optimized fetching.
             context = await self.get_store_context(target_store.id)
-            similar_notes = await self.find_similar_notes(query_text, business_id, store_id=target_store.id)
+            
+            # Task 107.14 Hardening: Intelligent Retrieval
+            # If the user asks for "marketing" or "commercial", we should cast a wider net or hint the search
+            search_limit = 15
+            similar_notes = await self.find_similar_notes(query_text, business_id, store_id=target_store.id, discovery_scope=discovery_scope, limit=search_limit)
+            
             provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
 
             # Secondary fetch for model and api key
@@ -217,7 +235,7 @@ class GraphRAGService:
             traceback.print_exc()
             return "Lo siento, tuve un problema al generar el reporte de inteligencia."
 
-    async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None, filters: Dict[str, str] = None) -> List[Dict[str, Any]]:
+    async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None, filters: Dict[str, str] = None, discovery_scope: str = "GLOBAL") -> List[Dict[str, Any]]:
         """Perform Hybrid Vector + Keyword search against the unified knowledge corpus (Task 111.6)."""
         try:
             # 1. Generate Query Embedding for Semantic Search
@@ -225,7 +243,19 @@ class GraphRAGService:
             
             # Base filters for both searches
             base_filters = [KnowledgeCorpus.business_id == business_id]
-            if store_id:
+            
+            # Task 113.1: Strict Identity Locking in LOCAL scope
+            if discovery_scope == "LOCAL":
+                if not store_id:
+                    print("WARNING: LOCAL scope requested but no store_id provided. Returning empty hits.")
+                    return []
+                base_filters.append(or_(
+                    KnowledgeCorpus.metadata_json['store_id'].astext == str(store_id),
+                    KnowledgeCorpus.metadata_json['store_ids'].contains([str(store_id)])
+                ))
+            elif store_id:
+                # If GLOBAL but we have a store_id, we still prioritize it but don't hard-lock (optional logic)
+                # For now, let's keep it consistent: if store_id is passed, we filter by it.
                 base_filters.append(or_(
                     KnowledgeCorpus.metadata_json['store_id'].astext == str(store_id),
                     KnowledgeCorpus.metadata_json['store_ids'].contains([str(store_id)])
@@ -408,7 +438,7 @@ class GraphRAGService:
             "content": n.note, 
             "execution_level": n.execution_level,
             "date": n.created_at.strftime("%Y-%m-%d")
-        } for n in store.notes[:5]]
+        } for n in store.notes[:15]]
 
         # Format Competitors from results
         competitors = [

@@ -2,17 +2,14 @@ from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.embeddings import EmbeddingService
 from app.models.trade import Store, StoreNote, Competitor, CustomerNote
-from app.models.knowledge import KnowledgeCorpus, KnowledgeEntityType
+from app.models.knowledge import KnowledgeCorpus
 from sqlalchemy.future import select
-from sqlalchemy import update
 import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
 
 from sqlalchemy.orm import selectinload
-
-# ... (rest of imports)
 
 async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str):
     """Internal logic to handle vectorization and corpus updates."""
@@ -52,7 +49,6 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
                 return
 
             # 3. Generate Semantic Summary
-            # Most models implement get_semantic_summary()
             content = entity.get_semantic_summary()
             if not content:
                 logger.warning(f"No content generated for entity {entity_id}")
@@ -65,7 +61,6 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
             # 5. Idempotent Upsert into KnowledgeCorpus
             deterministic_id = KnowledgeCorpus.generate_id(entity_type, entity_id)
             
-            # Check if entry exists (using the deterministic ID)
             corpus_res = await db.execute(
                 select(KnowledgeCorpus).where(KnowledgeCorpus.id == deterministic_id)
             )
@@ -91,9 +86,6 @@ async def _sync_vector_logic(entity_id: str, entity_type: str, business_id: str)
                 )
                 db.add(new_entry)
 
-            # 6. Legacy Compatibility: Update original entity embedding if column exists
-            # (Handled gracefully if column was dropped in d5aaaa9de0ec)
-            # We check if the entity has an 'embedding' attribute
             if hasattr(entity, 'embedding'):
                 entity.embedding = vector
 
@@ -148,4 +140,3 @@ def update_account_intelligence_task(self, store_id: str, business_id: str):
     except Exception as exc:
         logger.error(f"Retrying update_account_intelligence_task for {store_id} due to: {exc}")
         raise self.retry(exc=exc)
-

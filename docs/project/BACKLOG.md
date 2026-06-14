@@ -343,3 +343,9 @@
 - [x] Task 114.3: **People V2 Redesign**: Implement the high-end "Intelligence Dossier" for Contacts, featuring a unified context grid and dark-themed AI sidebar.
 - [ ] Task 114.4: **Strategy Desk**: Build the high-level dashboard for management reporting on Marketing and Commercial actions.
 - [ ] Task 114.5: **Mobile-First Ingestion**: Optimize the note-taking flow for mobile users (Quick Actions).
+
+## Epic 115: Proactive Utility-First Orchestration
+- [ ] Task 115.1: **Entity-First Resolution**: Refactor `orchestrator.py` to resolve Stores/Contacts independently of LLM intent classification.
+- [ ] Task 115.2: **Proactive Context Injection**: Automatically retrieve the Account Intelligence Dossier (Fat Table) as soon as an entity is resolved.
+- [ ] Task 115.3: **Multi-Mode Utility Logic**: Implement `utility_orchestrator.j2` to allow the AI to simultaneously brief, capture, and guide based on context.
+- [ ] Task 115.4: **Linguistic Flexibility Benchmarking**: Test against varied user styles (e.g., "Estoy con Maria", "Llegando", "Viendo a Carlos") to ensure zero-friction engagement.

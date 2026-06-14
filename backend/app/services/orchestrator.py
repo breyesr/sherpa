@@ -132,8 +132,32 @@ class B2BOrchestrator:
         # 3. Proceed with normal classification and routing
         classification = await self.classify_intent(user_message, history)
         intent = classification.get("intent", "CHAT")
+        scope = classification.get("scope", "LOCAL")
         
-        print(f"DEBUG ORCHESTRATOR: Intent identified as {intent} for message: '{user_message}'")
+        # 3.1 Deterministic Guardrail: Implicit Query Detection (Task 113.1 Hardening)
+        # If the user mentions a store/contact AND action words like "cita", "visitando", "llegando", force QUERY
+        visit_cues = ["cita", "reunión", "reunion", "visitando", "llegando", "yendo", "camino a", "enfrente de"]
+        msg_lower = user_message.lower()
+        if (detected_store_id or any(c.name.lower() in msg_lower for c in contacts)) and any(cue in msg_lower for cue in visit_cues):
+            if intent != "QUERY":
+                print(f"DEBUG ORCHESTRATOR: Implicit Query detected for '{user_message}'. Overriding intent to QUERY.")
+                intent = "QUERY"
+
+        # 4. Deterministic Guardrail: Programmatic Context Detection (Task 113.1 Hardening)
+        # If we have an active lock, look for pronouns that imply "This store"
+        if identifier:
+            from app.core.memory import ChatMemory
+            memory = ChatMemory()
+            metadata_session = await memory.get_metadata(identifier)
+            if metadata_session.get("active_store_id"):
+                local_pronouns = ["ellos", "ellas", "ahí", "ahi", "esa", "ese", "estos", "estas", "este", "esta", "con ellos", "de ellos"]
+                msg_lower = user_message.lower()
+                if any(f" {p}" in f" {msg_lower} " for p in local_pronouns):
+                    if scope == "GLOBAL":
+                        print(f"DEBUG ORCHESTRATOR: Deterministic Guardrail triggered. Overriding scope to LOCAL due to pronoun detection in: '{user_message}'")
+                        scope = "LOCAL"
+
+        print(f"DEBUG ORCHESTRATOR: Intent identified as {intent} (Scope: {scope}) for message: '{user_message}'")
 
         if intent == "REPORT":
             # Session 2 Goal: Hand off to IngestionAgent via Celery
@@ -143,8 +167,8 @@ class B2BOrchestrator:
         
         elif intent == "QUERY":
             # Session 3 Goal: Hand off to GraphRAGAgent
-            # Passing identifier (chat_id) for Task 109.1 session awareness
-            return await self.graphrag.generate_brief(user_message, business.id, history=history, chat_id=identifier)
+            # Passing identifier (chat_id) and scope for Task 113.1 session awareness
+            return await self.graphrag.generate_brief(user_message, business.id, history=history, chat_id=identifier, discovery_scope=scope)
             
         elif intent == "SCHEDULE":
             # Session 4 Goal: Use existing Scheduling tools
