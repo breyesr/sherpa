@@ -1,27 +1,21 @@
-# Handoff State: 2026-06-13
+# Handoff State: 2026-06-14
 
 ## 🎯 Current Status
-We have successfully completed a major hardening of the **B2B Sales Intelligence Brain**. The AI is now strictly isolated by session (Identity Lock) and behaves as a **Strategic Coach** using the Cognitive Frame pattern. We also performed a surgical cleanup of redundant management-focused ledger components.
+The **Architectural Pivot to Utility-First Intelligence (Epic 115)** is complete. The system now resolves entities proactively and bypasses rigid intent pipelines in favor of a dynamic, dossier-driven interaction model for Field Representatives.
 
 ## ✅ Accomplishments (This Session)
-1.  **Identity Lock (Task 113.1)**: Implemented deterministic session isolation in `GraphRAGService`. The AI is physically prevented from bleeding data across accounts.
-2.  **Strategic Coach Refactor (Task 107.14)**:
-    *   Updated `synthesizer.j2` to a 'Ledger-First' model (no more dropped details).
-    *   Rewrote `visit_briefer.j2` with Tactical Recap, Soft-Skill Tips, and Competitive Leverage.
-3.  **Scope Guardrails**: Added programmatic pronoun detection ("ellos", "ahí") and implicit query detection ("cita", "visitando") to `B2BOrchestrator`.
-4.  **Surgical Cleanup**: Removed the `/strategy/desk` endpoint and `StoreAction` models to keep the architecture Operative-focused.
-5.  **Language Hardening**: Hard-locked the AI to Spanish for all field interactions.
+1.  **Entity-First Resolution (Task 115.1)**: Created `EntityResolver` service to deterministically identify target Stores and Contacts via string matching and relational lookups prior to LLM routing.
+2.  **Proactive Context Injection (Task 115.2)**: Updated `B2BOrchestrator` to instantly load the 'Fat Table' (Account Intelligence Dossier) when a store is detected, effectively bypassing slow RAG pipelines for known accounts.
+3.  **Utility-First Prompt (Task 115.3)**: Implemented `utility_orchestrator.j2`, replacing the rigid Report vs. Query paths. The AI now seamlessly transitions between Brief Mode, Capture Mode, and Hybrid Mode based on user context.
+4.  **Benchmarking (Task 115.4)**: Verified linguistic flexibility using a mocked Database, proving successful entity resolution for direct, contact-based, and fuzzy requests.
 
 ## 🚧 Blockers & Risks
-- **Linguistic Fragility**: While hardened, the "Intent-First" architecture still relies on the LLM identifying the user's goal correctly before fetching context. This is the primary driver for the Epic 115 pivot.
+- **LLM Token Load**: Supplying the full dossier on every interaction uses more prompt tokens, though it saves significantly on latency and multi-step inference costs. This tradeoff should be monitored in production.
 
-## 🚀 Next Strategic Steps (Epic 115)
-The next session should focus on the **Architectural Pivot to Utility-First Intelligence**:
-- **Task 115.1**: Refactor `orchestrator.py` to resolve entities (Stores/Contacts) *before* classifying intent.
-- **Task 115.2**: Proactively fetch the 'Account Intelligence' dossier as soon as an entity is matched.
-- **Task 115.3**: Implement the `utility_orchestrator.j2` prompt which tells the LLM: "Here is the context and the message—be as useful as possible (brief, capture, or both)."
+## 🚀 Next Strategic Steps 
+The next focus should likely be on returning to **Epic 113: Relational Graph-Enriched RAG** to build out the high-confidence entity link extraction pipeline, or finishing **Epic 108: Actionable Intelligence Ledger** reporting dashboards.
 
 ## 🛠️ Dev Notes
-- Branch: `feature/b2b/relational-graph-ledger`
-- Key Test: `backend/app/tests/test_identity_lock.py`
-- Remember: The system now wipes chat history when a new store is detected to ensure high-fidelity isolation.
+- Branch: `feature/backend/utility-first-orchestration`
+- Key Test: `backend/app/tests/test_utility_pivot.py`
+- Remember: The legacy `intent_classifier.j2` is still used as a parallel routing guardrail for background tasks (like `process_b2b_ingestion.delay`), but text generation for LOCAL scope is now handled purely by `utility_orchestrator.j2`.

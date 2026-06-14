@@ -70,42 +70,52 @@ class B2BOrchestrator:
             # Default to CHAT on failure to be safe
             return {"intent": "CHAT", "reasoning": "Fallback due to error"}
 
+    async def _generate_utility_response(self, store_name: str, dossier_data: Optional[str], user_message: str, history: list = None) -> str:
+        """Generates a fast, context-aware response using the pre-loaded dossier."""
+        try:
+            template = prompt_env.get_template("utility_orchestrator.j2")
+            
+            history_str = ""
+            if history:
+                history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history[-5:]])
+
+            prompt = template.render(
+                store_name=store_name,
+                dossier=dossier_data,
+                user_message=user_message,
+                history=history_str
+            )
+
+            provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+            model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
+            api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+
+            response = await litellm.acompletion(
+                model=f"{provider}/{model}" if "/" not in model else model,
+                messages=[{"role": "user", "content": prompt}],
+                api_key=api_key,
+                timeout=30.0
+            )
+
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"ERROR: Utility Orchestrator failed: {e}")
+            traceback.print_exc()
+            return "Entendido. He procesado tu mensaje pero tuve un problema generando la respuesta detallada."
+
     async def route_message(self, business: Any, client: Any, user_message: str, history: list = None, metadata: Optional[Dict] = None, identifier: str = None) -> str:
         """
         Main entry point for routing with Topic Sensitivity. 
         Detects shifts between stores/contacts to prevent "Summary Anchoring".
         """
+        from app.services.entity_resolver import EntityResolver
+        from app.models.trade import AccountIntelligence, Store
+
         # 1. Topic Shift Detection: Resolve Store/Contact from message
         try:
-            from app.models.crm import Client
-            from app.models.trade import store_clients
-            
-            # Fetch names of all stores and contacts for this business
-            res_stores = await self.db.execute(select(Store).where(Store.business_id == business.id))
-            stores = res_stores.scalars().all()
-            
-            res_contacts = await self.db.execute(select(Client).where(Client.business_id == business.id))
-            contacts = res_contacts.scalars().all()
-            
-            msg_norm = self._normalize_str(user_message)
-            detected_store_id = None
-            
-            # Check Store Names
-            for s in stores:
-                if self._normalize_str(s.name) in msg_norm:
-                    detected_store_id = s.id
-                    break
-            
-            # Check Contact Names (Resolve to store)
-            if not detected_store_id:
-                for c in contacts:
-                    if self._normalize_str(c.name) in msg_norm:
-                        # Find store linked to this contact
-                        res_link = await self.db.execute(
-                            select(store_clients.c.store_id).where(store_clients.c.client_id == c.id)
-                        )
-                        detected_store_id = res_link.scalars().first()
-                        break
+            resolver = EntityResolver(self.db)
+            entity_result = await resolver.resolve_entities(business.id, user_message)
+            detected_store_id = entity_result.get("store_id")
             
             # 2. Store-Locking Logic
             if detected_store_id and identifier:
@@ -124,10 +134,35 @@ class B2BOrchestrator:
                     # Update metadata with the new active store
                     await memory.update_metadata(identifier, {"active_store_id": detected_store_id})
                     print(f"DEBUG ORCHESTRATOR: High-Fidelity Isolation triggered. Switched active_store_id to {detected_store_id}. History wiped.")
-        
+
+            # Proactive Context Injection (Task 115.2)
+            dossier_data = None
+            detected_store_name = "Ninguna detectada"
+            if detected_store_id:
+                # Fetch store name for the prompt
+                res_store = await self.db.execute(select(Store).where(Store.id == detected_store_id))
+                store_obj = res_store.scalars().first()
+                if store_obj:
+                    detected_store_name = store_obj.name
+
+                res_intel = await self.db.execute(
+                    select(AccountIntelligence).where(AccountIntelligence.store_id == detected_store_id)
+                )
+                intel = res_intel.scalars().first()
+                if intel and intel.dossier_json:
+                    dossier_data = intel.dossier_json.get("content")
+                    print(f"DEBUG ORCHESTRATOR: Proactively loaded Account Intelligence Dossier for Store ID: {detected_store_id}")
+                else:
+                    # Async trigger to generate it in the background if it doesn't exist
+                    # For now, it will just rely on the existing GraphRAG pipeline fallback
+                    print(f"DEBUG ORCHESTRATOR: No pre-existing Dossier found for Store ID: {detected_store_id}")
+
         except Exception as te:
             print(f"WARNING: Topic shift detection failed: {te}")
             traceback.print_exc()
+            detected_store_id = None
+            dossier_data = None
+            detected_store_name = "Ninguna detectada"
 
         # 3. Proceed with normal classification and routing
         classification = await self.classify_intent(user_message, history)
@@ -138,7 +173,7 @@ class B2BOrchestrator:
         # If the user mentions a store/contact AND action words like "cita", "visitando", "llegando", force QUERY
         visit_cues = ["cita", "reunión", "reunion", "visitando", "llegando", "yendo", "camino a", "enfrente de"]
         msg_lower = user_message.lower()
-        if (detected_store_id or any(c.name.lower() in msg_lower for c in contacts)) and any(cue in msg_lower for cue in visit_cues):
+        if detected_store_id and any(cue in msg_lower for cue in visit_cues):
             if intent != "QUERY":
                 print(f"DEBUG ORCHESTRATOR: Implicit Query detected for '{user_message}'. Overriding intent to QUERY.")
                 intent = "QUERY"
@@ -159,21 +194,25 @@ class B2BOrchestrator:
 
         print(f"DEBUG ORCHESTRATOR: Intent identified as {intent} (Scope: {scope}) for message: '{user_message}'")
 
+        if intent == "SCHEDULE":
+            # Session 4 Goal: Use existing Scheduling tools
+            return f"[ORCHESTRATOR] Routing to SCHEDULE pipeline. Reasoning: {classification.get('reasoning')}"
+
         if intent == "REPORT":
             # Session 2 Goal: Hand off to IngestionAgent via Celery
             from app.tasks.ingestion import process_b2b_ingestion
             process_b2b_ingestion.delay(business.id, user_message)
-            return "¡Entendido! Estoy analizando tu reporte y actualizando la base de datos ahora mismo. Te avisaré cuando termine."
+            # Do NOT return immediately. Let the Utility Orchestrator generate a contextual acknowledgment.
         
-        elif intent == "QUERY":
-            # Session 3 Goal: Hand off to GraphRAGAgent
-            # Passing identifier (chat_id) and scope for Task 113.1 session awareness
+        if intent == "QUERY" and scope == "GLOBAL":
+            # Session 3 Goal: Hand off to GraphRAGAgent ONLY for Global discovery
             return await self.graphrag.generate_brief(user_message, business.id, history=history, chat_id=identifier, discovery_scope=scope)
-            
-        elif intent == "SCHEDULE":
-            # Session 4 Goal: Use existing Scheduling tools
-            return f"[ORCHESTRATOR] Routing to SCHEDULE pipeline. Reasoning: {classification.get('reasoning')}"
-            
-        else:
-            # Fallback to standard chat response (Existing AIService logic)
-            return f"[ORCHESTRATOR] Routing to CHAT pipeline. Reasoning: {classification.get('reasoning')}"
+
+        # UTILITY-FIRST PIVOT (Task 115): 
+        # For LOCAL Queries, Reports, and general Chat, we use the unified Utility prompt with the pre-fetched dossier.
+        # If the dossier is missing but it's a QUERY, we fallback to GraphRAG.
+        if intent == "QUERY" and scope == "LOCAL" and not dossier_data:
+            print("DEBUG ORCHESTRATOR: No dossier found for LOCAL query. Falling back to GraphRAG pipeline.")
+            return await self.graphrag.generate_brief(user_message, business.id, history=history, chat_id=identifier, discovery_scope=scope)
+
+        return await self._generate_utility_response(detected_store_name, dossier_data, user_message, history)
