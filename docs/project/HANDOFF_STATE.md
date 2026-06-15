@@ -1,25 +1,23 @@
-# Handoff State: 2026-06-14
+# Handoff State: 2026-06-15
 
 ## 🎯 Current Status
-The **Architectural Pivot to Utility-First Intelligence (Epic 115)** is complete. The system now resolves entities proactively and bypasses rigid intent pipelines in favor of a dynamic, dossier-driven interaction model for Field Representatives.
+We have completed the **Architectural Audit and Design Phase** for the Agentic AI transition. The system is moving from a deterministic "Utility-First" router to a **Thin Agent (Predictive Planning)** architecture to enable multi-step reasoning and proactivity for the "Marco" persona.
 
 ## ✅ Accomplishments (This Session)
-1.  **Entity-First Resolution (Task 115.1)**: Created `EntityResolver` service to deterministically identify target Stores and Contacts via string matching and relational lookups prior to LLM routing.
-2.  **Proactive Context Injection (Task 115.2)**: Updated `B2BOrchestrator` to instantly load the 'Fat Table' (Account Intelligence Dossier) when a store is detected, effectively bypassing slow RAG pipelines for known accounts.
-3.  **Utility-First Prompt (Task 115.3)**: Implemented `utility_orchestrator.j2`, replacing the rigid Report vs. Query paths. The AI now seamlessly transitions between Brief Mode, Capture Mode, and Hybrid Mode based on user context.
-4.  **Benchmarking (Task 115.4)**: Verified linguistic flexibility using a mocked Database, proving successful entity resolution for direct, contact-based, and fuzzy requests.
+1.  **Diagnostic Audit**: Performed a deep-dive audit of current B2B interactions. Identified "Intent Anchoring" as the primary bottleneck, where the system is forced into a single logic path (e.g., either Briefing or Ingestion, but not both).
+2.  **Thin Agent Design**: Drafted and approved the **Predictive Planning Design Doc** (`docs/scope/agentic_b2b_design.md`). This architecture uses a two-pass LLM flow (Planner -> Execute -> Synthesize) to optimize for both intelligence and latency.
+3.  **Backlog Evolution**: Formalized **Epic 116: Agentic AI Transition (Thin Agent)** in `docs/project/BACKLOG.md`, replacing the previous "Deep Dive" tasks with a comprehensive agentic roadmap.
 
 ## 🚧 Blockers & Risks
-- **LLM Token Load**: Supplying the full dossier on every interaction uses more prompt tokens, though it saves significantly on latency and multi-step inference costs. This tradeoff should be monitored in production.
+- **Latency Budget**: Adding a second LLM pass (the Planner) will increase response times. We are mitigating this by using `gpt-4o-mini` for the planning phase and utilizing prompt caching.
+- **Tool Reliability**: The success of the Thin Agent depends on tools (Resolver, GraphRAG, Ingestion) returning highly structured JSON.
 
 ## 🚀 Next Strategic Steps 
-The immediate focus is **Epic 116: Deep Dive Intent Routing**:
-- **Task 116.1**: Update `intent_classifier.j2` to recognize `DEEP_DIVE` inquiries.
-- **Task 116.2**: Update `orchestrator.py` to route `DEEP_DIVE` directly to GraphRAG, bypassing the condensed dossier to provide granular historical answers.
-
-After this is resolved, we will return to **Epic 113: Relational Graph-Enriched RAG** or **Epic 108: Actionable Intelligence Ledger**.
+The immediate focus is **Epic 116: Agentic AI Transition**:
+- **Task 116.1**: **Tool Decoupling**: Refactor `EntityResolver` and `GraphRAGService` into standalone LLM-compatible tools that accept/return JSON.
+- **Task 116.2**: **Thin Agent Implementation**: Implement the two-pass orchestrator logic.
 
 ## 🛠️ Dev Notes
-- Branch: `feature/backend/utility-first-orchestration`
-- Key Test: `backend/app/tests/test_utility_pivot.py`
-- Remember: The legacy `intent_classifier.j2` is still used as a parallel routing guardrail for background tasks (like `process_b2b_ingestion.delay`), but text generation for LOCAL scope is now handled purely by `utility_orchestrator.j2`.
+- **New Design**: `docs/scope/agentic_b2b_design.md`
+- **Audit Findings**: `docs/research/diagnostic_audit_ai_performance.md`
+- **Next File to Edit**: `backend/app/services/entity_resolver.py` (Refactoring for tool compatibility).

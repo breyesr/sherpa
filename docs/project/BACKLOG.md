@@ -350,8 +350,10 @@
 - [x] Task 115.3: **Multi-Mode Utility Logic**: Implement `utility_orchestrator.j2` to allow the AI to simultaneously brief, capture, and guide based on context.
 - [x] Task 115.4: **Linguistic Flexibility Benchmarking**: Test against varied user styles (e.g., "Estoy con Maria", "Llegando", "Viendo a Carlos") to ensure zero-friction engagement.
 
-## Epic 116: Deep Dive Intent Routing (Utility Fix)
-**Objective**: Resolve conversational rigidity by allowing the AI to bypass the high-level Dossier and query the raw vector database when a user asks specific historical or analytical follow-up questions.
-- [ ] Task 116.1: **Intent Expansion**: Update `intent_classifier.j2` to recognize `DEEP_DIVE` inquiries (e.g., "historial", "últimas acciones").
-- [ ] Task 116.2: **Orchestrator Bypass**: Update `route_message` in `orchestrator.py` to route `DEEP_DIVE` intents directly to `GraphRAGService`, ignoring the pre-loaded dossier.
-- [ ] Task 116.3: **Verification**: Test the conversation flow to ensure standard arrivals trigger the fast Dossier, while follow-up questions trigger the deep GraphRAG search.
+## Epic 116: Agentic AI Transition (ReAct)
+**Objective**: Replace the deterministic intent routing with an Agentic Loop (ReAct) to allow the AI to autonomously select and sequence tools, enabling complex multi-step reasoning for B2B field scenarios.
+- [ ] Task 116.1: **Tool Decoupling**: Refactor `EntityResolver` and `GraphRAGService` into standalone LLM-compatible tools.
+- [ ] Task 116.2: **Thin Agent Implementation**: Update `B2BOrchestrator` to use a Two-Pass (Plan/Execute/Synthesize) workflow.
+- [ ] Task 116.3: **Tool Execution Layer**: Build the deterministic handler that executes the LLM's plan and aggregates results.
+- [ ] Task 116.4: **Persona Alignment**: Update `b2b_sales_brain.j2` to emphasize the proactive, analytical "Marco" persona.
+- [ ] Task 116.5: **Validation**: Perform end-to-end testing of ambiguous multi-intent messages to ensure proper tool sequencing.
