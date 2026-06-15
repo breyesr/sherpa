@@ -33,6 +33,36 @@ class GraphRAGService:
         self.db = db
         self.embeddings = EmbeddingService(db)
 
+    @staticmethod
+    def get_tool_definition() -> Dict[str, Any]:
+        """Returns the JSON schema for this tool."""
+        return {
+            "type": "function",
+            "function": {
+                "name": "query_knowledge",
+                "description": "Searches the business knowledge base, historical notes, and account intelligence. Use this for discovery, competitive analysis, or deep-dive historical questions.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The specific question or topic to search for (e.g., 'historial de precios', 'competencia en zona norte')."
+                        },
+                        "store_id": {
+                            "type": "string",
+                            "description": "Optional: Limit the search to a specific store ID."
+                        },
+                        "discovery_scope": {
+                            "type": "string",
+                            "enum": ["LOCAL", "GLOBAL"],
+                            "description": "Whether to search only within the current store (LOCAL) or across the whole business (GLOBAL)."
+                        }
+                    },
+                    "required": ["query"]
+                }
+            }
+        }
+
     def _normalize_str(self, text: str) -> str:
         """Remove accents and normalize string for comparison."""
         if not text: return ""
@@ -46,6 +76,23 @@ class GraphRAGService:
         # Escape needle for regex and check for word boundaries
         pattern = r'\b' + re.escape(self._normalize_str(needle)) + r'\b'
         return bool(re.search(pattern, self._normalize_str(haystack)))
+
+    async def query_knowledge(self, query: str, business_id: str, store_id: str = None, discovery_scope: str = "GLOBAL", chat_id: str = None) -> Dict[str, Any]:
+        """Tool-compatible wrapper for generate_brief."""
+        # Force a specific store_id if provided by the planner
+        # Note: generate_brief uses session metadata if chat_id is provided.
+        # Here we manually inject the store_id if the planner found it.
+        
+        response, reasoning = await self.generate_brief(
+            query_text=query,
+            business_id=business_id,
+            chat_id=chat_id,
+            discovery_scope=discovery_scope
+        )
+        return {
+            "response": response,
+            "reasoning": reasoning
+        }
 
     async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None, discovery_scope: str = None, store_name_to_strip: str = None) -> Tuple[str, str]:
         """Generate a strategic pre-visit brief using strict Session Locking."""

@@ -408,6 +408,45 @@ class CustomerNote(Base):
                 })
         return meta
 
+class ActionCategory(str, enum.Enum):
+    MARKETING = "MARKETING"
+    COMMERCIAL = "COMMERCIAL"
+
+class ActionObjective(str, enum.Enum):
+    THREAT_RESPONSE = "THREAT_RESPONSE"
+    ANNIVERSARY = "ANNIVERSARY"
+    REPLENISHMENT = "REPLENISHMENT"
+    NEW_PRODUCT = "NEW_PRODUCT"
+    RELATIONSHIP = "RELATIONSHIP"
+    GENERAL = "GENERAL"
+
+class StoreAction(Base):
+    __tablename__ = "store_actions"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
+    author_id = Column(String, ForeignKey("users.id"), nullable=True)
+    
+    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
+    objective = Column(SQLEnum(ActionObjective), nullable=False, index=True)
+    impact_level = Column(String, nullable=True)
+    note_source_id = Column(String, ForeignKey("store_notes.id"), nullable=True)
+    details = Column(JSON, nullable=True, default=dict)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
+    store = relationship("Store")
+    author = relationship("User")
+    note_source = relationship("StoreNote")
+
+    __table_args__ = (
+        Index('ix_store_actions_business_category', 'business_id', 'category'),
+        Index('ix_store_actions_business_objective', 'business_id', 'objective'),
+    )
+
 class AccountIntelligence(Base):
     """
     The 'Fat Table' for pre-calculated Account Dossiers (Epic 107).
