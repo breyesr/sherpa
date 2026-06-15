@@ -87,7 +87,7 @@ export default function StoreDetailPageV2() {
   });
 
   if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400">Loading Account Intelligence...</div>;
-  if (isFetched && !store) return <div className="p-20 text-center font-bold text-red-500">Account not found</div>;
+  if (!store) return <div className="p-20 text-center font-bold text-red-500">Account not found or connection error.</div>;
 
   const totalOrderValue = orders.reduce((sum, order) => sum + order.total_amount, 0);
 

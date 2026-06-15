@@ -996,6 +996,8 @@ export interface components {
       role: string;
       /** Content */
       content: string;
+      /** Reasoning Trace */
+      reasoning_trace?: string | null;
       /** Platform Message Id */
       platform_message_id?: string | null;
       /**

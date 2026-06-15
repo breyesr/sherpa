@@ -47,8 +47,9 @@ class GraphRAGService:
         pattern = r'\b' + re.escape(self._normalize_str(needle)) + r'\b'
         return bool(re.search(pattern, self._normalize_str(haystack)))
 
-    async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None, discovery_scope: str = None) -> str:
+    async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None, discovery_scope: str = None, store_name_to_strip: str = None) -> Tuple[str, str]:
         """Generate a strategic pre-visit brief using strict Session Locking."""
+        reasoning = []
         try:
             is_context_shift = False
             query_norm = self._normalize_str(query_text)
@@ -60,7 +61,8 @@ class GraphRAGService:
                     from app.core.memory import ChatMemory
                     memory = ChatMemory()
                     await memory.clear_session_data(chat_id)
-                    return "Entendido. He cerrado la sesión y reiniciado el historial. ¿A cuál tienda te diriges ahora?"
+                    reasoning.append("User requested session termination. Cleared session data.")
+                    return "Entendido. He cerrado la sesión y reiniciado el historial. ¿A cuál tienda te diriges ahora?", " | ".join(reasoning)
 
             # 1. Identity Stage: Find Target Store
             res = await self.db.execute(
@@ -77,13 +79,16 @@ class GraphRAGService:
                 memory = ChatMemory()
                 session_meta = await memory.get_metadata(chat_id)
                 active_store_id = session_meta.get("active_store_id")
+                if active_store_id:
+                    reasoning.append(f"Active session lock found for Store ID: {active_store_id}")
 
             # Task 113.1: Explicit Discovery Scope enforcement
-            # If we are locked to a store, scope is LOCAL by default to prevent data bleeding
             if active_store_id and not discovery_scope:
                 discovery_scope = "LOCAL"
             elif not discovery_scope:
                 discovery_scope = "GLOBAL"
+            
+            reasoning.append(f"Discovery scope set to: {discovery_scope}")
 
             # Helper to search for store in a string
             async def find_store_in_text(text: str) -> Tuple[Optional[Store], str]:
@@ -130,13 +135,13 @@ class GraphRAGService:
                 if found_store and confidence == "high" and found_store.id != active_store_id:
                     target_store = found_store
                     is_context_shift = True
-                    # If we shift stores, we stay in LOCAL scope but for the NEW store
                     discovery_scope = "LOCAL"
+                    reasoning.append(f"Context shift detected to {target_store.name} (High Confidence).")
                 else:
-                    # Deterministic Rule: If locked, we stay locked. No "GLOBAL" override allowed while in a session.
                     res_active = await self.db.execute(select(Store).where(Store.id == active_store_id))
                     target_store = res_active.scalars().first()
                     discovery_scope = "LOCAL"
+                    reasoning.append(f"Staying locked to {target_store.name}.")
             else:
                 # WE ARE UNLOCKED: Any match (even low) can set the lock
                 if found_store:
@@ -144,6 +149,7 @@ class GraphRAGService:
                     is_context_shift = True
                     if discovery_scope != "GLOBAL":
                         discovery_scope = "LOCAL"
+                    reasoning.append(f"No lock found. Resolved to {target_store.name} (Confidence: {confidence}).")
 
             # If still nothing, look at history (Only if unlocked)
             if not target_store and active_store_id is None and history:
@@ -152,17 +158,20 @@ class GraphRAGService:
                     if hist_store:
                         target_store = hist_store
                         discovery_scope = "LOCAL"
+                        reasoning.append(f"Resolved to {target_store.name} from history.")
                         break
 
             if not target_store or discovery_scope == "GLOBAL":
-                # Task 109.4: Global Discovery Mode (Only if no specific store identified OR explicit GLOBAL scope)
+                # Task 109.4: Global Discovery Mode
+                reasoning.append("Entering Global Discovery Mode.")
                 discovery_results = await self.search_store_profiles(query_text, business_id)
                 if discovery_results:
-                    return await self.generate_discovery_response(query_text, discovery_results)
+                    resp = await self.generate_discovery_response(query_text, discovery_results)
+                    return resp, " | ".join(reasoning)
                 
                 if discovery_scope == "GLOBAL":
-                    return "No encontré información relevante en la búsqueda global. ¿Podrías ser más específico?"
-                return "No pude identificar la tienda específica. ¿A cuál te diriges o de qué región quieres saber?"
+                    return "No encontré información relevante en la búsqueda global. ¿Podrías ser más específico?", " | ".join(reasoning)
+                return "No pude identificar la tienda específica. ¿A cuál te diriges o de qué región quieres saber?", " | ".join(reasoning)
             
             # 2. Update Session Focus
             if chat_id and target_store.id != active_store_id:
@@ -172,23 +181,29 @@ class GraphRAGService:
                 is_context_shift = True
                 print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
 
-            # 3. Sequential Data Retrieval (Stabilized for SQLAlchemy Async)
+            # 3. Sequential Data Retrieval
             context = await self.get_store_context(target_store.id)
             
-            # Task 107.14 Hardening: Intelligent Retrieval
-            # If the user asks for "marketing" or "commercial", we should cast a wider net or hint the search
             search_limit = 15
-            similar_notes = await self.find_similar_notes(query_text, business_id, store_id=target_store.id, discovery_scope=discovery_scope, limit=search_limit)
+            
+            # Query Stripping to prevent Keyword Poisoning
+            clean_query = query_text
+            if store_name_to_strip and store_name_to_strip != "Ninguna detectada":
+                # Simple case-insensitive replacement
+                pattern = re.compile(re.escape(store_name_to_strip), re.IGNORECASE)
+                clean_query = pattern.sub("", query_text).strip()
+                reasoning.append(f"Stripped store name from query. Cleaned query: '{clean_query}'")
+
+            similar_notes = await self.find_similar_notes(clean_query, business_id, store_id=target_store.id, discovery_scope=discovery_scope, limit=search_limit)
+            reasoning.append(f"Retrieved {len(similar_notes)} similar notes via Hybrid Search.")
             
             provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
-
-            # Secondary fetch for model and api key
             base_model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
             api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
             synthesis_model = await ConfigService.get(self.db, "SYNTHESIS_MODEL", None)
             synthesis_model = synthesis_model or base_model
 
-            # --- TRINITY PIPELINE: STAGE 1 - SYNTHESIS (Task 112.4) ---
+            # --- TRINITY PIPELINE: STAGE 1 - SYNTHESIS ---
             synthesis_template = prompt_env.get_template("synthesizer.j2")
             synthesis_prompt = synthesis_template.render(
                 store=context,
@@ -196,7 +211,6 @@ class GraphRAGService:
                 query=query_text
             )
 
-            # Stage 1 LLM Call (Generates the flavorless dossier)
             synthesis_response = await litellm.acompletion(
                 model=f"{provider}/{synthesis_model}" if "/" not in synthesis_model else synthesis_model,
                 messages=[{"role": "user", "content": synthesis_prompt}],
@@ -204,8 +218,9 @@ class GraphRAGService:
                 timeout=30.0
             )
             dossier = synthesis_response.choices[0].message.content or "No se pudo sintetizar la información."
+            reasoning.append(f"Synthesized dossier using {synthesis_model}.")
 
-            # --- TRINITY PIPELINE: STAGE 2 - PERSONA (Task 112.4) ---
+            # --- TRINITY PIPELINE: STAGE 2 - PERSONA ---
             persona_template = prompt_env.get_template("visit_briefer.j2")
             persona_prompt = persona_template.render(
                 dossier=dossier,
@@ -214,7 +229,6 @@ class GraphRAGService:
                 history=history[-3:] if history else []
             )
 
-            # Stage 2 LLM Call (Generates the conversational response)
             response = await litellm.acompletion(
                 model=f"{provider}/{base_model}" if "/" not in base_model else base_model,
                 messages=[{"role": "user", "content": persona_prompt}],
@@ -223,17 +237,18 @@ class GraphRAGService:
             )
 
             ai_content = response.choices[0].message.content or "No se pudo generar la respuesta final."
+            reasoning.append(f"Generated final response using {base_model}.")
             
-            # Task 109.3 & 110.3: Explicit Shift & Isolation Acknowledgment
             if is_context_shift:
                 ai_content = f"**[Nueva sesión: {target_store.name} | Historial reiniciado]**\n\n{ai_content}"
                 
-            return ai_content
+            return ai_content, " | ".join(reasoning)
 
         except Exception as e:
             print(f"ERROR: generate_brief failed: {e}")
             traceback.print_exc()
-            return "Lo siento, tuve un problema al generar el reporte de inteligencia."
+            return "Lo siento, tuve un problema al generar el reporte de inteligencia.", f"ERROR: {str(e)}"
+
 
     async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None, filters: Dict[str, str] = None, discovery_scope: str = "GLOBAL") -> List[Dict[str, Any]]:
         """Perform Hybrid Vector + Keyword search against the unified knowledge corpus (Task 111.6)."""

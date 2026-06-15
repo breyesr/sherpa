@@ -191,13 +191,27 @@ class AIService:
             intent = optimized["intent"]
             
             # 4. B2B Orchestration Stage (ONLY for TRADE vertical)
+            b2b_reasoning = None
             if self.business.vertical_type == VerticalType.TRADE:
-                b2b_routing_response = await self.orchestrator.route_message(
+                b2b_response_tuple = await self.orchestrator.route_message(
                     self.business, client_obj, user_message, history=history, metadata=metadata, identifier=normalized_id
                 )
 
+                if isinstance(b2b_response_tuple, tuple):
+                    b2b_routing_response, b2b_reasoning = b2b_response_tuple
+                else:
+                    b2b_routing_response = b2b_response_tuple
+
                 # If the orchestrator handled the response (e.g., triggered ingestion), return that.
                 if b2b_routing_response and not b2b_routing_response.startswith("[ORCHESTRATOR] Routing"):
+                    ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=b2b_routing_response, reasoning_trace=b2b_reasoning)
+                    self.db.add(ai_msg_obj)
+                    conv.last_message_at = datetime.utcnow()
+                    await self.db.commit()
+
+                    await self.memory.add_message(normalized_id, "user", user_message)
+                    await self.memory.add_message(normalized_id, "assistant", b2b_routing_response)
+
                     return b2b_routing_response
             else:
                 # Basic flows don't use the complex B2B orchestrator
@@ -314,7 +328,7 @@ class AIService:
 
             # 5. Response Hand-off
             # Persist AI response to DB
-            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text)
+            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text, reasoning_trace=b2b_reasoning)
             self.db.add(ai_msg_obj)
             conv.last_message_at = datetime.utcnow()
             await self.db.commit()

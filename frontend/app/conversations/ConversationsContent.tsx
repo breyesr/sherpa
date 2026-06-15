@@ -16,10 +16,11 @@ interface ConversationsContentProps {
 export default function ConversationsContent({ initialConversations, token }: ConversationsContentProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [devMode, setDevMode] = useState(false);
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. Fetch Conversations
+  // 1. Fetch Conversations (with audit log support)
   const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery<ConversationResponse[]>({
     queryKey: ['conversations'],
     queryFn: async () => {
@@ -183,6 +184,20 @@ export default function ConversationsContent({ initialConversations, token }: Co
                 </div>
                 
                 <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setDevMode(!devMode)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      devMode 
+                      ? 'bg-purple-50 text-purple-600 border border-purple-100' 
+                      : 'bg-gray-100 text-gray-500 border border-gray-200'
+                    }`}
+                  >
+                    <MessageSquare size={14} className={devMode ? 'animate-pulse' : ''} />
+                    {devMode ? 'Audit: ON' : 'Audit: OFF'}
+                  </button>
+
+                  <div className="h-8 w-px bg-gray-200 mx-1" />
+
                   {/* @ts-expect-error custom_fields is unknown */}
                   {selectedConv.client?.custom_fields?.needs_review && (
                     <span className="flex items-center gap-1.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-100">
@@ -220,6 +235,17 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {m.content}
                       </div>
+
+                      {devMode && m.role === 'assistant' && m.reasoning_trace && (
+                        <div className="mt-2 p-3 bg-purple-50 border border-purple-100 rounded-xl text-[10px] font-mono text-purple-700 leading-tight">
+                          <div className="flex items-center gap-1 font-black mb-1 text-[9px] uppercase tracking-widest">
+                            <MessageSquare size={10} />
+                            Brain Logic
+                          </div>
+                          {m.reasoning_trace}
+                        </div>
+                      )}
+
                       <div className={`flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                         {m.role === 'user' ? <User size={10} /> : <Bot size={10} />}
                         <SafeDate date={m.created_at} format="time" options={{ hour: '2-digit', minute: '2-digit' }} />

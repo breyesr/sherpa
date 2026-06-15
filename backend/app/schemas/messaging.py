@@ -8,6 +8,7 @@ class MessageResponse(BaseModel):
     conversation_id: str
     role: str
     content: str
+    reasoning_trace: Optional[str] = None
     platform_message_id: Optional[str] = None
     created_at: datetime
 
