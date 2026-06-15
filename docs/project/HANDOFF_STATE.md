@@ -13,7 +13,11 @@ The **Architectural Pivot to Utility-First Intelligence (Epic 115)** is complete
 - **LLM Token Load**: Supplying the full dossier on every interaction uses more prompt tokens, though it saves significantly on latency and multi-step inference costs. This tradeoff should be monitored in production.
 
 ## 🚀 Next Strategic Steps 
-The next focus should likely be on returning to **Epic 113: Relational Graph-Enriched RAG** to build out the high-confidence entity link extraction pipeline, or finishing **Epic 108: Actionable Intelligence Ledger** reporting dashboards.
+The immediate focus is **Epic 116: Deep Dive Intent Routing**:
+- **Task 116.1**: Update `intent_classifier.j2` to recognize `DEEP_DIVE` inquiries.
+- **Task 116.2**: Update `orchestrator.py` to route `DEEP_DIVE` directly to GraphRAG, bypassing the condensed dossier to provide granular historical answers.
+
+After this is resolved, we will return to **Epic 113: Relational Graph-Enriched RAG** or **Epic 108: Actionable Intelligence Ledger**.
 
 ## 🛠️ Dev Notes
 - Branch: `feature/backend/utility-first-orchestration`

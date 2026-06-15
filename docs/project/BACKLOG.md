@@ -349,3 +349,9 @@
 - [x] Task 115.2: **Proactive Context Injection**: Automatically retrieve the Account Intelligence Dossier (Fat Table) as soon as an entity is resolved.
 - [x] Task 115.3: **Multi-Mode Utility Logic**: Implement `utility_orchestrator.j2` to allow the AI to simultaneously brief, capture, and guide based on context.
 - [x] Task 115.4: **Linguistic Flexibility Benchmarking**: Test against varied user styles (e.g., "Estoy con Maria", "Llegando", "Viendo a Carlos") to ensure zero-friction engagement.
+
+## Epic 116: Deep Dive Intent Routing (Utility Fix)
+**Objective**: Resolve conversational rigidity by allowing the AI to bypass the high-level Dossier and query the raw vector database when a user asks specific historical or analytical follow-up questions.
+- [ ] Task 116.1: **Intent Expansion**: Update `intent_classifier.j2` to recognize `DEEP_DIVE` inquiries (e.g., "historial", "últimas acciones").
+- [ ] Task 116.2: **Orchestrator Bypass**: Update `route_message` in `orchestrator.py` to route `DEEP_DIVE` intents directly to `GraphRAGService`, ignoring the pre-loaded dossier.
+- [ ] Task 116.3: **Verification**: Test the conversation flow to ensure standard arrivals trigger the fast Dossier, while follow-up questions trigger the deep GraphRAG search.

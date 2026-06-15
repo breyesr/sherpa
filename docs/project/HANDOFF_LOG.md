@@ -216,3 +216,4 @@
 - **Orchestration Guardrails**: Added programmatic pronoun and implicit query detection to B2BOrchestrator to stabilize routing across diverse user styles.
 - **Backlog Grooming**: Formalized Epic 115 (Utility-First Architecture) for the next phase of AI proactivity.
 - [2026-06-14] (Epic 115) Completed Utility-First Architecture Pivot: Built EntityResolver for proactive store detection and transitioned orchestrator to use the unified `utility_orchestrator.j2` prompt, bypassing slow RAG pipelines for known accounts.
+- [2026-06-14] (Epic 116 Planned) Diagnosed conversational rigidity in Utility-First architecture. Formalized Deep Dive routing strategy to balance speed and historical depth without requiring complex agentic loops.
