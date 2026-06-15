@@ -217,9 +217,9 @@
 - **Backlog Grooming**: Formalized Epic 115 (Utility-First Architecture) for the next phase of AI proactivity.
 - [2026-06-14] (Epic 115) Completed Utility-First Architecture Pivot: Built EntityResolver for proactive store detection and transitioned orchestrator to use the unified `utility_orchestrator.j2` prompt, bypassing slow RAG pipelines for known accounts.
 - [2026-06-14] (Epic 116 Planned) Diagnosed conversational rigidity in Utility-First architecture. Formalized Deep Dive routing strategy to balance speed and historical depth without requiring complex agentic loops.
-- **[2026-06-15] - Agentic Pivot Design & Diagnostic Audit**
-    - **Diagnostic Audit**: Completed empirical audit of B2B AI performance. Identified "Intent Anchoring" and "Resolution Brittleness" as critical failure modes in the current deterministic router.
-    - **Architectural Shift**: Approved transition to a **Thin Agent (Predictive Planning)** model. This replaces the rigid switchboard with a Two-Pass (Plan/Execute/Synthesize) workflow for multi-step intelligence.
-    - **Documentation**: Created `docs/research/diagnostic_audit_ai_performance.md` and `docs/scope/agentic_b2b_design.md`.
-    - **Backlog**: Formalized **Epic 116 (Agentic AI Transition)** to track the implementation of the new reasoning loop and tool decoupling.
+- [2026-06-15] - Thin Agent Failure & Agentic RAG Pivot
+    - **Implementation**: Built the Two-Pass Thin Agent (`gpt-4o-mini` planner + execution layer).
+    - **Diagnostic**: Field simulations revealed catastrophic prompt adherence failures in the Planner (ignoring implicit context shifts, hallucinating tool arguments). 
+    - **Strategic Pivot**: Abandoned Epic 116. Approved Epic 117 (Agentic RAG Pivot) to transition to a self-correcting Full Agent (ReAct) and a unified Knowledge Corpus, prioritizing intelligence over latency.
+
 

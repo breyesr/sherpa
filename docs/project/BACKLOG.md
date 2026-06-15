@@ -350,10 +350,18 @@
 - [x] Task 115.3: **Multi-Mode Utility Logic**: Implement `utility_orchestrator.j2` to allow the AI to simultaneously brief, capture, and guide based on context.
 - [x] Task 115.4: **Linguistic Flexibility Benchmarking**: Test against varied user styles (e.g., "Estoy con Maria", "Llegando", "Viendo a Carlos") to ensure zero-friction engagement.
 
-## Epic 116: Agentic AI Transition (ReAct)
-**Objective**: Replace the deterministic intent routing with an Agentic Loop (ReAct) to allow the AI to autonomously select and sequence tools, enabling complex multi-step reasoning for B2B field scenarios.
-- [ ] Task 116.1: **Tool Decoupling**: Refactor `EntityResolver` and `GraphRAGService` into standalone LLM-compatible tools.
-- [ ] Task 116.2: **Thin Agent Implementation**: Update `B2BOrchestrator` to use a Two-Pass (Plan/Execute/Synthesize) workflow.
-- [ ] Task 116.3: **Tool Execution Layer**: Build the deterministic handler that executes the LLM's plan and aggregates results.
-- [ ] Task 116.4: **Persona Alignment**: Update `b2b_sales_brain.j2` to emphasize the proactive, analytical "Marco" persona.
-- [ ] Task 116.5: **Validation**: Perform end-to-end testing of ambiguous multi-intent messages to ensure proper tool sequencing.
+## Epic 116: Agentic AI Transition (Thin Agent)
+**Objective**: Replace the deterministic intent routing with an Agentic Loop (Thin Agent) to allow the AI to autonomously select and sequence tools.
+- [x] Task 116.1: **Tool Decoupling**: Refactor `EntityResolver` and `GraphRAGService` into standalone LLM-compatible tools.
+- [x] Task 116.2: **Thin Agent Implementation**: Update `B2BOrchestrator` to use a Two-Pass (Plan/Execute/Synthesize) workflow.
+- [x] Task 116.3: **Tool Execution Layer**: Build the deterministic handler that executes the LLM's plan and aggregates results.
+- [x] Task 116.4: **Persona Alignment**: Update `b2b_sales_brain.j2` to emphasize the proactive, analytical "Marco" persona.
+- [x] Task 116.5: **Validation**: Performed end-to-end testing. Diagnostic revealed that the Thin Agent suffers from severe hallucination in tool arguments when faced with B2B conversational ambiguity.
+
+## Epic 117: Agentic RAG Pivot (Full Agent & Unified Corpus)
+**Objective**: Transition from the brittle "Thin Agent" to a self-correcting "Full Agent" (ReAct) and merge the static Dossier into the Knowledge Corpus to eliminate data silos and context failures.
+- [ ] Task 117.1: **Corpus Unification**: Write a migration script to extract data from `AccountIntelligence` and inject it as "Summary Nodes" into `KnowledgeCorpus`.
+- [ ] Task 117.2: **Tool Consolidation**: Deprecate `get_account_dossier` and update `query_knowledge` to be the sole data retrieval tool for the Agent.
+- [ ] Task 117.3: **ReAct Loop Implementation**: Replace the Thin Agent `_get_planner_response` with a robust `litellm` ReAct loop supporting up to 5 iterations for self-correction.
+- [ ] Task 117.4: **Prompt Architecture**: Rewrite `b2b_sales_brain.j2` to support Thought/Action/Observation chains while maintaining the "Marco" conversational persona.
+- [ ] Task 117.5: **Validation**: Re-run the deep-dive diagnostic session to confirm 100% data retrieval and context retention.

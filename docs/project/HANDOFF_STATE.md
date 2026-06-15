@@ -1,23 +1,25 @@
 # Handoff State: 2026-06-15
 
 ## 🎯 Current Status
-We have completed the **Architectural Audit and Design Phase** for the Agentic AI transition. The system is moving from a deterministic "Utility-First" router to a **Thin Agent (Predictive Planning)** architecture to enable multi-step reasoning and proactivity for the "Marco" persona.
+The **Thin Agent** (Epic 116) was fully implemented and tested. However, field simulation diagnostics revealed that the architecture is too brittle for B2B conversational ambiguity. The one-shot "Planner" (`gpt-4o-mini`) frequently hallucinated tool arguments and failed to recognize implicit topic shifts.
+
+We have officially **abandoned the Thin Agent architecture** in favor of an **Agentic RAG (Full Agent)** approach. This trades minor latency increases for massive gains in self-correction and data reliability.
 
 ## ✅ Accomplishments (This Session)
-1.  **Diagnostic Audit**: Performed a deep-dive audit of current B2B interactions. Identified "Intent Anchoring" as the primary bottleneck, where the system is forced into a single logic path (e.g., either Briefing or Ingestion, but not both).
-2.  **Thin Agent Design**: Drafted and approved the **Predictive Planning Design Doc** (`docs/scope/agentic_b2b_design.md`). This architecture uses a two-pass LLM flow (Planner -> Execute -> Synthesize) to optimize for both intelligence and latency.
-3.  **Backlog Evolution**: Formalized **Epic 116: Agentic AI Transition (Thin Agent)** in `docs/project/BACKLOG.md`, replacing the previous "Deep Dive" tasks with a comprehensive agentic roadmap.
+1.  **Thin Agent Implementation & Diagnostic**: Built the Two-Pass orchestrator, but extensive simulated testing proved it inadequate for our needs.
+2.  **Architectural Pivot**: Drafted and approved `docs/scope/agentic_rag_pivot_plan.md`. 
+3.  **Backlog Update**: Closed Epic 116 as a verified failure path and opened **Epic 117 (Agentic RAG Pivot)** to track the implementation of the new ReAct loop and Unified Corpus.
 
 ## 🚧 Blockers & Risks
-- **Latency Budget**: Adding a second LLM pass (the Planner) will increase response times. We are mitigating this by using `gpt-4o-mini` for the planning phase and utilizing prompt caching.
-- **Tool Reliability**: The success of the Thin Agent depends on tools (Resolver, GraphRAG, Ingestion) returning highly structured JSON.
+- **Data Migration**: We must ensure no intelligence is lost when moving data from `AccountIntelligence` (JSON) to `KnowledgeCorpus` (Vector Nodes).
+- **Latency**: The ReAct loop will take ~8-12 seconds. The prompt must be heavily engineered to minimize unnecessary "Thoughts" and keep the loop tight.
 
 ## 🚀 Next Strategic Steps 
-The immediate focus is **Epic 116: Agentic AI Transition**:
-- **Task 116.1**: **Tool Decoupling**: Refactor `EntityResolver` and `GraphRAGService` into standalone LLM-compatible tools that accept/return JSON.
-- **Task 116.2**: **Thin Agent Implementation**: Implement the two-pass orchestrator logic.
+The immediate focus is **Epic 117: Agentic RAG Pivot**:
+- **Task 117.1**: **Corpus Unification**: Write the migration script to deprecate the `AccountIntelligence` table and inject dossiers into the `KnowledgeCorpus`.
+- **Task 117.2**: **Tool Consolidation**: Simplify the orchestrator to only use `resolve_entity` and `query_knowledge`.
 
 ## 🛠️ Dev Notes
-- **New Design**: `docs/scope/agentic_b2b_design.md`
-- **Audit Findings**: `docs/research/diagnostic_audit_ai_performance.md`
-- **Next File to Edit**: `backend/app/services/entity_resolver.py` (Refactoring for tool compatibility).
+- **New Architecture Plan**: `docs/scope/agentic_rag_pivot_plan.md`
+- **Simulation Scripts**: Retain `backend/test_simulated_session_3.py` to test the new ReAct agent once built.
+
