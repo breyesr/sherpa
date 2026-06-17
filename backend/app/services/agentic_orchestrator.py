@@ -252,4 +252,4 @@ class AgenticOrchestrator:
         except Exception as e:
             logger.error(f"AgenticOrchestrator failed: {e}")
             traceback.print_exc()
-            return f"Error interno: {str(e)}"
+            return f"Error interno: {str(e)}", "Error de ejecución en el orquestador."
