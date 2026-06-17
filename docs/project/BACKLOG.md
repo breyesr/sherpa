@@ -145,13 +145,26 @@
 ---
 
 ## Epic 119: The Sherpa Ingestion Engine (V2)
-**Objective**: Transition from beta placeholders to a high-end, high-volume ingestion and management system that powers the Trade intelligence dossier.
+**Objective**: Transition from beta placeholders to a high-end, high-volume bulk ingestion system that powers the Trade intelligence corpus.
 
-- [ ] Task 119.1: **Surgical CRUD Drawers**: Implement premium slide-over drawers for single Contact and Account creation/editing in `/trade/v2/`.
+- [ ] Task 119.1: **Guided Bulk Wizard**: Implement the 3-step UI (Upload -> AI-Assisted Mapping -> Conflict Resolution) with real-time progress feedback.
 - [ ] Task 119.2: **Association Ingestion Logic**: Enhance the `Data Gateway` backend to handle bulk linking of Stores and Clients via `external_id` mapping.
-- [ ] Task 119.3: **Guided Bulk Wizard**: Implement the 3-step UI (Upload -> AI-Assisted Mapping -> Conflict Resolution) with real-time progress feedback.
-- [ ] Task 119.4: **Deduplication UI**: Build a side-by-side comparison interface for manual resolution of data collisions during import.
-- [ ] Task 119.5: **Incremental Knowledge Sync**: Implement post-import hooks to trigger vector re-embedding for all newly ingested or modified entities.
+- [ ] Task 119.3: **Deduplication & Conflict UI**: Build a side-by-side comparison interface for manual resolution of data collisions during import.
+- [ ] Task 119.4: **Incremental Knowledge Sync**: Implement post-import hooks to trigger vector re-embedding for all newly ingested or modified entities.
+
+---
+
+## Epic 120: Surgical Trade Operations (The V2 Drawer System)
+**Objective**: Overhaul the manual data entry experience with high-density, "Surgical" slide-over drawers and a centralized intelligence ledger.
+
+- [ ] Task 120.1: **Reusable V2 Drawer Component**: Implement the premium, slide-over foundation with high-density scroll areas and smooth animations.
+- [ ] Task 120.2: **Surgical Entity Drawers**: Implement the `AccountDrawer` and `ContactDrawer` for V2 list views, replacing legacy modals.
+- [ ] Task 120.3: **Unified Catalog Drawer**: Implement a single high-density drawer for managing both Categories and Products inline.
+- [ ] Task 120.4: **Field Note & Observation Drawer**: Build the combined capture flow for Narrative Notes and Competitor Intelligence.
+- [ ] Task 120.5: **Global Intelligence Pulse**: Implement the `/trade/v2/notes` page—a chronological, filterable ledger of all territory intelligence.
+- [ ] Task 120.6: **Transactional Order Drawer**: Build the surgical 3-step order entry flow (Header -> Line Items -> Summary).
+- [ ] Task 120.7: **Timeline Deep-Link**: Implement the "See all notes" redirect logic from Store/Contact profiles to the Global Pulse page with pre-applied filters.
+- [ ] Task 120.8: **Data Provenance & Verification UI**: Implement "Source" indicators and "Needs Review" highlighting for AI-extracted data in all V2 Drawers to handle future voice-note ingestion.
 
 ---
 

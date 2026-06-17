@@ -22,6 +22,11 @@ store_clients = Table(
     Column("client_id", String, ForeignKey("clients.id", ondelete="CASCADE"), primary_key=True),
 )
 
+class DataSourceType(str, enum.Enum):
+    MANUAL = "manual"
+    AI_EXTRACTED = "ai_extracted"
+    INTEGRATION = "integration"
+
 class OrderStatus(str, enum.Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
@@ -194,6 +199,10 @@ class StoreNote(Base):
     note_type = Column(String, nullable=False, default="general", index=True)
     is_actionable = Column(Boolean, default=False, index=True)
     
+    # Provenance & Verification
+    source_type = Column(SQLEnum(DataSourceType), nullable=False, default=DataSourceType.MANUAL, index=True)
+    is_verified = Column(Boolean, default=True, index=True) # Defaults to True for manual, False for AI
+    
     # Structured metadata for the "Active AI" to eventually digest
     # Stores: { "objective": "...", "outcome": "...", "items_requested": [...], "competitor_move": "..." }
     action_metadata = Column(JSON, nullable=True, default=dict)
@@ -258,6 +267,10 @@ class Order(Base):
     status = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
     total_amount = Column(Float, nullable=False, default=0.0)
     notes = Column(Text, nullable=True)
+    
+    # Provenance & Verification
+    source_type = Column(SQLEnum(DataSourceType), nullable=False, default=DataSourceType.MANUAL, index=True)
+    is_verified = Column(Boolean, default=True, index=True)
     
     # Draft Hardening Fields
     delivery_id = Column(String, nullable=True, index=True)
@@ -327,6 +340,10 @@ class Competitor(Base):
     notes = Column(Text, nullable=True)
     strengths = Column(Text, nullable=True)
     weaknesses = Column(Text, nullable=True)
+
+    # Provenance & Verification
+    source_type = Column(SQLEnum(DataSourceType), nullable=False, default=DataSourceType.MANUAL, index=True)
+    is_verified = Column(Boolean, default=True, index=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
