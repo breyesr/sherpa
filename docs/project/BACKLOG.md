@@ -360,8 +360,8 @@
 
 ## Epic 117: Agentic RAG Pivot (Full Agent & Unified Corpus)
 **Objective**: Transition from the brittle "Thin Agent" to a self-correcting "Full Agent" (ReAct) and merge the static Dossier into the Knowledge Corpus to eliminate data silos and context failures.
-- [ ] Task 117.1: **Corpus Unification**: Write a migration script to extract data from `AccountIntelligence` and inject it as "Summary Nodes" into `KnowledgeCorpus`.
-- [ ] Task 117.2: **Tool Consolidation**: Deprecate `get_account_dossier` and update `query_knowledge` to be the sole data retrieval tool for the Agent.
-- [ ] Task 117.3: **ReAct Loop Implementation**: Replace the Thin Agent `_get_planner_response` with a robust `litellm` ReAct loop supporting up to 5 iterations for self-correction.
-- [ ] Task 117.4: **Prompt Architecture**: Rewrite `b2b_sales_brain.j2` to support Thought/Action/Observation chains while maintaining the "Marco" conversational persona.
-- [ ] Task 117.5: **Validation**: Re-run the deep-dive diagnostic session to confirm 100% data retrieval and context retention.
+- [x] Task 117.1: **Corpus Unification**: Write a migration script to inject `AccountIntelligence` dossiers into `KnowledgeCorpus` as high-priority "Summary Nodes".
+- [x] Task 117.2: **Tool Consolidation**: Deprecate `get_account_dossier` and update `query_knowledge` to be the sole data retrieval tool for the Agent.
+- [x] Task 117.3: **LangGraph Implementation**: Replace the custom orchestrator logic with a LangGraph state machine (ReAct pattern) to manage multi-tool loops and state persistence.
+- [x] Task 117.4: **State & Memory Hardening**: Configure LangGraph Checkpoints (Postgres-backed) to ensure the agent can recover from failures and maintain long-term multi-turn state.
+- [x] Task 117.5: **Validation**: Re-run the deep-dive diagnostic session to confirm 100% data retrieval and context retention.

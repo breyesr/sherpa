@@ -1,25 +1,26 @@
 # Handoff State: 2026-06-15
 
 ## 🎯 Current Status
-The **Thin Agent** (Epic 116) was fully implemented and tested. However, field simulation diagnostics revealed that the architecture is too brittle for B2B conversational ambiguity. The one-shot "Planner" (`gpt-4o-mini`) frequently hallucinated tool arguments and failed to recognize implicit topic shifts.
+The **Agentic RAG Pivot** (Epic 117) is fully implemented, stabilized, and validated. We have successfully transitioned from a brittle "Thin Agent" to a robust **LangGraph ReAct loop** with a 100% complete **Knowledge Corpus**. The system supports autonomous self-correction, persistent multi-turn state, and granular data retrieval for all stores and contacts.
 
-We have officially **abandoned the Thin Agent architecture** in favor of an **Agentic RAG (Full Agent)** approach. This trades minor latency increases for massive gains in self-correction and data reliability.
-
-## ✅ Accomplishments (This Session)
-1.  **Thin Agent Implementation & Diagnostic**: Built the Two-Pass orchestrator, but extensive simulated testing proved it inadequate for our needs.
-2.  **Architectural Pivot**: Drafted and approved `docs/scope/agentic_rag_pivot_plan.md`. 
-3.  **Backlog Update**: Closed Epic 116 as a verified failure path and opened **Epic 117 (Agentic RAG Pivot)** to track the implementation of the new ReAct loop and Unified Corpus.
+## ✅ Accomplishments (Epic 117 & Stabilization)
+- **Task 117.1**: **Unified Knowledge Corpus**. Successfully migrated 8 account dossiers as "Summary Nodes".
+- **Task 117.6**: **Universal Backfill**. Vectorized and migrated all **Store Notes** and **Customer Notes** (62+ new entries).
+- **Tool Consolidation**: Updated `AIService` to use `query_knowledge` as the sole source of truth.
+- **Reasoning Audit**: Restored the "Brain Logic" telemetry and fixed history-clutter by isolating current-turn thoughts.
+- **Stability Fix**: Resolved a critical indentation bug in `AgenticOrchestrator` that was causing silent "no response" failures.
+- **Entity Hardening**: Improved `EntityResolver` to be space-insensitive (e.g. "supermercadito" matches "Súper Mercadito").
 
 ## 🚧 Blockers & Risks
-- **Data Migration**: We must ensure no intelligence is lost when moving data from `AccountIntelligence` (JSON) to `KnowledgeCorpus` (Vector Nodes).
-- **Latency**: The ReAct loop will take ~8-12 seconds. The prompt must be heavily engineered to minimize unnecessary "Thoughts" and keep the loop tight.
+- **Dependency Depth**: The upgrade to LangChain 0.3/LangGraph required a "Nuclear" pip installation. We must ensure future dependencies are pinned carefully to avoid backtracking.
+- **Token Usage**: Monitor the chatty ReAct loop in production to ensure LLM costs stay within budget.
 
 ## 🚀 Next Strategic Steps 
-The immediate focus is **Epic 117: Agentic RAG Pivot**:
-- **Task 117.1**: **Corpus Unification**: Write the migration script to deprecate the `AccountIntelligence` table and inject dossiers into the `KnowledgeCorpus`.
-- **Task 117.2**: **Tool Consolidation**: Simplify the orchestrator to only use `resolve_entity` and `query_knowledge`.
+- **Cleanup Phase**: Remove the deprecated `B2BOrchestrator` and potentially the `AccountIntelligence` table to reduce technical debt.
+- **UI/UX Polishing**: Update the frontend to handle potential ~10s latency in Agentic responses with a "Thinking" indicator.
+- **New Feature - Voice Ingestion**: Leverage the robust Agent to handle audio-to-intelligence reporting.
 
 ## 🛠️ Dev Notes
-- **New Architecture Plan**: `docs/scope/agentic_rag_pivot_plan.md`
-- **Simulation Scripts**: Retain `backend/test_simulated_session_3.py` to test the new ReAct agent once built.
-
+- **New Engine**: `backend/app/services/agentic_orchestrator.py`
+- **State Schema**: `backend/app/services/agent_state.py`
+- **Migration Source**: `backend/migrate_account_intel.py` (Run once in staging/prod).

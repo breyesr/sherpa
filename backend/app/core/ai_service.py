@@ -20,7 +20,7 @@ from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
 from app.core.context_assembler import ContextAssembler
-from app.services.orchestrator import B2BOrchestrator
+from app.services.agentic_orchestrator import AgenticOrchestrator
 
 # Setup prompt template environment
 try:
@@ -40,7 +40,7 @@ class AIService:
         self.assistant_config = business_profile.assistant_config
         self.memory = ChatMemory()
         self.assembler = ContextAssembler(db)
-        self.orchestrator = B2BOrchestrator(db)
+        self.orchestrator = AgenticOrchestrator(db)
 
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
@@ -191,28 +191,20 @@ class AIService:
             intent = optimized["intent"]
             
             # 4. B2B Orchestration Stage (ONLY for TRADE vertical)
-            b2b_reasoning = None
             if self.business.vertical_type == VerticalType.TRADE:
-                b2b_response_tuple = await self.orchestrator.route_message(
-                    self.business, client_obj, user_message, history=history, metadata=metadata, identifier=normalized_id
+                b2b_response, b2b_reasoning = await self.orchestrator.get_response(
+                    self.business.id, client_obj.id, user_message, normalized_id
                 )
 
-                if isinstance(b2b_response_tuple, tuple):
-                    b2b_routing_response, b2b_reasoning = b2b_response_tuple
-                else:
-                    b2b_routing_response = b2b_response_tuple
+                ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=b2b_response, reasoning_trace=b2b_reasoning)
+                self.db.add(ai_msg_obj)
+                conv.last_message_at = datetime.utcnow()
+                await self.db.commit()
 
-                # If the orchestrator handled the response (e.g., triggered ingestion), return that.
-                if b2b_routing_response and not b2b_routing_response.startswith("[ORCHESTRATOR] Routing"):
-                    ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=b2b_routing_response, reasoning_trace=b2b_reasoning)
-                    self.db.add(ai_msg_obj)
-                    conv.last_message_at = datetime.utcnow()
-                    await self.db.commit()
+                await self.memory.add_message(normalized_id, "user", user_message)
+                await self.memory.add_message(normalized_id, "assistant", b2b_response)
 
-                    await self.memory.add_message(normalized_id, "user", user_message)
-                    await self.memory.add_message(normalized_id, "assistant", b2b_routing_response)
-
-                    return b2b_routing_response
+                return b2b_response
             else:
                 # Basic flows don't use the complex B2B orchestrator
                 print(f"DEBUG AISERVICE: Basic vertical detected. Skipping B2B Orchestration.")

@@ -13,11 +13,13 @@ SHERPA_KNOWLEDGE_NAMESPACE = uuid.UUID('f0a29e62-f85e-7eed-8000-0892ab3023d2')
 
 class KnowledgeEntityType(str, enum.Enum):
     STORE = "store"
+    CLIENT = "client"
     STORE_NOTE = "store_note"
     CUSTOMER_NOTE = "customer_note"
     COMPETITOR = "competitor"
     PRODUCT = "product"
     ORDER = "order"
+    ACCOUNT_SUMMARY = "account_summary"
 
 class KnowledgeCorpus(Base):
     __tablename__ = "knowledge_corpus"

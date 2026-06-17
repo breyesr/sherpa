@@ -15,23 +15,6 @@ class TradeToolKit:
             {
                 "type": "function",
                 "function": {
-                    "name": "get_account_dossier",
-                    "description": "Fetches the complete intelligence dossier for a specific store. Use this when you have a store_id and need to know everything about its performance, risks, and opportunities.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "store_id": {
-                                "type": "string",
-                                "description": "The unique ID of the store."
-                            }
-                        },
-                        "required": ["store_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
                     "name": "log_field_report",
                     "description": "Logs a new field observation or report about a store or customer. Use this when the representative shares new information from the field.",
                     "parameters": {
@@ -51,23 +34,6 @@ class TradeToolKit:
                 }
             }
         ]
-
-    async def get_account_dossier(self, store_id: str) -> Dict[str, Any]:
-        """Fetch the pre-compiled dossier for a store."""
-        try:
-            res = await self.db.execute(
-                select(AccountIntelligence).where(AccountIntelligence.store_id == store_id)
-            )
-            intel = res.scalars().first()
-            if intel and intel.dossier_json:
-                return {
-                    "success": True,
-                    "content": intel.dossier_json.get("content"),
-                    "last_updated": intel.updated_at.isoformat() if intel.updated_at else None
-                }
-            return {"success": False, "error": "No dossier found for this store."}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
 
     async def log_field_report(self, business_id: str, text: str, store_id: str = None) -> Dict[str, Any]:
         """Trigger background ingestion for a field report."""

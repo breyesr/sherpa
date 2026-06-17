@@ -471,6 +471,45 @@ class AccountIntelligence(Base):
     business_profile = relationship("BusinessProfile")
     store = relationship("Store", back_populates="intelligence")
 
+    def get_semantic_summary(self) -> str:
+        """Convert the dossier JSON into a readable summary for vectorization."""
+        d = self.dossier_json or {}
+        summary = [f"Resumen de Inteligencia para la cuenta: {getattr(self.store, 'name', 'Desconocida')}"]
+        
+        # If the dossier has a 'content' key (Markdown), use it as the primary summary
+        if "content" in d:
+            summary.append(d["content"])
+
+        # Vital Signs
+        if "vital_signs" in d:
+            vs = d["vital_signs"]
+            summary.append(f"Estado: {vs.get('status', 'N/A')}. Salud: {vs.get('health_score', 'N/A')}/10.")
+        
+        # Playbook
+        if "playbook" in d:
+            p = d["playbook"]
+            summary.append(f"Estrategia Comercial: {p.get('commercial_strategy', 'N/A')}")
+            summary.append(f"Playbook de Ventas: {p.get('sales_playbook', 'N/A')}")
+        
+        # Triggers & Threats
+        if "threats" in d:
+            summary.append(f"Amenazas Detectadas: {', '.join(d['threats'])}")
+        
+        if "triggers" in d:
+            summary.append(f"Triggers Activos: {', '.join(d['triggers'])}")
+
+        return "\n".join(summary)
+
+    def get_knowledge_metadata(self) -> dict:
+        """Return metadata for filtering."""
+        return {
+            "store_id": self.store_id,
+            "version": self.version,
+            "last_synthesized": self.last_synthesized_at.isoformat() if self.last_synthesized_at else None,
+            "region": getattr(self.store, 'region', None),
+            "segment": getattr(self.store, 'segment', None)
+        }
+
     __table_args__ = (
         Index('ix_account_intel_business_store', 'business_id', 'store_id'),
     )

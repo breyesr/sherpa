@@ -220,6 +220,10 @@
 - [2026-06-15] - Thin Agent Failure & Agentic RAG Pivot
     - **Implementation**: Built the Two-Pass Thin Agent (`gpt-4o-mini` planner + execution layer).
     - **Diagnostic**: Field simulations revealed catastrophic prompt adherence failures in the Planner (ignoring implicit context shifts, hallucinating tool arguments). 
-    - **Strategic Pivot**: Abandoned Epic 116. Approved Epic 117 (Agentic RAG Pivot) to transition to a self-correcting Full Agent (ReAct) and a unified Knowledge Corpus, prioritizing intelligence over latency.
+- **Epic 117 Stabilization**: Resolved critical retrieval and orchestration bugs.
+    - Performed **Universal Knowledge Backfill**: Vectorized all narrative visit notes, fixing the data gap for accounts like "Tienda La Norteña".
+    - Fixed **Indentation Bug** in `AgenticOrchestrator` that caused silent "Lo siento" errors.
+    - Cleaned up **Reasoning Trace**: Audit now only shows the current turn's thoughts.
+    - Hardened **Entity Resolution**: Implemented space-normalized matching for resilient store discovery.
 
 

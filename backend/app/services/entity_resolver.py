@@ -9,12 +9,15 @@ class EntityResolver:
     def __init__(self, db: Any):
         self.db = db
 
-    def _normalize_str(self, text: str) -> str:
+    def _normalize_str(self, text: str, remove_spaces: bool = False) -> str:
         """Remove accents and normalize string for comparison."""
         if not text: return ""
         # Normalize to NFKD and remove non-spacing mark (accents)
         normalized = unicodedata.normalize('NFKD', text)
-        return "".join([c for c in normalized if not unicodedata.combining(c)]).lower().strip()
+        result = "".join([c for c in normalized if not unicodedata.combining(c)]).lower().strip()
+        if remove_spaces:
+            return result.replace(" ", "")
+        return result
 
     @staticmethod
     def get_tool_definition() -> Dict[str, Any]:
@@ -43,6 +46,8 @@ class EntityResolver:
         Returns a dict with detected IDs, names, and confidence levels.
         """
         msg_norm = self._normalize_str(text)
+        msg_no_spaces = self._normalize_str(text, remove_spaces=True)
+        
         result = {
             "store_id": None,
             "store_name": None,
@@ -62,8 +67,12 @@ class EntityResolver:
         # 2. Check Store Names (Highest Priority)
         for s in stores:
             s_norm = self._normalize_str(s.name)
+            s_no_spaces = self._normalize_str(s.name, remove_spaces=True)
+            
             # Match if store name is in message, or if message (at least 4 chars) is in store name
-            if s_norm in msg_norm or (len(msg_norm) >= 4 and msg_norm in s_norm):
+            # Improved: match ignoring spaces (e.g. "supermercadito" vs "super mercadito")
+            if (s_norm in msg_norm or (len(msg_norm) >= 4 and msg_norm in s_norm) or
+                s_no_spaces in msg_no_spaces or (len(msg_no_spaces) >= 4 and msg_no_spaces in s_no_spaces)):
                 result["store_id"] = s.id
                 result["store_name"] = s.name
                 result["confidence"] = 1.0
@@ -74,7 +83,10 @@ class EntityResolver:
         if not result["store_id"]:
             for c in contacts:
                 c_norm = self._normalize_str(c.name)
-                if c_norm in msg_norm or (len(msg_norm) >= 4 and msg_norm in c_norm):
+                c_no_spaces = self._normalize_str(c.name, remove_spaces=True)
+                
+                if (c_norm in msg_norm or (len(msg_norm) >= 4 and msg_norm in c_norm) or
+                    c_no_spaces in msg_no_spaces or (len(msg_no_spaces) >= 4 and msg_no_spaces in c_no_spaces)):
                     result["contact_id"] = c.id
                     result["contact_name"] = c.name
                     # If no store found via name, try to find linked store

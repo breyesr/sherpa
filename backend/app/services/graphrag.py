@@ -78,21 +78,51 @@ class GraphRAGService:
         return bool(re.search(pattern, self._normalize_str(haystack)))
 
     async def query_knowledge(self, query: str, business_id: str, store_id: str = None, discovery_scope: str = "GLOBAL", chat_id: str = None) -> Dict[str, Any]:
-        """Tool-compatible wrapper for generate_brief."""
-        # Force a specific store_id if provided by the planner
-        # Note: generate_brief uses session metadata if chat_id is provided.
-        # Here we manually inject the store_id if the planner found it.
-        
-        response, reasoning = await self.generate_brief(
-            query_text=query,
-            business_id=business_id,
-            chat_id=chat_id,
-            discovery_scope=discovery_scope
-        )
-        return {
-            "response": response,
-            "reasoning": reasoning
-        }
+        """Tool-compatible wrapper that returns raw knowledge hits without internal LLM synthesis."""
+        reasoning = []
+        try:
+            # Determine active store context if local scope is needed
+            active_store_id = store_id
+            if not active_store_id and chat_id:
+                from app.core.memory import ChatMemory
+                memory = ChatMemory()
+                session_meta = await memory.get_metadata(chat_id)
+                active_store_id = session_meta.get("active_store_id")
+
+            # Force LOCAL if we have an active store, otherwise use requested scope
+            effective_scope = "LOCAL" if active_store_id else discovery_scope
+            reasoning.append(f"Querying knowledge base (Scope: {effective_scope}, Store: {active_store_id})")
+
+            # Keyword search + Vector search
+            limit = 10
+            similar_notes = await self.find_similar_notes(
+                query_text=query,
+                business_id=business_id,
+                store_id=active_store_id,
+                discovery_scope=effective_scope,
+                limit=limit
+            )
+
+            if not similar_notes:
+                return {
+                    "success": False,
+                    "message": "No relevant historical notes or knowledge found.",
+                    "reasoning": " | ".join(reasoning)
+                }
+
+            # Return the raw content of the notes so the orchestrator's LLM can synthesize it
+            notes_content = [n["content"] for n in similar_notes]
+            return {
+                "success": True,
+                "hits": len(notes_content),
+                "data": notes_content,
+                "reasoning": " | ".join(reasoning)
+            }
+
+        except Exception as e:
+            print(f"ERROR: query_knowledge failed: {e}")
+            traceback.print_exc()
+            return {"success": False, "error": str(e)}
 
     async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None, discovery_scope: str = None, store_name_to_strip: str = None) -> Tuple[str, str]:
         """Generate a strategic pre-visit brief using strict Session Locking."""
@@ -299,6 +329,10 @@ class GraphRAGService:
 
     async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None, filters: Dict[str, str] = None, discovery_scope: str = "GLOBAL") -> List[Dict[str, Any]]:
         """Perform Hybrid Vector + Keyword search against the unified knowledge corpus (Task 111.6)."""
+        if not query_text or not query_text.strip():
+            print("WARNING: find_similar_notes called with empty query_text. Returning empty list.")
+            return []
+            
         try:
             # 1. Generate Query Embedding for Semantic Search
             query_vector = await self.embeddings.get_embedding(query_text)
