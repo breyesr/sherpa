@@ -226,4 +226,11 @@
     - Cleaned up **Reasoning Trace**: Audit now only shows the current turn's thoughts.
     - Hardened **Entity Resolution**: Implemented space-normalized matching for resilient store discovery.
 
+## [2026-06-16] - Ingestion Engine Planning & V2 Evolution
+- **Brainstorming & Strategy (Epic 119)**: Finalized the design and technical strategy for the **Sherpa Ingestion Engine**.
+- **UX/UI Synthesis**: Defined a premium "Frictionless Inflow" strategy using Stepper Wizards for bulk uploads and Slide-over Drawers for surgical CRUD operations.
+- **Epic Formalization**: Created **Epic 119: The Sherpa Ingestion Engine (V2)** in the backlog, targeting the removal of beta placeholders in the Account and Contact views.
+- **Architectural Scope**: Tasked the backend enhancement for bulk many-to-many associations and the frontend implementation of a guided mapping wizard.
+- **Maintenance**: Updated `HANDOFF_STATE.md` and `BACKLOG.md` to reflect the new strategic focus.
+
 

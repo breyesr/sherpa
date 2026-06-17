@@ -131,6 +131,30 @@
 
 ---
 
+---
+
+## Epic 118: Real-time Knowledge Sync & Auto-Vectorization (PLANNED)
+**Objective**: Ensure the Knowledge Corpus stays synchronized with manual user actions in the dashboard, eliminating the need for manual backfills.
+
+- [ ] Task 118.1: **API Hooking - Trade**: Update `POST /stores` and `POST /stores/{id}/notes` to trigger `sync_vector_task` on success.
+- [ ] Task 118.2: **API Hooking - CRM**: Update `POST /clients` and `PATCH /clients/{id}` to trigger `sync_vector_task` for profile updates.
+- [ ] Task 118.3: **Update Handling**: Implement logic to detect content changes and update existing vector entries in the `KnowledgeCorpus`.
+- [ ] Task 118.4: **Deletion Cleanup**: Ensure that deleting a Store or Note also removes its corresponding entries from the `KnowledgeCorpus`.
+- [ ] Task 118.5: **Worker Reliability**: Implement a dead-letter queue for failed vectorization tasks to prevent permanent data gaps.
+
+---
+
+## Epic 119: The Sherpa Ingestion Engine (V2)
+**Objective**: Transition from beta placeholders to a high-end, high-volume ingestion and management system that powers the Trade intelligence dossier.
+
+- [ ] Task 119.1: **Surgical CRUD Drawers**: Implement premium slide-over drawers for single Contact and Account creation/editing in `/trade/v2/`.
+- [ ] Task 119.2: **Association Ingestion Logic**: Enhance the `Data Gateway` backend to handle bulk linking of Stores and Clients via `external_id` mapping.
+- [ ] Task 119.3: **Guided Bulk Wizard**: Implement the 3-step UI (Upload -> AI-Assisted Mapping -> Conflict Resolution) with real-time progress feedback.
+- [ ] Task 119.4: **Deduplication UI**: Build a side-by-side comparison interface for manual resolution of data collisions during import.
+- [ ] Task 119.5: **Incremental Knowledge Sync**: Implement post-import hooks to trigger vector re-embedding for all newly ingested or modified entities.
+
+---
+
 # Sherpa MVP Backlog (Legacy/Base)
 
 
