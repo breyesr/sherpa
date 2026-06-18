@@ -157,14 +157,14 @@
 ## Epic 120: Surgical Trade Operations (The V2 Drawer System)
 **Objective**: Overhaul the manual data entry experience with high-density, "Surgical" slide-over drawers and a centralized intelligence ledger.
 
-- [ ] Task 120.1: **Reusable V2 Drawer Component**: Implement the premium, slide-over foundation with high-density scroll areas and smooth animations.
-- [ ] Task 120.2: **Surgical Entity Drawers**: Implement the `AccountDrawer` and `ContactDrawer` for V2 list views, replacing legacy modals.
-- [ ] Task 120.3: **Unified Catalog Drawer**: Implement a single high-density drawer for managing both Categories and Products inline.
-- [ ] Task 120.4: **Field Note & Observation Drawer**: Build the combined capture flow for Narrative Notes and Competitor Intelligence.
-- [ ] Task 120.5: **Global Intelligence Pulse**: Implement the `/trade/v2/notes` page—a chronological, filterable ledger of all territory intelligence.
-- [ ] Task 120.6: **Transactional Order Drawer**: Build the surgical 3-step order entry flow (Header -> Line Items -> Summary).
-- [ ] Task 120.7: **Timeline Deep-Link**: Implement the "See all notes" redirect logic from Store/Contact profiles to the Global Pulse page with pre-applied filters.
-- [ ] Task 120.8: **Data Provenance & Verification UI**: Implement "Source" indicators and "Needs Review" highlighting for AI-extracted data in all V2 Drawers to handle future voice-note ingestion.
+- [x] Task 120.1: **Reusable V2 Drawer Component**: Implement the premium, slide-over foundation with high-density scroll areas and smooth animations.
+- [x] Task 120.2: **Surgical Entity Drawers**: Implement the `AccountDrawer` and `ContactDrawer` for V2 list views, replacing legacy modals.
+- [x] Task 120.3: **Unified Catalog Drawer**: Implement a single high-density drawer for managing both Categories and Products inline.
+- [x] Task 120.4: **Field Note & Observation Drawer**: Build the combined capture flow for Narrative Notes and Competitor Intelligence.
+- [x] Task 120.5: **Global Intelligence Pulse**: Implement the `/trade/v2/notes` page—a chronological, filterable ledger of all territory intelligence.
+- [x] Task 120.6: **Transactional Order Drawer**: Build the surgical 3-step order entry flow (Header -> Line Items -> Summary).
+- [x] Task 120.7: **Timeline Deep-Link**: Implement the "See all notes" redirect logic from Store/Contact profiles to the Global Pulse page with pre-applied filters.
+- [x] Task 120.8: **Data Provenance & Verification UI**: Implement "Source" indicators and "Needs Review" highlighting for AI-extracted data in all V2 Drawers to handle future voice-note ingestion.
 
 ---
 

@@ -1,5 +1,13 @@
 # Handoff Log
 
+## [2026-06-17] - V2 Trade Operations & Surgical UI (Epic 120 Complete)
+- **UI Architecture**: Implemented a universal `Drawer.tsx` slide-over component for high-density, context-aware data entry, replacing legacy centered modals.
+- **Surgical Drawers**: Built `AccountDrawer`, `ContactDrawer`, `CatalogDrawer`, and a 3-step `OrderDrawer`. Implemented "Instant-Populate" logic to eliminate loading latency when editing entities.
+- **Intelligence Ledger**: Developed the Global Pulse Page (`/trade/v2/notes`), creating a centralized chronological feed of all territory intelligence.
+- **Data Provenance**: Updated `StoreNote`, `CustomerNote`, `Competitor`, and `Order` models with `source_type` and `is_verified` fields to safely support future AI voice-note extractions. Executed Alembic migrations (`ee378a9ef4dc`, `e157629ce18d`).
+- **Detail Page Alignment**: Overhauled the `RetailerDetailPageV2` to match the high-end design language of the Store detail page, including sub-tabs, risk/opp extraction cards, and explicit routing to the Pulse ledger.
+- **System Stability**: Resolved complex React hydration and syntax issues caused by nested navigation elements.
+
 ## [2026-05-28] - Vertical-Aware AI Strategy & Admin Hardening
 - **Epic 106 Completion**: Successfully decoupled B2C and B2B AI messaging. Implemented vertical-aware template loading and tool masking in `AIService`.
 - **System Recovery**: Fixed critical crashes in `AIService` related to template missing and missing imports.
