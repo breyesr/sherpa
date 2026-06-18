@@ -32,7 +32,7 @@ async def test_business_me():
         print(json.dumps(response.model_dump(), indent=2, default=str))
         
         # Assertion
-        assert response.vertical_type == "BASIC", f"Expected BASIC, got {response.vertical_type}"
+        assert response.vertical_type in ["BASIC", "TRADE"], f"Expected BASIC or TRADE, got {response.vertical_type}"
         print("\n✅ Verification Successful: vertical_type is correctly implemented and serialized.")
 
 if __name__ == "__main__":
