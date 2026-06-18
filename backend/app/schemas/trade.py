@@ -17,6 +17,11 @@ class OrderStatus(str, enum.Enum):
     SHIPPED = "shipped"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
+
+class DataSourceType(str, enum.Enum):
+    MANUAL = "manual"
+    AI_EXTRACTED = "ai_extracted"
+    INTEGRATION = "integration"
 class StoreNoteBase(BaseModel):
     store_id: str
     note: str
@@ -27,6 +32,8 @@ class StoreNoteBase(BaseModel):
     note_type: str = "general"
     is_actionable: bool = False
     action_metadata: Optional[Dict[str, Any]] = {}
+    source_type: DataSourceType = DataSourceType.MANUAL
+    is_verified: bool = True
 
 class StoreNoteCreate(StoreNoteBase):
     pass
@@ -148,6 +155,8 @@ class OrderBase(BaseModel):
     delivery_date: Optional[date] = None
     payment_method: Optional[str] = None
     shipping_address: Optional[str] = None
+    source_type: DataSourceType = DataSourceType.MANUAL
+    is_verified: bool = True
 
 class OrderCreate(OrderBase):
     items: List[OrderItemBase]
@@ -174,6 +183,8 @@ class CompetitorBase(BaseModel):
     notes: Optional[str] = None
     strengths: Optional[str] = None
     weaknesses: Optional[str] = None
+    source_type: DataSourceType = DataSourceType.MANUAL
+    is_verified: bool = True
 
 class CompetitorCreate(CompetitorBase):
     pass
@@ -195,6 +206,11 @@ class CustomerNoteBase(BaseModel):
     next_visit_date: Optional[date] = None
     preferred_actions: Optional[str] = None
     general_notes: Optional[str] = None
+    note_type: str = "general"
+    risks: Optional[str] = None
+    opportunities: Optional[str] = None
+    source_type: DataSourceType = DataSourceType.MANUAL
+    is_verified: bool = True
 
 class CustomerNoteCreate(CustomerNoteBase):
     pass

@@ -16,8 +16,8 @@ import {
   ClipboardList
 } from 'lucide-react';
 import StoreModal from '@/components/StoreModal';
-import AddCategoryModal from '@/components/AddCategoryModal';
-import AddProductModal from '@/components/AddProductModal';
+import CatalogDrawer from '@/components/v2/CatalogDrawer';
+import OrderDrawer from '@/components/v2/OrderDrawer';
 import { 
   StoreResponse, 
   CategoryResponse, 
@@ -28,10 +28,13 @@ export default function TradeHubPage() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
-  // Modal States
+  // Drawer/Modal States
   const [isAddStoreOpen, setIsAddStoreOpen] = useState(false);
-  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
+  const [catalogDrawer, setCatalogDrawer] = useState<{isOpen: boolean, mode: 'product' | 'category'}>({
+    isOpen: false,
+    mode: 'product'
+  });
 
   // Fetch Stores
   const { data: stores = [] } = useQuery<StoreResponse[]>({
@@ -90,6 +93,13 @@ export default function TradeHubPage() {
           <p className="text-gray-500 mt-2 font-medium text-lg">Central nervous system for your field operations.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsOrderDrawerOpen(true)}
+            className="flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-all active:scale-95"
+          >
+            <ShoppingCart size={18} />
+            New Order
+          </button>
           <div className="relative group">
             <button className="flex items-center gap-2 bg-white border border-gray-200 px-6 py-3 rounded-2xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-all active:scale-95">
               <LayoutGrid size={18} className="text-gray-400" />
@@ -97,13 +107,13 @@ export default function TradeHubPage() {
             </button>
             <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
               <button 
-                onClick={() => setIsAddCategoryOpen(true)}
+                onClick={() => setCatalogDrawer({ isOpen: true, mode: 'category' })}
                 className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
               >
                 <Plus size={14} /> New Category
               </button>
               <button 
-                onClick={() => setIsAddProductOpen(true)}
+                onClick={() => setCatalogDrawer({ isOpen: true, mode: 'product' })}
                 className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
               >
                 <Plus size={14} /> New Product
@@ -181,7 +191,7 @@ export default function TradeHubPage() {
           <div className="flex justify-between items-center border-b border-gray-50 pb-4">
             <h3 className="font-bold text-xl text-gray-900">Categories</h3>
             <button 
-              onClick={() => setIsAddCategoryOpen(true)}
+              onClick={() => setCatalogDrawer({ isOpen: true, mode: 'category' })}
               className="text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest"
             >
               Add New
@@ -210,7 +220,7 @@ export default function TradeHubPage() {
           
           <div className="pt-4 border-t border-gray-50">
             <button 
-              onClick={() => setIsAddProductOpen(true)}
+              onClick={() => setCatalogDrawer({ isOpen: true, mode: 'product' })}
               className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-2xl text-sm font-black flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all"
             >
               <Package size={18} /> Add New Product
@@ -229,21 +239,16 @@ export default function TradeHubPage() {
         token={token}
       />
 
-      <AddCategoryModal 
-        isOpen={isAddCategoryOpen}
-        onClose={() => setIsAddCategoryOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['categories'] });
-        }}
+      <CatalogDrawer 
+        isOpen={catalogDrawer.isOpen}
+        onClose={() => setCatalogDrawer({ ...catalogDrawer, isOpen: false })}
         token={token}
+        initialMode={catalogDrawer.mode}
       />
 
-      <AddProductModal 
-        isOpen={isAddProductOpen}
-        onClose={() => setIsAddProductOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['products'] });
-        }}
+      <OrderDrawer 
+        isOpen={isOrderDrawerOpen}
+        onClose={() => setIsOrderDrawerOpen(false)}
         token={token}
       />
     </div>

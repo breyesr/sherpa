@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
@@ -20,9 +21,12 @@ import {
   ArrowUpRight,
   TrendingUp,
   Target,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import { StoreResponse, StoreNoteResponse, OrderResponse, ProductResponse, CompetitorResponse } from '@/types/api';
+import FieldNoteDrawer from '@/components/v2/FieldNoteDrawer';
+import OrderDrawer from '@/components/v2/OrderDrawer';
 
 type TabType = 'details' | 'products' | 'orders' | 'notes';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
@@ -33,6 +37,8 @@ export default function StoreDetailPageV2() {
   const token = useAuthStore((state) => state.token);
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [activeNoteSubTab, setActiveNoteSubTab] = useState<NoteSubTab>('all');
+  const [isNoteDrawerOpen, setIsNoteDrawerOpen] = useState(false);
+  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
 
   // Fetch Store Detail
   const { data: store, isLoading, isFetched } = useQuery<StoreResponse>({
@@ -364,7 +370,10 @@ export default function StoreDetailPageV2() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-black text-gray-900">Order History</h3>
-                  <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
+                  <button 
+                    onClick={() => setIsOrderDrawerOpen(true)}
+                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95"
+                  >
                     <Plus size={16} /> New Order
                   </button>
                 </div>
@@ -404,7 +413,10 @@ export default function StoreDetailPageV2() {
               <div className="space-y-8">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-black text-gray-900">Field Observations</h3>
-                  <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
+                  <button 
+                    onClick={() => setIsNoteDrawerOpen(true)}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95"
+                  >
                     <Plus size={16} /> New Entry
                   </button>
                 </div>
@@ -460,6 +472,16 @@ export default function StoreDetailPageV2() {
                         )}
                       </div>
                     ))}
+
+                    <div className="pt-8 flex justify-center">
+                      <Link 
+                        href={`/trade/v2/notes?store=${store.name}`}
+                        className="flex items-center gap-2 text-gray-400 hover:text-blue-600 font-bold text-sm uppercase tracking-widest transition-all group"
+                      >
+                        View Global Territory Intelligence
+                        <ExternalLink size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
@@ -531,6 +553,21 @@ export default function StoreDetailPageV2() {
           </div>
         </div>
       </div>
+
+      {/* Drawers */}
+      <FieldNoteDrawer 
+        isOpen={isNoteDrawerOpen}
+        onClose={() => setIsNoteDrawerOpen(false)}
+        storeId={id as string}
+        token={token}
+      />
+
+      <OrderDrawer 
+        isOpen={isOrderDrawerOpen}
+        onClose={() => setIsOrderDrawerOpen(false)}
+        storeId={id as string}
+        token={token}
+      />
     </div>
   );
 }

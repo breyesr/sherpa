@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
@@ -23,17 +24,24 @@ import {
   MessageSquare,
   Sparkles,
   Zap,
-  ChevronRight
+  ChevronRight,
+  ExternalLink
 } from 'lucide-react';
 import { ClientResponse, StoreResponse, OrderResponse } from '@/types/api';
 
 type TabType = 'overview' | 'stores' | 'orders' | 'timeline';
+type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
 
+/**
+ * RETAILER DETAIL PAGE V2 - UPDATED VERSION
+ * Includes Sub-tabs and high-density note cards.
+ */
 export default function RetailerDetailPageV2() {
   const { id } = useParams();
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeNoteSubTab, setActiveNoteSubTab] = useState<NoteSubTab>('all');
 
   // Fetch Client Detail (Aggregated endpoint)
   const { data: detail, isLoading, isFetched } = useQuery({
@@ -48,11 +56,24 @@ export default function RetailerDetailPageV2() {
     enabled: !!token && !!id,
   });
 
+  const noteSubTabs = [
+    { id: 'all', label: 'All Observations' },
+    { id: 'commercial', label: 'Commercial' },
+    { id: 'marketing', label: 'Marketing' },
+    { id: 'intel', label: 'Opps / Risks' },
+  ];
+
   if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400 italic animate-pulse">Consulting Sherpa Intelligence...</div>;
   if (isFetched && !detail) return <div className="p-20 text-center font-bold text-red-500">Contact not found</div>;
 
   const { client, stores = [], trade_notes = [], orders = [] } = detail;
   const totalSpend = orders.reduce((sum: number, o: any) => sum + o.total_amount, 0);
+
+  const filteredNotes = (trade_notes || []).filter((note: any) => {
+    if (activeNoteSubTab === 'all') return true;
+    if (activeNoteSubTab === 'intel') return note.risks || note.opportunities;
+    return note.note_type === activeNoteSubTab;
+  });
 
   const tabs = [
     { id: 'overview', label: 'Intelligence', icon: Sparkles },
@@ -62,7 +83,7 @@ export default function RetailerDetailPageV2() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div id="v2-retailer-detail-container" className="max-w-7xl mx-auto space-y-8 pb-20">
       {/* Navigation */}
       <button 
         onClick={() => router.back()}
@@ -193,7 +214,7 @@ export default function RetailerDetailPageV2() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-black text-gray-900">Stores</h3>
-                  <button className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
+                  <button className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95">
                     <Plus size={16} /> Link Store
                   </button>
                 </div>
@@ -265,38 +286,77 @@ export default function RetailerDetailPageV2() {
             {activeTab === 'timeline' && (
               <div className="space-y-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-black text-gray-900">Field Reports</h3>
-                  <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
-                    <Plus size={16} /> New Entry
-                  </button>
+                  <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic border-l-4 border-blue-600 pl-4">Territory Intelligence Ledger</h3>
+                </div>
+
+                {/* Sub Tabs Filter */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+                  {noteSubTabs.map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setActiveNoteSubTab(subTab.id as NoteSubTab)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        activeNoteSubTab === subTab.id
+                          ? 'bg-gray-900 text-white shadow-md'
+                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      {subTab.label}
+                    </button>
+                  ))}
                 </div>
                 
-                {trade_notes.length > 0 ? (
+                {filteredNotes.length > 0 ? (
                   <div className="space-y-6">
-                    {trade_notes.map((note: any) => (
-                      <div key={note.id} className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                    {filteredNotes.map((note: any) => (
+                      <div key={note.id} className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 hover:border-blue-100 hover:bg-white transition-all group">
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-gray-900 text-white rounded-md">
-                            Interaction
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
+                            ['risk', 'threat'].includes(note.note_type) ? 'bg-red-100 text-red-600 border border-red-200' :
+                            note.note_type === 'opportunity' ? 'bg-green-100 text-green-600 border border-green-200' :
+                            note.note_type === 'anniversary' ? 'bg-purple-100 text-purple-600 border border-purple-200' :
+                            'bg-blue-100 text-blue-600 border border-blue-200'
+                          }`}>
+                            {note.note_type}
                           </span>
                           <span className="text-[10px] font-bold text-gray-400">{new Date(note.created_at).toLocaleDateString()}</span>
                         </div>
-                        <p className="text-gray-900 font-medium leading-relaxed">{note.general_notes}</p>
-                        {note.preferred_actions && (
-                          <div className="mt-4 pt-4 border-t border-gray-200/50">
-                            <div className="flex items-start gap-2 text-xs font-bold text-blue-600">
-                              <Target size={14} className="shrink-0" />
-                              <span>Action: {note.preferred_actions}</span>
-                            </div>
+                        <p className="text-gray-900 font-medium leading-relaxed italic pr-12">&quot;{note.general_notes}&quot;</p>
+                        {(note.risks || note.opportunities) && (
+                          <div className="mt-4 pt-4 border-t border-gray-200/50 flex flex-col gap-3">
+                            {note.risks && (
+                              <div className="flex items-start gap-2 text-xs font-bold text-red-500">
+                                <AlertCircle size={14} className="shrink-0" />
+                                <span>Risk Extract: {note.risks}</span>
+                              </div>
+                            )}
+                            {note.opportunities && (
+                              <div className="flex items-start gap-2 text-xs font-bold text-green-600">
+                                <TrendingUp size={14} className="shrink-0" />
+                                <span>Opportunity: {note.opportunities}</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     ))}
+
+                    {/* Pulse Deep Link */}
+                    <div className="pt-10 flex justify-center">
+                      <Link 
+                        href={`/trade/v2/notes?retailer=${client.name}`}
+                        className="flex items-center gap-3 text-gray-400 hover:text-blue-600 font-bold text-xs uppercase tracking-[0.2em] transition-all group px-8 py-3 bg-gray-50 rounded-full"
+                      >
+                        Launch Global Pulse Explorer
+                        <ExternalLink size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-blue-400" />
+                      </Link>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
-                    <Activity className="mx-auto text-gray-300 mb-4" size={32} />
-                    <p className="text-gray-500 font-bold">No field reports found for this contact.</p>
+                  <div className="text-center py-24 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
+                    <Activity className="mx-auto text-gray-300 mb-6" size={48} />
+                    <h4 className="text-lg font-black text-gray-900 mb-2">No Reports Synchronized</h4>
+                    <p className="text-gray-500 font-bold text-sm max-w-xs mx-auto">Field observations from visits or AI analysis will materialize here.</p>
                   </div>
                 )}
               </div>
@@ -335,9 +395,9 @@ export default function RetailerDetailPageV2() {
                   <span className="text-[10px] font-black uppercase tracking-widest">Account Brief</span>
                 </div>
                 <p className="text-sm text-gray-200 leading-relaxed font-medium italic">
-                  "{client.name} is a key decision maker for {stores.length} locations. 
+                  &quot;{client.name} is a key decision maker for {stores.length} locations. 
                   Recently showed interest in expanding the beverage category. 
-                  Communication style is direct and efficiency-focused."
+                  Communication style is direct and efficiency-focused.&quot;
                 </p>
               </div>
 

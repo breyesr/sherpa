@@ -15,14 +15,20 @@ import {
   LayoutGrid,
   List as ListIcon,
   Filter,
-  MessageSquare
+  MessageSquare,
+  Edit2
 } from 'lucide-react';
 import { ClientResponse } from '@/types/api';
+import ContactDrawer from '@/components/v2/ContactDrawer';
 
 export default function RetailersPageV2() {
   const token = useAuthStore((state) => state.token);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: any}>({
+    isOpen: false,
+    clientId: null
+  });
 
   // Fetch Retailers (Clients)
   const { data: retailers = [], isLoading } = useQuery<ClientResponse[]>({
@@ -60,7 +66,10 @@ export default function RetailersPageV2() {
             Centralized contact intelligence for your retail partners and decision makers.
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95">
+        <button 
+          onClick={() => setContactDrawer({ isOpen: true, clientId: null })}
+          className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
+        >
           <Plus size={18} />
           Add Contact
         </button>
@@ -119,12 +128,12 @@ export default function RetailersPageV2() {
         <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
           <div className="divide-y divide-gray-50">
             {filteredRetailers.map((retailer) => (
-              <Link 
-                key={retailer.id} 
-                href={`/trade/v2/retailers/${retailer.id}`}
-                className="group flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all"
-              >
-                <div className="flex items-center gap-6">
+              <div key={retailer.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
+                <Link 
+                  href={`/trade/v2/retailers/${retailer.id}`}
+                  className="absolute inset-0 z-0"
+                />
+                <div className="relative z-10 flex items-center gap-6 pointer-events-none flex-1">
                   <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                     <UserIcon size={28} />
                   </div>
@@ -156,39 +165,67 @@ export default function RetailersPageV2() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-12 mt-6 md:mt-0">
-                  <div className="hidden lg:flex flex-col items-end">
+                <div className="relative z-10 flex items-center gap-12 mt-6 md:mt-0">
+                  <div className="hidden lg:flex flex-col items-end pointer-events-none">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Interaction</span>
                     <span className="font-bold text-gray-700">2 days ago</span>
                   </div>
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-end pointer-events-none">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Channel</span>
                     <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 px-3 py-1 rounded-lg">
                       <MessageSquare size={12} className="text-blue-500" />
                       <span className="text-xs font-bold text-gray-600">WhatsApp</span>
                     </div>
                   </div>
-                  <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setContactDrawer({ isOpen: true, clientId: retailer.id, initialData: retailer });
+                      }}
+                      className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative z-20"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all pointer-events-none" />
+                  </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRetailers.map((retailer) => (
-            <Link 
+            <div 
               key={retailer.id} 
-              href={`/trade/v2/retailers/${retailer.id}`}
-              className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between"
+              className="group relative bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between cursor-pointer"
             >
-              <div>
-                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                  <UserIcon size={24} />
+              <Link 
+                href={`/trade/v2/retailers/${retailer.id}`}
+                className="absolute inset-0 z-0"
+              />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                    <UserIcon size={24} />
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setContactDrawer({ isOpen: true, clientId: retailer.id, initialData: retailer });
+                    }}
+                    className="p-2 text-gray-300 hover:text-blue-600 transition-colors relative z-20"
+                  >
+                    <Edit2 size={18} />
+                  </button>
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                   {retailer.name}
                 </h3>
+...
                 <p className="text-gray-500 font-medium text-sm line-clamp-2 mb-4">
                   {retailer.role || 'Partner Retailer'}
                 </p>
@@ -215,10 +252,18 @@ export default function RetailersPageV2() {
                 </div>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
+
+      <ContactDrawer 
+        isOpen={contactDrawer.isOpen}
+        onClose={() => setContactDrawer({ ...contactDrawer, isOpen: false })}
+        token={token}
+        clientId={contactDrawer.clientId}
+        initialData={contactDrawer.initialData}
+      />
     </div>
   );
 }

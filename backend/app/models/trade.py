@@ -391,6 +391,15 @@ class CustomerNote(Base):
     preferred_actions = Column(Text, nullable=True)
     general_notes = Column(Text, nullable=True)
     
+    # Aligning with StoreNote for Pulse Integration
+    note_type = Column(String, nullable=False, default="general", index=True)
+    risks = Column(Text, nullable=True)
+    opportunities = Column(Text, nullable=True)
+    
+    # Provenance & Verification
+    source_type = Column(SQLEnum(DataSourceType), nullable=False, default=DataSourceType.MANUAL, index=True)
+    is_verified = Column(Boolean, default=True, index=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
