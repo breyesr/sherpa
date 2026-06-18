@@ -1,5 +1,12 @@
 # Handoff Log
 
+## [2026-06-18] - Agentic RAG Stability & Staging Merge
+- **Staging Merge**: Successfully merged `feature/trade/v2-ops` into `staging`, including the full V2 Drawer system and Trade Operation models.
+- **Verification Suite**: Upgraded simulation tests (`test_simulated_session.py`, `test_simulated_session_2.py`) to fully support the `AgenticOrchestrator` (LangGraph) architecture.
+- **Entity Resolution**: Fixed a critical `AttributeError` in the `EntityResolver` and hardened the logic to handle both mock data and real SQLAlchemy objects.
+- **Schema Validation**: Updated `test_business_api.py` to correctly validate the `TRADE` vertical type, ensuring parity with the B2B pivot.
+- **Stability**: Confirmed 100% pass rate for backend tests and multi-turn agent simulations on the `staging` branch.
+
 ## [2026-06-17] - V2 Trade Operations & Surgical UI (Epic 120 Complete)
 - **UI Architecture**: Implemented a universal `Drawer.tsx` slide-over component for high-density, context-aware data entry, replacing legacy centered modals.
 - **Surgical Drawers**: Built `AccountDrawer`, `ContactDrawer`, `CatalogDrawer`, and a 3-step `OrderDrawer`. Implemented "Instant-Populate" logic to eliminate loading latency when editing entities.
@@ -174,12 +181,14 @@
 - **2026-05-29 14:15**: Completed Epic 107. Hardened Trade schema, implemented multi-turn memory for AI, and added progressive disclosure UI for new B2B fields. System now supports high-precision Hybrid Search across regions and contacts.
 
 - **2026-05-29 18:30**: Resolved production deployment crash. Identified 'False Head' migration state and implemented manual column injection for the 'clients' table. System is now fully stable on staging/production.
-\n- **2026-06-07**: Completed Task 107.6 (Catalog Hardening). Updated Product, Category, and Order models with specialized draft fields (delivery_id, category_type, etc.) and synchronized frontend API types.
+
+- **2026-06-07**: Completed Task 107.6 (Catalog Hardening). Updated Product, Category, and Order models with specialized draft fields (delivery_id, category_type, etc.) and synchronized frontend API types.
 - **2026-06-07**: Completed Task 107.8 (Persona Serialization). Implemented recursive semantic summaries and vectorized existing Store, Client, and Competitor profiles to enable high-fidelity GraphRAG search.
 - **2026-06-07**: Completed Task 107.7 (Dashboard Column Expansion). Updated Stores, Retailers, and CRM views to display Region, Segment, and Role metadata as badges for immediate visual feedback.
 - **2026-06-07**: Implemented future-proof Action Tracking for StoreNotes. Added structured fields (note_type, is_actionable, action_metadata) to enable the 'Active AI' strategic layer for Marketing and Commercial interventions.
 - **2026-06-07**: Fixed store loading regression. Updated StoreNoteBase schema to make action_metadata optional, resolving Pydantic validation errors caused by NULL values in existing records.
-\n- **2026-06-08 15:00**: Epic 107 Completed. Hardened B2B relational core, implemented full GraphRAG persona awareness, and enabled future-proof action tracking. System is ready for staging merge and Railway deployment.
+
+- **2026-06-08 15:00**: Epic 107 Completed. Hardened B2B relational core, implemented full GraphRAG persona awareness, and enabled future-proof action tracking. System is ready for staging merge and Railway deployment.
 
 ## [2026-06-10] - Unified Knowledge Foundations (Epic 111)
 - **Model Standardization (Task 111.2)**: Standardized `get_knowledge_metadata()` across all Trade models (Categories, Products, Orders, Stores, Notes). This enables granular AI filtering in the unified corpus.
@@ -205,11 +214,21 @@
 - **Data Security**: Removed `python3 surgical_rebuild.py` from `backend/pre_deploy.sh`. This prevents the automatic dropping of tables (Categories, Products, Orders, etc.) on every deployment, securing production data persistence.
 - **Railway Sync**: Verified successful deployment on Railway. The system now correctly applies schema updates without conflicting with existing data.
 - **Handoff Update**: Refreshed `HANDOFF_STATE.md` to reflect the transition from "volatile rebuilds" to "stable idempotent migrations."
-\n## [2026-06-08] - Account Isolation & B2B Hardening (Epics 107, 109, 110)\n- **Context Isolation**: Successfully implemented 'Clean Slate' session isolation. The AI now atomically wipes Redis chat history and summaries when switching between stores, preventing context bleeding.\n- **Session Locking**: Integrated Redis-based 'Account Session Locks'. Once a store is identified, the system strictly filters all intelligence for that account until an explicit switch or termination command is received.\n- **GraphRAG Precision**: Added attributed source labeling (e.g., '[SOURCE: Store X]') to all retrieved context chunks. Implemented strict word-boundary matching to prevent common Spanish words (like 'este') from triggering false-positive account switches.\n- **B2B Hardening**: Completed the hardened Catalog schema (Products, Categories, Orders) with specialized B2B fields. Implemented recursive 'get_semantic_summary' for all entities to enable profile-aware AI briefings.\n- **High-Fidelity Environment**: Populated 2 months of mock history (32 visits) across all stores. Fully enriched 'Distribuidora del Este' with 100% data density (Risks, Opportunities, Actions, and Orders).\n- **Stability**: Resolved critical 'NameError' crash in GraphRAG and fixed Intent Classifier to correctly handle implicit briefing requests ('voy de camino').\n- **Deployment**: Merged all intelligence and isolation upgrades to 'staging' with automated self-healing schema injection for Railway.
-- 2026-06-11: Implemented Task 111.4. Refactored GraphRAGService to use KnowledgeCorpus. Hardened metadata in StoreNote, CustomerNote, and Client models.
-- 2026-06-11: Completed the Trinity Intelligence Pipeline (Epic 112). Implemented parallel retrieval, a specialized Synthesizer pass for structured dossiers, and a strategically-framed Persona delivery layer.
-- 2026-06-11: Completed Sprint 1: The Actionable Ledger. Implemented StoreAction and AccountIntelligence models, updated Ingestion logic for structured extraction, stabilized GraphRAG concurrent access, and performed historical backfill.
-- 2026-06-11: Resolved staging deployment failure (DuplicateTableError). Hardened early B2B migrations (091707792b94, 5ee6d1ad3979, 8f423ae0a403, 44af8f82f483) with SQLAlchemy Inspector for full idempotency. Verified successful deployment on staging.
+
+## [2026-06-08] - Account Isolation & B2B Hardening (Epics 107, 109, 110)
+- **Context Isolation**: Successfully implemented 'Clean Slate' session isolation. The AI now atomically wipes Redis chat history and summaries when switching between stores, preventing context bleeding.
+- **Session Locking**: Integrated Redis-based 'Account Session Locks'. Once a store is identified, the system strictly filters all intelligence for that account until an explicit switch or termination command is received.
+- **GraphRAG Precision**: Added attributed source labeling (e.g., '[SOURCE: Store X]') to all retrieved context chunks. Implemented strict word-boundary matching to prevent common Spanish words (like 'este') from triggering false-positive account switches.
+- **B2B Hardening**: Completed the hardened Catalog schema (Products, Categories, Orders) with specialized B2B fields. Implemented recursive 'get_semantic_summary' for all entities to enable profile-aware AI briefings.
+- **High-Fidelity Environment**: Populated 2 months of mock history (32 visits) across all stores. Fully enriched 'Distribuidora del Este' with 100% data density (Risks, Opportunities, Actions, and Orders).
+- **Stability**: Resolved critical 'NameError' crash in GraphRAG and fixed Intent Classifier to correctly handle implicit briefing requests ('voy de camino').
+- **Deployment**: Merged all intelligence and isolation upgrades to 'staging' with automated self-healing schema injection for Railway.
+
+- **2026-06-11**: Implemented Task 111.4. Refactored GraphRAGService to use KnowledgeCorpus. Hardened metadata in StoreNote, CustomerNote, and Client models.
+- **2026-06-11**: Completed the Trinity Intelligence Pipeline (Epic 112). Implemented parallel retrieval, a specialized Synthesizer pass for structured dossiers, and a strategically-framed Persona delivery layer.
+- **2026-06-11**: Completed Sprint 1: The Actionable Ledger. Implemented StoreAction and AccountIntelligence models, updated Ingestion logic for structured extraction, stabilized GraphRAG concurrent access, and performed historical backfill.
+- **2026-06-11**: Resolved staging deployment failure (DuplicateTableError). Hardened early B2B migrations (091707792b94, 5ee6d1ad3979, 8f423ae0a403, 44af8f82f483) with SQLAlchemy Inspector for full idempotency. Verified successful deployment on staging.
+
 - **2026-06-13**: Completed People V2 Redesign (Task 114.3). Successfully implemented the high-end "Contact Intelligence Dossier" with a unified behavioral/identity grid and a premium dark-themed "Sherpa Intelligence" sidebar. Hardened the backend aggregated detail endpoint with proper schemas and eager loading. Merged to staging.
 
 - **Modernized Account UI (Task 114.1)**: Successfully implemented a tabbed Store Detail page under `/trade/v2/` with distinct views for Details, Products, Orders, and a categorized Timeline.
@@ -223,9 +242,9 @@
 - **Strategic Coach Refactor (Task 107.14)**: Transitioned AI from "Summarizer" to "Advisor" using Cognitive Frame patterns and Ledger-First synthesis.
 - **Orchestration Guardrails**: Added programmatic pronoun and implicit query detection to B2BOrchestrator to stabilize routing across diverse user styles.
 - **Backlog Grooming**: Formalized Epic 115 (Utility-First Architecture) for the next phase of AI proactivity.
-- [2026-06-14] (Epic 115) Completed Utility-First Architecture Pivot: Built EntityResolver for proactive store detection and transitioned orchestrator to use the unified `utility_orchestrator.j2` prompt, bypassing slow RAG pipelines for known accounts.
-- [2026-06-14] (Epic 116 Planned) Diagnosed conversational rigidity in Utility-First architecture. Formalized Deep Dive routing strategy to balance speed and historical depth without requiring complex agentic loops.
-- [2026-06-15] - Thin Agent Failure & Agentic RAG Pivot
+- **[2026-06-14] (Epic 115)**: Completed Utility-First Architecture Pivot: Built EntityResolver for proactive store detection and transitioned orchestrator to use the unified `utility_orchestrator.j2` prompt, bypassing slow RAG pipelines for known accounts.
+- **[2026-06-14] (Epic 116 Planned)**: Diagnosed conversational rigidity in Utility-First architecture. Formalized Deep Dive routing strategy to balance speed and historical depth without requiring complex agentic loops.
+- **[2026-06-15]** - Thin Agent Failure & Agentic RAG Pivot
     - **Implementation**: Built the Two-Pass Thin Agent (`gpt-4o-mini` planner + execution layer).
     - **Diagnostic**: Field simulations revealed catastrophic prompt adherence failures in the Planner (ignoring implicit context shifts, hallucinating tool arguments). 
 - **Epic 117 Stabilization**: Resolved critical retrieval and orchestration bugs.
@@ -240,5 +259,3 @@
 - **Epic Formalization**: Created **Epic 119: The Sherpa Ingestion Engine (V2)** in the backlog, targeting the removal of beta placeholders in the Account and Contact views.
 - **Architectural Scope**: Tasked the backend enhancement for bulk many-to-many associations and the frontend implementation of a guided mapping wizard.
 - **Maintenance**: Updated `HANDOFF_STATE.md` and `BACKLOG.md` to reflect the new strategic focus.
-
-
