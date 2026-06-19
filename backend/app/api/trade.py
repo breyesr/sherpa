@@ -23,6 +23,8 @@ from app.schemas.trade import (
     StoreActionCreate, StoreActionResponse, StoreActionUpdate
 )
 
+from app.tasks.knowledge import sync_vector_task
+
 router = APIRouter()
 
 async def get_business(db: AsyncSession, user_id: str) -> BusinessProfile:
@@ -80,6 +82,7 @@ async def create_store(
 
     db.add(store)
     await db.commit()
+    sync_vector_task.delay(str(store.id), "store", str(business.id))
     
     # Reload with relationships for the response
     result = await db.execute(
@@ -131,6 +134,7 @@ async def create_store_note(
     )
     db.add(note)
     await db.commit()
+    sync_vector_task.delay(str(note.id), "store_note", str(business.id))
     await db.refresh(note)
     return note
 
@@ -172,6 +176,7 @@ async def update_store(
         
     db.add(store)
     await db.commit()
+    sync_vector_task.delay(str(store.id), "store", str(business.id))
     
     # Reload with relationships for the response
     res_final = await db.execute(

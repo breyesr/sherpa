@@ -136,7 +136,7 @@ class Store(Base):
     business_profile = relationship("BusinessProfile", back_populates="stores")
     
     # Many-to-Many relationship with Clients (Retailers)
-    clients = relationship("Client", secondary=store_clients, backref="stores")
+    clients = relationship("Client", secondary=store_clients, back_populates="stores")
     
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
     intelligence = relationship("AccountIntelligence", back_populates="store", uselist=False, cascade="all, delete-orphan")

@@ -48,6 +48,7 @@ class Client(Base):
     appointments = relationship("Appointment", back_populates="client", cascade="all, delete-orphan")
     trade_notes = relationship("CustomerNote", back_populates="client", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="client", cascade="all, delete-orphan")
+    stores = relationship("Store", secondary="store_clients", back_populates="clients")
 
     def get_semantic_summary(self, include_notes: bool = False) -> str:
         summary = f"Cliente (Contacto): {self.name}."

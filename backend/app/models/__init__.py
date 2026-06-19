@@ -9,3 +9,4 @@ from app.models.crm import Client, Appointment
 from app.models.service import Service
 from app.models.messaging import Conversation, Message
 from app.models.system import SystemConfiguration
+from app.models.dlq import VectorizationDLQ

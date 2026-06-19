@@ -10,6 +10,10 @@ from app.models.business import BusinessProfile, VerticalType
 from app.api.auth import get_current_user, get_password_hash
 from app.core.system_config import ConfigService
 from app.schemas.user import UserResponse, UserCreateAdmin, UserUpdate
+from app.models.dlq import VectorizationDLQ
+from app.tasks.knowledge import sync_vector_task, delete_vector_task
+from datetime import datetime
+from typing import Optional
 
 router = APIRouter()
 
@@ -164,3 +168,62 @@ async def update_admin_settings(
     for key, value in settings.items():
         await ConfigService.set(db, key, value)
     return {"status": "success"}
+
+@router.get("/dlq")
+async def list_dlq(
+    entity_type: Optional[str] = None,
+    status: Optional[str] = None,
+    business_id: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+) -> Any:
+    """List all dead-letter queue entries (Admin only)."""
+    stmt = select(VectorizationDLQ)
+    if entity_type:
+        stmt = stmt.where(VectorizationDLQ.entity_type == entity_type)
+    if status:
+        stmt = stmt.where(VectorizationDLQ.status == status)
+    if business_id:
+        stmt = stmt.where(VectorizationDLQ.business_id == business_id)
+        
+    stmt = stmt.order_by(VectorizationDLQ.created_at.desc()).limit(limit).offset(offset)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+@router.post("/dlq/{dlq_id}/retry")
+async def retry_dlq_entry(
+    dlq_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+) -> Any:
+    """Retry a failed task from DLQ and mark it as resolved (Admin only)."""
+    result = await db.execute(
+        select(VectorizationDLQ).where(VectorizationDLQ.id == dlq_id)
+    )
+    dlq_entry = result.scalars().first()
+    if not dlq_entry:
+        raise HTTPException(status_code=404, detail="DLQ entry not found")
+        
+    if dlq_entry.status == "resolved":
+        raise HTTPException(status_code=400, detail="DLQ entry is already resolved")
+        
+    # Re-dispatch Celery task
+    if dlq_entry.task_name == "sync_vector_task":
+        sync_vector_task.delay(dlq_entry.entity_id, dlq_entry.entity_type, dlq_entry.business_id)
+    elif dlq_entry.task_name == "delete_vector_task":
+        delete_vector_task.delay(dlq_entry.entity_id, dlq_entry.entity_type, dlq_entry.business_id)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported task type for retry: {dlq_entry.task_name}")
+        
+    dlq_entry.status = "resolved"
+    dlq_entry.resolved_at = datetime.utcnow()
+    db.add(dlq_entry)
+    await db.commit()
+    
+    return {
+        "status": "success",
+        "message": f"Successfully re-dispatched task {dlq_entry.task_name} for entity {dlq_entry.entity_id}"
+    }
+

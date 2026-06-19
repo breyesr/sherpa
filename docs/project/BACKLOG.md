@@ -38,14 +38,13 @@
 - [ ] Task 105.3: Update Telegram Webhook to download and process `voice` messages.
 - [ ] Task 105.4: Route transcribed text automatically into the B2B Ingestion Agent.
 
-## Epic 106: Vertical-Aware Prompt Orchestration (IN PROGRESS)
+## Epic 106: Vertical-Aware Prompt Orchestration (COMPLETE)
 - [x] Task 106.1: Separate system prompts into `b2c_scheduler.j2` and `b2b_sales_brain.j2`.
 - [x] Task 106.2: Refactor `AIService.get_response` to load templates based on `vertical_type`.
 - [x] Task 106.3: Implement "Tool Masking" to hide B2B-specific tools from B2C (Basic) businesses.
 - [x] Task 106.4: Remove hardcoded "Marco" persona and genericize `B2BOrchestrator` routing messages.
-- [ ] Task 106.5: Validate dual-mode logic: Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion".
 
-## Epic 107: Trade Schema Hardening & Draft Alignment (FOUNDATIONS COMPLETE)
+## Epic 107: Trade Schema Hardening & Draft Alignment (COMPLETE)
 - [x] Task 107.1: Relational Hardening: Update `Store`, `Client`, and `Competitor` models with draft fields plus B-Tree indexes for fast regional filtering.
 - [x] Task 107.2: Migration & Type Sync: Execute Alembic migrations and run `npm run gen:api` to synchronize the frontend TypeScript types.
 - [x] Task 107.3: AI Prompt & Tool Enrichment: Update `b2b_sales_brain.j2` and `intent_classifier.j2` so the AI knows how to "Hybrid Search" the new fields.
@@ -59,7 +58,6 @@
 - [x] Task 107.11: Deterministic Knowledge Storage: Migrate to v5 UUIDs and deterministic UPSERTs for knowledge chunks (Idempotency).
 - [x] Task 107.12: Account Intelligence Table: Create the "Fat Table" schema for Dossiers (Metadata, Playbook, Triggers, Context).
 - [x] Task 107.13: Heuristic Inference Pipeline: Implement the logic that updates the Dossier Playbook and Triggers automatically from field reports.
-- [ ] Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First).
 
 ## Epic 108: The Actionable Intelligence Ledger (Frictionless CRM)
 **Objective**: Transition from purely narrative visit notes to a structured ledger of Marketing and Commercial actions, automatically extracted by AI to power management dashboards and future "Active AI" interventions.
@@ -68,7 +66,7 @@
 - [x] Task 108.2: **AI Extraction Logic**: Update the `process_b2b_ingestion` pipeline to use a specialized LLM parsing step to identify and populate `StoreAction` records from raw chat notes.
 - [x] Task 108.3: **Historical Backfill**: Re-process existing mock notes (from the last 60 days) into the new `StoreAction` table to ensure dashboards are populated.
 - [ ] Task 108.4: **Dashboard API**: Create specialized endpoints for high-level reporting (e.g., actions by objective, visits per month, success rates).
-- [ ] Task 108.5: **Frictionless UI Integration**: Implement the "Strategy Desk" view with charts and an "Opportunity Inbox" for proposed AI actions that require Rep approval.
+- [ ] Task 108.5: **Opportunity Inbox**: Implement the AI-proposed action queue where the system surfaces recommended actions (e.g., from anniversary triggers or competitive threats) for Rep approval. *(Note: The Strategy Desk list view was delivered under Epic 121.4.)*
 - [ ] Task 108.6: **Anniversary Trigger**: Implement a background job that automatically generates a `StoreAction` (PROPOSED) when a store's `opening_date` is approaching.
 
 ## Epic 109: Context-Aware Account Intelligence & Discovery (COMPLETE)
@@ -102,15 +100,15 @@
 
 ---
 
-## Epic 112: The Trinity Intelligence Pipeline
-**Objective**: Decouple data retrieval, logical synthesis, and persona-driven delivery into a specialized three-step internal pipeline to maximize factual accuracy and strategic framing.
+## Epic 112: The Trinity Intelligence Pipeline (SUPERSEDED — BENCHMARKING PENDING)
+**Objective**: *(Original Trinity pipeline has been superseded by the LangGraph ReAct agent in Epic 117. The only remaining task is performance benchmarking of the new architecture.)*
 
 - [x] Task 112.1: **Retriever Parallelization**: Refactor `GraphRAGService` to use `asyncio.gather` for simultaneous SQL (Factual) and Vector (Semantic) data retrieval.
 - [x] Task 112.2: **The Synthesizer Prompt**: Develop `app/core/prompts/synthesizer.j2`, a flavorless, logic-driven template that merges raw data into a structured "Intelligence Dossier".
 - [x] Task 112.3: **The Sherpa Persona Refactor**: Rewrite `app/core/prompts/visit_briefer.j2` to act as "The Voice", focusing exclusively on strategic framing based on the clean Synthesizer dossier.
 - [x] Task 112.4: **Trinity Orchestration**: Implement the sequential flow: Fetch (Parallel) -> Synthesis (Flash Model) -> Persona Delivery (Capability Model).
 - [x] Task 112.5: **Validation Guardrails**: Implement "Identity Locking" checks in the Synthesizer to ensure facts from different stores never bleed into the same dossier.
-- [ ] Task 112.6: **Latency & Token Benchmarking**: Quantify the performance impact of the multi-step pipeline and optimize model selection (e.g., Gemini Flash for Synthesis).
+- [ ] Task 112.6: **ReAct Agent Benchmarking**: Quantify the multi-turn latency and token costs of the LangGraph ReAct loop. Optimize step limits and model routing to control SaaS margins.
 
 ---
 
@@ -121,8 +119,6 @@
 1. **Strict Hop Limit**: Graph traversals via SQL are capped at **2 levels** (e.g., Store -> Client -> Other Stores).
 2. **Confidence Threshold**: Any AI-extracted link with a confidence score **< 0.85** is hidden from the retriever until confirmed.
 3. **Isolation First**: Global discovery is strictly toggled; multi-hop results are **suppressed** during active visit sessions unless explicitly requested.
-
-- [ ] Task 113.1: **The Identity Lock**: Update `B2BOrchestrator` and `GraphRAGService` with an explicit `discovery_scope` (LOCAL | GLOBAL) to ensure data isolation during visits.
 - [ ] Task 113.2: **Polymorphic Link Schema**: Create the `knowledge_links` table with fields for `source_corpus_id`, `target_entity_type`, `target_entity_id`, `confidence_score`, and `link_provenance`.
 - [ ] Task 113.3: **High-Confidence Enrichment Pipeline**: Implement a Celery task using Gemini Flash to parse `KnowledgeCorpus` chunks and identify exact relational entity IDs.
 - [ ] Task 113.4: **Precision Context Injection**: Refactor the Retriever to perform "Hard-Coded Lookups" for exact entity names found in the query, bypassing vector similarity for known nodes.
@@ -398,7 +394,6 @@
 - [x] Task 114.1: **V2 Scaffolding**: Implement the modernized Account (Store) and Contact (Retailer) List and Detail pages under `/trade/v2/`.
 - [x] Task 114.2: **Content-Aware Intelligence**: Implement intelligence extraction and filtering that surfaces Risks/Opps regardless of the primary note label.
 - [x] Task 114.3: **People V2 Redesign**: Implement the high-end "Intelligence Dossier" for Contacts, featuring a unified context grid and dark-themed AI sidebar.
-- [ ] Task 114.4: **Strategy Desk**: Build the high-level dashboard for management reporting on Marketing and Commercial actions.
 - [ ] Task 114.5: **Mobile-First Ingestion**: Optimize the note-taking flow for mobile users (Quick Actions).
 
 ## Epic 115: Proactive Utility-First Orchestration
@@ -422,3 +417,21 @@
 - [x] Task 117.3: **LangGraph Implementation**: Replace the custom orchestrator logic with a LangGraph state machine (ReAct pattern) to manage multi-tool loops and state persistence.
 - [x] Task 117.4: **State & Memory Hardening**: Configure LangGraph Checkpoints (Postgres-backed) to ensure the agent can recover from failures and maintain long-term multi-turn state.
 - [x] Task 117.5: **Validation**: Re-run the deep-dive diagnostic session to confirm 100% data retrieval and context retention.
+
+---
+
+## 🚫 Deprecated & Superseded Tasks (Audit Log)
+The following tasks have been removed or deprecated from active epics because of recent architectural shifts (e.g. Unified Knowledge Corpus, LangGraph ReAct agent, Epic 121 completions):
+
+1. **Task 106.5: Validate dual-mode logic (Ensure B2C flows maintain "Identity Gating" while B2B flows prioritize "Intelligence Ingestion")**
+   * *Status:* **Removed**.
+   * *Reason:* Decoupling is now enforced cleanly at the application routing and 1:N `Agent` architecture levels. Basic and Trade modes use entirely separate orchestrators, making this gate-checking validation redundant.
+2. **Task 107.14: Strategic Coach Prompt: Rewrite `visit_briefer.j2` to use the "Cognitive Frame" assembly pattern (Strategy-First)**
+   * *Status:* **Removed**.
+   * *Reason:* Standalone `visit_briefer.j2` prompt is deprecated. Response synthesis is handled dynamically by the LangGraph agent prompt (`b2b_sales_brain.j2`) and retrieval tools.
+3. **Task 113.1: The Identity Lock: Update `B2BOrchestrator` and `GraphRAGService` with an explicit `discovery_scope` (LOCAL | GLOBAL) to ensure data isolation during visits**
+   * *Status:* **Removed**.
+   * *Reason:* Dynamic Redis-based session isolation and context flushing completed in Epic 110.
+4. **Task 114.4: Strategy Desk: Build the high-level dashboard for management reporting on Marketing and Commercial actions**
+   * *Status:* **Removed**.
+   * *Reason:* Fully built and delivered under Epic 121 (the `/trade/actions` list and outcome resolution UI).

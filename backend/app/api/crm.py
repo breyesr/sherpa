@@ -20,6 +20,8 @@ from app.schemas.crm import (
 from app.api.auth import get_current_user
 from app.core.google_calendar import GoogleCalendarService
 
+from app.tasks.knowledge import sync_vector_task, delete_vector_task
+
 router = APIRouter()
 
 async def get_user_business(db: AsyncSession, user_id: str) -> BusinessProfile:
@@ -57,6 +59,7 @@ async def create_client(
     )
     db.add(client)
     await db.commit()
+    sync_vector_task.delay(str(client.id), "client", str(business.id))
     await db.refresh(client)
     return client
 
@@ -129,6 +132,7 @@ async def update_client(
     
     db.add(client)
     await db.commit()
+    sync_vector_task.delay(str(client.id), "client", str(business.id))
     await db.refresh(client)
     return client
 
@@ -149,6 +153,7 @@ async def delete_client(
 
     await db.delete(client)
     await db.commit()
+    delete_vector_task.delay(str(client_id), "client", str(business.id))
     return {"status": "deleted"}
 
 @router.get("/appointments", response_model=List[AppointmentResponse])
