@@ -1,5 +1,11 @@
 # Handoff Log
 
+- **2026-06-19 (Epic 124 Complete)**: Implemented strict domain boundaries and transactional tooling for B2B sales assistant (Marco).
+    - Added **Domain Boundary Enforcement (Task 124.1)** to `b2b_sales_brain.j2` to politely reject off-topic questions (e.g. recipes).
+    - Created **Transactional Tool (Task 124.2)** `get_recent_orders` in `TradeToolKit` to execute structured SQL database query with proper eager loads.
+    - Registered **Agentic Tool (Task 124.3)** in `AgenticOrchestrator` to expose recent orders to the LangGraph planner.
+    - Created and ran unit tests in `test_agent_boundaries.py` to ensure high quality and zero regressions.
+
 - **2026-06-19 (Epic 118 Complete)**: Implemented real-time vector sync and auto-vectorization.
     - Added **Content Hash Check (Task 118.3)** to skip redundant OpenAI embeddings API calls.
     - Created **Dead-Letter Queue (Task 118.5)** database model and Alembic migration `e12f5bf3c6b4_add_vectorization_dlq` (fully executed).
@@ -283,3 +289,5 @@
 - **Backend Order Enhancement**: Exposed `GET /trade/orders/{order_id}` and `PATCH /trade/orders/{order_id}` on the FastAPI backend for detail lookup and status updates.
 - **Action Catalog & Strategy Desk (Tasks 121.3 & 121.4)**: Designed Strategy Desk dashboard and Configuration Catalog, allowing manual action dispatching and strict completion resolution outcomes reporting (requiring both numeric `result_value` and descriptive `resolution_notes`).
 - **OpenAPI Schema & Build Sync (Tasks 122.1 & 122.2)**: Successfully updated OpenAPI JSON, generated TypeScript typings, and verified Next.js compiles without errors.
+- **2026-06-19 14:25**: Resolved Conversational Cold-Start Store Listing bug. Added a structured `get_stores` tool to `TradeToolKit` and registered it in `AgenticOrchestrator`. This allows the agent to fetch all stores, regions, segments, markets, and locations directly from PostgreSQL database instead of relying on RAG for general catalog requests, stabilizing responses for queries like "Give me a list of stores and regions we manage".
+

@@ -115,7 +115,24 @@ class AgenticOrchestrator:
             sid = store_id or active_store_id
             return await calendar_toolkit.create_appointment(client_identifier, start_time, notes, store_id=sid)
 
-        tools = [resolve_entities, query_knowledge, log_field_report, get_available_slots, create_appointment]
+        @tool
+        async def get_stores():
+            """
+            Retrieve the list of all stores and their regions, segments, and markets managed by this business.
+            Use this when the user asks for a list of stores, regions, or locations we manage.
+            """
+            return await self.trade_toolkit.get_stores(business_id)
+
+        @tool
+        async def get_recent_orders(store_id: Optional[str] = None, limit: int = 5):
+            """
+            Retrieve the recent orders placed for the business, optionally filtered by a specific store_id.
+            Use this when the user asks for the latest/recent orders, order history, or last products sold to a store.
+            """
+            sid = store_id or active_store_id
+            return await self.trade_toolkit.get_recent_orders(business_id, store_id=sid, limit=limit)
+
+        tools = [resolve_entities, query_knowledge, log_field_report, get_available_slots, create_appointment, get_stores, get_recent_orders]
         
         # Setup Model
         provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")

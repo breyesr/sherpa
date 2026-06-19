@@ -181,6 +181,13 @@
 - [x] Task 122.2: **Products Catalog Page & Details**: Implement the `/trade/products` list view, query the backend catalog, link it to the existing `CatalogDrawer`, and build a product detail slide-over.
 - [x] Task 122.3: **Orders Ledger Page & Details**: Implement the `/trade/orders` ledger, query order statuses, integrate the existing `OrderDrawer` for new orders, and create a status timeline detail sheet.
 
+## Epic 124: Agent Domain Boundaries & Transactional Tooling
+**Objective**: Stabilize the B2B agent ("Marco") by implementing strict persona guardrails to prevent off-topic behavior and introducing structured SQL tools for accessing transactional data (orders) to prevent hallucinations during GraphRAG semantic searches.
+
+- [x] Task 124.1: **Domain Boundary Enforcement**: Update Jinja prompt templates (`b2b_sales_brain.j2`) with strict instructions to politely reject non-business queries (e.g., recipes) and refocus the conversation on sales intelligence.
+- [x] Task 124.2: **Transactional Tool Implementation**: Create a `get_recent_orders` method in `TradeToolKit` to execute a structured PostgreSQL lookup instead of relying on fuzzy semantic vector search.
+- [x] Task 124.3: **Agentic Registration**: Register the `get_recent_orders` tool within `AgenticOrchestrator` to provide the LangGraph LLM planner immediate access to factual order data.
+
 ---
 
 
