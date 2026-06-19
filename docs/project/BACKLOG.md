@@ -168,6 +168,26 @@
 
 ---
 
+## Epic 121: Action Catalog & Accountability (The Strategy Desk)
+**Objective**: Transition Store Actions from a static log into an active task desk, complete with a template catalog, owner assignment, due dates, and elastic outcome reporting.
+
+- [x] Task 121.1: **Database Migrations & Models**: Define the `ActionTemplate` model and add status, assignee, deadline, result value, result unit, and template reference to `StoreAction`. Create the Alembic migration script.
+- [x] Task 121.2: **Template & Action CRUD APIs**: Expose `GET/POST/PATCH/DELETE` for `/trade/action-templates` and query, assign, and resolution routes for `/trade/actions`.
+- [x] Task 121.3: **Action Catalog Configuration (UI)**: Build a simple settings interface to define standard action templates (e.g. name, category, default result unit).
+- [x] Task 121.4: **Strategy Desk & Detail Sheet (UI)**: Build the `/trade/actions` dashboard list. Implement a slide-over sheet to resolve tasks by inputting numerical results (using default template units) and logging execution notes.
+
+---
+
+## Epic 122: Route Consolidation & Core Dashboards (Products & Orders)
+**Objective**: Clean up legacy route structures, promote the modern V2 layout as the system standard, and implement dedicated dashboard directories for Products and Orders.
+
+- [x] Task 122.1: **Deprecate V1 Routes & Promote V2**: Delete legacy folders `stores/` and `retailers/`, rename V2 folders to standard routes, and update internal file navigation hooks in `Sidebar.tsx` and detail components.
+- [x] Task 122.2: **Products Catalog Page & Details**: Implement the `/trade/products` list view, query the backend catalog, link it to the existing `CatalogDrawer`, and build a product detail slide-over.
+- [x] Task 122.3: **Orders Ledger Page & Details**: Implement the `/trade/orders` ledger, query order statuses, integrate the existing `OrderDrawer` for new orders, and create a status timeline detail sheet.
+
+---
+
+
 # Sherpa MVP Backlog (Legacy/Base)
 
 

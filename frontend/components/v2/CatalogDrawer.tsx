@@ -21,13 +21,17 @@ interface CatalogDrawerProps {
   onClose: () => void;
   token: string | null;
   initialMode?: 'product' | 'category';
+  productId?: string | null;
+  initialData?: any;
 }
 
-export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'product' }: CatalogDrawerProps) {
+export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'product', productId, initialData }: CatalogDrawerProps) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'product' | 'category'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const isEditing = !!productId;
   
   // Categories for product selection
   const [categories, setCategories] = useState<any[]>([]);
@@ -53,10 +57,52 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
 
   useEffect(() => {
     if (isOpen) {
-      setMode(initialMode);
-      if (mode === 'product') fetchCategories();
+      setMode(productId ? 'product' : initialMode);
+      fetchCategories();
+      
+      if (productId) {
+        if (initialData) {
+          setProductData({
+            name: initialData.name || '',
+            category_id: initialData.category_id || '',
+            description: initialData.description || '',
+            price: initialData.price || 0,
+            sku: initialData.sku || '',
+            brand: initialData.brand || '',
+            product_type: initialData.product_type || '',
+            unit_of_measure: initialData.unit_of_measure || 'unit'
+          });
+        } else {
+          // Fetch from API
+          const fetchProduct = async () => {
+            try {
+              const res = await fetch(`${API_BASE_URL}/trade/products/${productId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (res.ok) {
+                const data = await res.json();
+                setProductData({
+                  name: data.name || '',
+                  category_id: data.category_id || '',
+                  description: data.description || '',
+                  price: data.price || 0,
+                  sku: data.sku || '',
+                  brand: data.brand || '',
+                  product_type: data.product_type || '',
+                  unit_of_measure: data.unit_of_measure || 'unit'
+                });
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          };
+          fetchProduct();
+        }
+      } else {
+        resetForms();
+      }
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, initialMode, productId, initialData]);
 
   async function fetchCategories() {
     setFetchingCats(true);
@@ -67,7 +113,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       if (res.ok) {
         const data = await res.json();
         setCategories(data);
-        if (data.length > 0 && !productData.category_id) {
+        if (data.length > 0 && !productData.category_id && !productId) {
           setProductData(prev => ({ ...prev, category_id: data[0].id }));
         }
       }
@@ -84,8 +130,13 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        method: 'POST',
+      const url = isEditing 
+        ? `${API_BASE_URL}/trade/products/${productId}` 
+        : `${API_BASE_URL}/trade/products`;
+      const method = isEditing ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -93,9 +144,12 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
         body: JSON.stringify(productData)
       });
 
-      if (!res.ok) throw new Error('Failed to create product');
+      if (!res.ok) throw new Error(isEditing ? 'Failed to update product' : 'Failed to create product');
 
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (isEditing) {
+        queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      }
       onClose();
       resetForms();
     } catch (err: any) {
@@ -160,7 +214,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
         disabled={loading || (mode === 'product' && (!productData.name || !productData.category_id)) || (mode === 'category' && !categoryData.name)}
         className={`flex-1 px-6 py-4 ${mode === 'product' ? 'bg-indigo-600 shadow-indigo-500/20' : 'bg-emerald-600 shadow-emerald-500/20'} text-white rounded-2xl font-bold transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
       >
-        {loading ? <Loader2 className="animate-spin" size={20} /> : (mode === 'product' ? 'Save Product' : 'Create Category')}
+        {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? 'Update Product' : (mode === 'product' ? 'Save Product' : 'Create Category'))}
       </button>
     </div>
   );
@@ -169,31 +223,33 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     <Drawer 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={mode === 'product' ? "Add Product" : "New Category"} 
-      subtitle={mode === 'product' ? "Define SKU, pricing, and category." : "Group your inventory for better tracking."}
+      title={isEditing ? "Edit Product" : (mode === 'product' ? "Add Product" : "New Category")} 
+      subtitle={isEditing ? "Update product specifications and pricing." : (mode === 'product' ? "Define SKU, pricing, and category." : "Group your inventory for better tracking.")}
       footer={footer}
       size="wide"
     >
       <div className="space-y-8">
         {/* Mode Selector */}
-        <div className="flex p-1.5 bg-gray-50 rounded-2xl">
-          <button 
-            onClick={() => setMode('product')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-              mode === 'product' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <Package size={16} /> Product
-          </button>
-          <button 
-            onClick={() => setMode('category')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-              mode === 'category' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <LayoutGrid size={16} /> Category
-          </button>
-        </div>
+        {!isEditing && (
+          <div className="flex p-1.5 bg-gray-50 rounded-2xl">
+            <button 
+              onClick={() => setMode('product')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                mode === 'product' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <Package size={16} /> Product
+            </button>
+            <button 
+              onClick={() => setMode('category')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                mode === 'category' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <LayoutGrid size={16} /> Category
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-bold flex items-center gap-2">

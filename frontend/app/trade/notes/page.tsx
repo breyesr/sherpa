@@ -201,7 +201,7 @@ export default function NotesPulsePage() {
                 <div className="md:w-64 shrink-0 flex flex-col justify-between p-6 bg-gray-50 rounded-[2rem] border border-gray-100/50 group-hover:bg-white transition-colors">
                   <div className="space-y-4">
                     <Link 
-                      href={`/trade/v2/stores/${note.store_id}`}
+                      href={`/trade/stores/${note.store_id}`}
                       className="group/link block space-y-1"
                     >
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</span>

@@ -2,195 +2,267 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
 import { 
-  ClipboardList,
-  UserPlus,
-  ChevronRight,
+  Users as UserIcon, 
+  Mail, 
   Phone,
+  Plus,
+  ChevronRight,
   Search,
-  Plus
+  LayoutGrid,
+  List as ListIcon,
+  Filter,
+  MessageSquare,
+  Edit2
 } from 'lucide-react';
-import ClientModal from '@/components/ClientModal';
-import { 
-  ClientResponse, 
-  BusinessProfileResponse,
-  StoreResponse 
-} from '@/types/api';
+import { ClientResponse } from '@/types/api';
+import ContactDrawer from '@/components/v2/ContactDrawer';
 
-export default function RetailersPage() {
+export default function RetailersPageV2() {
   const token = useAuthStore((state) => state.token);
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Modal States
-  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<ClientResponse | null>(null);
-
-  // Fetch Business for ClientModal
-  const { data: business } = useQuery<BusinessProfileResponse>({
-    queryKey: ['business'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
-    },
-    enabled: !!token,
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: any}>({
+    isOpen: false,
+    clientId: null
   });
 
-  // Fetch Clients
-  const { data: clients = [], isLoading: loadingClients } = useQuery<ClientResponse[]>({
+  // Fetch Retailers (Clients)
+  const { data: retailers = [], isLoading } = useQuery<ClientResponse[]>({
     queryKey: ['clients'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/crm/clients`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Failed to fetch clients');
+      if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
     enabled: !!token,
   });
 
-  // Fetch Stores for relationship count
-  const { data: stores = [] } = useQuery<StoreResponse[]>({
-    queryKey: ['stores'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!token,
-  });
-
-  const filteredRetailers = clients.filter((c) => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.phone && c.phone.includes(searchTerm))
+  const filteredRetailers = retailers.filter((r) => 
+    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.email && r.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (r.phone && r.phone.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleEditRetailer = (retailer: ClientResponse) => {
-    setSelectedClient(retailer);
-    setIsAddClientOpen(true);
-  };
-
   return (
-    <div className="space-y-10 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-            Retailers
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full uppercase tracking-tighter">CRM</span>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+              Beta V2
+            </span>
+          </div>
+          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
+            Contacts
           </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg">Manage your commercial relationships and lead scores.</p>
+          <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
+            Centralized contact intelligence for your retail partners and decision makers.
+          </p>
         </div>
         <button 
-          onClick={() => setIsAddClientOpen(true)}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
+          onClick={() => setContactDrawer({ isOpen: true, clientId: null })}
+          className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
         >
           <Plus size={18} />
-          Create Retailer
+          Add Contact
         </button>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center bg-gray-50/30 gap-4">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text"
-              placeholder="Search retailers..."
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">
-            {filteredRetailers.length} Retailers Found
-          </div>
+      {/* Control Bar */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text"
+            placeholder="Search contacts by name, email, or phone..."
+            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-900"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         
-        {loadingClients ? (
-          <div className="p-24 text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-400 font-bold">Loading retailers...</p>
+        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <ListIcon size={20} />
+          </button>
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <LayoutGrid size={20} />
+          </button>
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+          <button className="flex items-center gap-2 px-3 py-2 text-gray-500 font-bold text-xs uppercase tracking-wider hover:text-gray-900 transition-all">
+            <Filter size={16} />
+            Filter
+          </button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      {isLoading || !token ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-48 bg-gray-50 animate-pulse rounded-[2rem]" />
+          ))}
+        </div>
+      ) : filteredRetailers.length === 0 ? (
+        <div className="py-20 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
+          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <Search className="text-gray-300" size={32} />
           </div>
-        ) : filteredRetailers.length > 0 ? (
+          <h3 className="text-xl font-bold text-gray-900">No contacts found</h3>
+          <p className="text-gray-500 mt-2">Try adjusting your search or filters.</p>
+        </div>
+      ) : viewMode === 'list' ? (
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
           <div className="divide-y divide-gray-50">
             {filteredRetailers.map((retailer) => (
-              <div key={retailer.id} className="p-8 flex items-center justify-between hover:bg-gray-50/50 transition-all group">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-white border border-gray-100 text-gray-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:border-indigo-200 group-hover:text-indigo-500 transition-all">
-                    <ClipboardList size={24} />
+              <div key={retailer.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
+                <Link 
+                  href={`/trade/retailers/${retailer.id}`}
+                  className="absolute inset-0 z-0"
+                />
+                <div className="relative z-10 flex items-center gap-6 pointer-events-none flex-1">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                    <UserIcon size={28} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-lg text-gray-900 line-clamp-1">{retailer.name}</p>
+                    <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {retailer.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-4 mt-1 text-gray-500 font-medium">
                       {retailer.role && (
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md border border-gray-200">
-                          {retailer.role}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">
+                            {retailer.role}
+                          </span>
+                        </div>
                       )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 font-medium">
-                      <span className="flex items-center gap-1"><Phone size={14} className="text-gray-400" /> {retailer.phone || 'No phone'}</span>
-                      <span className="flex items-center gap-1 text-indigo-600 font-bold">
-                        {stores.filter((s) => s.clients?.some((c) => c.id === retailer.id)).length} Linked Stores
-                      </span>
+                      {retailer.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={14} className="text-gray-400" />
+                          <span className="text-sm">{retailer.phone}</span>
+                        </div>
+                      )}
+                      {retailer.email && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail size={14} className="text-gray-400" />
+                          <span className="text-sm">{retailer.email}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => handleEditRetailer(retailer)}
-                    className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all active:scale-90"
-                    title="Quick Edit"
-                  >
-                    <UserPlus size={18} />
-                  </button>
-                  <Link 
-                    href={`/crm?id=${retailer.id}`}
-                    className="p-3 bg-gray-50 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all active:scale-90"
-                    title="Full Profile"
-                  >
-                    <ChevronRight size={20} />
-                  </Link>
+                
+                <div className="relative z-10 flex items-center gap-12 mt-6 md:mt-0">
+                  <div className="hidden lg:flex flex-col items-end pointer-events-none">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Interaction</span>
+                    <span className="font-bold text-gray-700">2 days ago</span>
+                  </div>
+                  <div className="flex flex-col items-end pointer-events-none">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Channel</span>
+                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 px-3 py-1 rounded-lg">
+                      <MessageSquare size={12} className="text-blue-500" />
+                      <span className="text-xs font-bold text-gray-600">WhatsApp</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setContactDrawer({ isOpen: true, clientId: retailer.id, initialData: retailer });
+                      }}
+                      className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative z-20"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all pointer-events-none" />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="p-24 text-center">
-            <div className="w-20 h-20 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ClipboardList size={40} />
-            </div>
-            <h4 className="text-xl font-bold text-gray-900">No Retailers Found</h4>
-            <p className="text-gray-500 mt-1">Start by creating your first commercial contact.</p>
-            <button 
-              onClick={() => setIsAddClientOpen(true)}
-              className="mt-8 px-8 py-3 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-lg"
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredRetailers.map((retailer) => (
+            <div 
+              key={retailer.id} 
+              className="group relative bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between cursor-pointer"
             >
-              Add New Retailer
-            </button>
-          </div>
-        )}
-      </div>
+              <Link 
+                href={`/trade/retailers/${retailer.id}`}
+                className="absolute inset-0 z-0"
+              />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                    <UserIcon size={24} />
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setContactDrawer({ isOpen: true, clientId: retailer.id, initialData: retailer });
+                    }}
+                    className="p-2 text-gray-300 hover:text-blue-600 transition-colors relative z-20"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                  {retailer.name}
+                </h3>
+...
+                <p className="text-gray-500 font-medium text-sm line-clamp-2 mb-4">
+                  {retailer.role || 'Partner Retailer'}
+                </p>
+                <div className="flex flex-col gap-2">
+                  {retailer.phone && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
+                      <Phone size={14} className="text-gray-400" />
+                      {retailer.phone}
+                    </div>
+                  )}
+                  {retailer.email && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
+                      <Mail size={14} className="text-gray-400" />
+                      {retailer.email}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sentiment</span>
+                  <span className="text-blue-600 font-bold text-sm">Very Engaged</span>
+                </div>
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <ClientModal 
-        isOpen={isAddClientOpen}
-        onClose={() => {
-          setIsAddClientOpen(false);
-          setSelectedClient(null);
-        }}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['clients'] });
-        }}
+      <ContactDrawer 
+        isOpen={contactDrawer.isOpen}
+        onClose={() => setContactDrawer({ ...contactDrawer, isOpen: false })}
         token={token}
-        client={selectedClient}
-        business={business}
+        clientId={contactDrawer.clientId}
+        initialData={contactDrawer.initialData}
       />
     </div>
   );

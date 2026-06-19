@@ -81,27 +81,33 @@ export default function Sidebar() {
             <div className="pl-9 space-y-1">
               <Link 
                 href="/trade/stores"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') && !pathname.includes('/v2') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
-                • Accounts (Stores)
-              </Link>
-              <Link 
-                href="/trade/v2/stores"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/v2/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                • Accounts V2 (Beta)
+                • Accounts
               </Link>
               <Link 
                 href="/trade/retailers"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') && !pathname.includes('/v2') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
-                • Contacts (Retailers)
+                • Contacts
               </Link>
               <Link 
-                href="/trade/v2/retailers"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/v2/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                href="/trade/products"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
               >
-                • Contacts V2 (Beta)
+                • Products
+              </Link>
+              <Link 
+                href="/trade/orders"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                • Orders
+              </Link>
+              <Link 
+                href="/trade/actions"
+                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                • Actions
               </Link>
             </div>
           </div>

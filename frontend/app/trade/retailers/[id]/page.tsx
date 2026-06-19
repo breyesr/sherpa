@@ -344,7 +344,7 @@ export default function RetailerDetailPageV2() {
                     {/* Pulse Deep Link */}
                     <div className="pt-10 flex justify-center">
                       <Link 
-                        href={`/trade/v2/notes?retailer=${client.name}`}
+                        href={`/trade/notes?retailer=${client.name}`}
                         className="flex items-center gap-3 text-gray-400 hover:text-blue-600 font-bold text-xs uppercase tracking-[0.2em] transition-all group px-8 py-3 bg-gray-50 rounded-full"
                       >
                         Launch Global Pulse Explorer

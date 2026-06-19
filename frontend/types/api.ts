@@ -141,12 +141,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -308,6 +308,23 @@ export interface paths {
      */
     post: operations["create_product_api_v1_trade_products_post"];
   };
+  "/api/v1/trade/products/{product_id}": {
+    /**
+     * Get Product
+     * @description Get a product by ID.
+     */
+    get: operations["get_product_api_v1_trade_products__product_id__get"];
+    /**
+     * Delete Product
+     * @description Delete a product.
+     */
+    delete: operations["delete_product_api_v1_trade_products__product_id__delete"];
+    /**
+     * Update Product
+     * @description Update a product.
+     */
+    patch: operations["update_product_api_v1_trade_products__product_id__patch"];
+  };
   "/api/v1/trade/orders": {
     /**
      * List Orders
@@ -319,6 +336,18 @@ export interface paths {
      * @description Create a new order with items.
      */
     post: operations["create_order_api_v1_trade_orders_post"];
+  };
+  "/api/v1/trade/orders/{order_id}": {
+    /**
+     * Get Order
+     * @description Get detail of a single order by ID.
+     */
+    get: operations["get_order_api_v1_trade_orders__order_id__get"];
+    /**
+     * Update Order
+     * @description Update order metadata or status.
+     */
+    patch: operations["update_order_api_v1_trade_orders__order_id__patch"];
   };
   "/api/v1/trade/competitors": {
     /**
@@ -353,6 +382,59 @@ export interface paths {
      */
     post: operations["qualify_lead_api_v1_trade_clients__client_id__qualify_post"];
   };
+  "/api/v1/trade/action-templates": {
+    /**
+     * List Action Templates
+     * @description List all action templates for the business.
+     */
+    get: operations["list_action_templates_api_v1_trade_action_templates_get"];
+    /**
+     * Create Action Template
+     * @description Create a new action template.
+     */
+    post: operations["create_action_template_api_v1_trade_action_templates_post"];
+  };
+  "/api/v1/trade/action-templates/{template_id}": {
+    /**
+     * Delete Action Template
+     * @description Delete an action template.
+     */
+    delete: operations["delete_action_template_api_v1_trade_action_templates__template_id__delete"];
+    /**
+     * Update Action Template
+     * @description Update an action template.
+     */
+    patch: operations["update_action_template_api_v1_trade_action_templates__template_id__patch"];
+  };
+  "/api/v1/trade/actions": {
+    /**
+     * List Store Actions
+     * @description List store actions for the current business with filters.
+     */
+    get: operations["list_store_actions_api_v1_trade_actions_get"];
+    /**
+     * Create Store Action
+     * @description Create a manual store action.
+     */
+    post: operations["create_store_action_api_v1_trade_actions_post"];
+  };
+  "/api/v1/trade/actions/{action_id}": {
+    /**
+     * Get Store Action
+     * @description Retrieve a single store action.
+     */
+    get: operations["get_store_action_api_v1_trade_actions__action_id__get"];
+    /**
+     * Delete Store Action
+     * @description Delete a store action.
+     */
+    delete: operations["delete_store_action_api_v1_trade_actions__action_id__delete"];
+    /**
+     * Update Store Action
+     * @description Update a store action, with strict validation on completion.
+     */
+    patch: operations["update_store_action_api_v1_trade_actions__action_id__patch"];
+  };
   "/health": {
     /** Health Check */
     get: operations["health_check_health_get"];
@@ -363,6 +445,65 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    /**
+     * ActionCategory
+     * @enum {string}
+     */
+    ActionCategory: "MARKETING" | "COMMERCIAL";
+    /**
+     * ActionObjective
+     * @enum {string}
+     */
+    ActionObjective: "THREAT_RESPONSE" | "ANNIVERSARY" | "REPLENISHMENT" | "NEW_PRODUCT" | "RELATIONSHIP" | "GENERAL";
+    /**
+     * ActionStatus
+     * @enum {string}
+     */
+    ActionStatus: "proposed" | "pending" | "completed" | "cancelled";
+    /** ActionTemplateCreate */
+    ActionTemplateCreate: {
+      /** Name */
+      name: string;
+      category: components["schemas"]["ActionCategory"];
+      /** Default Unit */
+      default_unit: string;
+      /** Description */
+      description?: string | null;
+    };
+    /** ActionTemplateResponse */
+    ActionTemplateResponse: {
+      /** Name */
+      name: string;
+      category: components["schemas"]["ActionCategory"];
+      /** Default Unit */
+      default_unit: string;
+      /** Description */
+      description?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** ActionTemplateUpdate */
+    ActionTemplateUpdate: {
+      /** Name */
+      name?: string | null;
+      category?: components["schemas"]["ActionCategory"] | null;
+      /** Default Unit */
+      default_unit?: string | null;
+      /** Description */
+      description?: string | null;
+    };
     /** AgentResponse */
     AgentResponse: {
       /** Name */
@@ -549,10 +690,7 @@ export interface components {
       entity_type: string;
       /** Mapping Json */
       mapping_json: string;
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
     };
     /** Body_login_api_v1_auth_login_post */
@@ -561,7 +699,10 @@ export interface components {
       grant_type?: string | null;
       /** Username */
       username: string;
-      /** Password */
+      /**
+       * Password
+       * Format: password
+       */
       password: string;
       /**
        * Scope
@@ -570,7 +711,10 @@ export interface components {
       scope?: string;
       /** Client Id */
       client_id?: string | null;
-      /** Client Secret */
+      /**
+       * Client Secret
+       * Format: password
+       */
       client_secret?: string | null;
     };
     /** BusinessProfileCreate */
@@ -809,6 +953,13 @@ export interface components {
       strengths?: string | null;
       /** Weaknesses */
       weaknesses?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
     };
     /** CompetitorResponse */
     CompetitorResponse: {
@@ -832,6 +983,13 @@ export interface components {
       strengths?: string | null;
       /** Weaknesses */
       weaknesses?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
       /** Id */
       id: string;
       /** Business Id */
@@ -900,6 +1058,22 @@ export interface components {
       preferred_actions?: string | null;
       /** General Notes */
       general_notes?: string | null;
+      /**
+       * Note Type
+       * @default general
+       */
+      note_type?: string;
+      /** Risks */
+      risks?: string | null;
+      /** Opportunities */
+      opportunities?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
       /** Id */
       id: string;
       /** Business Id */
@@ -960,6 +1134,11 @@ export interface components {
        */
       updated_at: string;
     };
+    /**
+     * DataSourceType
+     * @enum {string}
+     */
+    DataSourceType: "manual" | "ai_extracted" | "integration";
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -1024,6 +1203,13 @@ export interface components {
       payment_method?: string | null;
       /** Shipping Address */
       shipping_address?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
       /** Items */
       items: components["schemas"]["OrderItemBase"][];
     };
@@ -1078,6 +1264,13 @@ export interface components {
       payment_method?: string | null;
       /** Shipping Address */
       shipping_address?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
       /** Id */
       id: string;
       /** Business Id */
@@ -1105,6 +1298,20 @@ export interface components {
      * @enum {string}
      */
     OrderStatus: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+    /** OrderUpdate */
+    OrderUpdate: {
+      status?: components["schemas"]["OrderStatus"] | null;
+      /** Notes */
+      notes?: string | null;
+      /** Delivery Id */
+      delivery_id?: string | null;
+      /** Delivery Date */
+      delivery_date?: string | null;
+      /** Payment Method */
+      payment_method?: string | null;
+      /** Shipping Address */
+      shipping_address?: string | null;
+    };
     /** ProductCreate */
     ProductCreate: {
       /** Name */
@@ -1164,6 +1371,27 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+    };
+    /** ProductUpdate */
+    ProductUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Category Id */
+      category_id?: string | null;
+      /** Price */
+      price?: number | null;
+      /** Description */
+      description?: string | null;
+      /** Sku */
+      sku?: string | null;
+      /** Brand */
+      brand?: string | null;
+      /** Product Type */
+      product_type?: string | null;
+      /** Unit Of Measure */
+      unit_of_measure?: string | null;
+      /** External Id */
+      external_id?: string | null;
     };
     /** ServiceCreate */
     ServiceCreate: {
@@ -1248,6 +1476,122 @@ export interface components {
       /** Is Active */
       is_active?: boolean | null;
     };
+    /** StoreActionCreate */
+    StoreActionCreate: {
+      /** Store Id */
+      store_id: string;
+      /** Template Id */
+      template_id?: string | null;
+      category: components["schemas"]["ActionCategory"];
+      objective: components["schemas"]["ActionObjective"];
+      /** Impact Level */
+      impact_level?: string | null;
+      /** Note Source Id */
+      note_source_id?: string | null;
+      /**
+       * Details
+       * @default {}
+       */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+      /** @default proposed */
+      status?: components["schemas"]["ActionStatus"];
+      /** Due Date */
+      due_date?: string | null;
+      /** Resolution Notes */
+      resolution_notes?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /** Result Value */
+      result_value?: number | null;
+      /** Result Unit */
+      result_unit?: string | null;
+      /** Revenue Impact */
+      revenue_impact?: number | null;
+    };
+    /** StoreActionResponse */
+    StoreActionResponse: {
+      /** Store Id */
+      store_id: string;
+      /** Template Id */
+      template_id?: string | null;
+      category: components["schemas"]["ActionCategory"];
+      objective: components["schemas"]["ActionObjective"];
+      /** Impact Level */
+      impact_level?: string | null;
+      /** Note Source Id */
+      note_source_id?: string | null;
+      /**
+       * Details
+       * @default {}
+       */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+      /** @default proposed */
+      status?: components["schemas"]["ActionStatus"];
+      /** Due Date */
+      due_date?: string | null;
+      /** Resolution Notes */
+      resolution_notes?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /** Result Value */
+      result_value?: number | null;
+      /** Result Unit */
+      result_unit?: string | null;
+      /** Revenue Impact */
+      revenue_impact?: number | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /** Author Id */
+      author_id?: string | null;
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
+      /** Store Name */
+      store_name?: string | null;
+      /** Assigned To Name */
+      assigned_to_name?: string | null;
+      /** Template Name */
+      template_name?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** StoreActionUpdate */
+    StoreActionUpdate: {
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
+      /** Template Id */
+      template_id?: string | null;
+      category?: components["schemas"]["ActionCategory"] | null;
+      objective?: components["schemas"]["ActionObjective"] | null;
+      /** Impact Level */
+      impact_level?: string | null;
+      status?: components["schemas"]["ActionStatus"] | null;
+      /** Due Date */
+      due_date?: string | null;
+      /** Resolution Notes */
+      resolution_notes?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /** Result Value */
+      result_value?: number | null;
+      /** Result Unit */
+      result_unit?: string | null;
+      /** Revenue Impact */
+      revenue_impact?: number | null;
+    };
     /** StoreCreate */
     StoreCreate: {
       /** Name */
@@ -1305,6 +1649,13 @@ export interface components {
       action_metadata?: {
         [key: string]: unknown;
       } | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
     };
     /** StoreNoteResponse */
     StoreNoteResponse: {
@@ -1337,6 +1688,13 @@ export interface components {
       action_metadata?: {
         [key: string]: unknown;
       } | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
       /** Id */
       id: string;
       /** Author Id */
@@ -1520,6 +1878,10 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
     };
     /**
      * VerticalType
@@ -2222,7 +2584,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -2788,6 +3150,86 @@ export interface operations {
     };
   };
   /**
+   * Get Product
+   * @description Get a product by ID.
+   */
+  get_product_api_v1_trade_products__product_id__get: {
+    parameters: {
+      path: {
+        product_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Product
+   * @description Delete a product.
+   */
+  delete_product_api_v1_trade_products__product_id__delete: {
+    parameters: {
+      path: {
+        product_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Product
+   * @description Update a product.
+   */
+  update_product_api_v1_trade_products__product_id__patch: {
+    parameters: {
+      path: {
+        product_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProductUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * List Orders
    * @description List all orders for the business, optionally filtered by store.
    */
@@ -2820,6 +3262,61 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["OrderCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Order
+   * @description Get detail of a single order by ID.
+   */
+  get_order_api_v1_trade_orders__order_id__get: {
+    parameters: {
+      path: {
+        order_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Order
+   * @description Update order metadata or status.
+   */
+  update_order_api_v1_trade_orders__order_id__patch: {
+    parameters: {
+      path: {
+        order_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OrderUpdate"];
       };
     };
     responses: {
@@ -2952,6 +3449,235 @@ export interface operations {
       200: {
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Action Templates
+   * @description List all action templates for the business.
+   */
+  list_action_templates_api_v1_trade_action_templates_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ActionTemplateResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Action Template
+   * @description Create a new action template.
+   */
+  create_action_template_api_v1_trade_action_templates_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActionTemplateCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ActionTemplateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Action Template
+   * @description Delete an action template.
+   */
+  delete_action_template_api_v1_trade_action_templates__template_id__delete: {
+    parameters: {
+      path: {
+        template_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Action Template
+   * @description Update an action template.
+   */
+  update_action_template_api_v1_trade_action_templates__template_id__patch: {
+    parameters: {
+      path: {
+        template_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActionTemplateUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ActionTemplateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Store Actions
+   * @description List store actions for the current business with filters.
+   */
+  list_store_actions_api_v1_trade_actions_get: {
+    parameters: {
+      query?: {
+        store_id?: string | null;
+        assigned_to_id?: string | null;
+        status?: string | null;
+        category?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Store Action
+   * @description Create a manual store action.
+   */
+  create_store_action_api_v1_trade_actions_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreActionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Store Action
+   * @description Retrieve a single store action.
+   */
+  get_store_action_api_v1_trade_actions__action_id__get: {
+    parameters: {
+      path: {
+        action_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Store Action
+   * @description Delete a store action.
+   */
+  delete_store_action_api_v1_trade_actions__action_id__delete: {
+    parameters: {
+      path: {
+        action_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Store Action
+   * @description Update a store action, with strict validation on completion.
+   */
+  update_store_action_api_v1_trade_actions__action_id__patch: {
+    parameters: {
+      path: {
+        action_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreActionUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"];
         };
       };
       /** @description Validation Error */

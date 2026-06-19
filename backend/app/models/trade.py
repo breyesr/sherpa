@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index, Boolean
+from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index, Boolean, Numeric
 import enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -446,6 +446,28 @@ class ActionObjective(str, enum.Enum):
     RELATIONSHIP = "RELATIONSHIP"
     GENERAL = "GENERAL"
 
+class ActionStatus(str, enum.Enum):
+    PROPOSED = "proposed"
+    PENDING = "pending"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+class ActionTemplate(Base):
+    __tablename__ = "action_templates"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    
+    name = Column(String, nullable=False)
+    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
+    default_unit = Column(String, nullable=False) # e.g. "exchanges", "participants"
+    description = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
+
 class StoreAction(Base):
     __tablename__ = "store_actions"
 
@@ -453,6 +475,8 @@ class StoreAction(Base):
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     store_id = Column(String, ForeignKey("stores.id"), nullable=False)
     author_id = Column(String, ForeignKey("users.id"), nullable=True)
+    assigned_to_id = Column(String, ForeignKey("users.id"), nullable=True)
+    template_id = Column(String, ForeignKey("action_templates.id"), nullable=True)
     
     category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
     objective = Column(SQLEnum(ActionObjective), nullable=False, index=True)
@@ -460,17 +484,31 @@ class StoreAction(Base):
     note_source_id = Column(String, ForeignKey("store_notes.id"), nullable=True)
     details = Column(JSON, nullable=True, default=dict)
     
+    # Execution & Results Columns
+    status = Column(SQLEnum(ActionStatus), default=ActionStatus.PROPOSED, nullable=False, index=True)
+    due_date = Column(DateTime, nullable=True)
+    resolution_notes = Column(Text, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
+    
+    result_value = Column(Numeric(10, 2), nullable=True)
+    result_unit = Column(String, nullable=True)
+    revenue_impact = Column(Numeric(10, 2), nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile")
     store = relationship("Store")
-    author = relationship("User")
+    author = relationship("User", foreign_keys=[author_id])
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+    template = relationship("ActionTemplate")
     note_source = relationship("StoreNote")
 
     __table_args__ = (
         Index('ix_store_actions_business_category', 'business_id', 'category'),
         Index('ix_store_actions_business_objective', 'business_id', 'objective'),
+        Index('ix_store_actions_business_store_created', 'business_id', 'store_id', 'created_at'),
+        Index('ix_store_actions_assigned_status', 'assigned_to_id', 'status'),
     )
 
 class AccountIntelligence(Base):

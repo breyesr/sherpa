@@ -1,11 +1,18 @@
 # Handoff Log
 
-## [2026-06-18] - Agentic RAG Stability & Staging Merge
-- **Staging Merge**: Successfully merged `feature/trade/v2-ops` into `staging`, including the full V2 Drawer system and Trade Operation models.
-- **Verification Suite**: Upgraded simulation tests (`test_simulated_session.py`, `test_simulated_session_2.py`) to fully support the `AgenticOrchestrator` (LangGraph) architecture.
-- **Entity Resolution**: Fixed a critical `AttributeError` in the `EntityResolver` and hardened the logic to handle both mock data and real SQLAlchemy objects.
-- **Schema Validation**: Updated `test_business_api.py` to correctly validate the `TRADE` vertical type, ensuring parity with the B2B pivot.
-- **Stability**: Confirmed 100% pass rate for backend tests and multi-turn agent simulations on the `staging` branch.
+- **2026-06-18 (Session 2)**: Pivoted focus to the Action Strategy Desk and Navigation Consolidation.
+    - Brainstormed and defined the schema design for the **Action Catalog & Outcome Accountability** model (hybrid structured/unstructured results).
+    - Translated user requirements into two new epics: **Epic 121: Action Catalog & Accountability** and **Epic 122: Route Consolidation & Core Dashboards**.
+    - Updated [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md) with Sprint 5 tasks.
+    - Refreshed [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to document active strategic priorities.
+
+- **2026-06-18**: Verified and merged `feature/trade/v2-ops` into `staging`.
+    - Integrated the **Surgical Trade Operations Suite** (Epic 120).
+    - Upgraded simulation tests (`test_simulated_session.py`, `test_simulated_session_2.py`) to fully support the `AgenticOrchestrator` (LangGraph) architecture.
+    - **Infrastructure Hardening**: Refactored migration `ee378a9ef4dc` with SQLAlchemy Inspector to be fully idempotent, resolving a critical `DuplicateObjectError` during staging deployment.
+    - Fixed `EntityResolver` logic and `BusinessProfileResponse` assertions to align with the B2B TRADE vertical.
+    - Verified stability with a full backend test suite run on `staging`.
+
 
 ## [2026-06-17] - V2 Trade Operations & Surgical UI (Epic 120 Complete)
 - **UI Architecture**: Implemented a universal `Drawer.tsx` slide-over component for high-density, context-aware data entry, replacing legacy centered modals.
@@ -259,3 +266,10 @@
 - **Epic Formalization**: Created **Epic 119: The Sherpa Ingestion Engine (V2)** in the backlog, targeting the removal of beta placeholders in the Account and Contact views.
 - **Architectural Scope**: Tasked the backend enhancement for bulk many-to-many associations and the frontend implementation of a guided mapping wizard.
 - **Maintenance**: Updated `HANDOFF_STATE.md` and `BACKLOG.md` to reflect the new strategic focus.
+
+## [2026-06-19] - Action Catalog & Route Consolidation (Epics 121 & 122)
+- **Product Details Dashboard (Task 122.2)**: Implemented product specifications view, client-side order ledger parsing, and a stocking accounts tracker.
+- **Orders Ledger & Detail Dashboard (Task 122.3)**: Built the orders dashboard ledger with search capabilities and status tab filters, along with a detailed timeline view.
+- **Backend Order Enhancement**: Exposed `GET /trade/orders/{order_id}` and `PATCH /trade/orders/{order_id}` on the FastAPI backend for detail lookup and status updates.
+- **Action Catalog & Strategy Desk (Tasks 121.3 & 121.4)**: Designed Strategy Desk dashboard and Configuration Catalog, allowing manual action dispatching and strict completion resolution outcomes reporting (requiring both numeric `result_value` and descriptive `resolution_notes`).
+- **OpenAPI Schema & Build Sync (Tasks 122.1 & 122.2)**: Successfully updated OpenAPI JSON, generated TypeScript typings, and verified Next.js compiles without errors.

@@ -39,3 +39,16 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [x] Task 4.5 (DevOps): Final CI/CD validation and load testing (Frontend Zero Noise pass).
 - [ ] Task 4.6 (FE): Architectural Refactor: Split Trade Hub into dedicated Dashboard, Stores, and Retailers views.
 
+## Sprint 5: Action Strategy Desk & Navigation Consolidation (CURRENT)
+**Goal:** Transition actions to a template-driven accountability workflow and establish clean, promoted V2 routes for Accounts, Contacts, Products, and Orders.
+
+- [ ] **Task 121.1 (BE):** Database Migrations & Models (Define `ActionTemplate` and enrich `StoreAction`).
+- [ ] **Task 121.2 (BE):** Template & Action CRUD APIs (`/trade/action-templates` and `/trade/actions`).
+- [ ] **Task 122.1 (FE):** Deprecate V1 routes, promote V2 routes to standard `/trade/*` directories, and update `Sidebar.tsx`.
+- [ ] **Task 122.2 (FE):** Build Product Catalog Dashboard and Details Drawer.
+- [ ] **Task 122.3 (FE):** Build Orders Ledger Dashboard and Details Timeline.
+- [ ] **Task 121.3 (FE):** Build Action Catalog Configuration UI (Settings).
+- [ ] **Task 121.4 (FE):** Build Strategy Desk & Outcome Resolution UI.
+
+
+
