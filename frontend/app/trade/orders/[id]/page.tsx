@@ -194,11 +194,11 @@ export default function OrderDetailPage() {
         {/* Cancel Action if applicable */}
         {order.status !== 'CANCELLED' && order.status !== 'DELIVERED' && (
           <button
-            onClick={() => handleStatusChange('CANCELLED')}
+            onClick={() => handleStatusChange('cancelled')}
             disabled={!!updatingStatus}
             className="flex items-center gap-2 bg-white text-red-600 px-5 py-3 border border-red-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-50 active:scale-95 shadow-sm"
           >
-            {updatingStatus === 'CANCELLED' ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
+            {updatingStatus === 'cancelled' ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
             Cancel Order
           </button>
         )}
@@ -317,7 +317,7 @@ export default function OrderDetailPage() {
                         {isCurrent && item.stepNum < 3 && (
                           <button
                             onClick={() => {
-                              const nextStatuses = ['CONFIRMED', 'SHIPPED', 'DELIVERED'];
+                              const nextStatuses = ['confirmed', 'shipped', 'delivered'];
                               handleStatusChange(nextStatuses[item.stepNum]);
                             }}
                             disabled={!!updatingStatus}
