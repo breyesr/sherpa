@@ -1,5 +1,15 @@
 # Handoff Log
 
+- **2026-06-19 (Epic 118 Complete)**: Implemented real-time vector sync and auto-vectorization.
+    - Added **Content Hash Check (Task 118.3)** to skip redundant OpenAI embeddings API calls.
+    - Created **Dead-Letter Queue (Task 118.5)** database model and Alembic migration `e12f5bf3c6b4_add_vectorization_dlq` (fully executed).
+    - Registered failure hooks writing to the DLQ after 5 retries.
+    - Added `GET /admin/dlq` and `POST /admin/dlq/{id}/retry` endpoints for monitoring/re-dispatching failed tasks.
+    - Wired real-time vector sync triggers into Store, StoreNote, and Client creation/update API endpoints (**Tasks 118.1 & 118.2**).
+    - Designed and implemented **Async Deletion Cleanup (Task 118.4)** to clean up KnowledgeCorpus (with customer note cascades) when client is deleted.
+    - Standardized `Client` and `Store` relationships using explicit `stores = relationship(...)` to align with SQLAlchemy 2.0 standards.
+    - Verified all 9 unit tests pass and updated `openapi.json` contract.
+
 - **2026-06-18 (Session 2)**: Pivoted focus to the Action Strategy Desk and Navigation Consolidation.
     - Brainstormed and defined the schema design for the **Action Catalog & Outcome Accountability** model (hybrid structured/unstructured results).
     - Translated user requirements into two new epics: **Epic 121: Action Catalog & Accountability** and **Epic 122: Route Consolidation & Core Dashboards**.
