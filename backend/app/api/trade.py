@@ -657,7 +657,7 @@ async def list_store_actions(
     # Enrich response properties to eliminate client-side N+1 loops
     for action in actions:
         action.store_name = action.store.name if action.store else None
-        action.assigned_to_name = action.assigned_to.name if action.assigned_to else None
+        action.assigned_to_name = action.assigned_to.email if action.assigned_to else None
         action.template_name = action.template.name if action.template else None
         
     return actions
@@ -684,7 +684,7 @@ async def get_store_action(
         raise HTTPException(status_code=404, detail="Action not found")
         
     action.store_name = action.store.name if action.store else None
-    action.assigned_to_name = action.assigned_to.name if action.assigned_to else None
+    action.assigned_to_name = action.assigned_to.email if action.assigned_to else None
     action.template_name = action.template.name if action.template else None
     return action
 
@@ -740,7 +740,7 @@ async def create_store_action(
     )
     enriched = result.scalars().first()
     enriched.store_name = enriched.store.name if enriched.store else None
-    enriched.assigned_to_name = enriched.assigned_to.name if enriched.assigned_to else None
+    enriched.assigned_to_name = enriched.assigned_to.email if enriched.assigned_to else None
     enriched.template_name = enriched.template.name if enriched.template else None
     return enriched
 
@@ -790,7 +790,7 @@ async def update_store_action(
     await db.refresh(action)
     
     action.store_name = action.store.name if action.store else None
-    action.assigned_to_name = action.assigned_to.name if action.assigned_to else None
+    action.assigned_to_name = action.assigned_to.email if action.assigned_to else None
     action.template_name = action.template.name if action.template else None
     return action
 

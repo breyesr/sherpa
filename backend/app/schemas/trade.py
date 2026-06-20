@@ -277,6 +277,7 @@ class ActionTemplateResponse(ActionTemplateBase):
 class StoreActionBase(BaseModel):
     store_id: str
     template_id: Optional[str] = None
+    assigned_to_id: Optional[str] = None
     category: ActionCategory
     objective: ActionObjective
     impact_level: Optional[str] = None

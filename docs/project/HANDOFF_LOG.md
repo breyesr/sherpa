@@ -1,5 +1,10 @@
 # Handoff Log
 
+- **2026-06-20 (Action Dispatch Fixes & Schema Hardening)**: Fixed critical server crash on Store Action creation.
+    - Added missing **`assigned_to_id`** to `StoreActionBase` pydantic schema in `app/schemas/trade.py`.
+    - Switched all four instances of **`assigned_to.name`** to **`assigned_to.email`** in `app/api/trade.py` to fix `AttributeError` (resulting in a 500 error / browser CORS error).
+    - Verified all 13 backend unit tests pass.
+
 - **2026-06-19 (Epic 124 Complete)**: Implemented strict domain boundaries and transactional tooling for B2B sales assistant (Marco).
     - Added **Domain Boundary Enforcement (Task 124.1)** to `b2b_sales_brain.j2` to politely reject off-topic questions (e.g. recipes).
     - Created **Transactional Tool (Task 124.2)** `get_recent_orders` in `TradeToolKit` to execute structured SQL database query with proper eager loads.
