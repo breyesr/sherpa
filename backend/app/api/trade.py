@@ -705,11 +705,16 @@ async def create_store_action(
         
     action_data = action_in.model_dump()
     
+    # Sanitize empty-string FK fields sent by the frontend (dropdowns default to '')
+    for fk_field in ("assigned_to_id", "template_id", "note_source_id"):
+        if fk_field in action_data and action_data[fk_field] == "":
+            action_data[fk_field] = None
+    
     # Auto-assign result_unit and category from template if template_id is provided
-    if action_in.template_id:
+    if action_data.get("template_id"):
         res_tpl = await db.execute(
             select(ActionTemplate)
-            .where(ActionTemplate.id == action_in.template_id, ActionTemplate.business_id == business.id)
+            .where(ActionTemplate.id == action_data["template_id"], ActionTemplate.business_id == business.id)
         )
         template = res_tpl.scalars().first()
         if not template:
