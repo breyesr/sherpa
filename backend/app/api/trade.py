@@ -657,7 +657,7 @@ async def list_store_actions(
     # Enrich response properties to eliminate client-side N+1 loops
     for action in actions:
         action.store_name = action.store.name if action.store else None
-        action.assigned_to_name = action.assigned_to.email if action.assigned_to else None
+        action.assigned_to_name = action.assigned_to.name if action.assigned_to else None
         action.template_name = action.template.name if action.template else None
         
     return actions
@@ -684,7 +684,7 @@ async def get_store_action(
         raise HTTPException(status_code=404, detail="Action not found")
         
     action.store_name = action.store.name if action.store else None
-    action.assigned_to_name = action.assigned_to.email if action.assigned_to else None
+    action.assigned_to_name = action.assigned_to.name if action.assigned_to else None
     action.template_name = action.template.name if action.template else None
     return action
 
@@ -709,6 +709,10 @@ async def create_store_action(
     for fk_field in ("assigned_to_id", "template_id", "note_source_id"):
         if fk_field in action_data and action_data[fk_field] == "":
             action_data[fk_field] = None
+            
+    # Strip timezone info from datetime fields to prevent asyncpg DataError
+    if action_data.get("due_date") and action_data["due_date"].tzinfo:
+        action_data["due_date"] = action_data["due_date"].replace(tzinfo=None)
     
     # Auto-assign result_unit and category from template if template_id is provided
     if action_data.get("template_id"):
@@ -745,7 +749,7 @@ async def create_store_action(
     )
     enriched = result.scalars().first()
     enriched.store_name = enriched.store.name if enriched.store else None
-    enriched.assigned_to_name = enriched.assigned_to.email if enriched.assigned_to else None
+    enriched.assigned_to_name = enriched.assigned_to.name if enriched.assigned_to else None
     enriched.template_name = enriched.template.name if enriched.template else None
     return enriched
 
@@ -775,6 +779,10 @@ async def update_store_action(
         
     update_data = action_in.model_dump(exclude_unset=True)
     
+    # Strip timezone info from datetime fields to prevent asyncpg DataError
+    if update_data.get("due_date") and update_data["due_date"].tzinfo:
+        update_data["due_date"] = update_data["due_date"].replace(tzinfo=None)
+    
     # STRICT VALIDATION: Require result_value and resolution_notes to mark COMPLETED
     new_status = update_data.get("status")
     if new_status == ActionStatus.COMPLETED or (action.status == ActionStatus.COMPLETED and new_status is None):
@@ -795,7 +803,7 @@ async def update_store_action(
     await db.refresh(action)
     
     action.store_name = action.store.name if action.store else None
-    action.assigned_to_name = action.assigned_to.email if action.assigned_to else None
+    action.assigned_to_name = action.assigned_to.name if action.assigned_to else None
     action.template_name = action.template.name if action.template else None
     return action
 

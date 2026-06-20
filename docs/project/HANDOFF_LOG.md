@@ -1,5 +1,12 @@
 # Handoff Log
 
+- **2026-06-20 (Store Reps Assignee Dropdown & Schema Migration)**: Fixed assignee select loading, schema, and timezone offset writes.
+    - Updated `StoreAction` database model and Alembic migration `fe412c1df3d4_change_assigned_to_id_fk_to_clients` to link `assigned_to_id` to `clients.id` (instead of `users.id`).
+    - Handled existing user IDs in `assigned_to_id` by setting them to NULL during migration to prevent Postgres constraint violations.
+    - Modified backend API endpoints to return client name instead of user email for `assigned_to_name`.
+    - Resolved asyncpg `DataError` on timezone-naive `TIMESTAMP` columns by stripping timezone offsets (`tzinfo=None`) from `due_date` parameters before writes.
+    - Updated frontend page to load store contacts (clients) in the assignee dropdown, reset the selection when changing target store, and bypassed default user ID fallback.
+
 - **2026-06-20 (Action Dispatch Fixes & Schema Hardening)**: Fixed critical server crash on Store Action creation.
     - Added missing **`assigned_to_id`** to `StoreActionBase` pydantic schema in `app/schemas/trade.py`.
     - Switched all four instances of **`assigned_to.name`** to **`assigned_to.email`** in `app/api/trade.py` to fix `AttributeError` (resulting in a 500 error / browser CORS error).

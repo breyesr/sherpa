@@ -78,12 +78,6 @@ export default function ActionsStrategyDesk() {
     enabled: !!token && isAdmin,
   });
 
-  // Fallback assignee list
-  const assigneesList = useMemo(() => {
-    if (teammates.length > 0) return teammates;
-    if (currentUser) return [currentUser];
-    return [];
-  }, [teammates, currentUser]);
 
   // Fetch Actions
   const { data: actions = [], isLoading: loadingActions } = useQuery<StoreActionResponse[]>({
@@ -138,6 +132,12 @@ export default function ActionsStrategyDesk() {
     details: {} as Record<string, any>
   });
 
+  // Assignees are store contacts (Clients)
+  const assigneesList = useMemo(() => {
+    const selectedStore = stores.find(s => s.id === actionFormData.store_id);
+    return selectedStore?.clients || [];
+  }, [stores, actionFormData.store_id]);
+
   // Resolution State (Strict completion requirements)
   const [resolutionData, setResolutionData] = useState({
     status: 'completed',
@@ -190,7 +190,7 @@ export default function ActionsStrategyDesk() {
       ...actionFormData,
       category: selectedTpl ? selectedTpl.category : 'COMMERCIAL',
       result_unit: selectedTpl ? selectedTpl.default_unit : 'unit',
-      assigned_to_id: actionFormData.assigned_to_id || currentUser?.id,
+      assigned_to_id: actionFormData.assigned_to_id || null,
       due_date: actionFormData.due_date ? new Date(actionFormData.due_date).toISOString() : null,
       status: 'pending' // default status for newly assigned desk actions
     };
@@ -717,7 +717,7 @@ export default function ActionsStrategyDesk() {
                 required
                 className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
                 value={actionFormData.store_id}
-                onChange={e => setActionFormData({...actionFormData, store_id: e.target.value})}
+                onChange={e => setActionFormData({...actionFormData, store_id: e.target.value, assigned_to_id: ''})}
               >
                 <option value="">Select Account...</option>
                 {stores.map(s => <option key={s.id} value={s.id}>{s.name} ({s.region})</option>)}
@@ -758,7 +758,11 @@ export default function ActionsStrategyDesk() {
                   onChange={e => setActionFormData({...actionFormData, assigned_to_id: e.target.value})}
                 >
                   <option value="">Select Assigned Rep...</option>
-                  {assigneesList.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                  {assigneesList.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.email ? `(${c.email})` : c.phone ? `(${c.phone})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

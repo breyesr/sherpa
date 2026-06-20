@@ -6869,6 +6869,17 @@
             ],
             "title": "Template Id"
           },
+          "assigned_to_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To Id"
+          },
           "category": {
             "$ref": "#/components/schemas/ActionCategory"
           },
@@ -7008,6 +7019,17 @@
             ],
             "title": "Template Id"
           },
+          "assigned_to_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To Id"
+          },
           "category": {
             "$ref": "#/components/schemas/ActionCategory"
           },
@@ -7139,17 +7161,6 @@
               }
             ],
             "title": "Author Id"
-          },
-          "assigned_to_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned To Id"
           },
           "store_name": {
             "anyOf": [

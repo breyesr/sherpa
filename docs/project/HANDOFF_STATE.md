@@ -1,15 +1,22 @@
-# Handoff State: 2026-06-20 (Post-Epic 124 Support & Schema Hardening)
+# Handoff State: 2026-06-20 (Post-Assignee Dropdown, Schema Migration, & Timezone Offset Fixes)
 
 ## 🎯 Current Status
-We resolved a critical server crash (resulting in a browser-side CORS `Failed to fetch` error) when dispatching Store Actions from the frontend. The backend schemas and trade API routers have been hardened to support assigned reps correctly, and all 13 backend unit tests pass successfully.
+We resolved a critical 500 error on `POST /trade/actions` where `due_date` sent from the frontend as a timezone-aware ISO string (`.toISOString()`) caused an asyncpg `DataError` when attempting to write to PostgreSQL's timezone-naive `TIMESTAMP WITHOUT TIME ZONE` column type. Timezone information is now programmatically stripped from the `due_date` object before database commits. Store actions can now be dispatched and updated successfully.
 
 ## ✅ Accomplishments (Store Actions Bug Fixes & Schema Hardening)
-- **Schema Alignment (Pydantic Fix)**: Added the missing `assigned_to_id: Optional[str] = None` field to `StoreActionBase` in `backend/app/schemas/trade.py`. Previously, it was omitted from the base schema, causing Pydantic to ignore any assignee passed during POST `/trade/actions` creation.
-- **AttributeError Resolution**: Resolved a fatal server crash where `enriched.assigned_to_name = enriched.assigned_to.name` was accessed in `backend/app/api/trade.py`. The `User` database model has no `name` attribute, so setting an assignee crashed the endpoint with an `AttributeError` (generating a 500 error without CORS headers). Switched all 4 occurrences in `trade.py` to use `assigned_to.email`.
-- **Validation**: Verified the POST `/trade/actions` endpoints with an in-process diagnostic script using `TestClient` and `httpx`. Tested and passed all 13 backend unit tests successfully.
+- **Database Schema Update**: Changed `StoreAction.assigned_to_id` to link to `clients.id` (instead of `users.id`) and updated `StoreAction.assigned_to` relation to link to the `Client` model.
+- **Data Migration & Safety Clean-up**: Created Alembic migration `fe412c1df3d4_change_assigned_to_id_fk_to_clients`. Cleared legacy user IDs from `assigned_to_id` to NULL before applying the constraint, preventing any database integrity errors during migration execution.
+- **Timezone Compatibility Fix**: Added a parser in `create_store_action` and `update_store_action` within `backend/app/api/trade.py` to strip any timezone offsets (`tzinfo=None`) from `due_date` prior to SQL insertion/update, bypassing asyncpg type mismatch errors.
+- **API Enrichment Logic**: Updated the enrichment logic in `backend/app/api/trade.py` to map `assigned_to_name` to `assigned_to.name` (the Client's name) instead of their email.
+- **Frontend Assignee Logic**:
+  - Redefined `assigneesList` to retrieve the contacts (`clients`) of the selected Target Account Location (Store).
+  - Updated the option elements in the select dropdown to render contact names with email/phone fallbacks.
+  - Reset the assignee when the Target Account Location changes to prevent mismatched assignments.
+  - Removed the default fallback to `currentUser.id` when no assignee is selected, sending `null` instead (sanitized on the backend).
+- **TypeScript Generation & Build Sync**: Regenerated the OpenAPI schema and TypeScript types (`npm run gen:api`), resolving a lexical-scope `ReferenceError` during compilation. Next.js now builds optimized production pages successfully.
 
 ## 🚧 Blockers & Risks
-- **None**: Local server works cleanly, CORS resolves on successful actions, and all unit tests pass.
+- **None**: Local server works cleanly, all API requests return successful status codes, and all unit tests pass.
 
 ## 🚀 Next Strategic Steps
 - **Bulk Ingestion Ingestion Pipeline (Epic 123)**:
@@ -18,4 +25,4 @@ We resolved a critical server crash (resulting in a browser-side CORS `Failed to
 
 ## 🛠️ Dev Notes
 - **Branch Management**: Currently on branch `feature/backend/epic-118-knowledge-sync`.
-- **Verified Tests**: Tested with `/backend/venv/bin/pytest -o asyncio_mode=auto`.
+- **Verified Tests**: Tested backend using `./venv/bin/pytest`. All 11 tests passed successfully.

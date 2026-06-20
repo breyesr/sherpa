@@ -234,6 +234,20 @@ export interface paths {
      */
     post: operations["update_admin_settings_api_v1_admin_settings_post"];
   };
+  "/api/v1/admin/dlq": {
+    /**
+     * List Dlq
+     * @description List all dead-letter queue entries (Admin only).
+     */
+    get: operations["list_dlq_api_v1_admin_dlq_get"];
+  };
+  "/api/v1/admin/dlq/{dlq_id}/retry": {
+    /**
+     * Retry Dlq Entry
+     * @description Retry a failed task from DLQ and mark it as resolved (Admin only).
+     */
+    post: operations["retry_dlq_entry_api_v1_admin_dlq__dlq_id__retry_post"];
+  };
   "/api/v1/data-gateway/me/imports": {
     /**
      * Get My Imports
@@ -1482,6 +1496,8 @@ export interface components {
       store_id: string;
       /** Template Id */
       template_id?: string | null;
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
       category: components["schemas"]["ActionCategory"];
       objective: components["schemas"]["ActionObjective"];
       /** Impact Level */
@@ -1516,6 +1532,8 @@ export interface components {
       store_id: string;
       /** Template Id */
       template_id?: string | null;
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
       category: components["schemas"]["ActionCategory"];
       objective: components["schemas"]["ActionObjective"];
       /** Impact Level */
@@ -1549,8 +1567,6 @@ export interface components {
       business_id: string;
       /** Author Id */
       author_id?: string | null;
-      /** Assigned To Id */
-      assigned_to_id?: string | null;
       /** Store Name */
       store_name?: string | null;
       /** Assigned To Name */
@@ -2866,6 +2882,60 @@ export interface operations {
         "application/json": {
           [key: string]: string;
         };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Dlq
+   * @description List all dead-letter queue entries (Admin only).
+   */
+  list_dlq_api_v1_admin_dlq_get: {
+    parameters: {
+      query?: {
+        entity_type?: string | null;
+        status?: string | null;
+        business_id?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Retry Dlq Entry
+   * @description Retry a failed task from DLQ and mark it as resolved (Admin only).
+   */
+  retry_dlq_entry_api_v1_admin_dlq__dlq_id__retry_post: {
+    parameters: {
+      path: {
+        dlq_id: string;
       };
     };
     responses: {

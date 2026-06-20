@@ -475,7 +475,7 @@ class StoreAction(Base):
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     store_id = Column(String, ForeignKey("stores.id"), nullable=False)
     author_id = Column(String, ForeignKey("users.id"), nullable=True)
-    assigned_to_id = Column(String, ForeignKey("users.id"), nullable=True)
+    assigned_to_id = Column(String, ForeignKey("clients.id"), nullable=True)
     template_id = Column(String, ForeignKey("action_templates.id"), nullable=True)
     
     category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
@@ -500,7 +500,7 @@ class StoreAction(Base):
     business_profile = relationship("BusinessProfile")
     store = relationship("Store")
     author = relationship("User", foreign_keys=[author_id])
-    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+    assigned_to = relationship("Client", foreign_keys=[assigned_to_id])
     template = relationship("ActionTemplate")
     note_source = relationship("StoreNote")
 
