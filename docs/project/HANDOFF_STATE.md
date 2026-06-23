@@ -16,9 +16,13 @@ We resolved a critical 500 error on `POST /trade/actions` where `due_date` sent 
 - **TypeScript Generation & Build Sync**: Regenerated the OpenAPI schema and TypeScript types (`npm run gen:api`), resolving a lexical-scope `ReferenceError` during compilation. Next.js now builds optimized production pages successfully.
 
 ## 🚧 Blockers & Risks
-- **None**: Local server works cleanly, all API requests return successful status codes, and all unit tests pass.
+- **Staging Assistant Configuration Fix**: Fixed a critical 404 error on `PATCH /api/v1/business/me/assistant` occurring when a business profile exists but is missing its child `Agent` record. Added an auto-create guard in the endpoint to dynamically provision a default `Agent` if it is missing, preventing user flow blockage.
+
+## 🚧 Blockers & Risks
+- **None**: The fix is committed to `feature/backend/epic-118-knowledge-sync` and all backend unit tests pass.
 
 ## 🚀 Next Strategic Steps
+- **Staging Deployment**: Merge `feature/backend/epic-118-knowledge-sync` to `staging` to trigger Railway redeployment and verify the staging assistant update behavior.
 - **Bulk Ingestion Ingestion Pipeline (Epic 123)**:
   - Begin design of the GraphRAG-driven bulk messaging ingestion pipeline.
   - Wire ingestion nodes to structure WhatsApp/Telegram notes into accounts and sales graphs.

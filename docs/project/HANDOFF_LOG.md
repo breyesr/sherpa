@@ -1,5 +1,10 @@
 # Handoff Log
 
+- **2026-06-23 (Assistant Settings 404 Bug Fix)**: Fixed application-level 404 when updating assistant behavior for businesses missing Agent records.
+    - Modified `update_assistant_me` in `backend/app/api/business.py` to auto-create a default `Agent` record if `business.assistant_config` is `None` (empty agents list).
+    - Verified all 11 backend unit tests pass successfully.
+    - Committed and pushed changes to the `feature/backend/epic-118-knowledge-sync` branch.
+
 - **2026-06-20 (Store Reps Assignee Dropdown & Schema Migration)**: Fixed assignee select loading, schema, and timezone offset writes.
     - Updated `StoreAction` database model and Alembic migration `fe412c1df3d4_change_assigned_to_id_fk_to_clients` to link `assigned_to_id` to `clients.id` (instead of `users.id`).
     - Handled existing user IDs in `assigned_to_id` by setting them to NULL during migration to prevent Postgres constraint violations.
