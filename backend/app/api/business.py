@@ -286,8 +286,14 @@ async def update_assistant_me(
         .options(selectinload(BusinessProfile.agents))
     )
     business = result.scalars().first()
-    if not business or not business.assistant_config:
-        raise HTTPException(status_code=404, detail="Assistant config not found")
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+    
+    if not business.assistant_config:
+        agent = Agent(business_id=business.id)
+        db.add(agent)
+        await db.flush()
+        await db.refresh(business, attribute_names=["agents"])
     
     update_data = agent_in.dict(exclude_unset=True)
     for field, value in update_data.items():
