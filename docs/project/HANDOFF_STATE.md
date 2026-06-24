@@ -6,7 +6,7 @@ We have defined and appended Epic 126: WhatsApp Lead Qualification Campaign to t
 ## ✅ Accomplishments (WhatsApp Lead Qualification Design)
 - **Epic Defined**: Created and documented Epic 126 in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md), containing detailed tasks for backend database migrations, OpenAPI type generation, webhook handlers, LangGraph orchestrators, routing logic, and UI adjustments.
 - **Implementation Strategy**: Formulated architectural choices:
-  - Add `min_quantity_for_rep_call` to the `Product` model.
+  - Add `wholesale_threshold` to the `Product` model.
   - Create a dedicated asynchronous Twilio webhook `/api/v1/whatsapp/webhook/twilio/prospect` routed to a Celery task.
   - Implement a `ProspectQualifier` LangGraph state machine with Postgres checkpoints.
   - Create a `StoreAction` (commercial lead) to notify representatives.
