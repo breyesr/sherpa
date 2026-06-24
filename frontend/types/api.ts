@@ -1347,6 +1347,8 @@ export interface components {
       unit_of_measure?: string | null;
       /** External Id */
       external_id?: string | null;
+      /** Wholesale Threshold */
+      wholesale_threshold?: number | null;
       /** Category Id */
       category_id: string;
     };
@@ -1371,6 +1373,8 @@ export interface components {
       unit_of_measure?: string | null;
       /** External Id */
       external_id?: string | null;
+      /** Wholesale Threshold */
+      wholesale_threshold?: number | null;
       /** Id */
       id: string;
       /** Category Id */
@@ -1406,6 +1410,8 @@ export interface components {
       unit_of_measure?: string | null;
       /** External Id */
       external_id?: string | null;
+      /** Wholesale Threshold */
+      wholesale_threshold?: number | null;
     };
     /** ServiceCreate */
     ServiceCreate: {

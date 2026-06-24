@@ -6418,6 +6418,17 @@
             ],
             "title": "External Id"
           },
+          "wholesale_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wholesale Threshold"
+          },
           "category_id": {
             "type": "string",
             "title": "Category Id"
@@ -6506,6 +6517,17 @@
               }
             ],
             "title": "External Id"
+          },
+          "wholesale_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wholesale Threshold"
           },
           "id": {
             "type": "string",
@@ -6636,6 +6658,17 @@
               }
             ],
             "title": "External Id"
+          },
+          "wholesale_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wholesale Threshold"
           }
         },
         "type": "object",

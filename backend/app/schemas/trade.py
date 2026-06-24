@@ -121,6 +121,7 @@ class ProductBase(BaseModel):
     brand: Optional[str] = None
     unit_of_measure: Optional[str] = None
     external_id: Optional[str] = None
+    wholesale_threshold: Optional[int] = None
 
 class ProductCreate(ProductBase):
     category_id: str
@@ -135,6 +136,7 @@ class ProductUpdate(BaseModel):
     product_type: Optional[str] = None
     unit_of_measure: Optional[str] = None
     external_id: Optional[str] = None
+    wholesale_threshold: Optional[int] = None
 
 class ProductResponse(ProductBase):
     id: str

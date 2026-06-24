@@ -17,7 +17,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
     category_id: '',
     description: '',
     price: 0,
-    sku: ''
+    sku: '',
+    wholesale_threshold: '' as string | number
   });
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,13 +57,20 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
     setError('');
 
     try {
+      const payload = {
+        ...formData,
+        wholesale_threshold: formData.wholesale_threshold !== '' && formData.wholesale_threshold !== null
+          ? parseInt(formData.wholesale_threshold as any, 10)
+          : null
+      };
+
       const res = await fetch(`${API_BASE_URL}/trade/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -72,7 +80,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
 
       onSuccess();
       onClose();
-      setFormData({ name: '', category_id: '', description: '', price: 0, sku: '' });
+      setFormData({ name: '', category_id: '', description: '', price: 0, sku: '', wholesale_threshold: '' });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -161,6 +169,22 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
                   onChange={e => setFormData({...formData, sku: e.target.value})}
                 />
                 <Barcode size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Wholesale Threshold (Qty)</label>
+              <div className="relative">
+                <input 
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="e.g. 50 (Leave empty for none)"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10"
+                  value={formData.wholesale_threshold}
+                  onChange={e => setFormData({...formData, wholesale_threshold: e.target.value ? parseInt(e.target.value, 10) : ''})}
+                />
+                <Tag size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </div>
             </div>
 

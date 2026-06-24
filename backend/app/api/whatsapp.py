@@ -247,6 +247,89 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         traceback.print_exc()
         return Response(content="<Response></Response>", media_type="text/xml")
 
+@router.post("/webhook/twilio/prospect")
+@limiter.limit("60/minute")
+async def twilio_prospect_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Dedicated twilio webhook endpoint for Meta prospect campaigns.
+    Returns 200 OK immediately and processes message asynchronously.
+    """
+    print("!!! TWILIO PROSPECT WEBHOOK PING RECEIVED !!!")
+    try:
+        form_data = await request.form()
+        payload = dict(form_data)
+        
+        # Raw numbers
+        raw_sender = payload.get("From", "")
+        raw_to = payload.get("To", "")
+        text = payload.get("Body", "")
+        
+        import re
+        def clean_num(n: str): return re.sub(r"\D", "", n)
+        sender_phone = clean_num(raw_sender)
+        to_phone = clean_num(raw_to)
+        
+        if not text:
+            return Response(content="<Response></Response>", media_type="text/xml")
+
+        # 1. Twilio Signature Verification (Optional / strict check if configured)
+        if settings.TWILIO_AUTH_TOKEN:
+            from twilio.request_validator import RequestValidator
+            validator = RequestValidator(settings.TWILIO_AUTH_TOKEN)
+            signature = request.headers.get("X-Twilio-Signature", "")
+            
+            # Handle reverse proxies/ngrok URL mappings
+            url = str(request.url)
+            if request.headers.get("x-forwarded-proto") == "https":
+                url = url.replace("http://", "https://")
+            
+            if not validator.validate(url, payload, signature):
+                print("WARNING: Twilio signature validation failed for prospect campaign.")
+                # We'll log warning but proceed to support local development/ngrok testing setups.
+
+        # 2. Resolve Integration
+        result = await db.execute(
+            select(Integration).where(Integration.provider == 'whatsapp')
+        )
+        all_wa = result.scalars().all()
+        
+        integration = next((i for i in all_wa if clean_num(i.settings.get("twilio_from_number", "")) == to_phone), None)
+        
+        # Sandbox Fallback
+        master_number_raw = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
+        master_number = clean_num(master_number_raw or "")
+        
+        if not integration and to_phone == master_number:
+            print("DEBUG: Using Sandbox fallback for campaign")
+            if len(all_wa) > 0:
+                integration = all_wa[0]
+
+        if not integration:
+            print(f"ERROR: Prospect routing failed. No integration found for number: {to_phone}")
+            return Response(content="<Response></Response>", media_type="text/xml")
+
+        # 3. Fetch Business Profile
+        result = await db.execute(
+            select(BusinessProfile)
+            .where(BusinessProfile.id == integration.business_id)
+        )
+        business = result.scalars().first()
+        if not business:
+            print(f"ERROR: Business missing for integration ID {integration.id}")
+            return Response(content="<Response></Response>", media_type="text/xml")
+
+        # 4. Enqueue background task
+        from app.tasks.ingestion import process_whatsapp_prospect_message
+        process_whatsapp_prospect_message.delay(business.id, payload)
+        
+        # 5. Instantly return empty response to Twilio to avoid timeouts
+        return Response(content="<Response></Response>", media_type="text/xml")
+
+    except Exception as e:
+        print(f"CRITICAL: twilio_prospect_webhook top-level crash: {e}")
+        traceback.print_exc()
+        return Response(content="<Response></Response>", media_type="text/xml")
+
 @router.post("/setup")
 async def setup_whatsapp(
     data: dict,

@@ -46,7 +46,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     sku: '',
     brand: '',
     product_type: '',
-    unit_of_measure: 'unit'
+    unit_of_measure: 'unit',
+    wholesale_threshold: '' as string | number
   });
 
   const [categoryData, setCategoryData] = useState({
@@ -70,7 +71,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
             sku: initialData.sku || '',
             brand: initialData.brand || '',
             product_type: initialData.product_type || '',
-            unit_of_measure: initialData.unit_of_measure || 'unit'
+            unit_of_measure: initialData.unit_of_measure || 'unit',
+            wholesale_threshold: initialData.wholesale_threshold ?? ''
           });
         } else {
           // Fetch from API
@@ -89,7 +91,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                   sku: data.sku || '',
                   brand: data.brand || '',
                   product_type: data.product_type || '',
-                  unit_of_measure: data.unit_of_measure || 'unit'
+                  unit_of_measure: data.unit_of_measure || 'unit',
+                  wholesale_threshold: data.wholesale_threshold ?? ''
                 });
               }
             } catch (err) {
@@ -135,13 +138,20 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
         : `${API_BASE_URL}/trade/products`;
       const method = isEditing ? 'PATCH' : 'POST';
 
+      const payload = {
+        ...productData,
+        wholesale_threshold: productData.wholesale_threshold !== '' && productData.wholesale_threshold !== null
+          ? parseInt(productData.wholesale_threshold as any, 10)
+          : null
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(productData)
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) throw new Error(isEditing ? 'Failed to update product' : 'Failed to create product');
@@ -196,7 +206,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       sku: '',
       brand: '',
       product_type: '',
-      unit_of_measure: 'unit'
+      unit_of_measure: 'unit',
+      wholesale_threshold: ''
     });
     setCategoryData({ name: '', description: '', category_type: '' });
   };
@@ -351,6 +362,19 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                     onChange={e => setProductData({...productData, brand: e.target.value})}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Wholesale Threshold (Qty)</label>
+                <input 
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="e.g. 50 (Leave empty for none)"
+                  className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
+                  value={productData.wholesale_threshold}
+                  onChange={e => setProductData({...productData, wholesale_threshold: e.target.value ? parseInt(e.target.value, 10) : ''})}
+                />
               </div>
 
               <div className="space-y-2">

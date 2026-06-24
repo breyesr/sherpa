@@ -82,6 +82,7 @@ class Product(Base):
     brand = Column(String, nullable=True, index=True)
     unit_of_measure = Column(String, nullable=True) # e.g., 'kg', 'unit', 'box'
     external_id = Column(String, nullable=True, index=True)
+    wholesale_threshold = Column(Integer, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -100,6 +101,8 @@ class Product(Base):
             summary += f" Unidad: {self.unit_of_measure}."
         if self.price:
             summary += f" Precio: {self.price}."
+        if self.wholesale_threshold is not None:
+            summary += f" Umbral mayorista: {self.wholesale_threshold}."
         if self.category:
             summary += f" {self.category.get_semantic_summary()}"
         return summary
@@ -109,7 +112,8 @@ class Product(Base):
             "name": self.name,
             "brand": self.brand,
             "sku": self.sku,
-            "product_type": self.product_type
+            "product_type": self.product_type,
+            "wholesale_threshold": self.wholesale_threshold
         }
 
 class Store(Base):
