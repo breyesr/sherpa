@@ -14,6 +14,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     vertical_type: Optional[str] = None
+    features_config: Optional[dict] = None
 
 class UserCreateAdmin(UserBase):
     password: str
@@ -21,11 +22,13 @@ class UserCreateAdmin(UserBase):
     is_active: bool = True
     is_admin: bool = False
     vertical_type: Optional[str] = "BASIC"
+    features_config: Optional[dict] = None
 
 class BusinessProfileMinimal(BaseModel):
     id: str
     name: str
     vertical_type: VerticalType
+    features_config: Optional[dict] = None
 
     class Config:
         from_attributes = True

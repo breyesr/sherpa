@@ -58,6 +58,42 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
         raise credentials_exception
     return user
 
+def require_feature(feature_key: str):
+    async def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if not current_user.business_profile:
+            raise HTTPException(status_code=404, detail="Business profile not found")
+        
+        # Local import to prevent circular imports
+        from app.api.business import DEFAULT_FEATURES_CONFIG
+        cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
+        
+        if not cfg.get(feature_key, {}).get("enabled", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail=f"El módulo '{feature_key}' no está habilitado para esta cuenta."
+            )
+        return current_user
+    return dependency
+
+def require_any_feature(feature_keys: list):
+    async def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if not current_user.business_profile:
+            raise HTTPException(status_code=404, detail="Business profile not found")
+        
+        # Local import to prevent circular imports
+        from app.api.business import DEFAULT_FEATURES_CONFIG
+        cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
+        
+        has_any = any(cfg.get(key, {}).get("enabled", False) for key in feature_keys)
+        if not has_any:
+            features_label = " o ".join(f"'{k}'" for k in feature_keys)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail=f"Ninguno de los módulos requeridos ({features_label}) está habilitado para esta cuenta."
+            )
+        return current_user
+    return dependency
+
 @router.get("/me", response_model=UserResponse)
 async def get_user_me(current_user: User = Depends(get_current_user)) -> Any:
     return current_user

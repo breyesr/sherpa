@@ -1,25 +1,34 @@
-# Handoff State: 2026-06-24 (WhatsApp Lead Qualification Campaign Completed)
+# Handoff State: 2026-06-24 (Modular Trade Packaging & Decoupling & User Modal Refactoring Completed)
 
 ## 🎯 Current Status
-We have successfully implemented and fully verified **Epic 126: WhatsApp Lead Qualification Campaign (Meta Prospection)**. The entire conversational qualifier pipeline is built, database migrations are applied locally, frontend components have been updated with type synchronization, and both lead qualification flows (above-threshold/wholesale rep assignment and below-threshold/retail direct-to-store routing) have been verified using a complete end-to-end simulation integration test suite.
+We have successfully implemented, styled, and verified:
+1. **Epic 127: Modular Inbound Webhook Routing (Multi-Tenant Ingress)**: Handles identity-based webhook message parsing, toggles config, and async queue dispatch.
+2. **Epic 128: Modular Feature Management (Admin Console Toggles)**: Allows Superadmins to selectively enable/disable feature sets (Scheduler, CRM, Trade Logistics, Sales Intelligence Coach) inside the admin page's User modal.
+3. **Epic 129: Modular Trade Packaging & Decoupling**: Monolithic `trade_logistics` has been split into `campaign_flow` and `b2b_solutions` keys. The admin user modal checklist has been upgraded to support individual toggles for Campaigns and B2B Solutions, and `business_identity` toggle is hidden as it is a core mandatory setting.
+4. **Dynamic Sidebar Layout Filtering**: The client-side navigation menu in `Sidebar.tsx` dynamically shows the full B2B Hub for B2B solutions clients, or a simplified standalone "Product Catalog" sidebar link for Campaign Flow clients without B2B solutions access.
+5. **Premium UX/UI Modal Overhaul**: Completely redesigned the User Creation & Edit modal on `/admin/page.tsx` to align with accessible, premium B2B SaaS aesthetics.
+6. **Resilient Backend Defaults**: Defined `DEFAULT_FEATURES_CONFIG` in `app/api/business.py` resolving a critical missing import error in `admin.py` and `auth.py`.
 
-## ✅ Accomplishments (Epic 126 Completed)
-- **Database Schema & Migration**: Added `wholesale_threshold` (Integer, nullable=True) to the `Product` model, generated the Alembic migration script, and executed it locally (`alembic upgrade head`).
-- **Pydantic Schemas & OpenAPI**: Updated product schemas in `app/schemas/trade.py`, regenerated `openapi.json`, and ran `npm run gen:api` to sync TypeScript definitions (`wholesale_threshold` added to frontend models).
-- **FastAPI Webhook Routing**: Implemented `/api/v1/whatsapp/webhook/twilio/prospect` in `app/api/whatsapp.py` to receive external webhook posts, perform signature verification, instantly respond with a `200 OK` empty response, and defer processing to a Celery task.
-- **Asynchronous Processing (Celery)**: Added task `process_whatsapp_prospect_message` in `app/tasks/ingestion.py` executing the graph workflow and using the Twilio REST API client to push responses back to the client.
-- **LangGraph Orchestrator (`ProspectQualifier`)**: Created the qualification state machine in `app/services/prospect_qualifier.py` that handles multi-turn conversation parsing, extracts 6 required fields via tool calls, and performs the qualification check.
-- **Database Lead Generation**: For wholesale leads, the orchestrator automatically generates a new `Client` record (associated contact), a `Store` record (lead account), and a `StoreAction` (representative task of category `COMMERCIAL`) to alert the sales representative.
-- **Form UI Threshold Customization**: Updated both the `AddProductModal.tsx` and V2 `CatalogDrawer.tsx` frontend forms with a numerical "Wholesale Threshold" input field, enabling dynamic threshold configurations from the dashboard.
-- **End-to-End Test Suite**: Written and executed `test_whatsapp_campaign.py` confirming both flows succeed with proper state retention, database population, and chatbot replies.
+All database schema migrations have been fully executed, openapi schemas generated, and type checks validated. Inbound webhook routing simulation tests (`test_webhook_routing.py`) have run and passed successfully.
+
+## ✅ Accomplishments
+- **Modular Trade Decoupling**: Split `trade_logistics` into `campaign_flow` and `b2b_solutions` keys. Successfully ran migration scripts to upgrade database configurations.
+- **Backend Feature Guards**: Upgraded `require_feature` and `require_any_feature` guards in `app/api/auth.py`. Gated the `/api/v1/trade/` router to check for `campaign_flow` OR `b2b_solutions` dynamically.
+- **Dynamic Sidebar**: Conditionally renders "Calendar", "Clients", "B2B Hub", or standalone "Product Catalog" depending on the client's custom feature configuration flags.
+- **Premium Admin User Modal UX & Gating**: Redesigned the modal with vertical scroll limits, horizontal template cards, switch toggles, and removed the redundant `business_identity` toggle checkbox (core mandatory prerequisite).
+- **Live Test Sandbox & Type Sync**: Integrated role selectors inside `AssistantSettings.tsx` and updated TypeScript API models via `npm run gen:api`.
 
 ## 🚧 Blockers & Risks
-- **None**: Epic 126 is fully implemented, all backend unit tests pass, and simulation test outputs are 100% green.
+- **None**: All systems compile cleanly and integration test outputs are 100% green.
 
 ## 🚀 Next Strategic Steps
-- **PR Code Review**: Review changes on the feature branch `feature/backend/whatsapp-lead-qualification` and create a PR to merge into `staging`.
-- **Twilio Campaign Sandbox Ingress**: Configure webhook URL on Twilio console pointing to the new `/api/v1/whatsapp/webhook/twilio/prospect` endpoint for live user testing.
+- **Commit Active Changes**: Save all modifications on the feature branch `feature/backend/whatsapp-lead-qualification`.
+- **PR to Staging**: Open a pull request from `feature/backend/whatsapp-lead-qualification` into the `staging` branch (requires user confirmation and HITM review before merge).
+- **Verify Staging Deployment**: Check the Nixpacks deployment status on Railway for the `sherpa`, `worker`, and `web` services.
 
 ## 🛠️ Dev Notes
 - **Branch Management**: Active on `feature/backend/whatsapp-lead-qualification`.
-- **Database Migrations applied**: `40f7bcbc34a1_add_wholesale_threshold_to_product`.
+- **Database Migrations applied**:
+  - `40f7bcbc34a1_add_wholesale_threshold_to_product`
+  - `10ffac29c01f_add_routing_config_to_businessprofile`
+  - `9179bb59d515_add_features_config_to_businessprofile`

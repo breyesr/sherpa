@@ -1,5 +1,32 @@
 # Handoff Log
 
+- **2026-06-24 (Modular Trade Decoupling Completed)**: Decoupled trade_logistics into campaign_flow and b2b_solutions (Epic 129).
+    - Split trade_logistics monolithic key in `DEFAULT_FEATURES_CONFIG` and user Pydantic schemas.
+    - Updated backend API dependencies in `app/api/auth.py` with `require_any_feature` to allow shared Product Catalog access.
+    - Updated dynamic sidebar layout filtering in `Sidebar.tsx` to support simplified Product Catalog layout for campaign-only accounts.
+    - Upgraded Admin provisioning User Modal in `/admin/page.tsx` with distinct toggles for `campaign_flow` and `b2b_solutions`, and removed the `business_identity` toggle.
+    - Verified all configurations with backend sandbox test suites.
+
+- **2026-06-24 (Modular Feature Management Completed)**: Fully implemented and tested Epic 128 for granular feature configuration.
+    - Added `features_config` JSON column to `BusinessProfile` model and applied the Alembic migration script (`9179bb59d515`) with default data presets.
+    - Integrated `features_config` validation rules inside user and business Pydantic schemas.
+    - Implemented a `require_feature` dependency guard in `app/api/auth.py` and gated trade logistics (`trade.py`) and GraphRAG briefing routes dynamically.
+    - Updated the user creation/edit modal on `/admin/page.tsx` with checklist toggles and template vertical presets.
+    - Synchronized OpenAPI specs and ran `npm run gen:api` to compile the type-safe Admin client.
+    - Resolved missing `DEFAULT_FEATURES_CONFIG` import bug in `backend/app/api/business.py` to prevent backend startup runtime crashes.
+    - Updated the frontend `Sidebar.tsx` navigation sidebar layout to dynamically render modules ("Calendar", "Clients", and "B2B Hub") according to enabled feature configurations.
+    - Fixed the admin user form `userForm` state default presets to automatically initialize and reset the `features_config` structure on "Add New User" click.
+    - Completely overhauled the UX/UI of the Admin user provisioning modal on `/admin/page.tsx`, implementing horizontal template selector cards, custom Switch toggles, Lucide icons, sticky panels, and vertical scroll containment.
+
+- **2026-06-24 (Modular Inbound Webhook Routing Completed)**: Fully implemented and tested Epic 127 for identity-based modular inbound message routing.
+    - Added `routing_config` JSON column to `BusinessProfile` database model and applied the Alembic migration locally.
+    - Implemented `IdentityResolver` to resolve inbound numbers to roles (prospective_client, distributor_retailer, sales_rep) using CRM contact records and store mappings.
+    - Created unified Twilio webhook `/api/v1/whatsapp/webhook/twilio` with dynamic toggle checking per business profile.
+    - Set up asynchronous processing tasks and queues (`sales-reps`, `distributors`, `prospects`) to support high scale.
+    - Wrote and verified end-to-end webhook integration test script (`test_webhook_routing.py`) mapping all scenarios.
+    - Refactored backend `/test-chat` endpoint to support role simulation (prospective_client, distributor_retailer, sales_rep), respecting config flags.
+    - Updated frontend Live Test Sandbox UI (`AssistantSettings.tsx`) with a role simulator dropdown selector, allowing admins to test all three user flows from the dashboard.
+
 - **2026-06-24 (WhatsApp Lead Qualification Campaign Completed)**: Fully implemented and tested Epic 126 for the WhatsApp lead qualification flow.
     - Added `wholesale_threshold` database column to the `Product` model and executed the Alembic migration locally.
     - Implemented `/api/v1/whatsapp/webhook/twilio/prospect` webhook, enqueuing a Celery task to execute the qualifier asynchronously.

@@ -64,6 +64,21 @@ export default function Sidebar() {
 
   const isAdmin = user?.is_admin || user?.role === 'admin' || user?.role === 'super_admin';
 
+  // Features mapping with backward compatibility fallbacks
+  const features = business?.features_config || {
+    scheduling: { enabled: true },
+    business_identity: { enabled: true },
+    crm_suite: { enabled: business?.vertical_type === 'BASIC' },
+    campaign_flow: { enabled: business?.vertical_type === 'TRADE' },
+    b2b_solutions: { enabled: business?.vertical_type === 'TRADE' },
+    sales_intelligence: { enabled: business?.vertical_type === 'TRADE' }
+  };
+
+  const showScheduling = features.scheduling?.enabled ?? true;
+  const showCRM = features.crm_suite?.enabled ?? false;
+  const showCampaignFlow = features.campaign_flow?.enabled ?? false;
+  const showB2BSolutions = features.b2b_solutions?.enabled ?? false;
+
   return (
     <div className="w-64 bg-white border-r min-h-screen flex flex-col shrink-0">
       <div className="p-6 border-b">
@@ -73,9 +88,16 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         <SidebarLink href="/" icon={LayoutDashboard} name="Dashboard" active={pathname === '/'} />
         <SidebarLink href="/conversations" icon={MessageSquare} name="Inbox" active={pathname === '/conversations'} />
-        <SidebarLink href="/calendar" icon={Calendar} name="Calendar" active={pathname === '/calendar'} />
         
-        {business?.vertical_type === 'TRADE' ? (
+        {showScheduling && (
+          <SidebarLink href="/calendar" icon={Calendar} name="Calendar" active={pathname === '/calendar'} />
+        )}
+        
+        {showCRM && (
+          <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
+        )}
+
+        {showB2BSolutions && (
           <div className="space-y-1">
             <SidebarLink href="/trade" icon={Store} name="B2B Hub" active={pathname === '/trade'} />
             <div className="pl-9 space-y-1">
@@ -111,8 +133,15 @@ export default function Sidebar() {
               </Link>
             </div>
           </div>
-        ) : (
-          <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
+        )}
+
+        {!showB2BSolutions && showCampaignFlow && (
+          <SidebarLink 
+            href="/trade/products" 
+            icon={Store} 
+            name="Product Catalog" 
+            active={pathname.startsWith('/trade/products')} 
+          />
         )}
 
         <SidebarLink href="/settings" icon={Settings} name="Settings" active={pathname === '/settings'} />

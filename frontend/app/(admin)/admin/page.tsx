@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { components } from '@/types/api';
 
@@ -50,7 +50,15 @@ export default function AdminSettingsPage() {
     password: '', 
     role: 'member', 
     is_active: true,
-    vertical_type: 'BASIC'
+    vertical_type: 'BASIC',
+    features_config: {
+      scheduling: { enabled: true },
+      business_identity: { enabled: true },
+      crm_suite: { enabled: true },
+      campaign_flow: { enabled: false },
+      b2b_solutions: { enabled: false },
+      sales_intelligence: { enabled: false }
+    }
   });
 
   const [loading, setLoading] = useState(true);
@@ -165,7 +173,21 @@ export default function AdminSettingsPage() {
         }
         setShowUserModal(false);
         setEditingUser(null);
-        setUserForm({ email: '', password: '', role: 'member', is_active: true, vertical_type: 'BASIC' });
+        setUserForm({ 
+          email: '', 
+          password: '', 
+          role: 'member', 
+          is_active: true, 
+          vertical_type: 'BASIC',
+          features_config: {
+            scheduling: { enabled: true },
+            business_identity: { enabled: true },
+            crm_suite: { enabled: true },
+            campaign_flow: { enabled: false },
+            b2b_solutions: { enabled: false },
+            sales_intelligence: { enabled: false }
+          }
+        });
         setMessage({ type: 'success', text: `User ${editingUser ? 'updated' : 'created'} successfully!` });
       }
     } catch (err) {
@@ -385,7 +407,15 @@ export default function AdminSettingsPage() {
                   password: '', 
                   role: 'member', 
                   is_active: true,
-                  vertical_type: 'BASIC'
+                  vertical_type: 'BASIC',
+                  features_config: {
+                    scheduling: { enabled: true },
+                    business_identity: { enabled: true },
+                    crm_suite: { enabled: true },
+                    campaign_flow: { enabled: false },
+                    b2b_solutions: { enabled: false },
+                    sales_intelligence: { enabled: false }
+                  }
                 });
                 setShowUserModal(true);
               }}
@@ -449,7 +479,15 @@ export default function AdminSettingsPage() {
                             password: '', 
                             role: user.role, 
                             is_active: user.is_active,
-                            vertical_type: user.business_profile?.vertical_type || 'BASIC'
+                            vertical_type: user.business_profile?.vertical_type || 'BASIC',
+                            features_config: user.business_profile?.features_config || {
+                              scheduling: { enabled: true },
+                              business_identity: { enabled: true },
+                              crm_suite: { enabled: true },
+                              campaign_flow: { enabled: false },
+                              b2b_solutions: { enabled: false },
+                              sales_intelligence: { enabled: false }
+                            }
                           });
                           setShowUserModal(true);
                         }}
@@ -474,85 +512,375 @@ export default function AdminSettingsPage() {
 
       {/* User Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-8 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="text-xl font-bold">{editingUser ? 'Edit User' : 'Create New User'}</h3>
-              <button onClick={() => setShowUserModal(false)} className="text-gray-400 hover:text-gray-600">&times;</button>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 max-h-[90vh]">
+            <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-blue-600 animate-pulse" />
+                  {editingUser ? 'Edit User Credentials & Features' : 'Provision New User Account'}
+                </h3>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Configure access level, template profile vertical, and specific modular features.</p>
+              </div>
+              <button 
+                onClick={() => setShowUserModal(false)} 
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <form onSubmit={handleUserSubmit} className="p-8 space-y-6">
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
-                <input
-                  type="email" required
-                  value={userForm.email}
-                  onChange={e => setUserForm({...userForm, email: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  {editingUser ? 'New Password (Optional)' : 'Password'}
-                </label>
-                <input
-                  type="password" required={!editingUser}
-                  value={userForm.password}
-                  onChange={e => setUserForm({...userForm, password: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Role</label>
-                  <select
-                    value={userForm.role}
-                    onChange={e => setUserForm({...userForm, role: e.target.value})}
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none"
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                    <option value="super_admin">Super Admin</option>
-                  </select>
+            
+            <form onSubmit={handleUserSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+                {/* Section: Credentials */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">1. User Credentials</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
+                      <div className="relative rounded-xl shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <Users className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          type="email" required
+                          value={userForm.email}
+                          onChange={e => setUserForm({...userForm, email: e.target.value})}
+                          className="block w-full pl-10 pr-3 py-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all text-xs font-medium text-slate-800"
+                          placeholder="name@company.com"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        {editingUser ? 'New Password (Optional)' : 'Password'}
+                      </label>
+                      <div className="relative rounded-xl shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <Lock className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          type="password" required={!editingUser}
+                          value={userForm.password}
+                          onChange={e => setUserForm({...userForm, password: e.target.value})}
+                          className="block w-full pl-10 pr-3 py-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all text-xs font-medium text-slate-800"
+                          placeholder={editingUser ? 'Leave blank to keep same' : 'Enter account password'}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Access Role</label>
+                      <select
+                        value={userForm.role}
+                        onChange={e => setUserForm({...userForm, role: e.target.value})}
+                        className="block w-full p-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all text-xs font-medium text-slate-800"
+                      >
+                        <option value="member">Member (Standard Rep)</option>
+                        <option value="admin">Admin (Manager)</option>
+                        <option value="super_admin">Super Admin (IT Exec)</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Account Status</label>
+                      <select
+                        value={userForm.is_active ? 'true' : 'false'}
+                        onChange={e => setUserForm({...userForm, is_active: e.target.value === 'true'})}
+                        className="block w-full p-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all text-xs font-medium text-slate-800"
+                      >
+                        <option value="true">Active (Permit Login)</option>
+                        <option value="false">Inactive (Suspended)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Status</label>
-                  <select
-                    value={userForm.is_active ? 'true' : 'false'}
-                    onChange={e => setUserForm({...userForm, is_active: e.target.value === 'true'})}
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none"
-                  >
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                  </select>
+
+                {/* Section: Business Vertical Preset Templates */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">2. Select Business Vertical Template</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserForm({
+                          ...userForm,
+                          vertical_type: 'BASIC',
+                          features_config: {
+                            scheduling: { enabled: true },
+                            business_identity: { enabled: true },
+                            crm_suite: { enabled: true },
+                            campaign_flow: { enabled: false },
+                            b2b_solutions: { enabled: false },
+                            sales_intelligence: { enabled: false }
+                          }
+                        });
+                      }}
+                      className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-28 ${
+                        userForm.vertical_type === 'BASIC'
+                          ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-500/10'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start w-full">
+                        <div className={`p-1.5 rounded-lg ${userForm.vertical_type === 'BASIC' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        {userForm.vertical_type === 'BASIC' && (
+                          <span className="bg-blue-600 text-white rounded-full p-0.5">
+                            <Check className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <h4 className="text-xs font-bold text-slate-800">Basic Vertical (B2C)</h4>
+                        <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">Interactive calendar scheduler, CRM directory, and WhatsApp scheduling.</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserForm({
+                          ...userForm,
+                          vertical_type: 'TRADE',
+                          features_config: {
+                            scheduling: { enabled: true },
+                            business_identity: { enabled: true },
+                            crm_suite: { enabled: true },
+                            campaign_flow: { enabled: true },
+                            b2b_solutions: { enabled: true },
+                            sales_intelligence: { enabled: true }
+                          }
+                        });
+                      }}
+                      className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-28 ${
+                        userForm.vertical_type === 'TRADE'
+                          ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-500/10'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start w-full">
+                        <div className={`p-1.5 rounded-lg ${userForm.vertical_type === 'TRADE' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                          <Store className="w-4 h-4" />
+                        </div>
+                        {userForm.vertical_type === 'TRADE' && (
+                          <span className="bg-blue-600 text-white rounded-full p-0.5">
+                            <Check className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <h4 className="text-xs font-bold text-slate-800">Trade Vertical (B2B)</h4>
+                        <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">Full logistics hub, product catalogs, restock orders, & Sales Intelligence Coach.</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Section: Modular Feature Toggles */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">3. Modular Feature Toggles</h4>
+                  
+                  <div className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    
+                    {/* Scheduling Toggle */}
+                    <div
+                      onClick={() => setUserForm({
+                        ...userForm,
+                        features_config: {
+                          ...userForm.features_config,
+                          scheduling: { enabled: !(userForm.features_config?.scheduling?.enabled ?? true) }
+                        }
+                      })}
+                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                        userForm.features_config?.scheduling?.enabled ?? true
+                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                          : 'border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${userForm.features_config?.scheduling?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-700">Appointment Scheduler</span>
+                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                            (userForm.features_config?.scheduling?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                          }`}>
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                              (userForm.features_config?.scheduling?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Interactive calendar engine and booking scheduling core.</p>
+                      </div>
+                    </div>
+
+                    {/* CRM Toggle */}
+                    <div
+                      onClick={() => setUserForm({
+                        ...userForm,
+                        features_config: {
+                          ...userForm.features_config,
+                          crm_suite: { enabled: !(userForm.features_config?.crm_suite?.enabled ?? true) }
+                        }
+                      })}
+                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                        userForm.features_config?.crm_suite?.enabled ?? true
+                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                          : 'border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${userForm.features_config?.crm_suite?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-700">Client Relationship Suite (CRM)</span>
+                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                            (userForm.features_config?.crm_suite?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                          }`}>
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                              (userForm.features_config?.crm_suite?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Contact profiles desk, client qualification filters, and custom messaging.</p>
+                      </div>
+                    </div>
+
+                    {/* Campaign Flow Toggle */}
+                    <div
+                      onClick={() => setUserForm({
+                        ...userForm,
+                        features_config: {
+                          ...userForm.features_config,
+                          campaign_flow: { enabled: !(userForm.features_config?.campaign_flow?.enabled ?? false) }
+                        }
+                      })}
+                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                        userForm.features_config?.campaign_flow?.enabled ?? false
+                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                          : 'border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${userForm.features_config?.campaign_flow?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <MessageSquare className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-700">Campaign Flow / Auto-Response</span>
+                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                            (userForm.features_config?.campaign_flow?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
+                          }`}>
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                              (userForm.features_config?.campaign_flow?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Inbound WhatsApp prospective leads qualification campaigns.</p>
+                      </div>
+                    </div>
+
+                    {/* B2B Solutions Toggle */}
+                    <div
+                      onClick={() => setUserForm({
+                        ...userForm,
+                        features_config: {
+                          ...userForm.features_config,
+                          b2b_solutions: { enabled: !(userForm.features_config?.b2b_solutions?.enabled ?? false) }
+                        }
+                      })}
+                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                        userForm.features_config?.b2b_solutions?.enabled ?? false
+                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                          : 'border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${userForm.features_config?.b2b_solutions?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <Store className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-700">B2B Store Solutions</span>
+                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                            (userForm.features_config?.b2b_solutions?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
+                          }`}>
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                              (userForm.features_config?.b2b_solutions?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Commercial stores routing, restocking orders, and template actions.</p>
+                      </div>
+                    </div>
+
+                    {/* Sales Intelligence Toggle */}
+                    <div
+                      onClick={() => setUserForm({
+                        ...userForm,
+                        features_config: {
+                          ...userForm.features_config,
+                          sales_intelligence: { enabled: !(userForm.features_config?.sales_intelligence?.enabled ?? false) }
+                        }
+                      })}
+                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                        userForm.features_config?.sales_intelligence?.enabled ?? false
+                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                          : 'border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${userForm.features_config?.sales_intelligence?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-700">Sales Intelligence Coach</span>
+                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                            (userForm.features_config?.sales_intelligence?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
+                          }`}>
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                              (userForm.features_config?.sales_intelligence?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Dossiers builder, territory intelligence feed, and AI coach briefs.</p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
               </div>
               
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Business Vertical</label>
-                <select
-                  value={userForm.vertical_type}
-                  onChange={e => setUserForm({...userForm, vertical_type: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none"
-                >
-                  <option value="BASIC">Basic (Scheduling)</option>
-                  <option value="TRADE">Trade (Stores & Inventory)</option>
-                </select>
-                <p className="text-[10px] text-gray-400 italic">This will set the default operating mode for the business profile.</p>
-              </div>
-              <div className="flex gap-3 pt-4">
+              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowUserModal(false)}
-                  className="flex-1 px-6 py-3 border rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all"
+                  className="px-5 py-2.5 border border-slate-200 rounded-xl font-bold text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all active:scale-98"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {saving ? 'Saving...' : 'Save User'}
+                  {saving ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      Save User Account
+                    </>
+                  )}
                 </button>
               </div>
             </form>

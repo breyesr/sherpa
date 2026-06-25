@@ -48,6 +48,7 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
   const [sandboxMessages, setSandboxMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [sandboxInput, setSandboxInput] = useState('');
   const [isSandboxLoading, setIsSandboxLoading] = useState(false);
+  const [sandboxRole, setSandboxRole] = useState<'sales_rep' | 'distributor_retailer' | 'prospective_client'>('sales_rep');
 
   const handleSaveAssistant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +93,8 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
         },
         body: JSON.stringify({
           message: sandboxInput,
-          assistant_config: editAssistant
+          assistant_config: editAssistant,
+          simulate_role: sandboxRole
         })
       });
 
@@ -322,13 +324,27 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
                 <p className="text-xs text-gray-400 font-medium">Preview behavior with your current settings</p>
               </div>
             </div>
-            <button 
-              type="button"
-              onClick={() => setSandboxMessages([])}
-              className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-wider"
-            >
-              Clear Chat
-            </button>
+            <div className="flex items-center gap-4">
+              <select
+                value={sandboxRole}
+                onChange={(e) => {
+                  setSandboxRole(e.target.value as any);
+                  setSandboxMessages([]);
+                }}
+                className="text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
+              >
+                <option value="sales_rep">Simulate Sales Rep</option>
+                <option value="distributor_retailer">Simulate Distributor</option>
+                <option value="prospective_client">Simulate Prospect</option>
+              </select>
+              <button 
+                type="button"
+                onClick={() => setSandboxMessages([])}
+                className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-wider"
+              >
+                Clear Chat
+              </button>
+            </div>
           </div>
 
           <div className="bg-white rounded-3xl border border-gray-100 h-[400px] flex flex-col shadow-sm overflow-hidden">

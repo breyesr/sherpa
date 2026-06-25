@@ -76,10 +76,12 @@ async def create_user_admin(
     await db.flush() # Get user ID
     
     # Create associated BusinessProfile
+    from app.api.business import DEFAULT_FEATURES_CONFIG
     business = BusinessProfile(
         user_id=user.id,
         name=f"Business of {user.email.split('@')[0]}",
-        vertical_type=user_in.vertical_type or VerticalType.BASIC
+        vertical_type=user_in.vertical_type or VerticalType.BASIC,
+        features_config=user_in.features_config or DEFAULT_FEATURES_CONFIG
     )
     db.add(business)
     await db.commit()
@@ -119,9 +121,12 @@ async def update_user_admin(
     if user_in.is_active is not None:
         user.is_active = user_in.is_active
     
-    # Handle vertical type update for linked business
-    if user_in.vertical_type and user.business_profile:
-        user.business_profile.vertical_type = user_in.vertical_type
+    # Handle vertical type and features config updates for linked business
+    if user.business_profile:
+        if user_in.vertical_type:
+            user.business_profile.vertical_type = user_in.vertical_type
+        if user_in.features_config is not None:
+            user.business_profile.features_config = user_in.features_config
         
     db.add(user)
     await db.commit()

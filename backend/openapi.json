@@ -1436,7 +1436,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1454,7 +1454,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1473,7 +1473,7 @@
           "whatsapp"
         ],
         "summary": "Twilio Whatsapp Webhook",
-        "description": "Multi-tenant Twilio Webhook (ISV Platform Model).",
+        "description": "Unified Multi-tenant Twilio Webhook with Identity-based Routing.\nReturns 200 OK immediately and processes message asynchronously.",
         "operationId": "twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post",
         "responses": {
           "200": {
@@ -4603,6 +4603,18 @@
             ],
             "title": "Crm Config",
             "default": []
+          },
+          "features_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Config"
           }
         },
         "type": "object",
@@ -4623,6 +4635,18 @@
           },
           "vertical_type": {
             "$ref": "#/components/schemas/VerticalType"
+          },
+          "features_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Config"
           }
         },
         "type": "object",
@@ -4685,6 +4709,18 @@
             ],
             "title": "Crm Config",
             "default": []
+          },
+          "features_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Config"
           },
           "id": {
             "type": "string",
@@ -4816,6 +4852,18 @@
               }
             ],
             "title": "Crm Config"
+          },
+          "features_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Config"
           }
         },
         "type": "object",
@@ -7996,6 +8044,18 @@
                 "type": "null"
               }
             ]
+          },
+          "simulate_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulate Role",
+            "default": "sales_rep"
           }
         },
         "type": "object",
@@ -8078,6 +8138,18 @@
             ],
             "title": "Vertical Type",
             "default": "BASIC"
+          },
+          "features_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Config"
           }
         },
         "type": "object",
@@ -8209,6 +8281,18 @@
               }
             ],
             "title": "Vertical Type"
+          },
+          "features_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Config"
           }
         },
         "type": "object",

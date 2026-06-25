@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, joinedload
 
 from app.core.database import get_db
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, require_feature, require_any_feature
 from app.core.ai_service import AIService
 from app.services.graphrag import GraphRAGService
 from app.models.user import User
@@ -25,7 +25,7 @@ from app.schemas.trade import (
 
 from app.tasks.knowledge import sync_vector_task
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 
 async def get_business(db: AsyncSession, user_id: str) -> BusinessProfile:
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == user_id))
@@ -34,9 +34,19 @@ async def get_business(db: AsyncSession, user_id: str) -> BusinessProfile:
         raise HTTPException(status_code=404, detail="Business not found")
     return business
 
+async def get_b2b_business(db: AsyncSession, current_user: User) -> BusinessProfile:
+    from app.api.business import DEFAULT_FEATURES_CONFIG
+    cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
+    if not cfg.get("b2b_solutions", {}).get("enabled", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="El módulo 'b2b_solutions' no está habilitado para esta cuenta."
+        )
+    return await get_business(db, current_user.id)
+
 # --- STORES ---
 
-@router.get("/stores", response_model=List[StoreResponse])
+@router.get("/stores", response_model=List[StoreResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
 async def list_stores(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -53,7 +63,7 @@ async def list_stores(
     )
     return result.scalars().all()
 
-@router.post("/stores", response_model=StoreResponse)
+@router.post("/stores", response_model=StoreResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def create_store(
     store_in: StoreCreate,
     db: AsyncSession = Depends(get_db),
@@ -92,7 +102,7 @@ async def create_store(
     )
     return result.scalars().first()
 
-@router.get("/stores/{store_id}", response_model=StoreResponse)
+@router.get("/stores/{store_id}", response_model=StoreResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def get_store(
     store_id: str,
     db: AsyncSession = Depends(get_db),
@@ -113,7 +123,7 @@ async def get_store(
         raise HTTPException(status_code=404, detail="Store not found")
     return store
 
-@router.post("/stores/{store_id}/notes", response_model=StoreNoteResponse)
+@router.post("/stores/{store_id}/notes", response_model=StoreNoteResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def create_store_note(
     store_id: str,
     note_in: StoreNoteCreate,
@@ -138,7 +148,7 @@ async def create_store_note(
     await db.refresh(note)
     return note
 
-@router.patch("/stores/{store_id}", response_model=StoreResponse)
+@router.patch("/stores/{store_id}", response_model=StoreResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def update_store(
     store_id: str,
     store_in: StoreUpdate,
@@ -323,7 +333,7 @@ async def delete_product(
 
 # --- ORDERS ---
 
-@router.get("/orders", response_model=List[OrderResponse])
+@router.get("/orders", response_model=List[OrderResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
 async def list_orders(
     store_id: str = None,
     db: AsyncSession = Depends(get_db),
@@ -339,7 +349,7 @@ async def list_orders(
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.post("/orders", response_model=OrderResponse)
+@router.post("/orders", response_model=OrderResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def create_order(
     order_in: OrderCreate,
     db: AsyncSession = Depends(get_db),
@@ -393,7 +403,7 @@ async def create_order(
     )
     return res_final.scalars().first()
 
-@router.get("/orders/{order_id}", response_model=OrderResponse)
+@router.get("/orders/{order_id}", response_model=OrderResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def get_order(
     order_id: str,
     db: AsyncSession = Depends(get_db),
@@ -411,7 +421,7 @@ async def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
-@router.patch("/orders/{order_id}", response_model=OrderResponse)
+@router.patch("/orders/{order_id}", response_model=OrderResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def update_order(
     order_id: str,
     order_in: OrderUpdate,
@@ -445,7 +455,7 @@ async def update_order(
 
 # --- COMPETITORS ---
 
-@router.get("/competitors", response_model=List[CompetitorResponse])
+@router.get("/competitors", response_model=List[CompetitorResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
 async def list_competitors(
     store_id: str = None,
     db: AsyncSession = Depends(get_db),
@@ -461,7 +471,7 @@ async def list_competitors(
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.post("/competitors", response_model=CompetitorResponse)
+@router.post("/competitors", response_model=CompetitorResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def create_competitor(
     competitor_in: CompetitorCreate,
     db: AsyncSession = Depends(get_db),
@@ -488,7 +498,7 @@ async def create_competitor(
 
 # --- AI INSIGHTS ---
 
-@router.get("/stores/{store_id}/brief")
+@router.get("/stores/{store_id}/brief", dependencies=[Depends(require_feature("sales_intelligence"))])
 async def get_strategic_brief(
     store_id: str,
     db: AsyncSession = Depends(get_db),
@@ -507,7 +517,8 @@ async def get_strategic_brief(
     brief = await rag_service.generate_brief(f"Brief for {store.name}", business.id)
     return {"report": brief}
 
-@router.post("/clients/{client_id}/brief")
+
+@router.post("/clients/{client_id}/brief", dependencies=[Depends(require_feature("sales_intelligence"))])
 async def generate_visit_brief(
     client_id: str,
     db: AsyncSession = Depends(get_db),
@@ -519,7 +530,8 @@ async def generate_visit_brief(
     report = await ai_service.get_specialized_response(client_id, "briefer")
     return {"report": report}
 
-@router.post("/clients/{client_id}/qualify")
+
+@router.post("/clients/{client_id}/qualify", dependencies=[Depends(require_feature("sales_intelligence"))])
 async def qualify_lead(
     client_id: str,
     db: AsyncSession = Depends(get_db),
@@ -538,7 +550,7 @@ async def qualify_lead(
 
 from typing import Optional
 
-@router.get("/action-templates", response_model=List[ActionTemplateResponse])
+@router.get("/action-templates", response_model=List[ActionTemplateResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
 async def list_action_templates(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -552,7 +564,7 @@ async def list_action_templates(
     )
     return result.scalars().all()
 
-@router.post("/action-templates", response_model=ActionTemplateResponse)
+@router.post("/action-templates", response_model=ActionTemplateResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def create_action_template(
     template_in: ActionTemplateCreate,
     db: AsyncSession = Depends(get_db),
@@ -570,7 +582,7 @@ async def create_action_template(
     await db.refresh(template)
     return template
 
-@router.patch("/action-templates/{template_id}", response_model=ActionTemplateResponse)
+@router.patch("/action-templates/{template_id}", response_model=ActionTemplateResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def update_action_template(
     template_id: str,
     template_in: ActionTemplateUpdate,
@@ -595,7 +607,7 @@ async def update_action_template(
     await db.refresh(template)
     return template
 
-@router.delete("/action-templates/{template_id}")
+@router.delete("/action-templates/{template_id}", dependencies=[Depends(require_feature("b2b_solutions"))])
 async def delete_action_template(
     template_id: str,
     db: AsyncSession = Depends(get_db),
@@ -620,7 +632,7 @@ async def delete_action_template(
 # --- STORE ACTIONS (STRATEGY DESK) ---
 # ==========================================
 
-@router.get("/actions", response_model=List[StoreActionResponse])
+@router.get("/actions", response_model=List[StoreActionResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
 async def list_store_actions(
     store_id: Optional[str] = None,
     assigned_to_id: Optional[str] = None,
@@ -662,7 +674,7 @@ async def list_store_actions(
         
     return actions
 
-@router.get("/actions/{action_id}", response_model=StoreActionResponse)
+@router.get("/actions/{action_id}", response_model=StoreActionResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def get_store_action(
     action_id: str,
     db: AsyncSession = Depends(get_db),
@@ -688,7 +700,7 @@ async def get_store_action(
     action.template_name = action.template.name if action.template else None
     return action
 
-@router.post("/actions", response_model=StoreActionResponse)
+@router.post("/actions", response_model=StoreActionResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def create_store_action(
     action_in: StoreActionCreate,
     db: AsyncSession = Depends(get_db),
@@ -753,7 +765,7 @@ async def create_store_action(
     enriched.template_name = enriched.template.name if enriched.template else None
     return enriched
 
-@router.patch("/actions/{action_id}", response_model=StoreActionResponse)
+@router.patch("/actions/{action_id}", response_model=StoreActionResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
 async def update_store_action(
     action_id: str,
     action_in: StoreActionUpdate,
@@ -807,7 +819,7 @@ async def update_store_action(
     action.template_name = action.template.name if action.template else None
     return action
 
-@router.delete("/actions/{action_id}")
+@router.delete("/actions/{action_id}", dependencies=[Depends(require_feature("b2b_solutions"))])
 async def delete_store_action(
     action_id: str,
     db: AsyncSession = Depends(get_db),

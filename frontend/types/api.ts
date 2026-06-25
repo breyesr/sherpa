@@ -141,17 +141,18 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
      * Twilio Whatsapp Webhook
-     * @description Multi-tenant Twilio Webhook (ISV Platform Model).
+     * @description Unified Multi-tenant Twilio Webhook with Identity-based Routing.
+     * Returns 200 OK immediately and processes message asynchronously.
      */
     post: operations["twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post"];
   };
@@ -753,6 +754,10 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** BusinessProfileMinimal */
     BusinessProfileMinimal: {
@@ -761,6 +766,10 @@ export interface components {
       /** Name */
       name: string;
       vertical_type: components["schemas"]["VerticalType"];
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** BusinessProfileResponse */
     BusinessProfileResponse: {
@@ -784,6 +793,10 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
       /** User Id */
@@ -819,6 +832,10 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** CategoryCreate */
     CategoryCreate: {
@@ -1805,6 +1822,11 @@ export interface components {
       /** Message */
       message: string;
       assistant_config?: components["schemas"]["AgentUpdate"] | null;
+      /**
+       * Simulate Role
+       * @default sales_rep
+       */
+      simulate_role?: string | null;
     };
     /** Token */
     Token: {
@@ -1852,6 +1874,10 @@ export interface components {
        * @default BASIC
        */
       vertical_type?: string | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** UserResponse */
     UserResponse: {
@@ -1891,6 +1917,10 @@ export interface components {
       is_active?: boolean | null;
       /** Vertical Type */
       vertical_type?: string | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -2606,7 +2636,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -2618,7 +2648,8 @@ export interface operations {
   };
   /**
    * Twilio Whatsapp Webhook
-   * @description Multi-tenant Twilio Webhook (ISV Platform Model).
+   * @description Unified Multi-tenant Twilio Webhook with Identity-based Routing.
+   * Returns 200 OK immediately and processes message asynchronously.
    */
   twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post: {
     responses: {

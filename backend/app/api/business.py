@@ -21,6 +21,15 @@ from app.schemas.crm import AppointmentResponse
 from app.api.auth import get_current_user
 from app.core.limiter import limiter
 
+DEFAULT_FEATURES_CONFIG = {
+    "scheduling": {"enabled": True},
+    "business_identity": {"enabled": True},
+    "crm_suite": {"enabled": True},
+    "campaign_flow": {"enabled": False},
+    "b2b_solutions": {"enabled": False},
+    "sales_intelligence": {"enabled": False}
+}
+
 router = APIRouter()
 
 async def get_full_business(db: AsyncSession, user_id: str) -> BusinessProfile:
@@ -42,6 +51,7 @@ from app.core.ai_service import AIService
 class TestChatRequest(BaseModel):
     message: str
     assistant_config: Optional[AgentUpdate] = None
+    simulate_role: Optional[str] = "sales_rep"  # "prospective_client", "distributor_retailer", "sales_rep"
 
 from sqlalchemy import func
 from app.models.crm import Client, Appointment
@@ -156,11 +166,68 @@ async def test_chat(
             
         for field, value in payload.assistant_config.dict(exclude_unset=True).items():
             setattr(business.assistant_config, field, value)
+            
+    # 1. Check if the simulated flow is enabled in company's routing configuration
+    simulate_role = payload.simulate_role or "sales_rep"
+    cfg = business.routing_config or {}
     
-    ai_service = AIService(business, db)
-    # Use a dummy identifier for testing
-    test_id = f"sandbox_{current_user.id}"
-    response = await ai_service.get_response(identifier=test_id, user_message=payload.message, metadata={"name": current_user.email, "platform": "sandbox"})
+    flow_enabled = False
+    if simulate_role == "prospective_client":
+        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
+    elif simulate_role == "distributor_retailer":
+        flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
+    elif simulate_role == "sales_rep":
+        flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
+        
+    if not flow_enabled:
+        return {"response": "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."}
+
+    # 2. Dispatch to the correct underlying message pipeline
+    if simulate_role == "prospective_client":
+        from app.services.prospect_qualifier import ProspectQualifier
+        qualifier = ProspectQualifier(db)
+        test_phone = f"sandbox_prosp_{current_user.id}"
+        response, _ = await qualifier.get_response(
+            business_id=business.id,
+            sender_phone=test_phone,
+            user_message=payload.message
+        )
+    elif simulate_role == "distributor_retailer":
+        from sqlalchemy.orm import selectinload
+        cli_res = await db.execute(
+            select(Client)
+            .where(Client.business_id == business.id)
+            .options(selectinload(Client.stores))
+        )
+        clients = cli_res.scalars().all()
+        # Find first client linked to physical stores
+        distributor = next((c for c in clients if c.stores), None)
+        client_id = distributor.id if distributor else None
+        
+        ai_service = AIService(business, db)
+        test_id = f"sandbox_dist_{current_user.id}"
+        response = await ai_service.get_response(
+            identifier=test_id,
+            user_message=payload.message,
+            metadata={
+                "name": distributor.name if distributor else "Distribuidor Test",
+                "platform": "sandbox",
+                "flow": "distributor",
+                "client_id": client_id
+            }
+        )
+    else: # sales_rep
+        ai_service = AIService(business, db)
+        test_id = f"sandbox_rep_{current_user.id}"
+        response = await ai_service.get_response(
+            identifier=test_id,
+            user_message=payload.message,
+            metadata={
+                "name": current_user.email,
+                "platform": "sandbox",
+                "flow": "sales_rep"
+            }
+        )
     
     return {"response": response}
 

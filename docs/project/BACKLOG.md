@@ -445,6 +445,35 @@
 - [x] Task 126.6: **Product Threshold UI**: Add a field to the product creation/edit form in the Trade Dashboard UI to allow users to edit the per-product quantity threshold (`wholesale_threshold`).
 - [x] Task 126.7: **End-to-End Integration Testing**: Write integration tests simulating the WhatsApp multi-turn webhook interaction, validating both the above-threshold (rep assignment) and below-threshold (store recommendation) flows.
 
+## Epic 127: Modular Inbound Webhook Routing (Multi-Tenant Ingress)
+**Objective**: Build a modular, identity-based routing architecture for inbound messages (WhatsApp/Telegram). Incoming messages are resolved using an identity resolver to identify if the sender is a prospective client, distributor/retailer, or sales representative. Admins can enable or disable these three flows per business profile using a JSON routing configuration. Messages are routed asynchronously to specialized Celery queues.
+
+- [x] Task 127.1: **Database Schema & Migrations**: Add `routing_config` (JSON) to the `BusinessProfile` model, generate an Alembic migration script, and apply it locally.
+- [x] Task 127.2: **Inbound Identity Resolution**: Create an `IdentityResolver` helper that parses phone numbers to resolve user roles (sales_rep, distributor_retailer, prospect) based on contact roles and store mappings.
+- [x] Task 127.3: **Unified Ingress Webhook**: Overhaul `/webhook/twilio` in `app/api/whatsapp.py` to intercept all WhatsApp traffic, perform identity matching, check dynamic configuration toggles, reject disabled flows, and dispatch immediately to Celery.
+- [x] Task 127.4: **Asynchronous Processing Pipelines**: Set up separate Celery tasks and task queues (`sales-reps`, `distributors`, `prospects`) to decouple processing of the three message flows.
+- [x] Task 127.5: **Simulated Webhook Testing**: Write a simulation integration test suite to verify webhook execution under various routing toggle scenarios.
+
+## Epic 128: Modular Feature Management (Admin Console Toggles)
+**Objective**: Transition from rigid vertical options to a modular "Plug & Play" configuration toggled per user. Admins can enable or disable feature modules (Appointment Scheduler, Business Identity Suite, CRM, Trade Logistics, Sales Intelligence Coach) inside the "Save/Edit User" modal in the admin page, with backend feature-gating dependencies enforcing access limits.
+
+- [x] Task 128.1: **Database Schema & Migrations**: Add `features_config` (JSON) to `BusinessProfile`, autogenerate the migration script (`9179bb59d515_add_features_config_to_businessprofile`), clean checkpointer drops, and apply it locally with a vertical-type preset data migration.
+- [x] Task 128.2: **Backend Schema Validations**: Integrate `features_config` into business and user Pydantic schemas (`BusinessProfileBase`, `BusinessProfileUpdate`, `UserUpdate`, `UserCreateAdmin`, `BusinessProfileMinimal`).
+- [x] Task 128.3: **Admin Endpoints Integration**: Update admin creation and edit controllers in `app/api/admin.py` to correctly populate and update `features_config` on the business profiles.
+- [x] Task 128.4: **Feature Gating Dependency**: Implement a `require_feature` dependency guard in `app/api/auth.py` and enforce it at the router level in `app/api/trade.py` (and specifically on GraphRAG briefing routes).
+- [x] Task 128.5: **Frontend Admin UI & Preset Templates**: Integrate checklist toggles in the Create/Edit user modal on `/admin/page.tsx` with dynamic presets based on the chosen template vertical.
+- [x] Task 128.6: **Type Sync & Integration Testing**: Synchronize frontend Typescript API definitions (`npm run gen:api`) and verify endpoint constraints are validated using `/test-chat` simulation tests.
+- [x] Task 128.7: **Remove Business Identity Suite Toggle from Admin UI**: Remove the toggle checkbox option from the User modal on `/admin/page.tsx` since business identity settings are a core mandatory prerequisite that should not be disableable by admins.
+
+## Epic 129: Modular Trade Packaging & Decoupling
+**Objective**: Refactor the rigid `trade_logistics` monolithic feature configuration into two decoupled modules (`campaign_flow` and `b2b_solutions`) to support precise tenant setups: Client A (Campaign only), Client B (B2B solutions only), Client C (Sales Coach only), or the full Trade Vertical. Remove the redundant `business_identity` toggle from the admin panel UI.
+
+- [x] Task 129.1: **Backend Configs & Data Migration**: Split `trade_logistics` into `campaign_flow` and `b2b_solutions` keys in default config dicts (`DEFAULT_FEATURES_CONFIG`) and Pydantic schemas. Run a database script to safely upgrade existing business profiles' `features_config` JSON records.
+- [x] Task 129.2: **Refined API Gating Guards**: Implement `require_any_feature` dependency guard in `app/api/auth.py`. Update FastAPI endpoints in `trade.py` and `whatsapp.py` to route based on individual feature toggles instead of the monolith.
+- [x] Task 129.3: **Frontend Admin Modal & Preset Upgrades**: Refactor `/admin/page.tsx` user form presets. Replace `trade_logistics` checkbox with two distinct checkboxes for campaigns and B2B solutions. Remove the `business_identity` checkbox toggle.
+- [x] Task 129.4: **Dynamic Sidebar Decoupling**: Update `Sidebar.tsx` to conditionally render Products, Accounts/Stores, Restock Orders, and Sales Intelligence links based on the new granular feature toggles.
+- [x] Task 129.5: **Validation & Verification**: Sync OpenAPI typescript schemas and run integration tests to check modular permissions routing.
+
 ---
 
 ## 🚫 Deprecated & Superseded Tasks (Audit Log)

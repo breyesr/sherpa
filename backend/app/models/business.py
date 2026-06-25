@@ -26,6 +26,13 @@ class BusinessProfile(Base):
     # Store field definitions: [{"key": "pet_name", "label": "Pet Name", "type": "text"}, ...]
     crm_config = Column(JSON, nullable=True, default=list)
 
+    # Modular Routing Configuration (Epic 14.1)
+    # e.g., {"prospects_enabled": true, "distributors_enabled": true, "sales_reps_enabled": true}
+    routing_config = Column(JSON, nullable=True, default=dict)
+
+    # Modular Features Configuration (Epic 128)
+    features_config = Column(JSON, nullable=True, default=dict)
+
     user = relationship("User", back_populates="business_profile")
     agents = relationship("Agent", back_populates="business_profile", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="business_profile", cascade="all, delete-orphan")
