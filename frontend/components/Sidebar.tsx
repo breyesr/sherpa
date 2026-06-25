@@ -13,7 +13,8 @@ import {
   Settings, 
   LogOut,
   Store,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -136,12 +137,20 @@ export default function Sidebar() {
         )}
 
         {!showB2BSolutions && showCampaignFlow && (
-          <SidebarLink 
-            href="/trade/products" 
-            icon={Store} 
-            name="Product Catalog" 
-            active={pathname.startsWith('/trade/products')} 
-          />
+          <>
+            <SidebarLink 
+              href="/trade/products" 
+              icon={Store} 
+              name="Product Catalog" 
+              active={pathname.startsWith('/trade/products')} 
+            />
+            <SidebarLink 
+              href="/trade/stores" 
+              icon={MapPin} 
+              name="Points of Sale" 
+              active={pathname.startsWith('/trade/stores')} 
+            />
+          </>
         )}
 
         <SidebarLink href="/settings" icon={Settings} name="Settings" active={pathname === '/settings'} />

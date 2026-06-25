@@ -46,7 +46,7 @@ async def get_b2b_business(db: AsyncSession, current_user: User) -> BusinessProf
 
 # --- STORES ---
 
-@router.get("/stores", response_model=List[StoreResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
+@router.get("/stores", response_model=List[StoreResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def list_stores(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -63,7 +63,7 @@ async def list_stores(
     )
     return result.scalars().all()
 
-@router.post("/stores", response_model=StoreResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+@router.post("/stores", response_model=StoreResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def create_store(
     store_in: StoreCreate,
     db: AsyncSession = Depends(get_db),
@@ -102,7 +102,7 @@ async def create_store(
     )
     return result.scalars().first()
 
-@router.get("/stores/{store_id}", response_model=StoreResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+@router.get("/stores/{store_id}", response_model=StoreResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def get_store(
     store_id: str,
     db: AsyncSession = Depends(get_db),
@@ -148,7 +148,7 @@ async def create_store_note(
     await db.refresh(note)
     return note
 
-@router.patch("/stores/{store_id}", response_model=StoreResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+@router.patch("/stores/{store_id}", response_model=StoreResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def update_store(
     store_id: str,
     store_in: StoreUpdate,

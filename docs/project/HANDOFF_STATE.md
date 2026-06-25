@@ -13,8 +13,8 @@ All database schema migrations have been fully executed, openapi schemas generat
 
 ## ✅ Accomplishments
 - **Modular Trade Decoupling**: Split `trade_logistics` into `campaign_flow` and `b2b_solutions` keys. Successfully ran migration scripts to upgrade database configurations.
-- **Backend Feature Guards**: Upgraded `require_feature` and `require_any_feature` guards in `app/api/auth.py`. Gated the `/api/v1/trade/` router to check for `campaign_flow` OR `b2b_solutions` dynamically.
-- **Dynamic Sidebar**: Conditionally renders "Calendar", "Clients", "B2B Hub", or standalone "Product Catalog" depending on the client's custom feature configuration flags.
+- **Backend Feature Guards**: Upgraded `require_feature` and `require_any_feature` guards in `app/api/auth.py`. Gated the `/api/v1/trade/` router to check for `campaign_flow` OR `b2b_solutions` dynamically, and updated `/stores` CRUD endpoints to accept `campaign_flow` so that campaign-only businesses can manage their retail locations.
+- **Dynamic Sidebar**: Conditionally renders "Calendar", "Clients", "B2B Hub", or standalone "Product Catalog" and "Points of Sale" depending on the client's custom feature configuration flags.
 - **Premium Admin User Modal UX & Gating**: Redesigned the modal with vertical scroll limits, horizontal template cards, switch toggles, and removed the redundant `business_identity` toggle checkbox (core mandatory prerequisite).
 - **Live Test Sandbox & Type Sync**: Integrated role selectors inside `AssistantSettings.tsx` and updated TypeScript API models via `npm run gen:api`.
 

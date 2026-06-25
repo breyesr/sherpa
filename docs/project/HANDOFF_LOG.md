@@ -3,7 +3,8 @@
 - **2026-06-24 (Modular Trade Decoupling Completed)**: Decoupled trade_logistics into campaign_flow and b2b_solutions (Epic 129).
     - Split trade_logistics monolithic key in `DEFAULT_FEATURES_CONFIG` and user Pydantic schemas.
     - Updated backend API dependencies in `app/api/auth.py` with `require_any_feature` to allow shared Product Catalog access.
-    - Updated dynamic sidebar layout filtering in `Sidebar.tsx` to support simplified Product Catalog layout for campaign-only accounts.
+    - Resolved shared dependency for stores: Relaxed store creation/view endpoints in backend `app/api/trade.py` to allow `campaign_flow` access, enabling campaign-only businesses to manage their retail locations.
+    - Updated dynamic sidebar layout filtering in `Sidebar.tsx` to support simplified Product Catalog layout and "Points of Sale" link for campaign-only accounts.
     - Upgraded Admin provisioning User Modal in `/admin/page.tsx` with distinct toggles for `campaign_flow` and `b2b_solutions`, and removed the `business_identity` toggle.
     - Verified all configurations with backend sandbox test suites.
 
