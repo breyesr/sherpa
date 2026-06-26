@@ -22,7 +22,7 @@ import {
 import { ClientResponse } from '@/types/api';
 import ContactDrawer from '@/components/v2/ContactDrawer';
 
-export default function RetailersPageV2() {
+export default function ProspectContactsPage() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,23 +32,23 @@ export default function RetailersPageV2() {
     clientId: null
   });
 
-  // Fetch Retailers (Clients)
-  const { data: retailers = [], isLoading } = useQuery<ClientResponse[]>({
-    queryKey: ['clients'],
+  // Fetch Prospect Contacts (Clients with is_prospect=true)
+  const { data: prospects = [], isLoading } = useQuery<ClientResponse[]>({
+    queryKey: ['clients', { is_prospect: true }],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
+      const res = await fetch(`${API_BASE_URL}/crm/clients?is_prospect=true`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Failed to fetch clients');
+      if (!res.ok) throw new Error('Failed to fetch prospect contacts');
       return res.json();
     },
     enabled: !!token,
   });
 
-  const filteredRetailers = retailers.filter((r) => 
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.email && r.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (r.phone && r.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredProspects = prospects.filter((p) => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.email && p.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.phone && p.phone.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -62,10 +62,10 @@ export default function RetailersPageV2() {
             </span>
           </div>
           <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-            Clients
+            Contacts
           </h1>
           <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
-            Centralized client intelligence for your retail partners and decision makers.
+            Inbound qualified prospective leads from campaigns and conversational funnels.
           </p>
         </div>
         <button 
@@ -73,7 +73,7 @@ export default function RetailersPageV2() {
           className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
         >
           <Plus size={18} />
-          Add Client
+          Add Contact
         </button>
       </div>
 
@@ -83,7 +83,7 @@ export default function RetailersPageV2() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text"
-            placeholder="Search clients by name, email, or phone..."
+            placeholder="Search contacts by name, email, or phone..."
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-900"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -118,18 +118,18 @@ export default function RetailersPageV2() {
             <div key={i} className="h-48 bg-gray-50 animate-pulse rounded-[2rem]" />
           ))}
         </div>
-      ) : filteredRetailers.length === 0 ? (
+      ) : filteredProspects.length === 0 ? (
         <div className="py-20 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
           <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
             <Search className="text-gray-300" size={32} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">No clients found</h3>
+          <h3 className="text-xl font-bold text-gray-900">No contacts found</h3>
           <p className="text-gray-500 mt-2">Try adjusting your search or filters.</p>
         </div>
       ) : viewMode === 'list' ? (
         <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
           <div className="divide-y divide-gray-50">
-            {filteredRetailers.map((retailer) => (
+            {filteredProspects.map((retailer) => (
               <div key={retailer.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
                 <Link 
                   href={`/trade/retailers/${retailer.id}`}
@@ -169,15 +169,24 @@ export default function RetailersPageV2() {
                 
                 <div className="relative z-10 flex items-center gap-12 mt-6 md:mt-0">
                   <div className="hidden lg:flex flex-col items-end pointer-events-none">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Interaction</span>
-                    <span className="font-bold text-gray-700">2 days ago</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lead Source</span>
+                    <span className="font-bold text-gray-700">
+                      {typeof retailer.custom_fields === 'object' && retailer.custom_fields !== null 
+                        ? (retailer.custom_fields as any).lead_source || 'WhatsApp Inbound' 
+                        : 'WhatsApp Inbound'}
+                    </span>
                   </div>
                   <div className="flex flex-col items-end pointer-events-none">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Channel</span>
-                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 px-3 py-1 rounded-lg">
-                      <MessageSquare size={12} className="text-blue-500" />
-                      <span className="text-xs font-bold text-gray-600">WhatsApp</span>
-                    </div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</span>
+                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${
+                      typeof retailer.custom_fields === 'object' && retailer.custom_fields !== null && (retailer.custom_fields as any).status === 'waitlist'
+                        ? 'bg-amber-50 border border-amber-100 text-amber-700'
+                        : 'bg-green-50 border border-green-100 text-green-700'
+                    }`}>
+                      {typeof retailer.custom_fields === 'object' && retailer.custom_fields !== null && (retailer.custom_fields as any).status === 'waitlist'
+                        ? 'Waitlist'
+                        : 'Qualified'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
@@ -194,7 +203,7 @@ export default function RetailersPageV2() {
                       onClick={async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (confirm(`Are you sure you want to delete client ${retailer.name}?`)) {
+                        if (confirm(`Are you sure you want to delete prospect contact ${retailer.name}?`)) {
                           try {
                             const res = await fetch(`${API_BASE_URL}/crm/clients/${retailer.id}`, {
                               method: 'DELETE',
@@ -203,10 +212,10 @@ export default function RetailersPageV2() {
                             if (res.ok) {
                               queryClient.invalidateQueries({ queryKey: ['clients'] });
                             } else {
-                              alert('Failed to delete client');
+                              alert('Failed to delete prospect contact');
                             }
                           } catch (err) {
-                            alert('Error deleting client');
+                            alert('Error deleting prospect contact');
                           }
                         }
                       }}
@@ -223,7 +232,7 @@ export default function RetailersPageV2() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRetailers.map((retailer) => (
+          {filteredProspects.map((retailer) => (
             <div 
               key={retailer.id} 
               className="group relative bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between cursor-pointer"
@@ -234,7 +243,7 @@ export default function RetailersPageV2() {
               />
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-6">
-                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                     <UserIcon size={24} />
                   </div>
                   <div className="flex gap-2 relative z-20">
@@ -252,7 +261,7 @@ export default function RetailersPageV2() {
                       onClick={async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (confirm(`Are you sure you want to delete client ${retailer.name}?`)) {
+                        if (confirm(`Are you sure you want to delete prospect ${retailer.name}?`)) {
                           try {
                             const res = await fetch(`${API_BASE_URL}/crm/clients/${retailer.id}`, {
                               method: 'DELETE',
@@ -261,10 +270,10 @@ export default function RetailersPageV2() {
                             if (res.ok) {
                               queryClient.invalidateQueries({ queryKey: ['clients'] });
                             } else {
-                              alert('Failed to delete client');
+                              alert('Failed to delete prospect');
                             }
                           } catch (err) {
-                            alert('Error deleting client');
+                            alert('Error deleting prospect');
                           }
                         }
                       }}
@@ -277,9 +286,8 @@ export default function RetailersPageV2() {
                 <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                   {retailer.name}
                 </h3>
-...
                 <p className="text-gray-500 font-medium text-sm line-clamp-2 mb-4">
-                  {retailer.role || 'Partner Retailer'}
+                  {retailer.role || 'Qualified Campaign Lead'}
                 </p>
                 <div className="flex flex-col gap-2">
                   {retailer.phone && (
@@ -300,7 +308,7 @@ export default function RetailersPageV2() {
               <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sentiment</span>
-                  <span className="text-blue-600 font-bold text-sm">Very Engaged</span>
+                  <span className="text-blue-600 font-bold text-sm">Campaign Active</span>
                 </div>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
               </div>
@@ -311,11 +319,14 @@ export default function RetailersPageV2() {
 
       <ContactDrawer 
         isOpen={contactDrawer.isOpen}
-        onClose={() => setContactDrawer({ ...contactDrawer, isOpen: false })}
+        onClose={() => {
+          setContactDrawer({ ...contactDrawer, isOpen: false });
+          queryClient.invalidateQueries({ queryKey: ['clients', { is_prospect: true }] });
+        }}
         token={token}
         clientId={contactDrawer.clientId}
         initialData={contactDrawer.initialData}
-        isProspect={false}
+        isProspect={true}
       />
     </div>
   );

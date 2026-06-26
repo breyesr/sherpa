@@ -49,6 +49,7 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [ ] **Task 122.3 (FE):** Build Orders Ledger Dashboard and Details Timeline.
 - [ ] **Task 121.3 (FE):** Build Action Catalog Configuration UI (Settings).
 - [ ] **Task 121.4 (FE):** Build Strategy Desk & Outcome Resolution UI.
+- [ ] **Task 135.1 (FE):** Information Architecture & Navigation Realignment (Segment B2B Hub, Prospects, and Products).
 
 
 

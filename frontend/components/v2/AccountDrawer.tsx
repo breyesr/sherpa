@@ -24,9 +24,10 @@ interface AccountDrawerProps {
   token: string | null;
   storeId?: string | null; // If provided, we are in Edit Mode
   initialData?: any; // Data passed from list view for instant population
+  isProspect?: boolean;
 }
 
-export default function AccountDrawer({ isOpen, onClose, token, storeId, initialData }: AccountDrawerProps) {
+export default function AccountDrawer({ isOpen, onClose, token, storeId, initialData, isProspect = false }: AccountDrawerProps) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,46 +36,91 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
 
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
     phone: '',
     email: '',
+    street_address: '',
+    colonia: '',
+    municipality: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: 'México',
     market: '',
     segment: '',
     region: '',
     external_id: '',
-    client_ids: [] as string[]
+    client_ids: [] as string[],
+    delivery_zip_codes: ''
   });
+
+  // List of resolved colonias for autocomplete selection in manual address mode
+  const [colonias, setColonias] = useState<string[]>([]);
+
+  // Delivery zip codes UI helper state
+  const [allPostalCodes, setAllPostalCodes] = useState<any[]>([]);
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedMunicipality, setSelectedMunicipality] = useState<string>('');
+  const [selectedZipCodesArray, setSelectedZipCodesArray] = useState<string[]>([]);
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+  const [customZipInput, setCustomZipInput] = useState<string>('');
+  const [manualAddress, setManualAddress] = useState(false);
+
+  // Form dirty checking state
+  const [initialSnapshot, setInitialSnapshot] = useState<string>('');
 
   // Initialize state when drawer opens
   useEffect(() => {
     if (isOpen) {
       if (!storeId) {
         // Create mode: clear form
-        setFormData({
+        const defaultData = {
           name: '',
-          address: '',
           phone: '',
           email: '',
+          street_address: '',
+          colonia: '',
+          municipality: '',
+          city: '',
+          state: '',
+          zip_code: '',
+          country: 'México',
           market: '',
           segment: '',
           region: '',
           external_id: '',
-          client_ids: []
-        });
+          client_ids: [] as string[],
+          delivery_zip_codes: ''
+        };
+        setFormData(defaultData);
+        setColonias([]);
+        setInitialSnapshot(JSON.stringify(defaultData));
+        setManualAddress(false);
       } else if (initialData) {
         // Edit mode with initial data: populate instantly
-        setFormData(prev => ({
-          ...prev,
+        const eagerData = {
           name: initialData.name || '',
-          address: initialData.address || '',
           phone: initialData.phone || '',
           email: initialData.email || '',
+          street_address: initialData.street_address || '',
+          colonia: initialData.colonia || '',
+          municipality: initialData.municipality || '',
+          city: initialData.city || '',
+          state: initialData.state || '',
+          zip_code: initialData.zip_code || '',
+          country: initialData.country || 'México',
           market: initialData.market || '',
           segment: initialData.segment || '',
           region: initialData.region || '',
           external_id: initialData.external_id || '',
-          client_ids: initialData.clients?.map((c: any) => c.id) || prev.client_ids
-        }));
+          client_ids: initialData.clients?.map((c: any) => c.id) || [],
+          delivery_zip_codes: initialData.delivery_zip_codes?.join(', ') || ''
+        };
+        setFormData(eagerData);
+        if (initialData.colonia) {
+          setColonias([initialData.colonia]);
+        }
+        setInitialSnapshot(JSON.stringify(eagerData));
+        setManualAddress(false);
       }
     }
   }, [isOpen, storeId, initialData]);
@@ -89,18 +135,40 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
           });
           if (res.ok) {
             const data = await res.json();
-            setFormData(prev => ({
-              ...prev,
-              name: data.name || prev.name,
-              address: data.address || prev.address,
-              phone: data.phone || prev.phone,
-              email: data.email || prev.email,
-              market: data.market || prev.market,
-              segment: data.segment || prev.segment,
-              region: data.region || prev.region,
-              external_id: data.external_id || prev.external_id,
-              client_ids: data.clients?.map((c: any) => c.id) || prev.client_ids
-            }));
+            const fullData = {
+              name: data.name || '',
+              phone: data.phone || '',
+              email: data.email || '',
+              street_address: data.street_address || '',
+              colonia: data.colonia || '',
+              municipality: data.municipality || '',
+              city: data.city || '',
+              state: data.state || '',
+              zip_code: data.zip_code || '',
+              country: data.country || 'México',
+              market: data.market || '',
+              segment: data.segment || '',
+              region: data.region || '',
+              external_id: data.external_id || '',
+              client_ids: data.clients?.map((c: any) => c.id) || [],
+              delivery_zip_codes: data.delivery_zip_codes?.join(', ') || ''
+            };
+            setFormData(prev => {
+              const prevJson = JSON.stringify(prev);
+              return (prevJson === initialSnapshot || !initialSnapshot) ? fullData : prev;
+            });
+            if (data.colonia) {
+              setColonias(prev => prev.includes(data.colonia) ? prev : [...prev, data.colonia]);
+            }
+            if (data.state && data.municipality && allPostalCodes.length > 0) {
+              const hasMatch = allPostalCodes.some(
+                pc => pc.state === data.state && pc.municipality === data.municipality
+              );
+              if (!hasMatch) {
+                setManualAddress(true);
+              }
+            }
+            setInitialSnapshot(JSON.stringify(fullData));
           }
         } catch (err) {
           console.error('Failed to fetch store for background sync', err);
@@ -108,7 +176,138 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       };
       fetchStore();
     }
+  }, [isOpen, storeId, token, allPostalCodes.length]);
+
+  // Autocomplete geographic fields on ZIP Code change (Manual Address Mode)
+  useEffect(() => {
+    const lookupZIP = async () => {
+      const code = formData.zip_code.trim();
+      if (code.length === 5 && manualAddress) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/${code}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+              const firstMatch = data[0];
+              const uniqueColonias = Array.from(new Set(data.map((item: any) => item.colonia))) as string[];
+              setColonias(uniqueColonias);
+              
+              setFormData(prev => ({
+                ...prev,
+                municipality: firstMatch.municipality || prev.municipality,
+                city: firstMatch.city || firstMatch.municipality || prev.city,
+                state: firstMatch.state || prev.state,
+                colonia: uniqueColonias.includes(prev.colonia) ? prev.colonia : uniqueColonias[0]
+              }));
+            }
+          }
+        } catch (err) {
+          console.error('Failed to resolve ZIP code details', err);
+        }
+      }
+    };
+    lookupZIP();
+  }, [formData.zip_code, manualAddress, token]);
+
+  // Fetch all preloaded postal codes on drawer open
+  useEffect(() => {
+    if (isOpen) {
+      const fetchPostalCodes = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setAllPostalCodes(data);
+            
+            // Check if active store state/municipality exists in loaded data, if not auto-toggle manual mode
+            if (storeId && formData.state && formData.municipality) {
+              const hasMatch = data.some(
+                (pc: any) => pc.state === formData.state && pc.municipality === formData.municipality
+              );
+              if (!hasMatch) {
+                setManualAddress(true);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch postal codes list', err);
+        }
+      };
+      fetchPostalCodes();
+      // Reset dropdown values
+      setSelectedState(formData.state || '');
+      setSelectedMunicipality(formData.municipality || '');
+      setSelectedZipCodesArray([]);
+      setLastClickedIndex(null);
+      setCustomZipInput('');
+      setManualAddress(false);
+    }
   }, [isOpen, storeId, token]);
+
+  // Preselect delivery zone State and Municipality based on Store Address
+  useEffect(() => {
+    if (formData.state) {
+      setSelectedState(formData.state);
+    }
+    if (formData.municipality) {
+      setSelectedMunicipality(formData.municipality);
+    }
+  }, [formData.state, formData.municipality]);
+
+
+  // Reset snapshot on close
+  useEffect(() => {
+    if (!isOpen) {
+      setInitialSnapshot('');
+    }
+  }, [isOpen]);
+
+  // Derive dirty state
+  const isDirty = initialSnapshot !== '' && JSON.stringify(formData) !== initialSnapshot;
+
+  // Warn before browser tab reload/close if dirty
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Intercept Next.js client-side navigation if form is dirty
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+      
+      if (anchor) {
+        const href = anchor.getAttribute('href');
+        const targetAttr = anchor.getAttribute('target');
+        
+        // Only block internal relative/local navigation link clicks
+        if (href && !href.startsWith('http') && !href.startsWith('mailto:') && !href.startsWith('tel:') && targetAttr !== '_blank') {
+          const confirmLeave = window.confirm("You have unsaved changes. Are you sure you want to leave?");
+          if (!confirmLeave) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('click', handleAnchorClick, true);
+    return () => document.removeEventListener('click', handleAnchorClick, true);
+  }, [isDirty]);
 
   // Fetch all clients for linking
   const { data: allClients = [] } = useQuery({
@@ -121,6 +320,15 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     },
     enabled: isOpen,
   });
+
+  // Warn before closing drawer if dirty
+  const handleClose = () => {
+    if (isDirty) {
+      const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to close?");
+      if (!confirmClose) return;
+    }
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,13 +344,23 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     // Clean payload
     const payload = {
       ...formData,
-      address: formData.address || null,
+      is_prospect: isEditing ? (initialData?.is_prospect ?? isProspect) : isProspect,
+      street_address: formData.street_address || null,
+      colonia: formData.colonia || null,
+      municipality: formData.municipality || null,
+      city: formData.city || null,
+      state: formData.state || null,
+      zip_code: formData.zip_code || null,
+      country: formData.country || 'México',
       phone: formData.phone || null,
       email: formData.email || null,
       market: formData.market || null,
       segment: formData.segment || null,
       region: formData.region || null,
-      external_id: formData.external_id || null
+      external_id: formData.external_id || null,
+      delivery_zip_codes: formData.delivery_zip_codes
+        ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : []
     };
 
     try {
@@ -163,6 +381,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       queryClient.invalidateQueries({ queryKey: ['stores'] });
       if (storeId) queryClient.invalidateQueries({ queryKey: ['store', storeId] });
       
+      setInitialSnapshot('');
       onClose();
     } catch (err: any) {
       setError(err.message);
@@ -183,7 +402,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   const footer = (
     <div className="flex gap-4">
       <button 
-        onClick={onClose}
+        onClick={handleClose}
         className="flex-1 px-6 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
       >
         Cancel
@@ -193,17 +412,45 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         disabled={loading || !formData.name}
         className="flex-1 px-6 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? 'Save Changes' : 'Create Account')}
+        {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? 'Save Changes' : (isProspect ? 'Create Prospect Account' : 'Create Account'))}
       </button>
     </div>
   );
 
+  // Physical address options calculations
+  const addressStates = Array.from(new Set(allPostalCodes.map(pc => pc.state))).sort();
+  const addressMunicipalities = Array.from(
+    new Set(
+      allPostalCodes
+        .filter(pc => pc.state === formData.state)
+        .map(pc => pc.municipality)
+    )
+  ).sort();
+  const addressZipCodes = Array.from(
+    new Set(
+      allPostalCodes
+        .filter(pc => pc.state === formData.state && pc.municipality === formData.municipality)
+        .map(pc => pc.zip_code)
+    )
+  ).sort();
+  const addressColonias = Array.from(
+    new Set(
+      allPostalCodes
+        .filter(pc => 
+          pc.state === formData.state && 
+          pc.municipality === formData.municipality && 
+          pc.zip_code === formData.zip_code
+        )
+        .map(pc => pc.colonia)
+    )
+  ).sort();
+
   return (
     <Drawer 
       isOpen={isOpen} 
-      onClose={onClose} 
-      title={isEditing ? "Edit Account" : "New Account"} 
-      subtitle={isEditing ? `Editing: ${formData.name || 'Account'}` : "Register a new physical point of sale."}
+      onClose={handleClose} 
+      title={isEditing ? (isProspect ? "Edit Prospect Account" : "Edit Account") : (isProspect ? "New Prospect Account" : "New Account")} 
+      subtitle={isEditing ? `Editing: ${formData.name || (isProspect ? 'Prospect Account' : 'Account')}` : (isProspect ? "Register a new prospective company or entity." : "Register a new physical point of sale.")}
       footer={footer}
       size="wide"
     >
@@ -215,38 +462,425 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
           </div>
         )}
 
-        {/* Identity Section */}
+        {/* Identity & Location Section */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <Store size={16} className="text-blue-600" />
-            <h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest text-blue-600">Identity & Location</h4>
+          <div className="flex justify-between items-center px-1 mb-2">
+            <div className="flex items-center gap-2">
+              <Store size={16} className="text-blue-600" />
+              <h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest text-blue-600">Identity & Location</h4>
+            </div>
+            <button
+              type="button"
+              onClick={() => setManualAddress(!manualAddress)}
+              className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-wider transition-colors focus:outline-none"
+            >
+              {manualAddress ? "Use Guided Dropdowns" : "Enter Address Manually"}
+            </button>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Account Name</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{isProspect ? 'Company / Entity Name' : 'Account Name'}</label>
             <input 
               required
               type="text"
-              placeholder="e.g. Tienda La Norteña"
+              placeholder={isProspect ? "e.g. Distribuidora del Norte" : "e.g. Tienda La Norteña"}
               className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
           </div>
 
+          {manualAddress ? (
+            // Manual Address Entry Mode
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ZIP Code</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. 04210"
+                    maxLength={5}
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                    value={formData.zip_code}
+                    onChange={e => setFormData({...formData, zip_code: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Colonia / Neighborhood</label>
+                  {colonias.length > 0 ? (
+                    <select
+                      className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none"
+                      value={formData.colonia}
+                      onChange={e => setFormData({...formData, colonia: e.target.value})}
+                    >
+                      {colonias.map((col, idx) => (
+                        <option key={idx} value={col}>{col}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input 
+                      type="text"
+                      placeholder="e.g. Portales Sur"
+                      className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                      value={formData.colonia}
+                      onChange={e => setFormData({...formData, colonia: e.target.value})}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Municipality / City</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Benito Juárez"
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                    value={formData.municipality}
+                    onChange={e => setFormData({...formData, municipality: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">State</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. CDMX"
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                    value={formData.state}
+                    onChange={e => setFormData({...formData, state: e.target.value})}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            // Guided Dropdown Entry Mode
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">State</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none"
+                    value={formData.state}
+                    onChange={e => {
+                      setFormData({
+                        ...formData,
+                        state: e.target.value,
+                        municipality: '',
+                        zip_code: '',
+                        colonia: '',
+                        city: ''
+                      });
+                    }}
+                  >
+                    <option value="">Select State...</option>
+                    {addressStates.map((st, idx) => (
+                      <option key={idx} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Municipality</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
+                    value={formData.municipality}
+                    onChange={e => {
+                      const match = allPostalCodes.find(pc => pc.state === formData.state && pc.municipality === e.target.value);
+                      setFormData({
+                        ...formData,
+                        municipality: e.target.value,
+                        zip_code: '',
+                        colonia: '',
+                        city: match?.city || match?.municipality || ''
+                      });
+                    }}
+                    disabled={!formData.state}
+                  >
+                    <option value="">Select Municipality...</option>
+                    {addressMunicipalities.map((mun, idx) => (
+                      <option key={idx} value={mun}>{mun}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ZIP Code</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
+                    value={formData.zip_code}
+                    onChange={e => {
+                      setFormData({
+                        ...formData,
+                        zip_code: e.target.value,
+                        colonia: ''
+                      });
+                    }}
+                    disabled={!formData.municipality}
+                  >
+                    <option value="">Select ZIP Code...</option>
+                    {addressZipCodes.map((zip, idx) => (
+                      <option key={idx} value={zip}>{zip}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Colonia / Neighborhood</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
+                    value={formData.colonia}
+                    onChange={e => {
+                      setFormData({
+                        ...formData,
+                        colonia: e.target.value
+                      });
+                    }}
+                    disabled={!formData.zip_code}
+                  >
+                    <option value="">Select Colonia...</option>
+                    {addressColonias.map((col, idx) => (
+                      <option key={idx} value={col}>{col}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Physical Address</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Street & Number</label>
             <div className="relative">
               <input 
                 type="text"
-                placeholder="Street, City, State"
+                placeholder="e.g. Calzada de Tlalpan 1209"
                 className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900 pr-12"
-                value={formData.address}
-                onChange={e => setFormData({...formData, address: e.target.value})}
+                value={formData.street_address}
+                onChange={e => setFormData({...formData, street_address: e.target.value})}
               />
               <MapPin size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
           </div>
+        </div>
+
+        <div className="space-y-4 p-4 bg-white rounded-2xl border border-gray-100">
+          <div className="flex justify-between items-center px-1">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Delivery Zones / ZIP Codes</label>
+            <span className="text-[9px] text-gray-400 italic">Configure coverage</span>
+          </div>
+
+          {/* Display added ZIPs as tags */}
+          <div className="flex flex-wrap gap-2 min-h-[36px] p-3 bg-gray-50 rounded-xl border border-gray-50">
+            {(() => {
+              const currentZipArray = formData.delivery_zip_codes
+                ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+                : [];
+              return (
+                <>
+                  {currentZipArray.map((zip, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-lg border border-blue-100 transition-all hover:bg-blue-100"
+                    >
+                      <span>{zip}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const updated = currentZipArray.filter(z => z !== zip);
+                          setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                        }}
+                        className="text-blue-500 hover:text-red-600 transition-colors text-[10px] font-black focus:outline-none"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {currentZipArray.length === 0 && (
+                    <span className="text-xs text-gray-400 italic py-0.5">No delivery zones configured yet.</span>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Select helpers */}
+          {(() => {
+            const currentZipArray = formData.delivery_zip_codes
+              ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+              : [];
+            
+            // Get unique states sorted
+            const uniqueStates = Array.from(
+              new Set(allPostalCodes.map(pc => pc.state))
+            ).sort();
+
+            // Get unique municipalities filtered by state
+            const filteredMunicipalities = Array.from(
+              new Set(
+                allPostalCodes
+                  .filter(pc => pc.state === selectedState)
+                  .map(pc => pc.municipality)
+              )
+            ).sort();
+            
+            // Get unique zip codes filtered by state and municipality
+            const filteredZipCodes = Array.from(
+              new Set(
+                allPostalCodes
+                  .filter(pc => pc.state === selectedState && pc.municipality === selectedMunicipality)
+                  .map(pc => pc.zip_code)
+              )
+            ).sort();
+
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* State */}
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider ml-1">State</span>
+                    <select
+                      className="w-full p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all appearance-none"
+                      value={selectedState}
+                      onChange={e => {
+                        setSelectedState(e.target.value);
+                        setSelectedMunicipality('');
+                        setSelectedZipCodesArray([]);
+                        setLastClickedIndex(null);
+                      }}
+                    >
+                      <option value="">Select State...</option>
+                      {uniqueStates.map((st, idx) => (
+                        <option key={idx} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Municipality */}
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider ml-1">Municipality</span>
+                    <select
+                      className="w-full p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all appearance-none disabled:opacity-50"
+                      value={selectedMunicipality}
+                      onChange={e => {
+                        setSelectedMunicipality(e.target.value);
+                        setSelectedZipCodesArray([]);
+                        setLastClickedIndex(null);
+                      }}
+                      disabled={!selectedState}
+                    >
+                      <option value="">Select Municipality...</option>
+                      {filteredMunicipalities.map((mun, idx) => (
+                        <option key={idx} value={mun}>{mun}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="flex justify-between items-center px-1 mb-2">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">ZIP Codes (Shift to select range)</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedZipCodesArray.length === filteredZipCodes.length) {
+                          setSelectedZipCodesArray([]);
+                        } else {
+                          setSelectedZipCodesArray(filteredZipCodes);
+                        }
+                      }}
+                      disabled={!selectedMunicipality || filteredZipCodes.length === 0}
+                      className="text-[9px] font-black text-blue-600 hover:text-blue-800 disabled:text-gray-300 transition-colors focus:outline-none uppercase tracking-wider"
+                    >
+                      {selectedZipCodesArray.length === filteredZipCodes.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+
+                  <select
+                    multiple
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all disabled:opacity-50 min-h-[95px]"
+                    value={selectedZipCodesArray}
+                    onChange={() => {}}
+                    disabled={!selectedMunicipality || filteredZipCodes.length === 0}
+                  >
+                    {filteredZipCodes.map((zip, idx) => (
+                      <option 
+                        key={idx} 
+                        value={zip} 
+                        className="py-1 px-2 rounded hover:bg-gray-100 font-bold cursor-pointer"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          const isShift = e.shiftKey;
+                          setSelectedZipCodesArray(prev => {
+                            if (isShift && lastClickedIndex !== null) {
+                              const start = Math.min(lastClickedIndex, idx);
+                              const end = Math.max(lastClickedIndex, idx);
+                              const rangeZips = filteredZipCodes.slice(start, end + 1);
+                              return Array.from(new Set([...prev, ...rangeZips]));
+                            } else {
+                              setLastClickedIndex(idx);
+                              if (prev.includes(zip)) {
+                                  return prev.filter(z => z !== zip);
+                              } else {
+                                  return [...prev, zip];
+                              }
+                            }
+                          });
+                        }}
+                      >
+                        {zip}
+                      </option>
+                    ))}
+                    {selectedMunicipality && filteredZipCodes.length === 0 && (
+                      <option disabled className="text-gray-400 italic">No ZIP codes preloaded.</option>
+                    )}
+                    {!selectedMunicipality && (
+                      <option disabled className="text-gray-400 italic">Select State and Municipality first.</option>
+                    )}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = Array.from(new Set([...currentZipArray, ...selectedZipCodesArray]));
+                      setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                      setSelectedZipCodesArray([]);
+                    }}
+                    disabled={selectedZipCodesArray.length === 0}
+                    className="w-full mt-3 p-3 bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                  >
+                    Add Selected ZIP Codes ({selectedZipCodesArray.length})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 pt-3 border-t border-gray-100 mt-1">
+                  <input
+                    type="text"
+                    placeholder="Or type custom ZIP (5 digits)..."
+                    className="flex-1 p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all"
+                    value={customZipInput}
+                    onChange={e => setCustomZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customZipInput.length === 5 && !currentZipArray.includes(customZipInput)) {
+                        const updated = [...currentZipArray, customZipInput];
+                        setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                        setCustomZipInput('');
+                      }
+                    }}
+                    disabled={customZipInput.length !== 5}
+                    className="px-4 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-400 whitespace-nowrap uppercase tracking-wider font-black"
+                  >
+                    Add Custom
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Segmentation Section */}

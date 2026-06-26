@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
 import { 
@@ -14,13 +14,15 @@ import {
   LayoutGrid,
   List as ListIcon,
   Filter,
-  Edit2
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { StoreResponse } from '@/types/api';
 import AccountDrawer from '@/components/v2/AccountDrawer';
 
 export default function StoresPageV2() {
   const token = useAuthStore((state) => state.token);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: any}>({
@@ -174,6 +176,30 @@ export default function StoresPageV2() {
                     >
                       <Edit2 size={18} />
                     </button>
+                    <button 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm(`Are you sure you want to delete store ${store.name}?`)) {
+                          try {
+                            const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
+                              method: 'DELETE',
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (res.ok) {
+                              queryClient.invalidateQueries({ queryKey: ['stores'] });
+                            } else {
+                              alert('Failed to delete store');
+                            }
+                          } catch (err) {
+                            alert('Error deleting store');
+                          }
+                        }
+                      }}
+                      className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all relative z-20"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                     <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all pointer-events-none" />
                   </div>
                 </div>
@@ -197,16 +223,42 @@ export default function StoresPageV2() {
                   <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                     <StoreIcon size={24} />
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setAccountDrawer({ isOpen: true, storeId: store.id, initialData: store });
-                    }}
-                    className="p-2 text-gray-300 hover:text-blue-600 transition-colors relative z-20"
-                  >
-                    <Edit2 size={18} />
-                  </button>
+                  <div className="flex gap-2 relative z-20">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setAccountDrawer({ isOpen: true, storeId: store.id, initialData: store });
+                      }}
+                      className="p-2 text-gray-300 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm(`Are you sure you want to delete store ${store.name}?`)) {
+                          try {
+                            const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
+                              method: 'DELETE',
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (res.ok) {
+                              queryClient.invalidateQueries({ queryKey: ['stores'] });
+                            } else {
+                              alert('Failed to delete store');
+                            }
+                          } catch (err) {
+                            alert('Error deleting store');
+                          }
+                        }
+                      }}
+                      className="p-2 text-gray-300 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                   {store.name}
@@ -245,6 +297,7 @@ export default function StoresPageV2() {
         token={token}
         storeId={accountDrawer.storeId}
         initialData={accountDrawer.initialData}
+        isProspect={false}
       />
     </div>
   );

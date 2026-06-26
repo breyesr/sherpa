@@ -50,40 +50,81 @@ class StoreNoteResponse(StoreNoteBase):
     class Config:
         from_attributes = True
 
+class PostalCodeResponse(BaseModel):
+    id: int
+    zip_code: str
+    colonia: str
+    municipality: str
+    city: Optional[str] = None
+    state: str
+
+    class Config:
+        from_attributes = True
+
+
 class StoreBase(BaseModel):
     name: str
-    address: Optional[str] = None
+    address: Optional[str] = None  # Kept as formatted address helper for backward compatibility
     phone: Optional[str] = None
     email: Optional[str] = None
+    
+    # Structured address fields
+    street_address: Optional[str] = None
+    colonia: Optional[str] = None
+    municipality: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    country: Optional[str] = "México"
+    
     market: Optional[str] = None
     segment: Optional[str] = None
     region: Optional[str] = None
     opening_date: Optional[date] = None
     external_id: Optional[str] = None
+    is_prospect: bool = False
+    delivery_zip_codes: Optional[List[str]] = []
+
 
 class StoreCreate(StoreBase):
     client_ids: Optional[List[str]] = []
+
 
 class StoreUpdate(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    
+    # Structured address fields
+    street_address: Optional[str] = None
+    colonia: Optional[str] = None
+    municipality: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    country: Optional[str] = None
+    
     market: Optional[str] = None
     segment: Optional[str] = None
     region: Optional[str] = None
     opening_date: Optional[date] = None
     external_id: Optional[str] = None
     client_ids: Optional[List[str]] = None
+    is_prospect: Optional[bool] = None
+    delivery_zip_codes: Optional[List[str]] = None
+
 
 class ClientMinimal(BaseModel):
     id: str
     name: str
     phone: Optional[str] = None
     email: Optional[str] = None
+    is_prospect: bool = False
 
     class Config:
         from_attributes = True
+
 
 class StoreResponse(StoreBase):
     id: str

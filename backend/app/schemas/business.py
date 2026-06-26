@@ -73,6 +73,7 @@ class BusinessProfileBase(BaseModel):
     vertical_type: VerticalType = VerticalType.BASIC
     crm_config: Optional[List[Dict]] = []
     features_config: Optional[Dict] = None
+    routing_config: Optional[Dict] = None
 
 class BusinessProfileCreate(BusinessProfileBase):
     pass
@@ -85,6 +86,7 @@ class BusinessProfileUpdate(BaseModel):
     vertical_type: Optional[VerticalType] = None
     crm_config: Optional[List[Dict]] = None
     features_config: Optional[Dict] = None
+    routing_config: Optional[Dict] = None
 
 class BusinessProfileResponse(BusinessProfileBase):
     id: str

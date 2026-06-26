@@ -1,5 +1,76 @@
 # Handoff Log
 
+- **2026-06-26 (B2B/Prospect Navigation & Category Realignment)**: Implemented Epic 135 to restructure the frontend layout and navigation to align with user segments (B2B Distributor vs. Prospects). Separated accounts and clients in B2B Hub from accounts and contacts in Prospects, and created a dedicated Category view tab inside Products. Updated [Sidebar.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/Sidebar.tsx), [AccountDrawer.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/v2/AccountDrawer.tsx), [retailers/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/retailers/page.tsx), and detail routing paths, and wrapped client pages in Suspense boundaries for clean, error-free Next.js production compilation.
+
+- **2026-06-26 (Out-of-Coverage Waitlist Lead Capture)**: Implemented Epic 134 to capture out-of-coverage prospects in the WhatsApp lead qualification flow as waitlist leads in the CRM database. Added a new `collecting_waitlist` phase in [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) to prompt out-of-coverage users for contact details (name, email, phone, company) if not already provided. Updated [qualify_lead](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py#L394) to save waitlisted prospects as prospect [Client](file:///Users/bernardo/projects/sherpa/backend/app/models/crm.py#L13) and [Store](file:///Users/bernardo/projects/sherpa/backend/app/models/trade.py) records in the database, with a `status: "waitlist"` flag inside `custom_fields` and [StoreAction](file:///Users/bernardo/projects/sherpa/backend/app/models/trade.py) details. Expanded the integration test suite in [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py) to cover immediate and multi-turn waitlist qualification scenarios, and confirmed all 5 integration test scenarios pass successfully.
+
+- **2026-06-25 (Geographic Hierarchy Dropdowns & Multi-Selection CP Improvements)**: Enhanced `AccountDrawer.tsx` to support a State -> Municipality -> CP (ZIP Code) selection dropdown hierarchy (removing redundant City level) for both store physical address configuration and delivery zones. Physical address configuration also includes a toggle to switch to Manual Address Entry and dropdown selection for Colonia. Configured custom multi-selection CP options utilizing a click-to-toggle option state pattern and shift-click index range selection. Implemented Next.js client-side navigation click interception on dirty forms, preventing accidental edits from being discarded. Verified and built the Next.js frontend application with zero compilation errors.
+
+- **2026-06-25 (Multi-Select Delivery Zones & Dirty Form Warnings)**: Upgraded `AccountDrawer.tsx` to support a State/City -> Municipality -> ZIP Code hierarchical selection flow, enabling users to multi-select ZIP codes (supporting range selection by holding Shift) and select all filtered ZIPs at once via a "Select All" toggle button. Added automatic dirty form checking via JSON-serialized form snapshots that triggers validation alerts (`beforeunload` listener for browser tab closes and `window.confirm` dialogs for drawer closures). Verified stability via Next.js compilation and integration tests.
+
+- **2026-06-25 (Premium Delivery Coverage UI & API Sync)**: Implemented a premium, dropdown-assisted delivery zip code manager in `AccountDrawer.tsx`. Users can select preloaded Mexican municipalities (e.g. grouped by State) to view and add corresponding ZIP codes, manage them as visually styled tags/badges (with delete operations), and enter custom ZIP codes. Created `GET /api/v1/trade/postal-codes` backend route to feed the selectors, regenerated API client interfaces, and validated Next.js builds and integration test suites.
+
+- **2026-06-25 (Geographic Address Resolution & Seeder Hardening)**: Populated all missing physical address columns (colonia, municipality, city, state, zip_code) across all 15 store records in the database, seeded additional Mexican region lookups (Oaxaca and Veracruz CPs), updated the master seeder script to populate structured addresses out-of-the-box, and verified zero regressions using the simulation test suite.
+
+- **2026-06-25 (Per-Store Delivery ZIP Codes Configuration & Verification)**: Migrated global ZIP routing configurations to granular, per-account store lists, added a custom input field in the Account Drawer UI, updated database seed scripts, and verified correctness with simulated conversations.
+    - Updated `seed_cemenquin.py` to assign custom delivery ZIP code lists (e.g. CDMX coordinates) to seeded stores.
+    - Modified `frontend/components/v2/AccountDrawer.tsx` to handle `delivery_zip_codes` initialization, form rendering as a comma-separated input, and list submission parsing in the API payload.
+    - Regenerated TypeScript typings (`npm run gen:api`) based on modified store schemas.
+    - Confirmed compile and bundle stability with a successful production build (`npm run build`).
+    - Validated per-store qualification and coverage fallback gating under simulated multi-turn conversations (`test_simulated_session_3.py`).
+
+- **2026-06-25 (Allowed Delivery Postal Codes Settings Field Added)**: Added an administrative configuration text area field to the platform's Settings dashboard to manage the allowed delivery postal codes for the prospective lead validation flow.
+    - Exposed `routing_config` JSON configuration field in the backend Pydantic schemas `BusinessProfileBase` and `BusinessProfileUpdate` inside `backend/app/schemas/business.py`.
+    - Integrated the new settings option inside the frontend settings panel `frontend/app/settings/components/GeneralSettings.tsx`, enabling users to input a comma-separated list of 5-digit allowed delivery zip codes.
+    - Restructured form payload submissions in the frontend to cleanly parse, sanitize, and update the nested database configurations inside `routing_config`.
+    - Regenerated the frontend API typescript types (`npm run gen:api`) to match backend changes and verified full frontend compile stability using `npm run build`.
+
+- **2026-06-25 (Prospect Qualifier Restructured & ZIP Validation Completed)**: Restructured the conversational WhatsApp lead qualification flow (Epic 132), enforcing sequential verification checkpoints (intent capture -> quantity threshold validation -> lead data collection -> CDMX postal code range verification -> success handoff), implementing greeting-based resets for all returning clients, and creating a unified dashboard action/notification log.
+    - Updated `ProspectQualifierState` and the `update_prospect_data` tool in `backend/app/services/prospect_qualifier.py` to capture and track contact `name`, `zip_code`, and conversational `phase` state variables.
+    - Modified the `call_model` LLM system prompt to dynamically adapt to `intent` or `collecting` phases, preventing contact info collection until the quantity threshold is satisfied.
+    - Upgraded `run_tools_and_update_state` tool execution node to validate wholesale quantity threshold immediately, reject and route to physical stores on failure, and validate 5-digit Mexican postal code ranges (CDMX prefix matching) before transitioning to lead handoff.
+    - Enhanced `qualify_lead` node to lookup/update pre-existing placeholder client records in the database matching the active thread's `sender_phone` (Task 130.3) instead of creating duplicate records, setting `is_prospect=True` on the updated Client and Store.
+    - Implemented a unified mocked notification action `_notify_sales_rep(...)` writing qualified prospect details to `logs/notifications.log` for CRM integrations.
+    - Enabled greeting-based resets (`"hola"`, `"buen día"`) for all completed flows (both sandbox and production), resolving returning client materials inquiry lockups.
+    - Developed and executed a comprehensive automated integration test suite in `backend/test_simulated_session_3.py` verifying all rejection and successful handoff paths.
+
+- **2026-06-25 (Prospect Simulator Reset Logic Hardening & Bug Fix)**: Fixed the bug in the Live Test Sandbox where the prospect qualifier got stuck in a terminal completed loop, returning the cached final response regardless of input.
+    - Upgraded `prospect_qualifier.py` to normalize user messages (lowercased, accents stripped, punctuation removed) and check for multi-word greetings (like `"Hola, buen día"`) using keyword substring searches.
+    - Implemented a fallback reset for short messages (<15 characters) when the thread is in a completed state to prevent any sandbox lockups.
+    - Developed and ran a standalone python verification test (`verify_reset.py`) simulating a completed prospect sequence and confirming the checkpointer correctly wipes and restarts the conversation flow upon receiving `"Hola, buen día"`.
+
+- **2026-06-25 (Live Test Sandbox Data Seeding Completed)**: Seeded 2 months of historical B2B CRM and Trade data for user `agrivera@gmail.com` (Cemenquin), populated the unified vector corpus, and initiated active LangGraph checkpointer threads for live simulator testing. Also restored the unconditional AI Audit view on the conversations dashboard.
+    - Created and ran [/backend/seed_cemenquin.py](file:///Users/bernardo/projects/sherpa/backend/seed_cemenquin.py) to clean and populate categories, products, stores, clients, orders, notes, and actions.
+    - Resolved lazy-loading greenlet exceptions in the async database session by executing explicit inserts into the many-to-many junction tables and utilizing eager relationship loads.
+    - Vectorized and synchronized all newly created records into the `KnowledgeCorpus` vector index.
+    - Triggered live simulator runs for B2B client and prospect flows, storing valid LangGraph checkpoints in postgres checkpointer tables.
+    - Executed validation query script confirming correct data counts and active checkpoint state.
+    - Restored the unconditional "Audit: ON/OFF" toggle button in the Inbox conversations tab (`ConversationsContent.tsx`) to match staging specification, resolving context/privileges gating for sandbox testing.
+
+- **2026-06-24 (Prospect vs. Client Data Classification Completed)**: Segregated prospects from active clients/stores across database models, schemas, and API queries, separated menu & dashboard layouts, and added deletion utilities (Epic 131).
+    - Added `is_prospect` column to `Store` and `Client` database models and executed Alembic migration `d2b9c075daf3`.
+    - Integrated `is_prospect` flags inside Pydantic schemas in `schemas/trade.py` and `schemas/crm.py`.
+    - Updated `ProspectQualifier` simulation flows to flag created contacts/stores as prospects (`is_prospect=True`).
+    - Added `is_prospect` optional query filtering to `/stores` and `/clients` API endpoints, defaulting to `False` to hide prospects from sales reps.
+    - Synchronized `openapi.json` and compiled TypeScript definitions in `frontend/types/api.ts`.
+    - Created and ran `test_prospect_classification.py` to verify API and database filtering.
+    - Built a dedicated Prospects dashboard page at `/trade/prospects` using the contact listing layout with `is_prospect=true` filters.
+    - Integrated the `• Prospects` navigation link in the B2B Hub section of the main menu sidebar (`Sidebar.tsx`).
+    - Configured `ContactDrawer` to support creating prospects directly, and added dynamic "Back to Prospects" navigation on contact detail page.
+    - Implemented `DELETE /trade/stores/{store_id}` endpoint in the FastAPI backend with async vector indexing updates.
+    - Resolved 500 error on store deletion by implementing manual cascading deletes for child records (orders, notes, competitors, actions, link tables) referencing the store, ensuring database integrity.
+    - Integrated temporary Delete buttons across Contacts, Prospects, and Accounts (Stores) list/grid views and detail pages.
+    - Verified compile stability via successful Next.js production builds (`npm run build`).
+
+- **2026-06-24 (Sandbox Simulators Debugging & Hardening Completed)**: Fixed looping, inbox persistence, confidence levels, and log leaks (Epic 130).
+    - Added conversation and message database persistence in `ProspectQualifier.get_response` and pre-checked checkpoint states using `aget_state` to prevent loop repetitions.
+    - Updated placeholder contact details transitions in `qualify_lead` when a lead is qualified.
+    - Standardized `EntityResolver` confidence scoring to return `0.9` confidence for matched contacts without linked stores.
+    - Gated DevMode (Audit ON/OFF) log visibility behind admin role checks on the frontend conversations tab.
+    - Executed `full_backfill_corpus.py` script to index and vectorize all active stores and clients.
+    - Resolved potential `UnboundLocalError` in non-B2B fallback pathways.
+    - Verified all test flows are 100% green via `test_whatsapp_campaign.py`.
+
 - **2026-06-24 (Modular Trade Decoupling Completed)**: Decoupled trade_logistics into campaign_flow and b2b_solutions (Epic 129).
     - Split trade_logistics monolithic key in `DEFAULT_FEATURES_CONFIG` and user Pydantic schemas.
     - Updated backend API dependencies in `app/api/auth.py` with `require_any_feature` to allow shared Product Catalog access.
@@ -344,4 +415,14 @@
 - **Action Catalog & Strategy Desk (Tasks 121.3 & 121.4)**: Designed Strategy Desk dashboard and Configuration Catalog, allowing manual action dispatching and strict completion resolution outcomes reporting (requiring both numeric `result_value` and descriptive `resolution_notes`).
 - **OpenAPI Schema & Build Sync (Tasks 122.1 & 122.2)**: Successfully updated OpenAPI JSON, generated TypeScript typings, and verified Next.js compiles without errors.
 - **2026-06-19 14:25**: Resolved Conversational Cold-Start Store Listing bug. Added a structured `get_stores` tool to `TradeToolKit` and registered it in `AgenticOrchestrator`. This allows the agent to fetch all stores, regions, segments, markets, and locations directly from PostgreSQL database instead of relying on RAG for general catalog requests, stabilizing responses for queries like "Give me a list of stores and regions we manage".
+
+## [2026-06-25] - Expanding Geographical Seeding & Verification
+- **Municipalities & ZIP Code Preloading (Task 133.3)**: Expanded high-density SEPOMEX lookup seeds in `backend/app/core/postal_seeder.py` from 43 to 79 unique records. Included comprehensive coverage of critical municipalities and zip codes for CDMX (Iztapalapa, Gustavo A. Madero, Tlalpan, Azcapotzalco, Xochimilco), Nuevo León (Guadalupe, San Nicolás de los Garza, Apodaca, Santa Catarina, General Escobedo), Jalisco (Tlaquepaque, Tonalá), Veracruz (Xalapa, Coatzacoalcos, Orizaba), Oaxaca (Tuxtepec, Salina Cruz, Juchitán), Puebla, Querétaro, and Yucatán.
+- **Database Seeding Execution**: Ran database re-seeding script `seed_cemenquin.py` to populate all newly added geography records into PostgreSQL, enabling instant dropdown lookup and validation matching.
+- **Test Integrity**: Executed simulation tests (`test_simulated_session_3.py`) to verify zero regressions in the lead qualification, out-of-range ZIP verification, and database persistence processes.
+- **Optimized Prospect Collection Flow**: Restructured the WhatsApp prospect qualification stage in `backend/app/services/prospect_qualifier.py`. When a request is qualified for wholesale, it immediately prompts for the delivery address and ZIP code to check coverage first. Once valid, it asks for the name, phone, email, and company details in one single consolidated query instead of one question at a time. Verified successfully with simulation tests.
+- **State-Filtered Physical Store Redirects**: Added logic to `backend/app/services/prospect_qualifier.py` that checks the state corresponding to the prospect's out-of-range ZIP code and limits physical store redirects to locations inside that same state. If no stores exist in that state, suggestions are omitted entirely. Verified with integration tests.
+
+
+
 

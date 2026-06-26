@@ -47,7 +47,9 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     contact_phone: business?.contact_phone || '', 
     timezone: business?.timezone || 'UTC',
     vertical_type: business?.vertical_type || 'BASIC',
-    crm_config: (business?.crm_config as any[]) || []
+    crm_config: (business?.crm_config as any[]) || [],
+    allowed_zip_codes: ((business as any)?.routing_config?.allowed_zip_codes || []).join(', '),
+    routing_config: (business as any)?.routing_config || {}
   };
 
   const initialUserData = { 
@@ -95,6 +97,16 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     // Filter out soft-deleted fields before saving
     const finalCrmConfig = (editBusiness.crm_config || []).filter((f: any) => !f.is_deleted);
     
+    // Parse allowed ZIP codes from comma-separated string
+    const cleanZips = editBusiness.allowed_zip_codes
+      ? editBusiness.allowed_zip_codes.split(',').map((z: string) => z.trim()).filter((z: string) => z.length > 0)
+      : [];
+      
+    const finalRoutingConfig = {
+      ...(editBusiness.routing_config || {}),
+      allowed_zip_codes: cleanZips
+    };
+    
     // Only send fields that are part of BusinessProfileUpdate schema
     const payload = { 
       name: editBusiness.name,
@@ -102,7 +114,8 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       contact_phone: editBusiness.contact_phone,
       timezone: editBusiness.timezone,
       vertical_type: editBusiness.vertical_type,
-      crm_config: finalCrmConfig 
+      crm_config: finalCrmConfig,
+      routing_config: finalRoutingConfig
     };
 
     try {
@@ -117,7 +130,12 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       if (res.ok) {
         onMessage({ type: 'success', text: 'Business profile updated successfully!' });
         // Update local state to remove the deleted items from view
-        setEditBusiness(prev => ({ ...prev, crm_config: finalCrmConfig }));
+        setEditBusiness(prev => ({ 
+          ...prev, 
+          crm_config: finalCrmConfig,
+          routing_config: finalRoutingConfig,
+          allowed_zip_codes: cleanZips.join(', ')
+        }));
         queryClient.invalidateQueries({ queryKey: ['business'] });
       } else {
         const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
@@ -216,6 +234,17 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Allowed Delivery ZIP Codes (Comma separated)</label>
+            <textarea 
+              value={editBusiness.allowed_zip_codes}
+              onChange={e => setEditBusiness({...editBusiness, allowed_zip_codes: e.target.value})}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium h-24 text-sm resize-none"
+              placeholder="e.g. 03330, 04210, 04510"
+            />
+            <p className="text-[10px] text-gray-400 italic">Enter the 5-digit postal codes this business profile distributes to. Leave empty to allow CDMX locations by default.</p>
           </div>
           <div className="flex justify-end pt-4">
             <button 

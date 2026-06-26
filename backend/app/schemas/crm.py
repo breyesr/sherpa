@@ -11,6 +11,7 @@ class ClientBase(BaseModel):
     birthday: Optional[date] = None
     gender: Optional[str] = None
     custom_fields: Optional[dict] = {}
+    is_prospect: bool = False
 
 class ClientCreate(ClientBase):
     pass
@@ -23,6 +24,7 @@ class ClientUpdate(BaseModel):
     birthday: Optional[date] = None
     gender: Optional[str] = None
     custom_fields: Optional[dict] = None
+    is_prospect: Optional[bool] = None
 
 class ClientResponse(ClientBase):
     id: str

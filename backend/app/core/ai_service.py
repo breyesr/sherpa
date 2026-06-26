@@ -168,6 +168,7 @@ class AIService:
         """Entry point for all messaging platforms."""
         try:
             # 1. Identity Stage
+            b2b_reasoning = None
             client_obj, is_new = await self._get_client(identifier, metadata)
             normalized_id = Client.normalize_id(identifier)
             platform = metadata.get("platform", "sandbox") if metadata else "sandbox"

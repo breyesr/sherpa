@@ -1,5 +1,5 @@
-from typing import Any, List, Dict
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any, List, Dict, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -39,11 +39,16 @@ def normalize_to_utc_naive(dt: datetime) -> datetime:
 
 @router.get("/clients", response_model=List[ClientResponse])
 async def get_clients(
+    is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
     business = await get_user_business(db, current_user.id)
-    result = await db.execute(select(Client).where(Client.business_id == business.id))
+    query = select(Client).where(Client.business_id == business.id)
+    if is_prospect is not None:
+        query = query.where(Client.is_prospect == is_prospect)
+        
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.post("/clients", response_model=ClientResponse)

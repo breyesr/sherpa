@@ -98,8 +98,8 @@ class EntityResolver:
                         # Handle mock strings and real objects
                         result["store_id"] = linked_store.id if hasattr(linked_store, "id") else linked_store
                         result["store_name"] = linked_store.name if hasattr(linked_store, "name") else "Linked Store"
-                        result["confidence"] = 0.9
-                        result["source"] = "contact_name_match"
+                    result["confidence"] = 0.9
+                    result["source"] = "contact_name_match"
                     break
 
         return result

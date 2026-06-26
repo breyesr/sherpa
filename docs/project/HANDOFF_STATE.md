@@ -1,34 +1,43 @@
-# Handoff State: 2026-06-24 (Modular Trade Packaging & Decoupling & User Modal Refactoring Completed)
+# Handoff State: 2026-06-26 (Waitlist Capture & Information Architecture Realignment)
 
 ## 🎯 Current Status
-We have successfully implemented, styled, and verified:
-1. **Epic 127: Modular Inbound Webhook Routing (Multi-Tenant Ingress)**: Handles identity-based webhook message parsing, toggles config, and async queue dispatch.
-2. **Epic 128: Modular Feature Management (Admin Console Toggles)**: Allows Superadmins to selectively enable/disable feature sets (Scheduler, CRM, Trade Logistics, Sales Intelligence Coach) inside the admin page's User modal.
-3. **Epic 129: Modular Trade Packaging & Decoupling**: Monolithic `trade_logistics` has been split into `campaign_flow` and `b2b_solutions` keys. The admin user modal checklist has been upgraded to support individual toggles for Campaigns and B2B Solutions, and `business_identity` toggle is hidden as it is a core mandatory setting.
-4. **Dynamic Sidebar Layout Filtering**: The client-side navigation menu in `Sidebar.tsx` dynamically shows the full B2B Hub for B2B solutions clients, or a simplified standalone "Product Catalog" sidebar link for Campaign Flow clients without B2B solutions access.
-5. **Premium UX/UI Modal Overhaul**: Completely redesigned the User Creation & Edit modal on `/admin/page.tsx` to align with accessible, premium B2B SaaS aesthetics.
-6. **Resilient Backend Defaults**: Defined `DEFAULT_FEATURES_CONFIG` in `app/api/business.py` resolving a critical missing import error in `admin.py` and `auth.py`.
+Epic 134 (Waitlist Lead Capture) and Epic 135 (Information Architecture & Navigation Realignment) have been fully implemented, built, and verified successfully:
 
-All database schema migrations have been fully executed, openapi schemas generated, and type checks validated. Inbound webhook routing simulation tests (`test_webhook_routing.py`) have run and passed successfully.
+1.  **Waitlist Inbound Qualification (Epic 134)**:
+    - Implemented `collecting_waitlist` phase in the state machine inside [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) to capture out-of-coverage contact info (name, email, phone, company) as waitlist leads in CRM.
+    - Verified all waitlist flows and sandbox thread hashing lookups in [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py).
+2.  **Sidebar Menu Realignment (Epic 135)**:
+    - Restructured [Sidebar.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/Sidebar.tsx) to render three distinct visual navigation segments:
+      - **B2B Hub**: Accounts (`/trade/stores`), Clients (`/trade/retailers`), Orders (`/trade/orders`), and Actions (`/trade/actions`).
+      - **Prospects**: Accounts (`/trade/prospects/accounts`), Contacts (`/trade/prospects/contacts`).
+      - **Products**: Category (`/trade/products?tab=categories`), Products (`/trade/products?tab=products`).
+    - Added Suspense wrapper boundaries to both [Sidebar.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/Sidebar.tsx) and [products/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/products/page.tsx) to prevent Next.js build-time static deoptimizations.
+3.  **Prospect Data Segregation**:
+    - Created [accounts/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/accounts/page.tsx) to query prospective companies with `is_prospect=true`.
+    - Created [contacts/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/contacts/page.tsx) to list prospective leads with `is_prospect=true`.
+    - Configured [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/page.tsx) to client-side redirect to the default Prospect Accounts view.
+4.  **UI Terminology Unification**:
+    - Updated [AccountDrawer.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/v2/AccountDrawer.tsx) to dynamically adjust headers/titles ("Prospect Account", "Company/Entity Name") and payloads based on `isProspect`.
+    - Updated [retailers/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/retailers/page.tsx) to rename active contacts to B2B "Clients".
+    - Updated detail view back links in [retailers/[id]/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/retailers/%5Bid%5D/page.tsx) and [stores/[id]/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/stores/%5Bid%5D/page.tsx) to point back to the respective active vs. prospect parents.
+5.  **Build Verification**:
+    - Successfully compiled Next.js static pages and optimization traces with 0 type-safety or static link warnings.
+
+---
 
 ## ✅ Accomplishments
-- **Modular Trade Decoupling**: Split `trade_logistics` into `campaign_flow` and `b2b_solutions` keys. Successfully ran migration scripts to upgrade database configurations.
-- **Backend Feature Guards**: Upgraded `require_feature` and `require_any_feature` guards in `app/api/auth.py`. Gated the `/api/v1/trade/` router to check for `campaign_flow` OR `b2b_solutions` dynamically, and updated `/stores` CRUD endpoints to accept `campaign_flow` so that campaign-only businesses can manage their retail locations.
-- **Dynamic Sidebar**: Conditionally renders "Calendar", "Clients", "B2B Hub", or standalone "Product Catalog" and "Points of Sale" depending on the client's custom feature configuration flags.
-- **Premium Admin User Modal UX & Gating**: Redesigned the modal with vertical scroll limits, horizontal template cards, switch toggles, and removed the redundant `business_identity` toggle checkbox (core mandatory prerequisite).
-- **Live Test Sandbox & Type Sync**: Integrated role selectors inside `AssistantSettings.tsx` and updated TypeScript API models via `npm run gen:api`.
+- **Consistent User Journeys**: Terminology and path routing now clearly separate distributor-facing trade operations from inbound campaign acquisition.
+- **Robust Multi-View Drawer Routing**: `AccountDrawer` and `ContactDrawer` successfully preserve state classifications and persist correct CRM attributes (`is_prospect=true/false`).
+- **Production Build Ready**: Verified production Next.js compilation of all modified components.
+
+---
 
 ## 🚧 Blockers & Risks
-- **None**: All systems compile cleanly and integration test outputs are 100% green.
+- **None**: Local unit/integration tests and production static build processes pass with exit code 0.
 
-## 🚀 Next Strategic Steps
-- **Commit Active Changes**: Save all modifications on the feature branch `feature/backend/whatsapp-lead-qualification`.
-- **PR to Staging**: Open a pull request from `feature/backend/whatsapp-lead-qualification` into the `staging` branch (requires user confirmation and HITM review before merge).
-- **Verify Staging Deployment**: Check the Nixpacks deployment status on Railway for the `sherpa`, `worker`, and `web` services.
+---
 
-## 🛠️ Dev Notes
-- **Branch Management**: Active on `feature/backend/whatsapp-lead-qualification`.
-- **Database Migrations applied**:
-  - `40f7bcbc34a1_add_wholesale_threshold_to_product`
-  - `10ffac29c01f_add_routing_config_to_businessprofile`
-  - `9179bb59d515_add_features_config_to_businessprofile`
+## 🚀 Next Steps
+1.  **Staging Deploy & Verification**:
+    - Request explicit user approval for staging integration per branching guidelines.
+    - Validate the full user interface manually across the unified B2B Hub, Prospects, and Products groupings.

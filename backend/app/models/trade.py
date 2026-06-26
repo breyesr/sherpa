@@ -1,3 +1,4 @@
+from typing import Optional, List, Dict, Any
 from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index, Boolean, Numeric
 import enum
 from sqlalchemy.orm import relationship
@@ -116,6 +117,17 @@ class Product(Base):
             "wholesale_threshold": self.wholesale_threshold
         }
 
+class PostalCode(Base):
+    __tablename__ = "postal_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    zip_code = Column(String(10), index=True, nullable=False)
+    colonia = Column(String, nullable=False)
+    municipality = Column(String, nullable=False)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=False)
+
+
 class Store(Base):
     __tablename__ = "stores"
 
@@ -123,9 +135,17 @@ class Store(Base):
     business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     
     name = Column(String, nullable=False, index=True)
-    address = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     email = Column(String, nullable=True)
+    
+    # Structured address components
+    street_address = Column(String, nullable=True)
+    colonia = Column(String, nullable=True)
+    municipality = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    zip_code = Column(String(10), nullable=True, index=True)
+    country = Column(String, default="México", nullable=True)
     
     # Metadata for trade operations
     market = Column(String, nullable=True, index=True)
@@ -133,6 +153,8 @@ class Store(Base):
     region = Column(String, nullable=True, index=True)
     opening_date = Column(Date, nullable=True)
     external_id = Column(String, nullable=True, index=True)
+    is_prospect = Column(Boolean, default=False, nullable=False)
+    delivery_zip_codes = Column(JSON, nullable=True, default=list)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -145,6 +167,46 @@ class Store(Base):
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
     intelligence = relationship("AccountIntelligence", back_populates="store", uselist=False, cascade="all, delete-orphan")
 
+    @property
+    def formatted_address(self) -> str:
+        parts = [
+            self.street_address,
+            self.colonia,
+            self.municipality,
+            self.city,
+            f"CP {self.zip_code}" if self.zip_code else None,
+            self.state
+        ]
+        return ", ".join(filter(None, parts))
+
+    @property
+    def address(self) -> str:
+        return self.formatted_address
+
+    @address.setter
+    def address(self, val: Optional[str]):
+        if not val:
+            self.street_address = None
+            return
+            
+        import re
+        parts = [p.strip() for p in val.split(",")]
+        self.street_address = parts[0] if len(parts) > 0 else val
+        self.city = parts[1] if len(parts) > 1 else None
+        self.state = parts[2] if len(parts) > 2 else (parts[1] if len(parts) == 2 else None)
+        
+        # Detect ZIP
+        zip_match = re.search(r"\b\d{5}\b", val)
+        if zip_match:
+            self.zip_code = zip_match.group(0)
+            
+        if self.zip_code:
+            if self.city:
+                self.city = re.sub(r"\(?CP\s*\d{5}\)?", "", self.city).strip()
+            if self.state:
+                self.state = re.sub(r"\(?CP\s*\d{5}\)?", "", self.state).strip()
+            self.street_address = re.sub(r"\(?CP\s*\d{5}\)?", "", self.street_address).strip()
+
     def get_semantic_summary(self, include_notes: bool = False, include_contacts: bool = False) -> str:
         summary = f"Punto de Venta (Store): {self.name}."
         if self.region:
@@ -153,8 +215,10 @@ class Store(Base):
             summary += f" Mercado: {self.market}."
         if self.segment:
             summary += f" Segmento: {self.segment}."
-        if self.address:
-            summary += f" Dirección: {self.address}."
+        
+        addr = self.formatted_address or self.address
+        if addr:
+            summary += f" Dirección: {addr}."
         if self.phone:
             summary += f" Teléfono: {self.phone}."
         if self.email:
@@ -178,7 +242,10 @@ class Store(Base):
             "region": self.region,
             "market": self.market,
             "segment": self.segment,
-            "name": self.name
+            "name": self.name,
+            "state": self.state,
+            "city": self.city,
+            "zip_code": self.zip_code
         }
 
     __table_args__ = (

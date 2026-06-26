@@ -20,6 +20,8 @@ export default function ConversationsContent({ initialConversations, token }: Co
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+
+
   // 1. Fetch Conversations (with audit log support)
   const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery<ConversationResponse[]>({
     queryKey: ['conversations'],

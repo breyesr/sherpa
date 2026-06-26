@@ -23,9 +23,10 @@ interface ContactDrawerProps {
   token: string | null;
   clientId?: string | null; // If provided, we are in Edit Mode
   initialData?: any; // Data passed from list view for instant population
+  isProspect?: boolean;
 }
 
-export default function ContactDrawer({ isOpen, onClose, token, clientId, initialData }: ContactDrawerProps) {
+export default function ContactDrawer({ isOpen, onClose, token, clientId, initialData, isProspect = false }: ContactDrawerProps) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +40,7 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
     role: '',
     birthday: '',
     gender: '',
+    is_prospect: isProspect,
     custom_fields: {
       preferred_comms: 'WhatsApp',
       comm_style: 'Professional'
@@ -57,6 +59,7 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
           role: '',
           birthday: '',
           gender: '',
+          is_prospect: isProspect,
           custom_fields: {
             preferred_comms: 'WhatsApp',
             comm_style: 'Professional'
@@ -72,6 +75,7 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
           role: initialData.role || '',
           birthday: initialData.birthday || '',
           gender: initialData.gender || '',
+          is_prospect: initialData.is_prospect ?? isProspect,
           custom_fields: {
             ...prev.custom_fields,
             ...(initialData.custom_fields || {})
@@ -79,7 +83,7 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
         }));
       }
     }
-  }, [isOpen, clientId, initialData]);
+  }, [isOpen, clientId, initialData, isProspect]);
 
   // Fetch full client data if editing (background sync for missing fields)
   useEffect(() => {
@@ -100,6 +104,7 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
               role: data.role || prev.role,
               birthday: data.birthday || prev.birthday,
               gender: data.gender || prev.gender,
+              is_prospect: data.is_prospect ?? prev.is_prospect,
               custom_fields: {
                 preferred_comms: data.custom_fields?.preferred_comms || prev.custom_fields.preferred_comms,
                 comm_style: data.custom_fields?.comm_style || prev.custom_fields.comm_style
@@ -132,7 +137,8 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
       gender: formData.gender || null,
       phone: formData.phone || null,
       email: formData.email || null,
-      role: formData.role || null
+      role: formData.role || null,
+      is_prospect: formData.is_prospect
     };
 
     try {

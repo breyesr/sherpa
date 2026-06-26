@@ -1,5 +1,5 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -11,7 +11,7 @@ from app.core.ai_service import AIService
 from app.services.graphrag import GraphRAGService
 from app.models.user import User
 from app.models.business import BusinessProfile
-from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, ActionTemplate, StoreAction
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, ActionTemplate, StoreAction, PostalCode
 from app.schemas.trade import (
     StoreResponse, StoreCreate, StoreUpdate,
     CategoryResponse, CategoryCreate,
@@ -20,10 +20,11 @@ from app.schemas.trade import (
     OrderResponse, OrderCreate, OrderUpdate,
     CompetitorResponse, CompetitorCreate,
     ActionTemplateCreate, ActionTemplateResponse, ActionTemplateUpdate,
-    StoreActionCreate, StoreActionResponse, StoreActionUpdate
+    StoreActionCreate, StoreActionResponse, StoreActionUpdate,
+    PostalCodeResponse
 )
 
-from app.tasks.knowledge import sync_vector_task
+from app.tasks.knowledge import sync_vector_task, delete_vector_task
 
 router = APIRouter(dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 
@@ -48,15 +49,18 @@ async def get_b2b_business(db: AsyncSession, current_user: User) -> BusinessProf
 
 @router.get("/stores", response_model=List[StoreResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def list_stores(
+    is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
     """List all stores for the current business."""
     business = await get_business(db, current_user.id)
+    query = select(Store).where(Store.business_id == business.id)
+    if is_prospect is not None:
+        query = query.where(Store.is_prospect == is_prospect)
+        
     result = await db.execute(
-        select(Store)
-        .where(Store.business_id == business.id)
-        .options(
+        query.options(
             selectinload(Store.notes),
             selectinload(Store.clients)
         )
@@ -75,8 +79,22 @@ async def create_store(
     store = Store(
         business_id=business.id, 
         name=store_in.name,
-        address=store_in.address,
-        external_id=store_in.external_id
+        street_address=store_in.street_address,
+        colonia=store_in.colonia,
+        municipality=store_in.municipality,
+        city=store_in.city,
+        state=store_in.state,
+        zip_code=store_in.zip_code,
+        country=store_in.country or "México",
+        phone=store_in.phone,
+        email=store_in.email,
+        market=store_in.market,
+        segment=store_in.segment,
+        region=store_in.region,
+        opening_date=store_in.opening_date,
+        external_id=store_in.external_id,
+        is_prospect=store_in.is_prospect,
+        delivery_zip_codes=store_in.delivery_zip_codes
     )
     
     # Handle multiple client_ids
@@ -195,6 +213,72 @@ async def update_store(
         .options(selectinload(Store.notes), selectinload(Store.clients))
     )
     return res_final.scalars().first()
+
+@router.delete("/stores/{store_id}", dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+async def delete_store(
+    store_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Delete a store."""
+    from sqlalchemy import delete as sqldelete
+    from app.models.trade import StoreNote, Order, OrderItem, Competitor, StoreAction, AccountIntelligence, store_clients
+    
+    business = await get_business(db, current_user.id)
+    result = await db.execute(
+        select(Store)
+        .where(Store.id == store_id, Store.business_id == business.id)
+    )
+    store = result.scalars().first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+        
+    # 1. Delete order items and orders
+    res_orders = await db.execute(select(Order.id).where(Order.store_id == store_id))
+    order_ids = res_orders.scalars().all()
+    if order_ids:
+        await db.execute(sqldelete(OrderItem).where(OrderItem.order_id.in_(order_ids)))
+        await db.execute(sqldelete(Order).where(Order.id.in_(order_ids)))
+        
+    # 2. Delete related observations and metadata
+    await db.execute(sqldelete(StoreNote).where(StoreNote.store_id == store_id))
+    await db.execute(sqldelete(Competitor).where(Competitor.store_id == store_id))
+    await db.execute(sqldelete(StoreAction).where(StoreAction.store_id == store_id))
+    await db.execute(sqldelete(AccountIntelligence).where(AccountIntelligence.store_id == store_id))
+    
+    # 3. Clean link tables
+    await db.execute(store_clients.delete().where(store_clients.c.store_id == store_id))
+    
+    # 4. Finally delete the store
+    await db.delete(store)
+    await db.commit()
+    
+    delete_vector_task.delay(str(store_id), "store", str(business.id))
+    return {"status": "deleted"}
+
+
+# --- POSTAL CODES ---
+
+@router.get("/postal-codes", response_model=List[PostalCodeResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+async def list_postal_codes(
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Retrieve all preloaded Mexican postal codes."""
+    result = await db.execute(select(PostalCode))
+    return result.scalars().all()
+
+
+@router.get("/postal-codes/{zip_code}", response_model=List[PostalCodeResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+async def lookup_postal_code(
+    zip_code: str,
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code."""
+    result = await db.execute(
+        select(PostalCode).where(PostalCode.zip_code == zip_code)
+    )
+    return result.scalars().all()
+
 
 # --- CATEGORIES ---
 

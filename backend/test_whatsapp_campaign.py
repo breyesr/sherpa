@@ -10,6 +10,7 @@ from app.core.database import SessionLocal
 from app.models.business import BusinessProfile
 from app.models.trade import Category, Product, Store, StoreAction, ActionCategory, ActionStatus
 from app.models.crm import Client
+from app.models.messaging import Conversation, Message
 from app.services.prospect_qualifier import ProspectQualifier
 
 async def setup_test_data(db, business_id: str):
@@ -149,7 +150,52 @@ async def test_below_threshold(business_id: str, product: Product):
         print("✅ SUCCESS: Below-threshold flow direct-to-store logic executed successfully.")
 
 async def main():
+    from sqlalchemy import text, delete
+    from app.models.trade import store_clients
     async with SessionLocal() as db:
+        # 1. Clean up database records for test phones to ensure repeatability
+        try:
+            # Find client ids for the test phones
+            id_hash_1 = Client.hash_id("525511223344")
+            id_hash_2 = Client.hash_id("525599887766")
+            res_cli = await db.execute(select(Client.id).where(Client.whatsapp_id_hash.in_([id_hash_1, id_hash_2])))
+            client_ids = res_cli.scalars().all()
+            
+            if client_ids:
+                # Delete store actions assigned to or created by these clients
+                await db.execute(delete(StoreAction).where(StoreAction.assigned_to_id.in_(client_ids)))
+                
+                # Find store ids linked to these clients via store_clients link table
+                res_sc = await db.execute(select(store_clients.c.store_id).where(store_clients.c.client_id.in_(client_ids)))
+                linked_store_ids = res_sc.scalars().all()
+                
+                # Delete from store_clients link table
+                await db.execute(store_clients.delete().where(store_clients.c.client_id.in_(client_ids)))
+                
+                if linked_store_ids:
+                    # Delete store actions for these stores
+                    await db.execute(delete(StoreAction).where(StoreAction.store_id.in_(linked_store_ids)))
+                    # Delete the stores themselves
+                    await db.execute(delete(Store).where(Store.id.in_(linked_store_ids)))
+                    
+                # Delete clients
+                await db.execute(delete(Client).where(Client.id.in_(client_ids)))
+                
+            # 2. Delete conversations and messages
+            res_conv = await db.execute(select(Conversation.id).where(Conversation.platform_chat_id.in_(["525511223344", "525599887766"])))
+            conv_ids = res_conv.scalars().all()
+            if conv_ids:
+                await db.execute(delete(Message).where(Message.conversation_id.in_(conv_ids)))
+            await db.execute(delete(Conversation).where(Conversation.platform_chat_id.in_(["525511223344", "525599887766"])))
+            
+            # 3. Delete checkpointer entries
+            await db.execute(text("DELETE FROM checkpoints WHERE thread_id IN ('prospect_525511223344', 'prospect_525599887766')"))
+            await db.execute(text("DELETE FROM checkpoint_writes WHERE thread_id IN ('prospect_525511223344', 'prospect_525599887766')"))
+            await db.commit()
+        except Exception as ce:
+            print(f"Cleanup warning: {ce}")
+            await db.rollback()
+
         # Use first active business in DB
         res_biz = await db.execute(select(BusinessProfile).limit(1))
         biz = res_biz.scalars().first()

@@ -601,27 +601,58 @@
         ],
         "summary": "Get Clients",
         "operationId": "get_clients_api_v1_crm_clients_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "is_prospect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by prospect status. If None, returns all.",
+              "default": false,
+              "title": "Is Prospect"
+            },
+            "description": "Filter by prospect status. If None, returns all."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ClientResponse"
                   },
-                  "type": "array",
                   "title": "Response Get Clients Api V1 Crm Clients Get"
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
@@ -629,15 +660,20 @@
         ],
         "summary": "Create Client",
         "operationId": "create_client_api_v1_crm_clients_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ClientCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -660,12 +696,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/crm/clients/{client_id}": {
@@ -2273,27 +2304,58 @@
         "summary": "List Stores",
         "description": "List all stores for the current business.",
         "operationId": "list_stores_api_v1_trade_stores_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "is_prospect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by prospect status. If None, returns all.",
+              "default": false,
+              "title": "Is Prospect"
+            },
+            "description": "Filter by prospect status. If None, returns all."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/StoreResponse"
                   },
-                  "type": "array",
                   "title": "Response List Stores Api V1 Trade Stores Get"
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
@@ -2302,15 +2364,20 @@
         "summary": "Create Store",
         "description": "Create a new store.",
         "operationId": "create_store_api_v1_trade_stores_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/StoreCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2333,12 +2400,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/trade/stores/{store_id}": {
@@ -2443,6 +2505,52 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Delete Store",
+        "description": "Delete a store.",
+        "operationId": "delete_store_api_v1_trade_stores__store_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Delete Store Api V1 Trade Stores  Store Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/trade/stores/{store_id}/notes": {
@@ -2486,6 +2594,89 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StoreNoteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/postal-codes": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List Postal Codes",
+        "description": "Retrieve all preloaded Mexican postal codes.",
+        "operationId": "list_postal_codes_api_v1_trade_postal_codes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PostalCodeResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Postal Codes Api V1 Trade Postal Codes Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trade/postal-codes/{zip_code}": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Lookup Postal Code",
+        "description": "Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.",
+        "operationId": "lookup_postal_code_api_v1_trade_postal_codes__zip_code__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zip_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Zip Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PostalCodeResponse"
+                  },
+                  "title": "Response Lookup Postal Code Api V1 Trade Postal Codes  Zip Code  Get"
                 }
               }
             }
@@ -4615,6 +4806,18 @@
               }
             ],
             "title": "Features Config"
+          },
+          "routing_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Config"
           }
         },
         "type": "object",
@@ -4721,6 +4924,18 @@
               }
             ],
             "title": "Features Config"
+          },
+          "routing_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Config"
           },
           "id": {
             "type": "string",
@@ -4864,6 +5079,18 @@
               }
             ],
             "title": "Features Config"
+          },
+          "routing_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Config"
           }
         },
         "type": "object",
@@ -5013,6 +5240,11 @@
             ],
             "title": "Custom Fields",
             "default": {}
+          },
+          "is_prospect": {
+            "type": "boolean",
+            "title": "Is Prospect",
+            "default": false
           }
         },
         "type": "object",
@@ -5088,6 +5320,11 @@
               }
             ],
             "title": "Email"
+          },
+          "is_prospect": {
+            "type": "boolean",
+            "title": "Is Prospect",
+            "default": false
           }
         },
         "type": "object",
@@ -5171,6 +5408,11 @@
             ],
             "title": "Custom Fields",
             "default": {}
+          },
+          "is_prospect": {
+            "type": "boolean",
+            "title": "Is Prospect",
+            "default": false
           },
           "id": {
             "type": "string",
@@ -5297,6 +5539,17 @@
               }
             ],
             "title": "Custom Fields"
+          },
+          "is_prospect": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Prospect"
           }
         },
         "type": "object",
@@ -6389,6 +6642,50 @@
         "type": "object",
         "title": "OrderUpdate"
       },
+      "PostalCodeResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "zip_code": {
+            "type": "string",
+            "title": "Zip Code"
+          },
+          "colonia": {
+            "type": "string",
+            "title": "Colonia"
+          },
+          "municipality": {
+            "type": "string",
+            "title": "Municipality"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "zip_code",
+          "colonia",
+          "municipality",
+          "state"
+        ],
+        "title": "PostalCodeResponse"
+      },
       "ProductCreate": {
         "properties": {
           "name": {
@@ -7475,6 +7772,84 @@
             ],
             "title": "Email"
           },
+          "street_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Address"
+          },
+          "colonia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colonia"
+          },
+          "municipality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipality"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "zip_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zip Code"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country",
+            "default": "M\u00e9xico"
+          },
           "market": {
             "anyOf": [
               {
@@ -7530,6 +7905,26 @@
               }
             ],
             "title": "External Id"
+          },
+          "is_prospect": {
+            "type": "boolean",
+            "title": "Is Prospect",
+            "default": false
+          },
+          "delivery_zip_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zip Codes",
+            "default": []
           },
           "client_ids": {
             "anyOf": [
@@ -7808,6 +8203,84 @@
             ],
             "title": "Email"
           },
+          "street_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Address"
+          },
+          "colonia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colonia"
+          },
+          "municipality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipality"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "zip_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zip Code"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country",
+            "default": "M\u00e9xico"
+          },
           "market": {
             "anyOf": [
               {
@@ -7863,6 +8336,26 @@
               }
             ],
             "title": "External Id"
+          },
+          "is_prospect": {
+            "type": "boolean",
+            "title": "Is Prospect",
+            "default": false
+          },
+          "delivery_zip_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zip Codes",
+            "default": []
           },
           "id": {
             "type": "string",
@@ -7955,6 +8448,83 @@
             ],
             "title": "Email"
           },
+          "street_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Address"
+          },
+          "colonia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colonia"
+          },
+          "municipality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipality"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "zip_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zip Code"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "market": {
             "anyOf": [
               {
@@ -8024,6 +8594,31 @@
               }
             ],
             "title": "Client Ids"
+          },
+          "is_prospect": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Prospect"
+          },
+          "delivery_zip_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zip Codes"
           }
         },
         "type": "object",

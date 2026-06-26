@@ -25,7 +25,8 @@ import {
   Sparkles,
   Zap,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Trash2
 } from 'lucide-react';
 import { ClientResponse, StoreResponse, OrderResponse } from '@/types/api';
 
@@ -85,13 +86,40 @@ export default function RetailerDetailPageV2() {
   return (
     <div id="v2-retailer-detail-container" className="max-w-7xl mx-auto space-y-8 pb-20">
       {/* Navigation */}
-      <button 
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-all group"
-      >
-        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-all" />
-        Back to Contacts
-      </button>
+      <div className="flex justify-between items-center">
+        <button 
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-all group"
+        >
+          <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-all" />
+          {client?.is_prospect ? 'Back to Contacts' : 'Back to Clients'}
+        </button>
+        <button
+          onClick={async () => {
+            const isProspect = client?.is_prospect;
+            const term = isProspect ? 'contact' : 'client';
+            if (confirm(`Are you sure you want to delete ${term} ${client?.name}?`)) {
+              try {
+                const res = await fetch(`${API_BASE_URL}/crm/clients/${client?.id}`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                  router.push(isProspect ? '/trade/prospects/contacts' : '/trade/retailers');
+                } else {
+                  alert(`Failed to delete ${term}`);
+                }
+              } catch (err) {
+                alert(`Error deleting ${term}`);
+              }
+            }
+          }}
+          className="flex items-center gap-2 text-red-600 hover:text-red-800 font-bold transition-all bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl text-sm"
+        >
+          <Trash2 size={16} />
+          Delete {client?.is_prospect ? 'Contact' : 'Client'}
+        </button>
+      </div>
 
       {/* Header Card */}
       <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm relative overflow-hidden">

@@ -474,6 +474,17 @@
 - [x] Task 129.4: **Dynamic Sidebar Decoupling**: Update `Sidebar.tsx` to conditionally render Products, Accounts/Stores, Restock Orders, and Sales Intelligence links based on the new granular feature toggles.
 - [x] Task 129.5: **Validation & Verification**: Sync OpenAPI typescript schemas and run integration tests to check modular permissions routing.
 
+## Epic 130: Sandbox Simulators Debugging & Hardening
+**Objective**: Fix looping, persistence, confidence, and log leak bugs inside Sandbox Simulators (Prospect and Sales Rep flows) to make testing reliable and accurate.
+
+- [x] Task 130.1: **Prospect Simulator Loop Prevention**: Pre-check checkpointer state using `aget_state` to prevent overriding the `is_completed: True` flag. Bypasses model invocation once qualifier processes are finalized.
+- [x] Task 130.2: **Prospect Simulator Inbox Logging**: Implement Conversation and Message database logging inside `ProspectQualifier.get_response` so that simulated campaign conversations automatically appear in the dashboard inbox.
+- [x] Task 130.3: **Client Record Lead Qualification Update**: Modify `qualify_lead` to update pre-existing client placeholder records (name, email, company custom fields) when the lead is qualified, supporting seamless history tracking.
+- [x] Task 130.4: **Entity Resolver Confidence Adjustments**: Fix confidence score logic in `EntityResolver.resolve_entities` to preserve `confidence: 0.9` and `source: "contact_name_match"` even if matched contacts do not have linked store relations.
+- [x] Task 130.5: **Dashboard Inbox Logs Gating**: Wrap DevMode (Audit ON/OFF) button rendering in `ConversationsContent.tsx` with an `isAdmin` check, hiding system logs and purple "Brain Logic" trace boxes for regular users.
+- [x] Task 130.6: **DB Vectorization Backfill**: Re-sync and backfill all populated store and client entity records into the `KnowledgeCorpus` vector database.
+- [x] Task 130.7: **Fallback Messaging Stabilization**: Initialize `b2b_reasoning` to `None` inside `ai_service.py` to prevent potential `UnboundLocalError` crashes in non-B2B fallback routing flows.
+
 ---
 
 ## 🚫 Deprecated & Superseded Tasks (Audit Log)
@@ -491,3 +502,67 @@ The following tasks have been removed or deprecated from active epics because of
 4. **Task 114.4: Strategy Desk: Build the high-level dashboard for management reporting on Marketing and Commercial actions**
    * *Status:* **Removed**.
    * *Reason:* Fully built and delivered under Epic 121 (the `/trade/actions` list and outcome resolution UI).
+
+---
+
+## Epic 131: Prospect vs. Client Data Classification (COMPLETE)
+**Objective**: Correctly classify and segment "Prospects" from actual "Clients" (Stores / Accounts) to prevent unconverted prospects from surfacing in the CRM/UI as active clients for the sales reps.
+
+- [x] Task 131.1: **Database Model Upgrades**: Add `is_prospect = Column(Boolean, default=False, nullable=False)` to the `Store` and `Client` database models.
+- [x] Task 131.2: **Alembic Migration & Schema Upgrades**: Generate and execute the Alembic migration script using `server_default=sa.text('false')` to safely update existing rows without constraint violations.
+- [x] Task 131.3: **Pydantic Schema Integration**: Update `StoreBase`, `StoreUpdate`, `ClientMinimal`, `ClientBase`, and `ClientUpdate` schemas to include and expose `is_prospect`.
+- [x] Task 131.4: **Lead Qualification Classification**: Set `is_prospect=True` on `Client` and `Store` during initial WhatsApp lead creation in `ProspectQualifier.get_response` and qualification in `qualify_lead`.
+- [x] Task 131.5: **API Filtering**: Update `list_stores` and `get_clients` endpoints to support `is_prospect` filtering, defaulting to `False` (hiding prospects from standard active lists).
+- [x] Task 131.6: **Frontend Types Generation**: Synchronize openapi spec and regenerate frontend API models using `npm run gen:api`.
+- [x] Task 131.7: **Validation Suite**: Create and execute `test_prospect_classification.py` verifying full API and database classification isolation.
+- [x] Task 131.8: **Frontend Prospects Dashboard**: Create the new Next.js page at `/trade/prospects` utilizing the contacts layout and querying the backend using `is_prospect=true` filtering.
+- [x] Task 131.9: **Sidebar Navigation Integration**: Integrate the `• Prospects` navigation link in the B2B Hub section of `Sidebar.tsx`, and add dynamic "Back to Prospects" label resolution on the contact details page.
+- [x] Task 131.10: **Store Deletion API**: Create `DELETE /trade/stores/{store_id}` endpoint in the backend and wire up `delete_vector_task` for clean RAG index purging.
+- [x] Task 131.11: **Dashboard Delete Actions**: Add delete buttons with trash icons and confirm modal prompts on accounts, contacts, and prospects dashboard lists (grid & list views), and aggregated details views.
+
+---
+
+## Epic 132: Conversational Prospect Flow & Delivery Validation (COMPLETE)
+**Objective**: Restructure the conversational prospect qualification flow in the WhatsApp campaign, enforcing sequential steps (intent capture -> quantity check -> lead data collection -> postal code validation -> handoff), resolving simulator reset issues for all users, and creating a unified dashboard action/notification mechanism.
+
+- [x] Task 132.1: **Conversational Flow Restructuring**: Update `ProspectQualifier` to utilize a stateful phase tracking (`"intent"`, `"collecting"`, `"rehearsing"`, `"completed"`, `"rejected"`) and enforce that personal details are not requested until the quantity threshold check is passed.
+- [x] Task 132.2: **ZIP Code Range Check (Cost-Zero)**: Implement postal code (CP) extraction and validation inside `qualify_lead`. Verify if the extracted CP falls inside the business profile's `routing_config` configured `allowed_zip_codes`.
+- [x] Task 132.3: **Graceful Rejection Routing**: If the quantity threshold is not met, or if the postal code range validation fails, direct the user to the nearest physical store based on store address/city matching and immediately terminate the qualification flow.
+- [x] Task 132.4: **Unified Sandbox & Production Reset Logic**: Enable greeting-based resets (e.g. "hola", "buen día") for all completed flows, allowing returning clients to place new material requests.
+- [x] Task 132.5: **Lead Actions & Internal Notification Hook**: Implement automated `StoreAction` record creation upon successful qualification and wire it to a mocked SMS/email internal notification logger.
+- [x] Task 132.6: **End-to-End Integration Testing**: Add test coverage to verify low-quantity routing, invalid postal code routing, valid qualification flow, and returning user resets.
+
+---
+
+## Epic 133: Structured Store Addresses & SEPOMEX Postal Preloading (COMPLETE)
+**Objective**: Refactor store addresses into structured fields, create a pre-seeded Mexican postal codes lookup database table for automatic validation and autocomplete, and build the corresponding UI fields in the account creation drawer.
+
+- [x] Task 133.1: **Database Schema Refactoring**: Define the `PostalCode` model and add `street_address`, `colonia`, `municipality`, `city`, `state`, `zip_code`, and `country` fields to the `Store` database model.
+- [x] Task 133.2: **Alembic Migration**: Generate and execute schema migration parsing existing unstructured address strings into new columns.
+- [x] Task 133.3: **SEPOMEX High-Density Seeding**: Preload SEPOMEX key region codes into the `postal_codes` lookup table (expanded to include comprehensive key municipalities and zip codes for CDMX, Nuevo León, Jalisco, Veracruz, Oaxaca, Puebla, Querétaro, and Yucatán).
+- [x] Task 133.4: **Backend Autocomplete APIs**: Expose GET `/api/v1/trade/postal-codes/{zip_code}` endpoint and update store CRUD controllers and schemas.
+- [x] Task 133.5: **Frontend Account Drawer Autocomplete**: Integrate structured inputs and automatic location filling inside the Account Drawer component.
+- [x] Task 133.6: **Verification & Test Execution**: Verify Next.js compilation and integration tests are passing.
+
+---
+
+## Epic 134: Out-of-Coverage Waitlist Lead Capture (Prospect Flow Upgrade)
+**Objective**: Transition from hard rejection of out-of-coverage prospects to an opt-in waitlist lead capture flow. Out-of-coverage prospects are prompted for contact details (name, email, phone, company) to be registered in the CRM with a `status: "waitlist"` flag, preserving leads and mapping geographic demand.
+
+- [x] Task 134.1: **Waitlist Flow Phase Tracking**: Update `ProspectQualifierState` to support `collecting_waitlist` phase. Update `call_model` state machine prompts inside `prospect_qualifier.py` to prompt for contact details if a prospect is out of coverage.
+- [x] Task 134.2: **Waitlist DB Persistence**: Update `run_tools_and_update_state` and `qualify_lead` nodes to transition to waitlist collection if coverage check fails. If they have already provided details (or once they do), write them to the CRM (database) as a prospect Client and Store with `status: "waitlist"` and `lead_source: "WhatsApp Prospection - Lista de Espera"`.
+- [x] Task 134.3: **Integration Testing Suite Upgrades**: Update `test_simulated_session_3.py` (specifically Scenario 2) to assert that out-of-coverage prospects are collected and saved as waitlist leads in the database.
+- [x] Task 134.4: **Verify & Validate Flow**: Run tests to ensure all scenarios pass and the frontend compiles successfully.
+
+---
+
+## Epic 135: Information Architecture & Navigation Realignment
+**Objective**: Restructure the frontend navigation hierarchy and UI segmentation to align data representation with user segments (B2B Distributor vs. Campaign Prospects), ensuring clear role clarity and workflow segmentation.
+
+- [x] Task 135.1: **Sidebar Route Restructuring**: Update `Sidebar.tsx` to display three segmented groups: B2B Hub (Accounts, Clients, Orders, Actions), Prospects (Accounts, Contacts), and Products (Categories, Products).
+- [x] Task 135.2: **Data Filtering Segregation**: Configure dashboard views for B2B Hub (Accounts/Clients) and Prospects (Accounts/Contacts) to query endpoints using `is_prospect=false` and `is_prospect=true` filters respectively.
+- [x] Task 135.3: **UI Terminology Unification**: Align the dashboard tables and drawers so that `Client` models are rendered as "Clients" inside B2B Hub but as "Contacts" inside the Prospects dashboard.
+- [x] Task 135.4: **Build & Compile Verification**: Validate route changes and ensure Next.js compiles with zero runtime link warnings or missing page type errors.
+
+
+

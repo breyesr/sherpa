@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
@@ -14,12 +14,18 @@ import {
   LogOut,
   Store,
   ShieldCheck,
-  MapPin
+  MapPin,
+  Tag,
+  Package
 } from 'lucide-react';
 
-export default function Sidebar() {
+import { Suspense } from 'react';
+
+function SidebarContent() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'products';
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
 
@@ -86,61 +92,106 @@ export default function Sidebar() {
         <h1 className="text-2xl font-bold text-blue-600">Sherpa</h1>
       </div>
       
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        <SidebarLink href="/" icon={LayoutDashboard} name="Dashboard" active={pathname === '/'} />
-        <SidebarLink href="/conversations" icon={MessageSquare} name="Inbox" active={pathname === '/conversations'} />
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+        <div className="space-y-1">
+          <SidebarLink href="/" icon={LayoutDashboard} name="Dashboard" active={pathname === '/'} />
+          <SidebarLink href="/conversations" icon={MessageSquare} name="Inbox" active={pathname === '/conversations'} />
+          
+          {showScheduling && (
+            <SidebarLink href="/calendar" icon={Calendar} name="Calendar" active={pathname === '/calendar'} />
+          )}
+        </div>
         
-        {showScheduling && (
-          <SidebarLink href="/calendar" icon={Calendar} name="Calendar" active={pathname === '/calendar'} />
-        )}
-        
-        {showCRM && (
-          <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
+        {showCRM && !showB2BSolutions && (
+          <div className="space-y-1">
+            <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
+          </div>
         )}
 
         {showB2BSolutions && (
-          <div className="space-y-1">
-            <SidebarLink href="/trade" icon={Store} name="B2B Hub" active={pathname === '/trade'} />
-            <div className="pl-9 space-y-1">
-              <Link 
-                href="/trade/stores"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                • Accounts
-              </Link>
-              <Link 
-                href="/trade/retailers"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                • Contacts
-              </Link>
-              <Link 
-                href="/trade/products"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                • Products
-              </Link>
-              <Link 
-                href="/trade/orders"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                • Orders
-              </Link>
-              <Link 
-                href="/trade/actions"
-                className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                • Actions
-              </Link>
+          <div className="space-y-4 pt-2 border-t border-gray-100">
+            {/* B2B Hub Group */}
+            <div className="space-y-1">
+              <SidebarLink href="/trade" icon={Store} name="B2B Hub" active={pathname === '/trade'} />
+              <div className="pl-9 space-y-1">
+                <Link 
+                  href="/trade/stores"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Accounts
+                </Link>
+                <Link 
+                  href="/trade/retailers"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Clients
+                </Link>
+                <Link 
+                  href="/trade/orders"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Orders
+                </Link>
+                <Link 
+                  href="/trade/actions"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Actions
+                </Link>
+              </div>
+            </div>
+
+            {/* Prospects Group */}
+            <div className="space-y-1 pt-2 border-t border-gray-50">
+              <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
+                <Users size={16} />
+                <span>Prospects</span>
+              </div>
+              <div className="pl-9 space-y-1">
+                <Link 
+                  href="/trade/prospects/accounts"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/prospects/accounts') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Accounts
+                </Link>
+                <Link 
+                  href="/trade/prospects/contacts"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/prospects/contacts') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Contacts
+                </Link>
+              </div>
+            </div>
+
+            {/* Products Group */}
+            <div className="space-y-1 pt-2 border-t border-gray-50">
+              <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
+                <Package size={16} />
+                <span>Products</span>
+              </div>
+              <div className="pl-9 space-y-1">
+                <Link 
+                  href="/trade/products?tab=categories"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Category
+                </Link>
+                <Link 
+                  href="/trade/products?tab=products"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Products
+                </Link>
+              </div>
             </div>
           </div>
         )}
 
         {!showB2BSolutions && showCampaignFlow && (
-          <>
+          <div className="space-y-1 pt-2 border-t border-gray-100">
             <SidebarLink 
               href="/trade/products" 
-              icon={Store} 
+              icon={Package} 
               name="Product Catalog" 
               active={pathname.startsWith('/trade/products')} 
             />
@@ -150,14 +201,16 @@ export default function Sidebar() {
               name="Points of Sale" 
               active={pathname.startsWith('/trade/stores')} 
             />
-          </>
+          </div>
         )}
 
-        <SidebarLink href="/settings" icon={Settings} name="Settings" active={pathname === '/settings'} />
+        <div className="pt-2 border-t border-gray-100">
+          <SidebarLink href="/settings" icon={Settings} name="Settings" active={pathname === '/settings'} />
 
-        {isAdmin && (
-          <SidebarLink href="/admin" icon={ShieldCheck} name="Admin Panel" active={pathname === '/admin'} />
-        )}
+          {isAdmin && (
+            <SidebarLink href="/admin" icon={ShieldCheck} name="Admin Panel" active={pathname === '/admin'} />
+          )}
+        </div>
       </nav>
 
       <div className="p-4 border-t mt-auto">
@@ -170,6 +223,14 @@ export default function Sidebar() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function Sidebar() {
+  return (
+    <Suspense fallback={<div className="w-64 bg-white border-r min-h-screen shrink-0" />}>
+      <SidebarContent />
+    </Suspense>
   );
 }
 

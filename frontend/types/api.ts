@@ -287,6 +287,11 @@ export interface paths {
      */
     get: operations["get_store_api_v1_trade_stores__store_id__get"];
     /**
+     * Delete Store
+     * @description Delete a store.
+     */
+    delete: operations["delete_store_api_v1_trade_stores__store_id__delete"];
+    /**
      * Update Store
      * @description Update a store.
      */
@@ -298,6 +303,20 @@ export interface paths {
      * @description Add a note (observation) to a store.
      */
     post: operations["create_store_note_api_v1_trade_stores__store_id__notes_post"];
+  };
+  "/api/v1/trade/postal-codes": {
+    /**
+     * List Postal Codes
+     * @description Retrieve all preloaded Mexican postal codes.
+     */
+    get: operations["list_postal_codes_api_v1_trade_postal_codes_get"];
+  };
+  "/api/v1/trade/postal-codes/{zip_code}": {
+    /**
+     * Lookup Postal Code
+     * @description Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.
+     */
+    get: operations["lookup_postal_code_api_v1_trade_postal_codes__zip_code__get"];
   };
   "/api/v1/trade/categories": {
     /**
@@ -758,6 +777,10 @@ export interface components {
       features_config?: {
         [key: string]: unknown;
       } | null;
+      /** Routing Config */
+      routing_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** BusinessProfileMinimal */
     BusinessProfileMinimal: {
@@ -797,6 +820,10 @@ export interface components {
       features_config?: {
         [key: string]: unknown;
       } | null;
+      /** Routing Config */
+      routing_config?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
       /** User Id */
@@ -834,6 +861,10 @@ export interface components {
         }[] | null;
       /** Features Config */
       features_config?: {
+        [key: string]: unknown;
+      } | null;
+      /** Routing Config */
+      routing_config?: {
         [key: string]: unknown;
       } | null;
     };
@@ -886,6 +917,11 @@ export interface components {
       custom_fields?: {
         [key: string]: unknown;
       } | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
     };
     /** ClientDetailResponse */
     ClientDetailResponse: {
@@ -907,6 +943,11 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
     };
     /** ClientResponse */
     ClientResponse: {
@@ -929,6 +970,11 @@ export interface components {
       custom_fields?: {
         [key: string]: unknown;
       } | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
       /** Id */
       id: string;
       /** Business Id */
@@ -961,6 +1007,8 @@ export interface components {
       custom_fields?: {
         [key: string]: unknown;
       } | null;
+      /** Is Prospect */
+      is_prospect?: boolean | null;
     };
     /** CompetitorCreate */
     CompetitorCreate: {
@@ -1343,6 +1391,21 @@ export interface components {
       /** Shipping Address */
       shipping_address?: string | null;
     };
+    /** PostalCodeResponse */
+    PostalCodeResponse: {
+      /** Id */
+      id: number;
+      /** Zip Code */
+      zip_code: string;
+      /** Colonia */
+      colonia: string;
+      /** Municipality */
+      municipality: string;
+      /** City */
+      city?: string | null;
+      /** State */
+      state: string;
+    };
     /** ProductCreate */
     ProductCreate: {
       /** Name */
@@ -1641,6 +1704,23 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Street Address */
+      street_address?: string | null;
+      /** Colonia */
+      colonia?: string | null;
+      /** Municipality */
+      municipality?: string | null;
+      /** City */
+      city?: string | null;
+      /** State */
+      state?: string | null;
+      /** Zip Code */
+      zip_code?: string | null;
+      /**
+       * Country
+       * @default México
+       */
+      country?: string | null;
       /** Market */
       market?: string | null;
       /** Segment */
@@ -1651,6 +1731,16 @@ export interface components {
       opening_date?: string | null;
       /** External Id */
       external_id?: string | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
+      /**
+       * Delivery Zip Codes
+       * @default []
+       */
+      delivery_zip_codes?: string[] | null;
       /**
        * Client Ids
        * @default []
@@ -1759,6 +1849,23 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Street Address */
+      street_address?: string | null;
+      /** Colonia */
+      colonia?: string | null;
+      /** Municipality */
+      municipality?: string | null;
+      /** City */
+      city?: string | null;
+      /** State */
+      state?: string | null;
+      /** Zip Code */
+      zip_code?: string | null;
+      /**
+       * Country
+       * @default México
+       */
+      country?: string | null;
       /** Market */
       market?: string | null;
       /** Segment */
@@ -1769,6 +1876,16 @@ export interface components {
       opening_date?: string | null;
       /** External Id */
       external_id?: string | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
+      /**
+       * Delivery Zip Codes
+       * @default []
+       */
+      delivery_zip_codes?: string[] | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -1804,6 +1921,20 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Street Address */
+      street_address?: string | null;
+      /** Colonia */
+      colonia?: string | null;
+      /** Municipality */
+      municipality?: string | null;
+      /** City */
+      city?: string | null;
+      /** State */
+      state?: string | null;
+      /** Zip Code */
+      zip_code?: string | null;
+      /** Country */
+      country?: string | null;
       /** Market */
       market?: string | null;
       /** Segment */
@@ -1816,6 +1947,10 @@ export interface components {
       external_id?: string | null;
       /** Client Ids */
       client_ids?: string[] | null;
+      /** Is Prospect */
+      is_prospect?: boolean | null;
+      /** Delivery Zip Codes */
+      delivery_zip_codes?: string[] | null;
     };
     /** TestChatRequest */
     TestChatRequest: {
@@ -2241,11 +2376,23 @@ export interface operations {
   };
   /** Get Clients */
   get_clients_api_v1_crm_clients_get: {
+    parameters: {
+      query?: {
+        /** @description Filter by prospect status. If None, returns all. */
+        is_prospect?: boolean | null;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
           "application/json": components["schemas"]["ClientResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -3059,11 +3206,23 @@ export interface operations {
    * @description List all stores for the current business.
    */
   list_stores_api_v1_trade_stores_get: {
+    parameters: {
+      query?: {
+        /** @description Filter by prospect status. If None, returns all. */
+        is_prospect?: boolean | null;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
           "application/json": components["schemas"]["StoreResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -3108,6 +3267,31 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Store
+   * @description Delete a store.
+   */
+  delete_store_api_v1_trade_stores__store_id__delete: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -3168,6 +3352,45 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["StoreNoteResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Postal Codes
+   * @description Retrieve all preloaded Mexican postal codes.
+   */
+  list_postal_codes_api_v1_trade_postal_codes_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PostalCodeResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Lookup Postal Code
+   * @description Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.
+   */
+  lookup_postal_code_api_v1_trade_postal_codes__zip_code__get: {
+    parameters: {
+      path: {
+        zip_code: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PostalCodeResponse"][];
         };
       };
       /** @description Validation Error */
