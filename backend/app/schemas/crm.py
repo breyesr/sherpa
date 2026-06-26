@@ -12,6 +12,8 @@ class ClientBase(BaseModel):
     gender: Optional[str] = None
     custom_fields: Optional[dict] = {}
     is_prospect: bool = False
+    whatsapp_opt_in: bool = False
+    whatsapp_opt_in_at: Optional[datetime] = None
 
 class ClientCreate(ClientBase):
     pass
@@ -25,6 +27,8 @@ class ClientUpdate(BaseModel):
     gender: Optional[str] = None
     custom_fields: Optional[dict] = None
     is_prospect: Optional[bool] = None
+    whatsapp_opt_in: Optional[bool] = None
+    whatsapp_opt_in_at: Optional[datetime] = None
 
 class ClientResponse(ClientBase):
     id: str

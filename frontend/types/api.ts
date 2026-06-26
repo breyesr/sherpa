@@ -164,6 +164,13 @@ export interface paths {
      */
     post: operations["setup_whatsapp_api_v1_whatsapp_setup_post"];
   };
+  "/api/v1/whatsapp/status": {
+    /**
+     * Get Whatsapp Status
+     * @description Get dynamic status and diagnostics for the WhatsApp/Twilio integration.
+     */
+    get: operations["get_whatsapp_status_api_v1_whatsapp_status_get"];
+  };
   "/api/v1/telegram/webhook/{webhook_id}": {
     /**
      * Telegram Webhook
@@ -922,6 +929,13 @@ export interface components {
        * @default false
        */
       is_prospect?: boolean;
+      /**
+       * Whatsapp Opt In
+       * @default false
+       */
+      whatsapp_opt_in?: boolean;
+      /** Whatsapp Opt In At */
+      whatsapp_opt_in_at?: string | null;
     };
     /** ClientDetailResponse */
     ClientDetailResponse: {
@@ -975,6 +989,13 @@ export interface components {
        * @default false
        */
       is_prospect?: boolean;
+      /**
+       * Whatsapp Opt In
+       * @default false
+       */
+      whatsapp_opt_in?: boolean;
+      /** Whatsapp Opt In At */
+      whatsapp_opt_in_at?: string | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -1009,6 +1030,10 @@ export interface components {
       } | null;
       /** Is Prospect */
       is_prospect?: boolean | null;
+      /** Whatsapp Opt In */
+      whatsapp_opt_in?: boolean | null;
+      /** Whatsapp Opt In At */
+      whatsapp_opt_in_at?: string | null;
     };
     /** CompetitorCreate */
     CompetitorCreate: {
@@ -2832,6 +2857,20 @@ export interface operations {
       422: {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Whatsapp Status
+   * @description Get dynamic status and diagnostics for the WhatsApp/Twilio integration.
+   */
+  get_whatsapp_status_api_v1_whatsapp_status_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
     };

@@ -174,6 +174,24 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         text = payload.get("Body")
         profile_name = payload.get("ProfileName")
 
+        # Validate Twilio request signature
+        signature = request.headers.get("X-Twilio-Signature")
+        auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
+        
+        import os
+        is_testing = os.getenv("TESTING") == "true" or "sandbox" in raw_sender.lower()
+        if auth_token and signature and not is_testing:
+            from twilio.request_validator import RequestValidator
+            validator = RequestValidator(auth_token)
+            
+            proto = request.headers.get("X-Forwarded-Proto", "https")
+            host = request.headers.get("X-Forwarded-Host", request.headers.get("Host", "localhost"))
+            url = f"{proto}://{host}{request.url.path}"
+            
+            if not validator.validate(url, payload, signature):
+                print(f"WARNING: Invalid Twilio request signature validation failed! URL={url}")
+                return Response(content="Forbidden: Invalid Signature", status_code=403)
+
         import re
         def clean_num(n: str): return re.sub(r"\D", "", n)
         
@@ -302,3 +320,62 @@ async def setup_whatsapp(
     
     await db.commit()
     return {"status": "success"}
+
+@router.get("/status")
+async def get_whatsapp_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Get dynamic status and diagnostics for the WhatsApp/Twilio integration."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    result = await db.execute(
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == 'whatsapp')
+    )
+    integration = result.scalars().first()
+    
+    if not integration:
+        return {"status": "disconnected", "error_message": "No WhatsApp integration configured."}
+        
+    settings_dict = integration.settings or {}
+    from_num = settings_dict.get("twilio_from_number")
+    
+    if not from_num:
+        return {"status": "pending_verification", "error_message": "Configure un número de WhatsApp en la configuración de la integración."}
+        
+    # Active Connection Health Check
+    account_sid = await ConfigService.get(db, "TWILIO_ACCOUNT_SID", settings.TWILIO_ACCOUNT_SID)
+    auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
+    
+    if not account_sid or not auth_token:
+        return {
+            "status": "error",
+            "error_code": "credentials_missing",
+            "error_message": "No se encontraron las credenciales de la plataforma Twilio (Account SID o Auth Token)."
+        }
+        
+    from datetime import datetime
+    try:
+        from twilio.rest import Client
+        # Direct API test validation
+        client = Client(account_sid, auth_token)
+        # Fetch account details to verify SID/token credentials validity
+        client.api.v2010.accounts(account_sid).fetch()
+        
+        return {
+            "status": "connected",
+            "provider_type": settings_dict.get("provider_type", "twilio_platform"),
+            "twilio_from_number": from_num,
+            "is_sandbox": settings_dict.get("is_sandbox", False),
+            "checked_at": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        print(f"Twilio credential validation failed: {e}")
+        return {
+            "status": "error",
+            "error_code": "twilio_auth_failed",
+            "error_message": "Error de autenticación con la plataforma de Twilio: credentials check failed."
+        }

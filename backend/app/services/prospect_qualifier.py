@@ -477,7 +477,9 @@ Estado actual de los datos recopilados:
                     phone=phone_num,
                     email=email_addr,
                     custom_fields=custom_fields_val,
-                    is_prospect=True
+                    is_prospect=True,
+                    whatsapp_opt_in=True,
+                    whatsapp_opt_in_at=datetime.utcnow()
                 )
                 self.db.add(client)
                 await self.db.flush()
@@ -487,6 +489,8 @@ Estado actual de los datos recopilados:
                 client.email = email_addr
                 client.custom_fields = custom_fields_val
                 client.is_prospect = True
+                client.whatsapp_opt_in = True
+                client.whatsapp_opt_in_at = datetime.utcnow()
                 self.db.add(client)
                 await self.db.flush()
             

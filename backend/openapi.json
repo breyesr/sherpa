@@ -1565,6 +1565,31 @@
         ]
       }
     },
+    "/api/v1/whatsapp/status": {
+      "get": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Get Whatsapp Status",
+        "description": "Get dynamic status and diagnostics for the WhatsApp/Twilio integration.",
+        "operationId": "get_whatsapp_status_api_v1_whatsapp_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/telegram/webhook/{webhook_id}": {
       "post": {
         "tags": [
@@ -5245,6 +5270,23 @@
             "type": "boolean",
             "title": "Is Prospect",
             "default": false
+          },
+          "whatsapp_opt_in": {
+            "type": "boolean",
+            "title": "Whatsapp Opt In",
+            "default": false
+          },
+          "whatsapp_opt_in_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Opt In At"
           }
         },
         "type": "object",
@@ -5414,6 +5456,23 @@
             "title": "Is Prospect",
             "default": false
           },
+          "whatsapp_opt_in": {
+            "type": "boolean",
+            "title": "Whatsapp Opt In",
+            "default": false
+          },
+          "whatsapp_opt_in_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Opt In At"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -5550,6 +5609,29 @@
               }
             ],
             "title": "Is Prospect"
+          },
+          "whatsapp_opt_in": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Opt In"
+          },
+          "whatsapp_opt_in_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Opt In At"
           }
         },
         "type": "object",

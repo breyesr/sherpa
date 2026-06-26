@@ -14,6 +14,7 @@ interface WhatsAppModalProps {
 export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: WhatsAppModalProps) {
   const [step, setStep] = useState(1); // 1: Welcome, 2: Number, 3: Verify, 4: Success
   const [businessNumber, setBusinessNumber] = useState('');
+  const [optIn, setOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -102,11 +103,23 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
                   onChange={(e) => setBusinessNumber(e.target.value)}
                 />
               </div>
+              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-150 shadow-inner">
+                <input 
+                  type="checkbox" 
+                  id="opt-in-compliance"
+                  checked={optIn}
+                  onChange={(e) => setOptIn(e.target.checked)}
+                  className="mt-1 w-4 h-4 rounded text-green-600 focus:ring-green-500 border-gray-300 cursor-pointer"
+                />
+                <label htmlFor="opt-in-compliance" className="text-xs text-gray-500 font-semibold leading-relaxed select-none cursor-pointer">
+                  Confirmo que poseo el consentimiento explícito (opt-in) de mis clientes para iniciar el contacto y enviar notificaciones vía WhatsApp, cumpliendo con las políticas de Twilio/Meta.
+                </label>
+              </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setStep(1)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">Back</button>
               <button 
-                disabled={!businessNumber}
+                disabled={!businessNumber || !optIn}
                 onClick={() => setStep(3)}
                 className="flex-[2] py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all shadow-md disabled:opacity-50"
               >

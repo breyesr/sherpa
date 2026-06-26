@@ -36,6 +36,8 @@ class Client(Base):
     telegram_id_hash = Column(String, nullable=True, index=True)
     whatsapp_id_hash = Column(String, nullable=True, index=True)
     is_prospect = Column(Boolean, default=False, nullable=False)
+    whatsapp_opt_in = Column(Boolean, default=False, nullable=False)
+    whatsapp_opt_in_at = Column(DateTime, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
