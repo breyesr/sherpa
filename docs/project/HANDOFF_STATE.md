@@ -13,6 +13,7 @@ Epics 134 (Waitlist Lead Capture), 135 (IA & Navigation Realignment), and 136 (T
 ---
 
 ## ✅ Accomplishments
+- **Twilio Trial Config Guide**: Created a comprehensive, step-by-step setup guide for connecting a Twilio trial/sandbox account at [twilio_setup_guide.md](file:///Users/bernardo/projects/sherpa/temp/twilio_setup_guide.md).
 - **Secure Webhooks**: Webhook endpoints are protected against replay and signature forgery attacks via Twilio header validation.
 - **Dynamic Diagnostics**: Dashboard settings panel presents clear diagnostic feedback directly mapping backend API credentials validation.
 - **Opt-in Audit Trail**: Saved B2B campaign prospects automatically record conversational opt-in consent and timestamps in SQL tables.
