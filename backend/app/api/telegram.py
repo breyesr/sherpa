@@ -69,6 +69,64 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         print(f"DEBUG: Processing message from {chat_id}: '{text[:30]}...'")
         chat_id_str = str(chat_id)
         
+        # Check if the message is a link command: /link <phone>
+        clean_text = text.strip()
+        if clean_text.startswith("/link"):
+            parts = clean_text.split(None, 1)
+            raw_phone = parts[1].strip() if len(parts) > 1 else ""
+            from app.services.identity_resolver import IdentityResolver
+            norm_phone = IdentityResolver.clean_identifier(raw_phone)
+            
+            if not norm_phone:
+                bot_token = decrypt_token(integration.access_token)
+                await TelegramService.send_message(
+                    bot_token, chat_id, 
+                    "Por favor, indica tu número de teléfono. Ejemplo: /link 5218132477146"
+                )
+                return {"status": "ok"}
+                
+            # Find the client with this phone number
+            from app.models.crm import Client
+            res_cli = await db.execute(
+                select(Client).where(Client.business_id == business.id, Client.phone == norm_phone)
+            )
+            client_to_link = res_cli.scalars().first()
+            
+            # Also check if it matches business contact_phone
+            biz_phone = IdentityResolver.clean_identifier(business.contact_phone) if business.contact_phone else None
+            if not client_to_link and biz_phone and norm_phone == biz_phone:
+                # Create the sales rep client record dynamically
+                client_to_link = Client(
+                    business_id=business.id,
+                    name="Sales Rep (Admin)",
+                    phone=biz_phone,
+                    role="sales_rep",
+                    is_prospect=False
+                )
+                db.add(client_to_link)
+                await db.flush()
+            
+            if client_to_link:
+                # Link this Telegram chat ID
+                client_to_link.telegram_id = chat_id_str
+                client_to_link.telegram_id_hash = Client.hash_id(chat_id_str)
+                db.add(client_to_link)
+                await db.commit()
+                
+                bot_token = decrypt_token(integration.access_token)
+                await TelegramService.send_message(
+                    bot_token, chat_id, 
+                    f"¡Tu Telegram ha sido vinculado con éxito al número {raw_phone}! Ahora estás registrado como {client_to_link.name} y puedes usar todos los comandos."
+                )
+                return {"status": "ok"}
+            else:
+                bot_token = decrypt_token(integration.access_token)
+                await TelegramService.send_message(
+                    bot_token, chat_id, 
+                    f"No pudimos encontrar ningún contacto con el número {raw_phone} en nuestro sistema CRM. Por favor, asegúrate de que el número esté registrado en tu panel de Sherpa."
+                )
+                return {"status": "ok"}
+
         # Trigger 'typing' status immediately to improve UX
         try:
             bot_token = decrypt_token(integration.access_token)
