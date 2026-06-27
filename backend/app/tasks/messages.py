@@ -13,11 +13,12 @@ import traceback
 def clean_num(n: str): 
     return re.sub(r"\D", "", n)
 
-def send_twilio_reply(to_phone: str, sender_phone: str, body: str):
-    account_sid = settings.TWILIO_ACCOUNT_SID
-    auth_token = settings.TWILIO_AUTH_TOKEN
+async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
+    from app.core.system_config import ConfigService
+    account_sid = await ConfigService.get(db, "TWILIO_ACCOUNT_SID", settings.TWILIO_ACCOUNT_SID)
+    auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
     if not account_sid or not auth_token:
-        print("ERROR: Twilio credentials not configured in settings. Cannot send async reply.")
+        print("ERROR: Twilio credentials not configured in database or settings. Cannot send async reply.")
         return
         
     client = Client(account_sid, auth_token)
@@ -60,7 +61,7 @@ async def run_sales_rep_message(business_id: str, client_id: str, payload: dict)
             traceback.print_exc()
             response_text = "Error interno procesando mensaje de representante."
             
-    send_twilio_reply(to_phone, sender_phone, response_text)
+        await send_twilio_reply(db, to_phone, sender_phone, response_text)
 
 async def run_distributor_message(business_id: str, client_id: str, payload: dict):
     from app.core.ai_service import AIService
@@ -90,7 +91,7 @@ async def run_distributor_message(business_id: str, client_id: str, payload: dic
             traceback.print_exc()
             response_text = "Error interno procesando mensaje de distribuidor."
             
-    send_twilio_reply(to_phone, sender_phone, response_text)
+        await send_twilio_reply(db, to_phone, sender_phone, response_text)
 
 async def run_prospect_message(business_id: str, client_id: Optional[str], payload: dict):
     from app.services.prospect_qualifier import ProspectQualifier
@@ -112,7 +113,7 @@ async def run_prospect_message(business_id: str, client_id: Optional[str], paylo
             traceback.print_exc()
             response_text = "Error interno procesando mensaje de prospecto."
             
-    send_twilio_reply(to_phone, sender_phone, response_text)
+        await send_twilio_reply(db, to_phone, sender_phone, response_text)
 
 @celery_app.task(bind=True, name="process_sales_rep_message", max_retries=3, default_retry_delay=5)
 def process_sales_rep_message(self, business_id: str, client_id: str, payload: dict):
