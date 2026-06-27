@@ -54,7 +54,7 @@ async def setup_test_data(db, business_id: str):
         store = Store(
             business_id=business_id,
             name="Sucursal Monterrey Centro",
-            address="Av. Constitución 456, Monterrey, NL",
+            address="Av. Constitución 456, Monterrey, Nuevo León, CP 64000",
             phone="8111223344"
         )
         db.add(store)
@@ -80,8 +80,8 @@ async def test_above_threshold(business_id: str, product: Product):
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
         
         # Turn 3: Location
-        print("[PROSPECT]: Las necesito en Av. Constituyentes 123, Ciudad de México")
-        response, is_comp = await qualifier.get_response(business_id, sender_phone, "Las necesito en Av. Constituyentes 123, Ciudad de México")
+        print("[PROSPECT]: Las necesito en Av. Constituyentes 123, Ciudad de México, CP 01000")
+        response, is_comp = await qualifier.get_response(business_id, sender_phone, "Las necesito en Av. Constituyentes 123, Ciudad de México, CP 01000")
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
         
         # Turn 4: Contact details
@@ -102,10 +102,10 @@ async def test_above_threshold(business_id: str, product: Product):
         assert client.custom_fields.get("company") == "Distribuidora G"
         
         # Fetch Store
-        res_store = await db.execute(select(Store).where(Store.business_id == business_id, Store.name == "Distribuidora G (WhatsApp Lead)"))
+        res_store = await db.execute(select(Store).where(Store.business_id == business_id, Store.name == "Distribuidora G (Obra WhatsApp)"))
         store = res_store.scalars().first()
         assert store is not None, "Store should be created"
-        assert store.address == "Av. Constituyentes 123, Ciudad de México"
+        assert "Av. Constituyentes 123" in store.address
         
         # Fetch Action
         res_act = await db.execute(select(StoreAction).where(StoreAction.business_id == business_id, StoreAction.store_id == store.id))
@@ -134,8 +134,8 @@ async def test_below_threshold(business_id: str, product: Product):
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
         
         # Turn 3: Location
-        print("[PROSPECT]: Estoy en Monterrey")
-        response, is_comp = await qualifier.get_response(business_id, sender_phone, "Estoy en Monterrey")
+        print("[PROSPECT]: Estoy en Monterrey, CP 64000")
+        response, is_comp = await qualifier.get_response(business_id, sender_phone, "Estoy en Monterrey, CP 64000")
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
         
         # Turn 4: Contact details

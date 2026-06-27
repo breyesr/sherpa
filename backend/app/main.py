@@ -46,6 +46,11 @@ app.add_middleware(
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+@app.get("/")
+def root_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/health")
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
