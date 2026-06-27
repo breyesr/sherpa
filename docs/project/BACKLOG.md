@@ -574,3 +574,14 @@ The following tasks have been removed or deprecated from active epics because of
 - [x] Task 136.3: **Webhook Request Validation**: Implement Twilio signature verification utility for webhook endpoints (`/api/v1/whatsapp/webhook/twilio`) to ensure only authentic requests originating from Twilio are processed.
 - [x] Task 136.4: **Connection Status webhooks & Health Checks**: Implement active status ping checks against Twilio API resources to verify connectivity.
 - [x] Task 136.5: **User-facing Connection Diagnostics**: Enhance error presentation on settings panel integration drawers, displaying detailed verification failures or connection API disconnect reasons to the user.
+
+---
+
+## Epic 137: Channel Alignment & Identity-Based Routing for Telegram
+**Objective**: Unify the messaging infrastructure by implementing identity-based routing on Telegram. Incoming Telegram messages will resolve using the `IdentityResolver` and route dynamically to the B2B Sales Rep (Orchestrator), Distributor, or Prospect Qualifier flow depending on the resolved role, matching the WhatsApp channel behavior.
+
+- [x] Task 137.1: **Telegram Webhook Identity Resolution**: Integrate `IdentityResolver.resolve_sender` in `app/api/telegram.py` to identify the sender's role (`sales_rep`, `distributor_retailer`, or `prospective_client`) on Telegram.
+- [x] Task 137.2: **Dynamic Flow Routing in AI Service**: Update `app/core/ai_service.py` to check the client's role and metadata flow configurations, running the LangGraph Sales Rep orchestrator (`b2b_sales_brain.j2`) only when the sender is a verified `sales_rep`.
+- [x] Task 137.3: **Prospect & Distributor Routing for Telegram**: Connect Telegram to the `ProspectQualifier` flow for prospects, and a standard helper prompt for distributors.
+- [x] Task 137.4: **Validation & Verification**: Verify routing behavior and ensure test suite runs cleanly.
+

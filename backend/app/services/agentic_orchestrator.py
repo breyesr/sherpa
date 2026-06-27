@@ -65,7 +65,12 @@ class AgenticOrchestrator:
         
         # Fetch Client
         from app.models.crm import Client
-        res_c = await self.db.execute(select(Client).where(Client.id == client_id))
+        from sqlalchemy.orm import selectinload
+        res_c = await self.db.execute(
+            select(Client)
+            .where(Client.id == client_id)
+            .options(selectinload(Client.stores))
+        )
         client = res_c.scalars().first()
 
         # Fetch Summary from Memory

@@ -75,25 +75,58 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
             await TelegramService.send_typing(bot_token, chat_id)
         except: pass
 
-        # 4. Process with AI
-        from app.core.ai_service import AIService
-        ai = AIService(business, db)
+        # 4. Resolve identity and check routing configuration
+        from app.services.identity_resolver import IdentityResolver
+        sender_type, client_obj = await IdentityResolver.resolve_sender(db, business.id, chat_id_str, is_telegram=True)
         
-        meta = {
-            "platform": "telegram",
-            "first_name": first_name,
-            "last_name": last_name,
-            "username": username
-        }
-        
-        try:
-            # get_response now handles registration, normalization and healing
-            response_text = await ai.get_response(chat_id_str, text, meta)
-            print(f"DEBUG: AI Success for {chat_id_str}. Sending response...")
-        except Exception as e:
-            print(f"ERROR: AIService failed for {chat_id_str}: {e}")
-            traceback.print_exc()
-            response_text = "I'm having a bit of trouble thinking right now. Please try again in a moment."
+        cfg = business.routing_config or {}
+        flow_enabled = False
+        if sender_type == "prospective_client":
+            flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
+        elif sender_type == "distributor_retailer":
+            flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
+        elif sender_type == "sales_rep":
+            flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
+
+        if not flow_enabled:
+            response_text = "Este servicio no está habilitado actualmente para este número."
+        else:
+            if sender_type == "prospective_client":
+                from app.services.prospect_qualifier import ProspectQualifier
+                qualifier = ProspectQualifier(db)
+                try:
+                    response_text, is_completed = await qualifier.get_response(
+                        business_id=business.id,
+                        sender_phone=chat_id_str,
+                        user_message=text,
+                        platform="telegram"
+                    )
+                    print(f"DEBUG: Prospect Qualifier Success for {chat_id_str}. Sending response...")
+                except Exception as e:
+                    print(f"ERROR: ProspectQualifier failed for {chat_id_str}: {e}")
+                    traceback.print_exc()
+                    response_text = "I'm having a bit of trouble thinking right now. Please try again in a moment."
+            else:
+                from app.core.ai_service import AIService
+                ai = AIService(business, db)
+                
+                meta = {
+                    "platform": "telegram",
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "username": username,
+                    "flow": "sales_rep" if sender_type == "sales_rep" else "distributor",
+                    "client_id": client_obj.id if client_obj else None
+                }
+                
+                try:
+                    # get_response now handles registration, normalization and healing
+                    response_text = await ai.get_response(chat_id_str, text, meta)
+                    print(f"DEBUG: AI Success for {chat_id_str}. Sending response...")
+                except Exception as e:
+                    print(f"ERROR: AIService failed for {chat_id_str}: {e}")
+                    traceback.print_exc()
+                    response_text = "I'm having a bit of trouble thinking right now. Please try again in a moment."
         
         # 5. Send Response
         try:

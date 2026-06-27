@@ -40,6 +40,7 @@ class ProspectQualifierState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
     business_id: str
     sender_phone: str
+    platform: Optional[str]
     
     # Prospect Data
     product: Optional[str]
@@ -437,6 +438,8 @@ Estado actual de los datos recopilados:
             zip_val = state.get("zip_code")
             sender_phone = state.get("sender_phone")
             is_waitlist = state.get("phase") == "qualifying_waitlist"
+            platform = state.get("platform", "whatsapp")
+            is_telegram = platform == "telegram"
             
             # Fetch Product
             res_prod = await self.db.execute(select(Product).where(Product.id == prod_id))
@@ -452,18 +455,29 @@ Estado actual de los datos recopilados:
             
             # 1. Update placeholder client or create new client
             sender_hash = Client.hash_id(sender_phone)
-            res_cli = await self.db.execute(
-                select(Client).where(Client.business_id == biz_id, Client.whatsapp_id_hash == sender_hash)
-            )
+            if is_telegram:
+                res_cli = await self.db.execute(
+                    select(Client).where(Client.business_id == biz_id, Client.telegram_id_hash == sender_hash)
+                )
+            else:
+                res_cli = await self.db.execute(
+                    select(Client).where(Client.business_id == biz_id, Client.whatsapp_id_hash == sender_hash)
+                )
             client = res_cli.scalars().first()
             
             if not client:
-                # Fallback to phone_num lookup
-                id_hash = Client.hash_id(phone_num)
-                res_cli_phone = await self.db.execute(
-                    select(Client).where(Client.business_id == biz_id, Client.whatsapp_id_hash == id_hash)
-                )
-                client = res_cli_phone.scalars().first()
+                # Fallback lookup
+                if is_telegram:
+                    res_cli_tg = await self.db.execute(
+                        select(Client).where(Client.business_id == biz_id, Client.telegram_id == sender_phone)
+                    )
+                    client = res_cli_tg.scalars().first()
+                else:
+                    id_hash = Client.hash_id(phone_num)
+                    res_cli_phone = await self.db.execute(
+                        select(Client).where(Client.business_id == biz_id, Client.whatsapp_id_hash == id_hash)
+                    )
+                    client = res_cli_phone.scalars().first()
             
             custom_fields_val = {"company": comp, "zip_code": zip_val}
             if is_waitlist:
@@ -474,23 +488,29 @@ Estado actual de los datos recopilados:
                 client = Client(
                     business_id=biz_id,
                     name=name_val,
-                    phone=phone_num,
+                    phone=phone_num if not is_telegram else None,
                     email=email_addr,
                     custom_fields=custom_fields_val,
                     is_prospect=True,
-                    whatsapp_opt_in=True,
-                    whatsapp_opt_in_at=datetime.utcnow()
+                    whatsapp_opt_in=not is_telegram,
+                    whatsapp_opt_in_at=datetime.utcnow() if not is_telegram else None,
+                    telegram_id=sender_phone if is_telegram else None,
+                    telegram_id_hash=sender_hash if is_telegram else None
                 )
                 self.db.add(client)
                 await self.db.flush()
             else:
                 client.name = name_val
-                client.phone = phone_num
+                if not is_telegram:
+                    client.phone = phone_num
+                    client.whatsapp_opt_in = True
+                    client.whatsapp_opt_in_at = datetime.utcnow()
+                else:
+                    client.telegram_id = sender_phone
+                    client.telegram_id_hash = sender_hash
                 client.email = email_addr
                 client.custom_fields = custom_fields_val
                 client.is_prospect = True
-                client.whatsapp_opt_in = True
-                client.whatsapp_opt_in_at = datetime.utcnow()
                 self.db.add(client)
                 await self.db.flush()
             
@@ -511,9 +531,10 @@ Estado actual de los datos recopilados:
                     pc_state = pc_record.state
  
             # 2. Create Store (as prospect)
+            channel_name = "Telegram" if is_telegram else "WhatsApp"
             store = Store(
                 business_id=biz_id,
-                name=f"{comp} (Obra WhatsApp)" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})",
+                name=f"{comp} (Obra {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})",
                 street_address=loc,
                 colonia=pc_colonia,
                 municipality=pc_municipality,
@@ -534,6 +555,7 @@ Estado actual de los datos recopilados:
             )
             
             # 3. Create StoreAction (Proposed Commercial)
+            channel_name = "Telegram" if is_telegram else "WhatsApp"
             action = StoreAction(
                 business_id=biz_id,
                 store_id=store.id,
@@ -542,7 +564,7 @@ Estado actual de los datos recopilados:
                 objective=ActionObjective.GENERAL,
                 status=ActionStatus.PROPOSED,
                 details={
-                    "lead_source": "WhatsApp Prospection" if not is_waitlist else "WhatsApp Prospection - Lista de Espera",
+                    "lead_source": f"{channel_name} Prospection" if not is_waitlist else f"{channel_name} Prospection - Lista de Espera",
                     "product_interest": product.name,
                     "requested_quantity": qty,
                     "matched_store_id": state.get("matched_store_id"),
@@ -612,30 +634,48 @@ Estado actual de los datos recopilados:
         
         return workflow.compile(checkpointer=checkpointer)
 
-    async def get_response(self, business_id: str, sender_phone: str, user_message: str) -> Tuple[str, bool]:
+    async def get_response(self, business_id: str, sender_phone: str, user_message: str, platform: str = "whatsapp") -> Tuple[str, bool]:
         """Main entry point to qualify lead over WhatsApp campaign."""
         try:
             # 0. Find or create Client and Conversation to log the interaction in the inbox
             normalized_phone = Client.normalize_id(sender_phone)
             id_hash = Client.hash_id(normalized_phone)
-            platform = "sandbox" if "sandbox" in sender_phone.lower() else "whatsapp"
+            if platform != "telegram":
+                platform = "sandbox" if "sandbox" in sender_phone.lower() else "whatsapp"
             
             # Check for existing Client
-            res_cli = await self.db.execute(
-                select(Client).where(
-                    Client.business_id == business_id,
-                    Client.whatsapp_id_hash == id_hash
+            if platform == "telegram":
+                res_cli = await self.db.execute(
+                    select(Client).where(
+                        Client.business_id == business_id,
+                        Client.telegram_id_hash == id_hash
+                    )
                 )
-            )
+            else:
+                res_cli = await self.db.execute(
+                    select(Client).where(
+                        Client.business_id == business_id,
+                        Client.whatsapp_id_hash == id_hash
+                    )
+                )
             client = res_cli.scalars().first()
             if not client:
-                client = Client(
-                    business_id=business_id,
-                    name=f"Prospect Sandbox ({sender_phone})" if platform == "sandbox" else f"Prospect {sender_phone}",
-                    phone=sender_phone,
-                    whatsapp_id_hash=id_hash,
-                    is_prospect=True
-                )
+                if platform == "telegram":
+                    client = Client(
+                        business_id=business_id,
+                        name=f"Prospect Telegram ({sender_phone})",
+                        telegram_id=sender_phone,
+                        telegram_id_hash=id_hash,
+                        is_prospect=True
+                    )
+                else:
+                    client = Client(
+                        business_id=business_id,
+                        name=f"Prospect Sandbox ({sender_phone})" if platform == "sandbox" else f"Prospect {sender_phone}",
+                        phone=sender_phone,
+                        whatsapp_id_hash=id_hash,
+                        is_prospect=True
+                    )
                 self.db.add(client)
                 await self.db.commit()
                 await self.db.refresh(client)
@@ -722,6 +762,7 @@ Estado actual de los datos recopilados:
                             "messages": [HumanMessage(content=user_message)],
                             "business_id": business_id,
                             "sender_phone": sender_phone,
+                            "platform": platform,
                             "is_completed": False,
                             "final_response": ""
                         },
