@@ -21,6 +21,12 @@ class IdentityResolver:
         normalized_id = IdentityResolver.clean_identifier(platform_id)
         id_hash = Client.hash_id(normalized_id)
 
+        # Fetch business to get contact_phone
+        from app.models.business import BusinessProfile
+        result_biz = await db.execute(select(BusinessProfile).where(BusinessProfile.id == business_id))
+        business = result_biz.scalars().first()
+        biz_phone = IdentityResolver.clean_identifier(business.contact_phone) if business and business.contact_phone else None
+
         # 1. Fetch Client with store relations pre-loaded
         query = select(Client).where(
             Client.business_id == business_id
@@ -36,11 +42,30 @@ class IdentityResolver:
         result = await db.execute(query)
         client = result.scalars().first()
 
+        # If not found, check if this is the business contact phone on WhatsApp
+        if not client and not is_telegram and biz_phone and normalized_id == biz_phone:
+            # Find or create a sales rep Client record for the business contact phone
+            res_biz_cli = await db.execute(
+                select(Client).where(Client.business_id == business_id, Client.phone == biz_phone)
+            )
+            client = res_biz_cli.scalars().first()
+            if not client:
+                client = Client(
+                    business_id=business_id,
+                    name="Sales Rep (Admin)",
+                    phone=biz_phone,
+                    role="sales_rep",
+                    is_prospect=False
+                )
+                db.add(client)
+                await db.commit()
+                await db.refresh(client)
+
         if not client:
             return "prospective_client", None
 
         # 2. Check representative status
-        if client.role in ("representative", "sales_rep", "agent"):
+        if (client.role in ("representative", "sales_rep", "agent")) or (biz_phone and client.phone == biz_phone):
             return "sales_rep", client
 
         # 3. Check physical store mappings
