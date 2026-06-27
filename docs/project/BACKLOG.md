@@ -569,8 +569,8 @@ The following tasks have been removed or deprecated from active epics because of
 ## Epic 136: Twilio Integration Compliance, Status Tracking & Verification
 **Objective**: Enhance the Twilio/WhatsApp integration with explicit compliance opt-in capturing, webhook signature validation, real-time connection health checks, and user-facing connection state / error diagnostics.
 
-- [ ] Task 136.1: **Compliance Opt-in UI**: Add explicit compliance notice text and a mandatory opt-in checkbox to the WhatsApp connection modal (`WhatsAppModal.tsx`) to satisfy Twilio/WhatsApp legal policies.
-- [ ] Task 136.2: **Compliance DB Storage**: Add `whatsapp_opt_in: Boolean` and `whatsapp_opt_in_at: DateTime` columns to the `Client` database model and generate the corresponding database schema migration script.
-- [ ] Task 136.3: **Webhook Request Validation**: Implement Twilio signature verification utility for webhook endpoints (`/api/v1/whatsapp/webhook/twilio`) to ensure only authentic requests originating from Twilio are processed.
-- [ ] Task 136.4: **Connection Status webhooks & Health Checks**: Implement active status ping checks against Twilio API resources to verify connectivity.
-- [ ] Task 136.5: **User-facing Connection Diagnostics**: Enhance error presentation on settings panel integration drawers, displaying detailed verification failures or connection API disconnect reasons to the user.
+- [x] Task 136.1: **Compliance Opt-in UI**: Add explicit compliance notice text and a mandatory opt-in checkbox to the WhatsApp connection modal (`WhatsAppModal.tsx`) to satisfy Twilio/WhatsApp legal policies.
+- [x] Task 136.2: **Compliance DB Storage**: Add `whatsapp_opt_in: Boolean` and `whatsapp_opt_in_at: DateTime` columns to the `Client` database model and generate the corresponding database schema migration script.
+- [x] Task 136.3: **Webhook Request Validation**: Implement Twilio signature verification utility for webhook endpoints (`/api/v1/whatsapp/webhook/twilio`) to ensure only authentic requests originating from Twilio are processed.
+- [x] Task 136.4: **Connection Status webhooks & Health Checks**: Implement active status ping checks against Twilio API resources to verify connectivity.
+- [x] Task 136.5: **User-facing Connection Diagnostics**: Enhance error presentation on settings panel integration drawers, displaying detailed verification failures or connection API disconnect reasons to the user.
