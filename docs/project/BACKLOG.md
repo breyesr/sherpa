@@ -585,3 +585,28 @@ The following tasks have been removed or deprecated from active epics because of
 - [x] Task 137.3: **Prospect & Distributor Routing for Telegram**: Connect Telegram to the `ProspectQualifier` flow for prospects, and a standard helper prompt for distributors.
 - [x] Task 137.4: **Validation & Verification**: Verify routing behavior and ensure test suite runs cleanly.
 
+---
+
+## Epic 138: Prospect-to-Store Redirection & Value Tracking
+**Objective**: Build a structured database redirection mapping and request value tracking between Campaign Prospects (`is_prospect = True`) and authorized physical stores. Track the referred date, target store, requested product/quantity, and estimated potential value, and expose these referral connections in the prospect drawers and store details dashboards with role-based masking.
+
+- [ ] Task 138.1: **Database Schema Migration & Audit Log**: Create a self-referential `assigned_store_id` relationship on `Store`, and add `requested_product_id` (ForeignKey to products), `requested_quantity` (Integer), `potential_value` (Float), and `referred_at` (DateTime) columns. Implement the `ClientStoreHistory` audit logging table to track reassignments.
+- [ ] Task 138.2: **Lead Qualification Value Ingestion**: Update `qualify_lead` in `prospect_qualifier.py` to write the resolved `matched_store_id`, `product_id`, `quantity`, `referred_at`, and calculated `potential_value` (`qty * product.price`) into the prospect's newly created `Store` record.
+- [ ] Task 138.3: **API Schema & Validation Setup**: Update schemas in `schemas/trade.py` and endpoints in `api/trade.py` to accept, return, and update `assigned_store_id`, `requested_product_id`, `requested_quantity`, `potential_value`, and `referred_at`, enforcing multi-tenant verification and circular reference checks.
+- [ ] Task 138.4: **Dashboard Referral Logs & KPI Expose**: Add a "Referrals" dashboard tab inside the Store details page to render a list of assigned prospects (showing date, product, quantity, and lead value, with PII masking gates for distributors), along with a Total Referral Pipeline Value KPI metric.
+- [ ] Task 138.5: **API Type Regeneration & Compile Check**: Update OpenAPI definitions, regenerate frontend types, and verify the production build succeeds.
+
+---
+
+## Epic 139: Prospects Segmentation & Retail Referrals
+**Objective**: Introduce dynamic segmentation to group campaign prospects into Wholesale Leads or Retail Referrals. Modify the prospect qualifying flow to capture retail leads in the CRM database, re-route them to physical stores, and expose them as separate Wholesale vs. Retail listings in the navigation sidebar and views.
+
+- [ ] Task 139.1: **Database Schema & Segment Migration**: Add a `prospect_segment` column (VARCHAR, default "wholesale", indexed) to both `Client` and `Store` tables. Create Alembic migration script to default all existing rows to "wholesale".
+- [ ] Task 139.2: **API Filters & Pydantic Schema Integration**: Update `schemas/trade.py` and `schemas/crm.py` schemas to include `prospect_segment`. Extend GET `/trade/stores` and `/clients` to accept and validate the `prospect_segment` query filter parameter.
+- [ ] Task 139.3: **Lead Qualification Flow Segmentation**: Update `ProspectQualifier` (prospect_qualifier.py) to ask for contact details (name, email) for below-threshold retail leads, saving them with `is_prospect=True` and `prospect_segment="retail"`, and assigned to the matched store.
+- [ ] Task 139.4: **Sidebar Restructure & List Filtering**: Update `Sidebar.tsx` to separate Prospects into "Wholesale" and "Retail Referrals" headings, mapping navigation links to corresponding segment query parameters. Update React Query keys in account/contact lists to support dynamic query invalidation.
+- [ ] Task 139.5: **Test Suite Alignment**: Refactor `test_whatsapp_campaign.py` and `test_simulated_session_3.py` assertions to expect retail lead CRM generation instead of immediate session termination, verifying all test validations pass.
+- [ ] Task 139.6: **Type Regeneration & Build Verification**: Update OpenAPI definitions, regenerate frontend TypeScript types, and verify production build compilation.
+
+
+
