@@ -608,5 +608,68 @@ The following tasks have been removed or deprecated from active epics because of
 - [ ] Task 139.5: **Test Suite Alignment**: Refactor `test_whatsapp_campaign.py` and `test_simulated_session_3.py` assertions to expect retail lead CRM generation instead of immediate session termination, verifying all test validations pass.
 - [ ] Task 139.6: **Type Regeneration & Build Verification**: Update OpenAPI definitions, regenerate frontend TypeScript types, and verify production build compilation.
 
+---
+
+## Epic 140: Feature-Bound Access Control & Intake Alignment
+**Objective**: Restrict user access in the Live Test Sandbox, Telegram, and WhatsApp channels to only the flows they are explicitly licensed for in their `features_config` (e.g. limiting prospect interactions for businesses without the `campaign_flow` feature).
+
+- [ ] Task 140.1: **Sandbox /test-chat Feature Guardrails**
+  * **Description**: Modify the backend `/test-chat` route in `backend/app/api/business.py` to check the business profile's `features_config` in addition to its `routing_config`. Block simulation requests for roles that do not have their corresponding feature flag enabled.
+  * **Acceptance Criteria**:
+    * *Given* a business profile with `features_config.campaign_flow.enabled = False` and `routing_config.prospective_clients.enabled = True`,
+    * *When* a POST request is sent to `/test-chat` with `simulate_role: "prospective_client"`,
+    * *Then* the endpoint returns `{"response": "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."}`.
+
+- [ ] Task 140.2: **Webhook Routing Alignment (Telegram)**
+  * **Description**: Modify the Telegram webhook handler in `backend/app/api/telegram.py` to cross-reference resolved sender roles with `features_config` flags. Reject incoming messages if the corresponding feature is disabled.
+  * **Acceptance Criteria**:
+    * *Given* a business profile with `features_config.campaign_flow.enabled = False`,
+    * *When* an incoming message is received on Telegram from a chat ID that resolves to a `prospective_client`,
+    * *Then* the Telegram handler intercepts the request and sends back a message: `"Este servicio no está habilitado actualmente para este número."`.
+
+- [ ] Task 140.3: **Webhook Routing Alignment (WhatsApp)**
+  * **Description**: Modify the WhatsApp webhook handler in `backend/app/api/whatsapp.py` to cross-reference resolved sender roles with `features_config` flags. Reject incoming messages if the corresponding feature is disabled.
+  * **Acceptance Criteria**:
+    * *Given* a business profile with `features_config.b2b_solutions.enabled = False`,
+    * *When* an incoming webhook message is received on WhatsApp from a sender that resolves to a `distributor_retailer`,
+    * *Then* the webhook handler intercepts the message and returns a Twilio TwiML response containing `"Este servicio no está habilitado actualmente para este número."`.
+
+- [ ] Task 140.4: **Frontend Sandbox UI Feature Filtering**
+  * **Description**: Update the Live Test Sandbox rendering in `AssistantSettings.tsx` to read the business profile's `features_config` and conditionally render option tags in the role selector. Hide or disable role options if the associated feature is disabled.
+  * **Acceptance Criteria**:
+    * *Given* a logged-in user whose business profile has `features_config.b2b_solutions.enabled = False` and `features_config.campaign_flow.enabled = True`,
+    * *When* they navigate to the Assistant Settings panel,
+    * *Then* the Live Test Sandbox role dropdown renders the `"Simulate Prospect"` and `"Simulate Sales Rep"` options, but does NOT render the `"Simulate Distributor"` option.
+
+- [ ] Task 140.5: **Business Profile Routing Config Initialization**
+  * **Description**: Create a backend helper that yields default `routing_config` blocks per vertical (e.g. enabling prospects, distributors, and reps for `TRADE`), and invoke it during initial `BusinessProfile` instantiation points in `admin.py` and `business.py`.
+  * **Acceptance Criteria**:
+    * *Given* a new user registration or admin user creation specifying `vertical_type: "TRADE"`,
+    * *When* the profile is created in the database,
+    * *Then* the `routing_config` JSON column is initialized with `"prospective_clients": {"enabled": true}`, `"distributors_retailers": {"enabled": true}`, and `"sales_reps": {"enabled": true}` instead of `{}`.
+
+- [ ] Task 140.6: **Admin Upgrade Path Alignment**
+  * **Description**: Update the PATCH `/admin/users/{user_id}` route in `admin.py` to ensure that when a user's vertical is promoted (e.g. `BASIC` to `TRADE`), their `routing_config` is upgraded with the corresponding B2B routing keys.
+  * **Acceptance Criteria**:
+    * *Given* an existing user profile with `vertical_type: "BASIC"` and `routing_config = {"prospective_clients": {"enabled": true}}`,
+    * *When* the admin updates the user's vertical to `"TRADE"`,
+    * *Then* the database profile is patched and `routing_config` is upgraded to include `"distributors_retailers": {"enabled": true}`.
+
+- [ ] Task 140.7: **Alembic Data Migration**
+  * **Description**: Create a data migration script inside Alembic to backfill all existing business profile rows, populating `routing_config` with vertical-specific defaults if currently `NULL` or `{}`.
+  * **Acceptance Criteria**:
+    * *Given* existing profiles in the database with empty or `NULL` routing configurations,
+    * *When* the Alembic upgrade script is run,
+    * *Then* all rows are successfully populated with their corresponding vertical defaults and no data is lost.
+
+- [ ] Task 140.8: **Integration Testing & Verification Suite**
+  * **Description**: Add integration tests asserting that the Sandbox, Telegram, and WhatsApp endpoints successfully reject messages for roles whose feature flags are disabled. Also assert that new user registration and vertical promotion successfully populate routing configurations.
+  * **Acceptance Criteria**:
+    * *Given* the test suite environment,
+    * *When* running the testing suite,
+    * *Then* all feature-bound restriction, profile initialization, and vertical migration scenarios pass cleanly.
+
+
+
 
 

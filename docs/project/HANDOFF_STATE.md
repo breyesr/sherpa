@@ -1,14 +1,14 @@
-# Handoff State: 2026-06-27 (Epic 138 & 139 Backlog Drafting)
+# Handoff State: 2026-06-27 (Epic 140 Backlog Upgrade)
 
 ## 🎯 Current Status
-Epics 134 to 137 have been fully implemented and merged into staging. Epics 138 (Redirection & Value Tracking) and 139 (Prospects Segmentation & Retail Referrals) are now fully drafted in the backlog and sprint plan, and their database, API, and UI/UX dependencies have been analyzed.
+We investigated a bug where a new trade vertical user with campaign flow gets the error `"Este servicio no está habilitado..."` in the Live Test Sandbox, Telegram, and WhatsApp. We identified that the root cause is `routing_config` defaulting to an empty dictionary `{}` which strictly disables prospect and distributor flows. Furthermore, the system lacks dynamic checks against the user's `features_config` on these webhooks/sandbox entry points. To address this, we defined and added **Epic 140** to `docs/project/BACKLOG.md` (now fully updated with initialization helper, admin PATCH promotion upgrades, and Alembic database data backfills) to align access controls across all three intake channels.
 
 ---
 
 ## ✅ Accomplishments
-- **Epic 138 & 139 Backlog & Sprint Plan**: Successfully added Epics 138 and 139 with tasks and Given/When/Then acceptance criteria to `/docs/project/BACKLOG.md` and `/docs/sprint_plan.md`.
-- **System Blueprints**: Completed full backend, frontend, UX, and testing dependency audits for both features, saving detailed review documents under the conversation artifacts.
-- **Workspace Hygiene**: Cleaned all project directories; all active codebase files are clean and unmodified.
+- **Bug Diagnosis**: Fully investigated why new trade vertical users get blocked in webhooks and sandbox.
+- **Epic 140 Expansion**: Successfully drafted and expanded Epic 140 ("Feature-Bound Access Control & Intake Alignment") with detailed tasks (140.1 to 140.8) and Given/When/Then acceptance criteria inside `docs/project/BACKLOG.md`.
+- **System Hygiene**: Verified that no database schemas or source code files have been modified, per the user's request.
 
 ---
 
@@ -18,4 +18,4 @@ Epics 134 to 137 have been fully implemented and merged into staging. Epics 138 
 ---
 
 ## 🚀 Next Steps
-1. **Implementation Authorization**: Await user permission to begin coding and executing Epic 138 and 139 tasks.
+1. **Implementation Authorization**: Await user authorization to execute Epic 140 tasks (enforcing feature-bound checks in backend API, webhooks routing, sandbox frontend selector UI, dynamic profile defaults, admin vertical promotion patches, and Alembic data backfills).
