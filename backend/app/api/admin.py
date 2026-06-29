@@ -36,6 +36,27 @@ async def list_users(
     )
     return result.scalars().all()
 
+def upgrade_business_to_trade(business: BusinessProfile):
+    from app.api.business import get_default_routing_config, get_default_features_config
+    
+    # Upgrade routing_config
+    curr_routing = business.routing_config or {}
+    trade_routing = get_default_routing_config("TRADE")
+    for key, val in trade_routing.items():
+        if key not in curr_routing:
+            curr_routing[key] = val
+    business.routing_config = dict(curr_routing)
+    
+    # Upgrade features_config
+    curr_features = business.features_config or {}
+    trade_features = get_default_features_config("TRADE")
+    for key, val in trade_features.items():
+        if key not in curr_features:
+            curr_features[key] = val
+        elif not curr_features[key].get("enabled", False) and val.get("enabled", False):
+            curr_features[key] = val
+    business.features_config = dict(curr_features)
+
 @router.patch("/businesses/{business_id}/vertical", response_model=Dict[str, str])
 async def update_business_vertical(
     business_id: str,
@@ -49,7 +70,11 @@ async def update_business_vertical(
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
     
+    old_vertical = business.vertical_type
     business.vertical_type = vertical_type
+    if old_vertical == VerticalType.BASIC and vertical_type == VerticalType.TRADE:
+        upgrade_business_to_trade(business)
+        
     db.add(business)
     await db.commit()
     return {"status": "success", "vertical_type": vertical_type.value}
@@ -76,12 +101,14 @@ async def create_user_admin(
     await db.flush() # Get user ID
     
     # Create associated BusinessProfile
-    from app.api.business import DEFAULT_FEATURES_CONFIG
+    from app.api.business import get_default_routing_config, get_default_features_config
+    v_type = user_in.vertical_type or VerticalType.BASIC
     business = BusinessProfile(
         user_id=user.id,
         name=f"Business of {user.email.split('@')[0]}",
-        vertical_type=user_in.vertical_type or VerticalType.BASIC,
-        features_config=user_in.features_config or DEFAULT_FEATURES_CONFIG
+        vertical_type=v_type,
+        routing_config=user_in.routing_config or get_default_routing_config(v_type),
+        features_config=user_in.features_config or get_default_features_config(v_type)
     )
     db.add(business)
     await db.commit()
@@ -124,7 +151,11 @@ async def update_user_admin(
     # Handle vertical type and features config updates for linked business
     if user.business_profile:
         if user_in.vertical_type:
-            user.business_profile.vertical_type = user_in.vertical_type
+            old_vertical = user.business_profile.vertical_type
+            new_vertical = user_in.vertical_type
+            user.business_profile.vertical_type = new_vertical
+            if old_vertical == VerticalType.BASIC and new_vertical == VerticalType.TRADE:
+                upgrade_business_to_trade(user.business_profile)
         if user_in.features_config is not None:
             user.business_profile.features_config = user_in.features_config
         

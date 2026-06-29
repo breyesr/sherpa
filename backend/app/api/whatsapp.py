@@ -241,7 +241,17 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         from app.services.identity_resolver import IdentityResolver
         sender_type, client = await IdentityResolver.resolve_sender(db, business.id, sender_phone)
 
-        # 4. Check dynamic routing flags
+        # 4. Check dynamic routing and feature configuration flags
+        from app.api.business import DEFAULT_FEATURES_CONFIG
+        feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+        feature_enabled = True
+        if sender_type == "prospective_client":
+            feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
+        elif sender_type == "distributor_retailer":
+            feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+        elif sender_type == "sales_rep":
+            feature_enabled = feat_cfg.get("crm_suite", {}).get("enabled", True)
+
         cfg = business.routing_config or {}
         flow_enabled = False
         if sender_type == "prospective_client":
@@ -251,7 +261,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         elif sender_type == "sales_rep":
             flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
 
-        if not flow_enabled:
+        if not feature_enabled or not flow_enabled:
             from twilio.twiml.messaging_response import MessagingResponse
             twiml = MessagingResponse()
             twiml.message("Este servicio no está habilitado actualmente para este número.")

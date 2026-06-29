@@ -50,6 +50,19 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
   const [isSandboxLoading, setIsSandboxLoading] = useState(false);
   const [sandboxRole, setSandboxRole] = useState<'sales_rep' | 'distributor_retailer' | 'prospective_client'>('sales_rep');
 
+  const features = (business?.features_config as Record<string, any>) || {};
+  const isCampaignEnabled = features.campaign_flow?.enabled === true;
+  const isB2bEnabled = features.b2b_solutions?.enabled === true;
+
+  useEffect(() => {
+    if (sandboxRole === 'distributor_retailer' && !isB2bEnabled) {
+      setSandboxRole('sales_rep');
+    }
+    if (sandboxRole === 'prospective_client' && !isCampaignEnabled) {
+      setSandboxRole('sales_rep');
+    }
+  }, [isB2bEnabled, isCampaignEnabled, sandboxRole]);
+
   const handleSaveAssistant = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingAssistant(true);
@@ -334,8 +347,12 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
                 className="text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
               >
                 <option value="sales_rep">Simulate Sales Rep</option>
-                <option value="distributor_retailer">Simulate Distributor</option>
-                <option value="prospective_client">Simulate Prospect</option>
+                {isB2bEnabled && (
+                  <option value="distributor_retailer">Simulate Distributor</option>
+                )}
+                {isCampaignEnabled && (
+                  <option value="prospective_client">Simulate Prospect</option>
+                )}
               </select>
               <button 
                 type="button"

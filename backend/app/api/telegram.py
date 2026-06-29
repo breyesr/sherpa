@@ -137,6 +137,16 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         from app.services.identity_resolver import IdentityResolver
         sender_type, client_obj = await IdentityResolver.resolve_sender(db, business.id, chat_id_str, is_telegram=True)
         
+        from app.api.business import DEFAULT_FEATURES_CONFIG
+        feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+        feature_enabled = True
+        if sender_type == "prospective_client":
+            feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
+        elif sender_type == "distributor_retailer":
+            feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+        elif sender_type == "sales_rep":
+            feature_enabled = feat_cfg.get("crm_suite", {}).get("enabled", True)
+
         cfg = business.routing_config or {}
         flow_enabled = False
         if sender_type == "prospective_client":
@@ -146,7 +156,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         elif sender_type == "sales_rep":
             flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
 
-        if not flow_enabled:
+        if not feature_enabled or not flow_enabled:
             response_text = "Este servicio no está habilitado actualmente para este número."
         else:
             if sender_type == "prospective_client":

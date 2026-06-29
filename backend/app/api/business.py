@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
-from app.models.business import BusinessProfile, Agent
+from app.models.business import BusinessProfile, Agent, VerticalType
 from app.schemas.business import (
     BusinessProfileCreate,
     BusinessProfileUpdate,
@@ -29,6 +29,40 @@ DEFAULT_FEATURES_CONFIG = {
     "b2b_solutions": {"enabled": False},
     "sales_intelligence": {"enabled": False}
 }
+
+def get_default_routing_config(vertical_type: str) -> dict:
+    if vertical_type == "TRADE":
+        return {
+            "prospective_clients": {"enabled": True},
+            "distributors_retailers": {"enabled": True},
+            "sales_reps": {"enabled": True}
+        }
+    else:
+        return {
+            "prospective_clients": {"enabled": False},
+            "distributors_retailers": {"enabled": False},
+            "sales_reps": {"enabled": True}
+        }
+
+def get_default_features_config(vertical_type: str) -> dict:
+    if vertical_type == "TRADE":
+        return {
+            "scheduling": {"enabled": True},
+            "business_identity": {"enabled": True},
+            "crm_suite": {"enabled": True},
+            "campaign_flow": {"enabled": True},
+            "b2b_solutions": {"enabled": True},
+            "sales_intelligence": {"enabled": True}
+        }
+    else:
+        return {
+            "scheduling": {"enabled": True},
+            "business_identity": {"enabled": True},
+            "crm_suite": {"enabled": True},
+            "campaign_flow": {"enabled": False},
+            "b2b_solutions": {"enabled": False},
+            "sales_intelligence": {"enabled": False}
+        }
 
 router = APIRouter()
 
@@ -167,10 +201,20 @@ async def test_chat(
         for field, value in payload.assistant_config.dict(exclude_unset=True).items():
             setattr(business.assistant_config, field, value)
             
-    # 1. Check if the simulated flow is enabled in company's routing configuration
+    # 1. Check if the simulated flow is enabled in company's features and routing configurations
     simulate_role = payload.simulate_role or "sales_rep"
-    cfg = business.routing_config or {}
     
+    # Check feature flag entitlement first
+    feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+    feature_enabled = True
+    if simulate_role == "prospective_client":
+        feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
+    elif simulate_role == "distributor_retailer":
+        feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+    elif simulate_role == "sales_rep":
+        feature_enabled = feat_cfg.get("crm_suite", {}).get("enabled", True)
+
+    cfg = business.routing_config or {}
     flow_enabled = False
     if simulate_role == "prospective_client":
         flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
@@ -179,7 +223,7 @@ async def test_chat(
     elif simulate_role == "sales_rep":
         flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
         
-    if not flow_enabled:
+    if not feature_enabled or not flow_enabled:
         return {"response": "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."}
 
     # 2. Dispatch to the correct underlying message pipeline
@@ -255,11 +299,15 @@ async def create_business_me(
         business = result.scalars().first()
         
         if not business:
+            v_type = business_in.vertical_type or VerticalType.BASIC
             business = BusinessProfile(
                 user_id=current_user.id,
                 name=business_in.name,
                 category=business_in.category,
-                contact_phone=business_in.contact_phone
+                contact_phone=business_in.contact_phone,
+                vertical_type=v_type,
+                routing_config=business_in.routing_config or get_default_routing_config(v_type),
+                features_config=business_in.features_config or get_default_features_config(v_type)
             )
             db.add(business)
             await db.flush() # Get the ID without committing yet
@@ -311,13 +359,17 @@ async def update_business_me(
     if not business:
         # Auto-create if it doesn't exist (robust for admins/legacy)
         print(f"DEBUG: Business not found for user {current_user.id}, creating new profile.")
+        v_type = business_in.vertical_type or VerticalType.BASIC
         business = BusinessProfile(
             user_id=current_user.id,
             name=business_in.name or "My Business",
             category=business_in.category,
             contact_phone=business_in.contact_phone,
             timezone=business_in.timezone or "UTC",
-            crm_config=business_in.crm_config or []
+            crm_config=business_in.crm_config or [],
+            vertical_type=v_type,
+            routing_config=business_in.routing_config or get_default_routing_config(v_type),
+            features_config=business_in.features_config or get_default_features_config(v_type)
         )
         db.add(business)
         await db.flush()
