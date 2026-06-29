@@ -669,6 +669,67 @@ The following tasks have been removed or deprecated from active epics because of
     * *When* running the testing suite,
     * *Then* all feature-bound restriction, profile initialization, and vertical migration scenarios pass cleanly.
 
+---
+
+## Epic 150: Infrastructure Staging Hardening & Cost Optimization
+**Objective**: Optimize the Railway staging environment resources to reduce monthly billing while preserving performance and reliability.
+
+- [ ] Task 150.1: **Restrict Celery Worker Concurrency**
+  * **Description**: Update the Celery worker command in `backend/Procfile` and `docker-compose.yml` to specify `--concurrency=1`, `--max-tasks-per-child=50`, and `--prefetch-multiplier=1`. This will limit memory overhead and prevent memory leaks.
+  * **Acceptance Criteria**:
+    * *Given* the worker configuration in staging,
+    * *When* Celery is launched,
+    * *Then* the process pool count is limited to 1, and child workers recycle after executing 50 tasks.
+
+- [ ] Task 150.2: **Implement Conditional Connection Pooling & Disable SQL Echo**
+  * **Description**: Update `backend/app/core/database.py` to use `QueuePool` with sensible limits for the API server, but keep `NullPool` for worker processes to prevent pre-fork socket sharing issues. Disable SQL echo in staging/production (`echo=False`) to reduce logging overhead.
+  * **Acceptance Criteria**:
+    * *Given* the database engine configuration,
+    * *When* running in the API server context,
+    * *Then* a connection pool is initialized.
+    * *When* running in a Celery worker context,
+    * *Then* connection pooling is disabled (`NullPool`).
+    * *Then* SQLAlchemy logs are not printed to stdout in staging/production.
+
+- [ ] Task 150.3: **Optimize Celery Result Expiration & Polling Chatter**
+  * **Description**: Configure `task_ignore_result = True` by default in `celery_app.py`, set a low expiration (`result_expires = 1800`), and configure `broker_transport_options` with a `polling_interval` of 5.0 seconds.
+  * **Acceptance Criteria**:
+    * *Given* Celery broker transport configuration,
+    * *When* the worker is running idle,
+    * *Then* it polls Redis at 5-second intervals, reducing Redis CPU load.
+
+- [ ] Task 150.4: **Next.js Standalone Build**
+  * **Description**: Configure Next.js standalone output in `frontend/next.config.js` to build a minimal standalone node application, reducing runtime memory footprint.
+  * **Acceptance Criteria**:
+    * *Given* Next.js compilation,
+    * *When* running `npm run build`,
+    * *Then* the compiler outputs a standalone build target in `.next/standalone/server.js`.
+
+- [ ] Task 150.5: **Configure Railway CPU/RAM Limits and Sleep on Idle**
+  * **Description**: Apply resource limits (512MB RAM for worker, API, frontend, postgres; 256MB RAM for Redis) and enable "Sleep on Idle" for the web and API services in the Railway dashboard settings.
+  * **Acceptance Criteria**:
+    * *Given* the Railway staging console,
+    * *When* no developer is active,
+    * *Then* the frontend and API containers spin down to sleep.
+
+- [ ] Task 150.6: **Celery Queue Isolation Setup**
+  * **Description**: Configure Celery settings in `celery_app.py` to define two distinct queues (`fast_queue` and `slow_queue`). Route short I/O tasks (`send_upcoming_reminders`, `sync_all_calendars`) to `fast_queue` and heavy AI tasks (`ingestion`, `knowledge`) to `slow_queue`.
+  * **Acceptance Criteria**:
+    * *Given* a task dispatcher context,
+    * *When* `sync_single_calendar` is dispatched,
+    * *Then* it is routed to the `fast_queue`.
+    * *When* a GraphRAG knowledge extraction task is dispatched,
+    * *Then* it is routed to the `slow_queue`.
+
+- [ ] Task 150.7: **Configure Horizontal Production Procfile**
+  * **Description**: Update production deployment settings to start separate worker processes targeting specific queues with customized concurrency constraints (`--concurrency=4` for fast queue and `--concurrency=1` for slow queue).
+  * **Acceptance Criteria**:
+    * *Given* the production environment,
+    * *When* the Celery workers are launched,
+    * *Then* the fast workers process tasks from `fast_queue` with concurrency 4, and the slow workers process tasks from `slow_queue` with concurrency 1.
+
+
+
 
 
 

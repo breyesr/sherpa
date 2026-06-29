@@ -437,6 +437,8 @@
 - **Optimized Prospect Collection Flow**: Restructured the WhatsApp prospect qualification stage in `backend/app/services/prospect_qualifier.py`. When a request is qualified for wholesale, it immediately prompts for the delivery address and ZIP code to check coverage first. Once valid, it asks for the name, phone, email, and company details in one single consolidated query instead of one question at a time. Verified successfully with simulation tests.
 - **State-Filtered Physical Store Redirects**: Added logic to `backend/app/services/prospect_qualifier.py` that checks the state corresponding to the prospect's out-of-range ZIP code and limits physical store redirects to locations inside that same state. If no stores exist in that state, suggestions are omitted entirely. Verified with integration tests.
 
-
-
-
+## [2026-06-29] - Railway Staging Cost & Resource Optimization Analysis
+- **Billing Audit**: Conducted a thorough cost and infrastructure audit of Railway staging billing details (totaling $10.16).
+- **RAM Drivers Isolated**: Identified that RAM consumes 97.4% of total project costs ($9.90). Identified the Celery worker (Asynchronous Processor) as the primary contributor ($6.16, 60.6%) due to default worker core auto-detection spawning 32+ idle pre-fork processes.
+- **Redis Polling Overhead**: Isolated high Redis CPU consumption (198.45 vCPU-hours) to worker heartbeats/polling loops, and FastAPI/Next.js memory usage to 24/7 run-time profiles without sleep/memory constraints.
+- **Remediation Strategy**: Drafted an actionable cost-reduction guide recommending worker concurrency limits, strict memory quotas, standalone Next.js builds, and "Sleep on Idle" settings to save ~87% of monthly staging costs.

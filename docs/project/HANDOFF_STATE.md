@@ -1,14 +1,14 @@
-# Handoff State: 2026-06-27 (Epic 140 Backlog Upgrade)
+# Handoff State: 2026-06-29 (Railway Staging Billing Optimization)
 
 ## 🎯 Current Status
-We investigated a bug where a new trade vertical user with campaign flow gets the error `"Este servicio no está habilitado..."` in the Live Test Sandbox, Telegram, and WhatsApp. We identified that the root cause is `routing_config` defaulting to an empty dictionary `{}` which strictly disables prospect and distributor flows. Furthermore, the system lacks dynamic checks against the user's `features_config` on these webhooks/sandbox entry points. To address this, we defined and added **Epic 140** to `docs/project/BACKLOG.md` (now fully updated with initialization helper, admin PATCH promotion upgrades, and Alembic database data backfills) to align access controls across all three intake channels.
+We completed a comprehensive DevOps analysis of the Railway staging environment's resource consumption and costs. The primary driver of the staging bill is RAM (representing 97.4% of total expenses), with the Celery worker (Asynchronous Processor) accounting for over 60% of the total cost due to default host-concurrency process forks. We have documented these findings and proposed concrete configuration fixes to achieve ~87% cost savings.
 
 ---
 
 ## ✅ Accomplishments
-- **Bug Diagnosis**: Fully investigated why new trade vertical users get blocked in webhooks and sandbox.
-- **Epic 140 Expansion**: Successfully drafted and expanded Epic 140 ("Feature-Bound Access Control & Intake Alignment") with detailed tasks (140.1 to 140.8) and Given/When/Then acceptance criteria inside `docs/project/BACKLOG.md`.
-- **System Hygiene**: Verified that no database schemas or source code files have been modified, per the user's request.
+- **Billing Optimization Report**: Created [railway_staging_cost_analysis.md](file:///Users/bernardo/.gemini/antigravity-cli/brain/fbfd7a8a-1ba1-4211-8e5f-a44cccb222d7/railway_staging_cost_analysis.md) detailing memory bottlenecks, Celery concurrency multipliers, Next.js footprint, and database/broker idle consumption.
+- **Remediation Mapping**: Mapped exact configuration adjustments needed (worker concurrency limits, strict service memory limits, Sleep on Idle activation, and Celery polling optimizations).
+- **Handoff & Log Integration**: Logged the accomplishments in `HANDOFF_LOG.md`.
 
 ---
 
@@ -18,4 +18,7 @@ We investigated a bug where a new trade vertical user with campaign flow gets th
 ---
 
 ## 🚀 Next Steps
-1. **Implementation Authorization**: Await user authorization to execute Epic 140 tasks (enforcing feature-bound checks in backend API, webhooks routing, sandbox frontend selector UI, dynamic profile defaults, admin vertical promotion patches, and Alembic data backfills).
+1. **Apply Configuration Adjustments**: Implement the recommended Railway service memory limits and enable "Sleep on Idle" in the Railway staging environment dashboard.
+2. **Restrict Celery Concurrency**: Update the staging start command in the worker configuration or `Procfile` to set `--concurrency=1`.
+3. **Optimize Next.js Build**: Configure Next.js standalone build target to minimize the frontend dashboard's resident RAM footprint.
+
