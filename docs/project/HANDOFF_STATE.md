@@ -1,25 +1,21 @@
-# Handoff State: 2026-06-29 (Epic 150 Cost Optimization Completed & Deployed)
+# Handoff State: 2026-06-29 (Epic 140 Access Control & Intake Alignment Completed)
 
 ## 🎯 Current Status
-We have successfully implemented, verified, and deployed the cost optimization and staging hardening changes under Epic 150. Staging is now running with strict RAM limits, Serverless sleep-on-idle settings, restricted Celery worker concurrency (concurrency=1), conditional connection pooling (`AsyncAdaptedQueuePool` for FastAPI, `NullPool` for Celery), and isolated fast/slow queues. The new configurations are live on Railway staging.
-
----
+We have successfully implemented, verified, and locally migrated the access control and intake alignment features under Epic 140. Staged to remote branch `feature/backend/epic-140-access-control` and ready for pull request merge to `staging`.
 
 ## ✅ Accomplishments
-- **Celery Concurrency Controls**: Modified `backend/Procfile` and `docker-compose.yml` to limit worker concurrency (`--concurrency=1`, `--max-tasks-per-child=50`, and `--prefetch-multiplier=1`).
-- **Connection Pooling**: Configured `AsyncAdaptedQueuePool` for the API server and `NullPool` for Celery processes in `backend/app/core/database.py`, and disabled SQL query logging to prevent log bloating.
-- **Queue Isolation**: Defined `fast_queue` and `slow_queue` in `backend/app/core/celery_app.py`, routing instant webhook/reminder tasks to the fast queue and heavy AI/ingestion tasks to the slow queue.
-- **Next.js Standalone Build**: Added `output: 'standalone'` in `frontend/next.config.mjs` to optimize Next.js runtime memory.
-- **Manual Dashboard Configs**: Verified RAM limits (512MB for API, worker, frontend, db; 256MB for Redis) and enabled "Serverless" sleep-on-idle for API and web dashboard services on Railway.
-- **Secret Scan Cleanup**: Ignored database backups (`*.sql`, `*.dump`) locally and in `temp/` to prevent secret-scanning rule violations on push.
-- **Branch Merged & Pushed**: Merged changes into `staging`, pushed successfully to GitHub, and pushed the feature branch `feature/backend/epic-150-cost-optimization` to remote.
-
----
+- **Task 140.1 (Sandbox `/test-chat` Feature Gates)**: Blocked simulation requests for roles that do not have their corresponding feature flag enabled in `features_config`.
+- **Task 140.2 (Telegram Webhook Routing)**: Added check to telegram webhook handler to cross-reference resolved sender roles with `features_config` flags and reject with a polite default response.
+- **Task 140.3 (WhatsApp Webhook Routing)**: Integrated routing check with WhatsApp webhook handler returning a valid Twilio TwiML rejection message if the feature is disabled.
+- **Task 140.4 (Frontend Sandbox UI Feature Filtering)**: Dynamically rendered simulation options in the settings sandbox based on the active licensed features.
+- **Task 140.5 (Profile Initialization)**: Implemented helper default builders to auto-populate routing and feature configurations per vertical (`BASIC`/`TRADE`) during onboarding/creation.
+- **Task 140.6 (Admin Upgrade Path)**: Created config upgrade pathway to dynamically append B2B routing keys when a user is promoted from BASIC to TRADE.
+- **Task 140.7 (Alembic Data Migration)**: Created and locally executed a Postgres-compatible Alembic migration to backfill all NULL/empty routing profiles with vertical defaults.
+- **Task 140.8 (Verification Suite)**: Created `test_sandbox_gates.py` running 10 parallel webhook, sandbox, and admin scenarios. All pass 100% cleanly.
 
 ## 🚧 Blockers & Risks
 - **None**.
 
----
-
 ## 🚀 Next Steps
-1. **Epic 140 Implementation Authorization**: Await user authorization to begin executing Epic 140 tasks (enforcing feature-bound checks in backend API, webhook routing, sandbox frontend selector UI, dynamic profile defaults, admin vertical promotion patches, and Alembic data backfills).
+1. **Epic 140 Merge to Staging**: Perform HITM verification and merge the `feature/backend/epic-140-access-control` branch to `staging`.
+2. **Begin Epic 138 (Account & Channel Association Logic)** or **Epic 139 (WhatsApp Business API Ingestion Integration)**.
