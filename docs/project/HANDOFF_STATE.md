@@ -1,14 +1,16 @@
-# Handoff State: 2026-06-29 (Railway Staging Billing Optimization)
+# Handoff State: 2026-06-29 (Epic 150 Cost Optimization Implementation)
 
 ## 🎯 Current Status
-We completed a comprehensive DevOps analysis of the Railway staging environment's resource consumption and costs. The primary driver of the staging bill is RAM (representing 97.4% of total expenses), with the Celery worker (Asynchronous Processor) accounting for over 60% of the total cost due to default host-concurrency process forks. We have documented these findings and proposed concrete configuration fixes to achieve ~87% cost savings.
+We have successfully implemented the infrastructure hardening and cost optimization configuration adjustments defined in Epic 150. All backend test suites compile and pass successfully, confirming that the new conditional connection pooling, query echo disabling, and Celery queue/routing rules did not break any functionality.
 
 ---
 
 ## ✅ Accomplishments
-- **Billing Optimization Report**: Created [railway_staging_cost_analysis.md](file:///Users/bernardo/.gemini/antigravity-cli/brain/fbfd7a8a-1ba1-4211-8e5f-a44cccb222d7/railway_staging_cost_analysis.md) detailing memory bottlenecks, Celery concurrency multipliers, Next.js footprint, and database/broker idle consumption.
-- **Remediation Mapping**: Mapped exact configuration adjustments needed (worker concurrency limits, strict service memory limits, Sleep on Idle activation, and Celery polling optimizations).
-- **Handoff & Log Integration**: Logged the accomplishments in `HANDOFF_LOG.md`.
+- **Celery Concurrency Restriction**: Modified `backend/Procfile` and `docker-compose.yml` to limit worker concurrency (`--concurrency=1`, `--max-tasks-per-child=50`, and `--prefetch-multiplier=1`) to optimize RAM consumption.
+- **Connection Pooling Optimization**: Updated `backend/app/core/database.py` to use `AsyncAdaptedQueuePool` for the FastAPI Web API server (`pool_size=5`, `max_overflow=10`, `pool_recycle=1800`) and disabled pooling (`NullPool`) for Celery processes to prevent post-fork connection problems. Turned off SQL echoing (`echo=False`).
+- **Celery Queues & Routing Rules**: Updated `backend/app/core/celery_app.py` to define `fast_queue` and `slow_queue`. Routed fast tasks (`send_upcoming_reminders`, `sync_all_calendars`) to `fast_queue` and all others to `slow_queue`. Added global Celery settings to limit result storage and reduce Redis polling chatter (`polling_interval=5.0`).
+- **Next.js Standalone Build**: Configured Next.js standalone build target in `frontend/next.config.mjs` to minimize the production build RAM footprint.
+- **Verification**: Executed backend unit and integration test suite via `venv/bin/pytest` under `backend/` with 100% of the 11 tests passing.
 
 ---
 
@@ -18,7 +20,5 @@ We completed a comprehensive DevOps analysis of the Railway staging environment'
 ---
 
 ## 🚀 Next Steps
-1. **Apply Configuration Adjustments**: Implement the recommended Railway service memory limits and enable "Sleep on Idle" in the Railway staging environment dashboard.
-2. **Restrict Celery Concurrency**: Update the staging start command in the worker configuration or `Procfile` to set `--concurrency=1`.
-3. **Optimize Next.js Build**: Configure Next.js standalone build target to minimize the frontend dashboard's resident RAM footprint.
-
+1. **Manual Railway Dashboard Steps**: Configure the staging container RAM limits (512MB for worker, web API, frontend, postgres; 256MB for Redis) and enable "Sleep on Idle" in the Railway service dashboard settings.
+2. **Merge feature/backend/epic-150-cost-optimization**: Open a pull request and obtain HITM approval to merge these staging adjustments into the `staging` branch.

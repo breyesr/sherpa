@@ -1,0 +1,7 @@
+{
+  "folderTrust": true,
+  "experimental": {
+    "enableAgents": true,
+    "enableSubagents": true
+  }
+}

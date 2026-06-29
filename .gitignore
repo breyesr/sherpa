@@ -46,3 +46,12 @@ GEMINI.md
 dist/
 build/
 *.tsbuildinfo
+
+# Database dumps and backups
+*.sql
+*.dump
+temp/*.dump
+temp/*.sql
+temp/local_db_export.*
+temp/mexico_geography_database.csv
+
