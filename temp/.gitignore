@@ -1,0 +1,7 @@
+# Ignore database backups and large data files in this directory
+*.sql
+*.dump
+*.csv
+
+# Ensure markdown documentation files are tracked
+!*.md
