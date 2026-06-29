@@ -705,12 +705,13 @@ The following tasks have been removed or deprecated from active epics because of
     * *When* running `npm run build`,
     * *Then* the compiler outputs a standalone build target in `.next/standalone/server.js`.
 
-- [ ] Task 150.5: **Configure Railway CPU/RAM Limits and Sleep on Idle**
+- [x] Task 150.5: **Configure Railway CPU/RAM Limits and Sleep on Idle**
   * **Description**: Apply resource limits (512MB RAM for worker, API, frontend, postgres; 256MB RAM for Redis) and enable "Sleep on Idle" for the web and API services in the Railway dashboard settings.
   * **Acceptance Criteria**:
     * *Given* the Railway staging console,
     * *When* no developer is active,
     * *Then* the frontend and API containers spin down to sleep.
+
 
 - [x] Task 150.6: **Celery Queue Isolation Setup**
   * **Description**: Configure Celery settings in `celery_app.py` to define two distinct queues (`fast_queue` and `slow_queue`). Route short I/O tasks (`send_upcoming_reminders`, `sync_all_calendars`) to `fast_queue` and heavy AI tasks (`ingestion`, `knowledge`) to `slow_queue`.
