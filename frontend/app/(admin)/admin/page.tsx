@@ -155,13 +155,26 @@ export default function AdminSettingsPage() {
       const url = editingUser ? `${API_BASE_URL}/admin/users/${editingUser.id}` : `${API_BASE_URL}/admin/users`;
       const method = editingUser ? 'PATCH' : 'POST';
       
+      const finalForm = {
+        ...userForm,
+        features_config: {
+          ...userForm.features_config,
+          scheduling: { enabled: true },
+          business_identity: { enabled: true },
+          crm_suite: { enabled: true },
+          campaign_flow: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.campaign_flow?.enabled ?? true) : false },
+          b2b_solutions: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.b2b_solutions?.enabled ?? true) : false },
+          sales_intelligence: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.sales_intelligence?.enabled ?? true) : false }
+        }
+      };
+      
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(userForm)
+        body: JSON.stringify(finalForm)
       });
 
       if (res.ok) {
@@ -636,7 +649,7 @@ export default function AdminSettingsPage() {
                         )}
                       </div>
                       <div className="mt-2">
-                        <h4 className="text-xs font-bold text-slate-800">Basic Vertical (B2C)</h4>
+                        <h4 className="text-xs font-bold text-slate-800">B2C (Basic Scheduler)</h4>
                         <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">Interactive calendar scheduler, CRM directory, and WhatsApp scheduling.</p>
                       </div>
                     </button>
@@ -674,186 +687,149 @@ export default function AdminSettingsPage() {
                         )}
                       </div>
                       <div className="mt-2">
-                        <h4 className="text-xs font-bold text-slate-800">Trade Vertical (B2B)</h4>
-                        <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">Full logistics hub, product catalogs, restock orders, & Sales Intelligence Coach.</p>
+                        <h4 className="text-xs font-bold text-slate-800">B2B (Trade Logistics)</h4>
+                        <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">Full logistics hub, product catalogs, restock orders, and AI sales intelligence.</p>
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {/* Section: Modular Feature Toggles */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">3. Modular Feature Toggles</h4>
-                  
-                  <div className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                    
-                    {/* Scheduling Toggle */}
-                    <div
-                      onClick={() => setUserForm({
-                        ...userForm,
-                        features_config: {
-                          ...userForm.features_config,
-                          scheduling: { enabled: !(userForm.features_config?.scheduling?.enabled ?? true) }
-                        }
-                      })}
-                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                        userForm.features_config?.scheduling?.enabled ?? true
-                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
-                          : 'border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg ${userForm.features_config?.scheduling?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <Calendar className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700">Appointment Scheduler</span>
-                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            (userForm.features_config?.scheduling?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
-                          }`}>
-                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                              (userForm.features_config?.scheduling?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </div>
+                {/* Section: Feature Toggles or Locked Core info */}
+                {userForm.vertical_type === 'BASIC' ? (
+                  <div className="space-y-3 animate-in fade-in duration-200 w-full">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">3. Core Features Included</h4>
+                    <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100">
+                        <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                          <Calendar className="w-4 h-4" />
                         </div>
-                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Interactive calendar engine and booking scheduling core.</p>
+                        <div>
+                          <span className="text-xs font-bold text-slate-700 block">Appointment Scheduler</span>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Interactive calendar engine and booking scheduling core.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100">
+                        <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-700 block">Client Relationship Suite (CRM)</span>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Contact profiles desk, client qualification filters, and custom messaging.</p>
+                        </div>
+                      </div>
+                      <div className="p-3 text-[10px] text-slate-400 bg-slate-100/50 rounded-xl font-semibold flex items-center gap-2 border border-dashed border-slate-200">
+                        <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>B2C accounts include Core Scheduling and CRM. Upgrade to B2B (Trade) to unlock modular campaigns, store logistics, and AI briefing.</span>
                       </div>
                     </div>
-
-                    {/* CRM Toggle */}
-                    <div
-                      onClick={() => setUserForm({
-                        ...userForm,
-                        features_config: {
-                          ...userForm.features_config,
-                          crm_suite: { enabled: !(userForm.features_config?.crm_suite?.enabled ?? true) }
-                        }
-                      })}
-                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                        userForm.features_config?.crm_suite?.enabled ?? true
-                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
-                          : 'border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg ${userForm.features_config?.crm_suite?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700">Client Relationship Suite (CRM)</span>
-                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            (userForm.features_config?.crm_suite?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
-                          }`}>
-                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                              (userForm.features_config?.crm_suite?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Contact profiles desk, client qualification filters, and custom messaging.</p>
-                      </div>
-                    </div>
-
-                    {/* Campaign Flow Toggle */}
-                    <div
-                      onClick={() => setUserForm({
-                        ...userForm,
-                        features_config: {
-                          ...userForm.features_config,
-                          campaign_flow: { enabled: !(userForm.features_config?.campaign_flow?.enabled ?? false) }
-                        }
-                      })}
-                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                        userForm.features_config?.campaign_flow?.enabled ?? false
-                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
-                          : 'border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg ${userForm.features_config?.campaign_flow?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <MessageSquare className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700">Campaign Flow / Auto-Response</span>
-                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            (userForm.features_config?.campaign_flow?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
-                          }`}>
-                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                              (userForm.features_config?.campaign_flow?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Inbound WhatsApp prospective leads qualification campaigns.</p>
-                      </div>
-                    </div>
-
-                    {/* B2B Solutions Toggle */}
-                    <div
-                      onClick={() => setUserForm({
-                        ...userForm,
-                        features_config: {
-                          ...userForm.features_config,
-                          b2b_solutions: { enabled: !(userForm.features_config?.b2b_solutions?.enabled ?? false) }
-                        }
-                      })}
-                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                        userForm.features_config?.b2b_solutions?.enabled ?? false
-                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
-                          : 'border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg ${userForm.features_config?.b2b_solutions?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <Store className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700">B2B Store Solutions</span>
-                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            (userForm.features_config?.b2b_solutions?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
-                          }`}>
-                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                              (userForm.features_config?.b2b_solutions?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Commercial stores routing, restocking orders, and template actions.</p>
-                      </div>
-                    </div>
-
-                    {/* Sales Intelligence Toggle */}
-                    <div
-                      onClick={() => setUserForm({
-                        ...userForm,
-                        features_config: {
-                          ...userForm.features_config,
-                          sales_intelligence: { enabled: !(userForm.features_config?.sales_intelligence?.enabled ?? false) }
-                        }
-                      })}
-                      className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                        userForm.features_config?.sales_intelligence?.enabled ?? false
-                          ? 'border-blue-200 bg-blue-50/5 shadow-sm'
-                          : 'border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg ${userForm.features_config?.sales_intelligence?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700">Sales Intelligence Coach</span>
-                          <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            (userForm.features_config?.sales_intelligence?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
-                          }`}>
-                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                              (userForm.features_config?.sales_intelligence?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Dossiers builder, territory intelligence feed, and AI coach briefs.</p>
-                      </div>
-                    </div>
-
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-3 animate-in fade-in duration-200 w-full">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">3. Modular B2B Features</h4>
+                    <div className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                      
+                      {/* Campaign Flow Toggle */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            campaign_flow: { enabled: !(userForm.features_config?.campaign_flow?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.campaign_flow?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.campaign_flow?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <MessageSquare className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Automated Intake & Campaigns</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.campaign_flow?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.campaign_flow?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Qualify prospective inbound leads via automated WhatsApp/Telegram waitlist and intake flows.</p>
+                        </div>
+                      </div>
+
+                      {/* B2B Solutions Toggle */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            b2b_solutions: { enabled: !(userForm.features_config?.b2b_solutions?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.b2b_solutions?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.b2b_solutions?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Store className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Store Routing & Order Logistics</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.b2b_solutions?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.b2b_solutions?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Manage physical store routing, delivery zones, restocking orders, and sales rep action catalog.</p>
+                        </div>
+                      </div>
+
+                      {/* Sales Intelligence Toggle */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            sales_intelligence: { enabled: !(userForm.features_config?.sales_intelligence?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.sales_intelligence?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.sales_intelligence?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Sales Intelligence & AI Briefs</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.sales_intelligence?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.sales_intelligence?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Generate account briefing summaries and store dossier profiles using GraphRAG account analysis.</p>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
 
               </div>
               
