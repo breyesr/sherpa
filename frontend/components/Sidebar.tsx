@@ -86,13 +86,17 @@ function SidebarContent() {
     crm_suite: { enabled: business?.vertical_type === 'BASIC' },
     campaign_flow: { enabled: business?.vertical_type === 'TRADE' },
     b2b_solutions: { enabled: business?.vertical_type === 'TRADE' },
-    sales_intelligence: { enabled: business?.vertical_type === 'TRADE' }
+    sales_intelligence: { enabled: business?.vertical_type === 'TRADE' },
+    services: { enabled: business?.vertical_type === 'BASIC' },
+    products: { enabled: business?.vertical_type === 'TRADE' }
   };
 
   const showScheduling = features.scheduling?.enabled ?? true;
   const showCRM = features.crm_suite?.enabled ?? false;
   const showCampaignFlow = features.campaign_flow?.enabled ?? false;
   const showB2BSolutions = features.b2b_solutions?.enabled ?? false;
+  const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+  const showProducts = features.products?.enabled ?? (business?.vertical_type === 'TRADE');
 
   return (
     <div className="w-64 bg-white border-r min-h-screen flex flex-col shrink-0">
@@ -113,17 +117,16 @@ function SidebarContent() {
         {showCRM && !showB2BSolutions && (
           <div className="space-y-1 pt-2 border-t border-gray-100">
             <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
-            <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
+            {showServices && (
+              <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
+            )}
             
-            <div className="flex items-center gap-3 px-4 py-2 text-gray-300 cursor-not-allowed select-none">
-              <Tag size={20} />
-              <span className="font-bold text-sm">Category (pending)</span>
-            </div>
-            
-            <div className="flex items-center gap-3 px-4 py-2 text-gray-300 cursor-not-allowed select-none">
-              <Package size={20} />
-              <span className="font-bold text-sm">Products (pending)</span>
-            </div>
+            {showProducts && (
+              <>
+                <SidebarLink href="/trade/products?tab=categories" icon={Tag} name="Category" active={pathname.startsWith('/trade/products') && activeTab === 'categories'} />
+                <SidebarLink href="/trade/products?tab=products" icon={Package} name="Products" active={pathname.startsWith('/trade/products') && activeTab !== 'categories'} />
+              </>
+            )}
           </div>
         )}
 
@@ -135,27 +138,27 @@ function SidebarContent() {
               <div className="pl-9 space-y-1">
                 <Link 
                   href="/trade/stores"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  • Accounts
+                  Accounts
                 </Link>
                 <Link 
                   href="/trade/retailers"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  • Contacts
+                  Contacts
                 </Link>
                 <Link 
                   href="/trade/orders"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  • Orders
+                  Orders
                 </Link>
                 <Link 
                   href="/trade/actions"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  • Actions
+                  Actions
                 </Link>
               </div>
             </div>
@@ -165,13 +168,16 @@ function SidebarContent() {
               <div className="space-y-1 pt-2 border-t border-gray-50">
                 <button 
                   onClick={() => setIsProspectingOpen(!isProspectingOpen)}
-                  className="flex items-center justify-between w-full px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider hover:text-gray-600 transition-colors"
+                  className="flex items-center justify-between w-full px-4 py-2 text-slate-400 font-bold text-xs uppercase tracking-wider hover:text-slate-600 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <Users size={16} />
                     <span>Prospecting</span>
                   </div>
-                  {isProspectingOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  <ChevronRight 
+                    size={14} 
+                    className={`transform transition-transform duration-200 ${isProspectingOpen ? 'rotate-90' : ''}`} 
+                  />
                 </button>
                 
                 {isProspectingOpen && (
@@ -180,22 +186,25 @@ function SidebarContent() {
                     <div className="space-y-1">
                       <button 
                         onClick={() => setIsWholesaleOpen(!isWholesaleOpen)}
-                        className="flex items-center justify-between w-full pl-3 pr-2 py-1 text-gray-500 font-bold text-xs hover:text-gray-900 transition-colors"
+                        className="flex items-center justify-between w-full pl-3 pr-2 py-1 text-slate-500 font-bold text-xs hover:text-slate-900 transition-colors"
                       >
-                        <span className="flex items-center gap-2">• Wholesale</span>
-                        {isWholesaleOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                        <span className="flex items-center gap-2">Wholesale</span>
+                        <ChevronRight 
+                          size={12} 
+                          className={`transform transition-transform duration-200 ${isWholesaleOpen ? 'rotate-90' : ''}`} 
+                        />
                       </button>
                       {isWholesaleOpen && (
-                        <div className="pl-6 space-y-1 border-l border-gray-100 ml-2">
+                        <div className="pl-6 space-y-1 border-l border-slate-100 ml-2">
                           <Link 
                             href="/trade/prospects/accounts?segment=wholesale"
-                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                            className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
                             Accounts
                           </Link>
                           <Link 
                             href="/trade/prospects/contacts?segment=wholesale"
-                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                            className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
                             Contacts
                           </Link>
@@ -207,22 +216,25 @@ function SidebarContent() {
                     <div className="space-y-1">
                       <button 
                         onClick={() => setIsRetailOpen(!isRetailOpen)}
-                        className="flex items-center justify-between w-full pl-3 pr-2 py-1 text-gray-500 font-bold text-xs hover:text-gray-900 transition-colors"
+                        className="flex items-center justify-between w-full pl-3 pr-2 py-1 text-slate-500 font-bold text-xs hover:text-slate-900 transition-colors"
                       >
-                        <span className="flex items-center gap-2">• Retail</span>
-                        {isRetailOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                        <span className="flex items-center gap-2">Retail</span>
+                        <ChevronRight 
+                          size={12} 
+                          className={`transform transition-transform duration-200 ${isRetailOpen ? 'rotate-90' : ''}`} 
+                        />
                       </button>
                       {isRetailOpen && (
-                        <div className="pl-6 space-y-1 border-l border-gray-100 ml-2">
+                        <div className="pl-6 space-y-1 border-l border-slate-100 ml-2">
                           <Link 
                             href="/trade/prospects/accounts?segment=retail"
-                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                            className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
                             Accounts
                           </Link>
                           <Link 
                             href="/trade/prospects/contacts?segment=retail"
-                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                            className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
                             Contacts
                           </Link>
@@ -247,26 +259,26 @@ function SidebarContent() {
           </div>
         )}
 
-        {(showB2BSolutions || showCampaignFlow) && (
+        {showB2BSolutions && showProducts && (
           <div className="space-y-1 pt-2 border-t border-gray-100">
             {/* Products Group */}
             <div className="space-y-1">
-              <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-3 px-4 py-2 text-slate-400 font-bold text-xs uppercase tracking-wider">
                 <Package size={16} />
                 <span>Products</span>
               </div>
               <div className="pl-9 space-y-1">
                 <Link 
                   href="/trade/products?tab=categories"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  • Categories
+                  Categories
                 </Link>
                 <Link 
                   href="/trade/products?tab=products"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  • Products
+                  Products
                 </Link>
               </div>
             </div>
@@ -307,12 +319,15 @@ function SidebarLink({ href, icon: Icon, name, active }: any) {
   return (
     <Link 
       href={href}
-      className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all font-bold ${
+      className={`relative flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm font-semibold ${
         active 
-          ? 'bg-blue-50 text-blue-600 shadow-sm' 
-          : 'text-gray-600 hover:bg-gray-50'
+          ? 'bg-blue-50/50 text-blue-600 shadow-sm' 
+          : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-900'
       }`}
     >
+      {active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-md" />
+      )}
       <Icon size={20} />
       <span>{name}</span>
     </Link>

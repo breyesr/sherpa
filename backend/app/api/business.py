@@ -27,7 +27,9 @@ DEFAULT_FEATURES_CONFIG = {
     "crm_suite": {"enabled": True},
     "campaign_flow": {"enabled": False},
     "b2b_solutions": {"enabled": False},
-    "sales_intelligence": {"enabled": False}
+    "sales_intelligence": {"enabled": False},
+    "services": {"enabled": True},
+    "products": {"enabled": False}
 }
 
 def get_default_routing_config(vertical_type: str) -> dict:
@@ -52,7 +54,9 @@ def get_default_features_config(vertical_type: str) -> dict:
             "crm_suite": {"enabled": True},
             "campaign_flow": {"enabled": True},
             "b2b_solutions": {"enabled": True},
-            "sales_intelligence": {"enabled": True}
+            "sales_intelligence": {"enabled": True},
+            "services": {"enabled": False},
+            "products": {"enabled": True}
         }
     else:
         return {
@@ -61,7 +65,9 @@ def get_default_features_config(vertical_type: str) -> dict:
             "crm_suite": {"enabled": True},
             "campaign_flow": {"enabled": False},
             "b2b_solutions": {"enabled": False},
-            "sales_intelligence": {"enabled": False}
+            "sales_intelligence": {"enabled": False},
+            "services": {"enabled": True},
+            "products": {"enabled": False}
         }
 
 router = APIRouter()

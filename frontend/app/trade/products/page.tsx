@@ -59,6 +59,26 @@ function ProductsPageContent() {
     enabled: !!token,
   });
 
+  // Fetch Business Profile
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      try {
+        const res = await fetch(`${API_BASE_URL}/business/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) return res.json();
+      } catch {
+        // Silent fail
+      }
+      return null;
+    },
+    enabled: !!token,
+  });
+
+  const isB2C = business?.vertical_type === 'BASIC';
+
   // Create a mapping of category ID to category Name for fast lookup
   const categoryMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -96,7 +116,9 @@ function ProductsPageContent() {
             Products
           </h1>
           <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
-            Browse and manage your B2B product catalog, active categories, and inventory items.
+            {isB2C 
+              ? "Browse and manage your retail product catalog, active categories, and catalog listings."
+              : "Browse and manage your B2B product catalog, active categories, and inventory items."}
           </p>
         </div>
         <div className="flex flex-wrap gap-4">
@@ -244,7 +266,7 @@ function ProductsPageContent() {
                           {product.name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-4 mt-1 text-gray-500 font-medium">
-                          {product.brand && (
+                          {!isB2C && product.brand && (
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-semibold">
                               {product.brand}
                             </span>
@@ -302,7 +324,9 @@ function ProductsPageContent() {
                     <h3 className="text-2xl font-black text-gray-900 group-hover:text-emerald-600 transition-all leading-tight truncate">
                       {product.name}
                     </h3>
-                    <p className="text-gray-400 font-bold text-xs mt-1 uppercase tracking-widest">{product.brand || 'No Brand'}</p>
+                    {!isB2C && (
+                      <p className="text-gray-400 font-bold text-xs mt-1 uppercase tracking-widest">{product.brand || 'No Brand'}</p>
+                    )}
                     
                     {product.sku && (
                       <p className="text-gray-400 text-xs font-mono mt-3">SKU: {product.sku}</p>

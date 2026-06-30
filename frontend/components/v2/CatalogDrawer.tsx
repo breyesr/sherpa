@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import Drawer from './Drawer';
 import { 
@@ -30,6 +30,26 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
   const [mode, setMode] = useState<'product' | 'category'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Fetch Business Profile
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      try {
+        const res = await fetch(`${API_BASE_URL}/business/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) return res.json();
+      } catch {
+        // Silent fail
+      }
+      return null;
+    },
+    enabled: !!token,
+  });
+
+  const isB2C = business?.vertical_type === 'BASIC';
   
   const isEditing = !!productId;
   
@@ -342,7 +362,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className={`space-y-2 ${isB2C ? 'col-span-2' : ''}`}>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">SKU / Code</label>
                   <input 
                     type="text"
@@ -352,30 +372,34 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                     onChange={e => setProductData({...productData, sku: e.target.value})}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Brand</label>
-                  <input 
-                    type="text"
-                    placeholder="e.g. Nespresso"
-                    className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
-                    value={productData.brand}
-                    onChange={e => setProductData({...productData, brand: e.target.value})}
-                  />
-                </div>
+                {!isB2C && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Brand</label>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Nespresso"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
+                      value={productData.brand}
+                      onChange={e => setProductData({...productData, brand: e.target.value})}
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Wholesale Threshold (Qty)</label>
-                <input 
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="e.g. 50 (Leave empty for none)"
-                  className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
-                  value={productData.wholesale_threshold}
-                  onChange={e => setProductData({...productData, wholesale_threshold: e.target.value ? parseInt(e.target.value, 10) : ''})}
-                />
-              </div>
+              {!isB2C && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Wholesale Threshold (Qty)</label>
+                  <input 
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="e.g. 50 (Leave empty for none)"
+                    className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
+                    value={productData.wholesale_threshold}
+                    onChange={e => setProductData({...productData, wholesale_threshold: e.target.value ? parseInt(e.target.value, 10) : ''})}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Description</label>

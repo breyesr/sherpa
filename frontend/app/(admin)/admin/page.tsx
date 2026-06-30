@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check } from 'lucide-react';
+import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check, Package, Scissors } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { components } from '@/types/api';
 
@@ -164,7 +164,9 @@ export default function AdminSettingsPage() {
           crm_suite: { enabled: true },
           campaign_flow: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.campaign_flow?.enabled ?? true) : false },
           b2b_solutions: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.b2b_solutions?.enabled ?? true) : false },
-          sales_intelligence: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.sales_intelligence?.enabled ?? true) : false }
+          sales_intelligence: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.sales_intelligence?.enabled ?? true) : false },
+          services: { enabled: userForm.vertical_type === 'BASIC' ? (userForm.features_config?.services?.enabled ?? true) : false },
+          products: { enabled: userForm.features_config?.products?.enabled ?? (userForm.vertical_type === 'TRADE') }
         }
       };
       
@@ -697,29 +699,91 @@ export default function AdminSettingsPage() {
                 {/* Section: Feature Toggles or Locked Core info */}
                 {userForm.vertical_type === 'BASIC' ? (
                   <div className="space-y-3 animate-in fade-in duration-200 w-full">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">3. Core Features Included</h4>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-1">3. Core Features & Toggles</h4>
                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-2">
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 opacity-75">
                         <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
                           <Calendar className="w-4 h-4" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <span className="text-xs font-bold text-slate-700 block">Appointment Scheduler</span>
                           <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Interactive calendar engine and booking scheduling core.</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 opacity-75">
                         <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
                           <Users className="w-4 h-4" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <span className="text-xs font-bold text-slate-700 block">Client Relationship Suite (CRM)</span>
                           <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Contact profiles desk, client qualification filters, and custom messaging.</p>
                         </div>
                       </div>
-                      <div className="p-3 text-[10px] text-slate-400 bg-slate-100/50 rounded-xl font-semibold flex items-center gap-2 border border-dashed border-slate-200">
-                        <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>B2C accounts include Core Scheduling and CRM. Upgrade to B2B (Trade) to unlock modular campaigns, store logistics, and AI briefing.</span>
+
+                      {/* Services Toggle */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            services: { enabled: !(userForm.features_config?.services?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.services?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.services?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Scissors className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Services Catalog</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.services?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.services?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Enable standalone catalog page for B2C services bookings.</p>
+                        </div>
+                      </div>
+
+                      {/* Products Toggle (for B2C) */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            products: { enabled: !(userForm.features_config?.products?.enabled ?? false) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.products?.enabled ?? false
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.products?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Products & Categories</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.products?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.products?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Enable products catalog page for B2C retail listings.</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -824,6 +888,39 @@ export default function AdminSettingsPage() {
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Generate account briefing summaries and store dossier profiles using GraphRAG account analysis.</p>
+                        </div>
+                      </div>
+
+                      {/* Products Toggle (for B2B) */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            products: { enabled: !(userForm.features_config?.products?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.products?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.products?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Products & Categories Catalog</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.products?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.products?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Manage products and categories definitions catalog (quantities, prices, and unit measurements).</p>
                         </div>
                       </div>
 
