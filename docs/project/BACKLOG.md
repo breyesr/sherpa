@@ -728,11 +728,32 @@ The following tasks have been removed or deprecated from active epics because of
     * *Given* the production environment,
     * *When* the Celery workers are launched,
     * *Then* the fast workers process tasks from `fast_queue` with concurrency 4, and the slow workers process tasks from `slow_queue` with concurrency 1.
+---
 
+## Epic 151: Simplified Admin User Provisioning & Feature Layout Alignment
+**Objective**: Streamline the Admin User Provisioning modal layout to use progressive disclosure, hiding core features and conditionally showing B2B sub-features only when B2B (Trade) is active, while updating feature labels for clarity.
 
+- [ ] Task 151.1: **Define B2B Sub-Feature Conditional Rendering**
+  * **Description**: Modify the Admin User Modal in `frontend/app/(admin)/admin/page.tsx` to conditionally render Section 3 (Modular B2B Features) only if `vertical_type === 'TRADE'`. If `vertical_type === 'BASIC'`, render a read-only list of core included features (Appointment Scheduler & CRM).
+  * **Acceptance Criteria**:
+    * *Given* the Admin User Modal is open,
+    * *When* vertical type is "B2C (Basic)",
+    * *Then* Section 3 displays the read-only core features and hides the B2B toggles.
+    * *When* vertical type is "B2B (Trade)",
+    * *Then* Section 3 displays the three modular toggles.
 
+- [ ] Task 151.2: **Refine Feature Labels & Descriptions**
+  * **Description**: Rename labels and descriptions in Section 3 of the Admin User Modal to use clear B2B terminology: "Automated Intake & Campaigns", "Store Routing & Order Logistics", and "Sales Intelligence & AI Briefs".
+  * **Acceptance Criteria**:
+    * *Given* B2B toggles are displayed,
+    * *When* the admin views the labels,
+    * *Then* they see the updated labels and their corresponding B2B-centric descriptions.
 
-
-
+- [ ] Task 151.3: **Simplify State and Preset Bindings**
+  * **Description**: Remove individual "Appointment Scheduler" and "CRM Suite" toggles from Section 3 since they are core features. Ensure they are automatically set to `enabled: true` in the backend payload on save.
+  * **Acceptance Criteria**:
+    * *Given* any vertical selection,
+    * *When* saving the user features,
+    * *Then* `scheduling` and `crm_suite` are always sent as `{ enabled: true }` in `features_config` to the backend.
 
 
