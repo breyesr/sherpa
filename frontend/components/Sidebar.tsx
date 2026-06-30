@@ -17,10 +17,13 @@ import {
   MapPin,
   Tag,
   Package,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Scissors,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
 function SidebarContent() {
   const pathname = usePathname();
@@ -29,6 +32,10 @@ function SidebarContent() {
   const activeTab = searchParams.get('tab') || 'products';
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
+
+  const [isProspectingOpen, setIsProspectingOpen] = useState(true);
+  const [isWholesaleOpen, setIsWholesaleOpen] = useState(true);
+  const [isRetailOpen, setIsRetailOpen] = useState(true);
 
   // Resilient queries with try/catch
   const { data: user } = useQuery({
@@ -104,8 +111,17 @@ function SidebarContent() {
         </div>
         
         {showCRM && !showB2BSolutions && (
-          <div className="space-y-1">
+          <div className="space-y-1 pt-2 border-t border-gray-100">
             <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
+            <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
+            <div className="pl-9 space-y-1">
+              <div className="flex items-center justify-between py-1.5 text-gray-300 cursor-not-allowed select-none">
+                <span className="text-sm font-bold">• Category (pending)</span>
+              </div>
+              <div className="flex items-center justify-between py-1.5 text-gray-300 cursor-not-allowed select-none">
+                <span className="text-sm font-bold">• Products (pending)</span>
+              </div>
+            </div>
           </div>
         )}
 
@@ -125,7 +141,7 @@ function SidebarContent() {
                   href="/trade/retailers"
                   className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
                 >
-                  • Clients
+                  • Contacts
                 </Link>
                 <Link 
                   href="/trade/orders"
@@ -142,52 +158,97 @@ function SidebarContent() {
               </div>
             </div>
 
-            {/* Wholesale Prospects Group */}
-            <div className="space-y-1 pt-2 border-t border-gray-50">
-              <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
-                <Users size={16} />
-                <span>Wholesale Leads</span>
-              </div>
-              <div className="pl-9 space-y-1">
-                <Link 
-                  href="/trade/prospects/accounts?segment=wholesale"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+            {/* Prospecting (Automated Intake & Campaigns) Group */}
+            {showCampaignFlow && (
+              <div className="space-y-1 pt-2 border-t border-gray-50">
+                <button 
+                  onClick={() => setIsProspectingOpen(!isProspectingOpen)}
+                  className="flex items-center justify-between w-full px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider hover:text-gray-600 transition-colors"
                 >
-                  • Accounts
-                </Link>
-                <Link 
-                  href="/trade/prospects/contacts?segment=wholesale"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-                >
-                  • Contacts
-                </Link>
-              </div>
-            </div>
+                  <div className="flex items-center gap-3">
+                    <Users size={16} />
+                    <span>Prospecting</span>
+                  </div>
+                  {isProspectingOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+                
+                {isProspectingOpen && (
+                  <div className="pl-6 space-y-2">
+                    {/* Wholesale Sub-tree */}
+                    <div className="space-y-1">
+                      <button 
+                        onClick={() => setIsWholesaleOpen(!isWholesaleOpen)}
+                        className="flex items-center justify-between w-full pl-3 pr-2 py-1 text-gray-500 font-bold text-xs hover:text-gray-900 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">• Wholesale</span>
+                        {isWholesaleOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </button>
+                      {isWholesaleOpen && (
+                        <div className="pl-6 space-y-1 border-l border-gray-100 ml-2">
+                          <Link 
+                            href="/trade/prospects/accounts?segment=wholesale"
+                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                          >
+                            Accounts
+                          </Link>
+                          <Link 
+                            href="/trade/prospects/contacts?segment=wholesale"
+                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                          >
+                            Contacts
+                          </Link>
+                        </div>
+                      )}
+                    </div>
 
-            {/* Retail Referrals Group */}
-            <div className="space-y-1 pt-2 border-t border-gray-50">
-              <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
-                <ArrowLeftRight size={16} />
-                <span>Retail Referrals</span>
+                    {/* Retail Sub-tree */}
+                    <div className="space-y-1">
+                      <button 
+                        onClick={() => setIsRetailOpen(!isRetailOpen)}
+                        className="flex items-center justify-between w-full pl-3 pr-2 py-1 text-gray-500 font-bold text-xs hover:text-gray-900 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">• Retail</span>
+                        {isRetailOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </button>
+                      {isRetailOpen && (
+                        <div className="pl-6 space-y-1 border-l border-gray-100 ml-2">
+                          <Link 
+                            href="/trade/prospects/accounts?segment=retail"
+                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                          >
+                            Accounts
+                          </Link>
+                          <Link 
+                            href="/trade/prospects/contacts?segment=retail"
+                            className={`block text-xs font-bold py-1 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}
+                          >
+                            Contacts
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="pl-9 space-y-1">
-                <Link 
-                  href="/trade/prospects/accounts?segment=retail"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-                >
-                  • Accounts
-                </Link>
-                <Link 
-                  href="/trade/prospects/contacts?segment=retail"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-                >
-                  • Contacts
-                </Link>
-              </div>
-            </div>
+            )}
+          </div>
+        )}
 
+        {!showB2BSolutions && showCampaignFlow && (
+          <div className="space-y-1 pt-2 border-t border-gray-100">
+            <SidebarLink 
+              href="/trade/stores" 
+              icon={MapPin} 
+              name="Point of Sale" 
+              active={pathname.startsWith('/trade/stores')} 
+            />
+          </div>
+        )}
+
+        {(showB2BSolutions || showCampaignFlow) && (
+          <div className="space-y-1 pt-2 border-t border-gray-100">
             {/* Products Group */}
-            <div className="space-y-1 pt-2 border-t border-gray-50">
+            <div className="space-y-1">
               <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
                 <Package size={16} />
                 <span>Products</span>
@@ -197,7 +258,7 @@ function SidebarContent() {
                   href="/trade/products?tab=categories"
                   className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
                 >
-                  • Category
+                  • Categories
                 </Link>
                 <Link 
                   href="/trade/products?tab=products"
@@ -207,23 +268,6 @@ function SidebarContent() {
                 </Link>
               </div>
             </div>
-          </div>
-        )}
-
-        {!showB2BSolutions && showCampaignFlow && (
-          <div className="space-y-1 pt-2 border-t border-gray-100">
-            <SidebarLink 
-              href="/trade/products" 
-              icon={Package} 
-              name="Product Catalog" 
-              active={pathname.startsWith('/trade/products')} 
-            />
-            <SidebarLink 
-              href="/trade/stores" 
-              icon={MapPin} 
-              name="Points of Sale" 
-              active={pathname.startsWith('/trade/stores')} 
-            />
           </div>
         )}
 
