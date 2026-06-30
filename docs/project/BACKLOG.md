@@ -799,3 +799,43 @@ The following tasks have been removed or deprecated from active epics because of
     * *Given* the integration test suite,
     * *When* running pytest,
     * *Then* all tests pass cleanly.
+
+---
+
+## Epic 141: B2C Product & Category Catalog Activation & UI Gating
+**Objective**: Activate the products and categories catalog for B2C (BASIC) vertical users by reusing the shared `Product` and `Category` database models and tables, while dynamically adapting the frontend catalog page and edit drawer layouts to hide B2B-only attributes (such as wholesale quantity thresholds, manufacturer brands, and distribution metrics).
+
+- [ ] Task 141.1: **Map B2C Product and Category Sidebar Links**
+  * **Description**: Wire the B2C sidebar menu links for `Category (pending)` and `Products (pending)` in `Sidebar.tsx` to active routes `/trade/products?tab=categories` and `/trade/products?tab=products` respectively, removing the "Pending" tag and styling.
+  * **Acceptance Criteria**:
+    * *Given* a B2C (BASIC) user profile,
+    * *When* the user views the sidebar,
+    * *Then* they see active "Category" and "Products" links pointing to the products route.
+
+- [ ] Task 141.2: **Dynamic Product Catalog Page Vertical Filtering**
+  * **Description**: Update the products list table/grid view (`frontend/app/trade/products/page.tsx`) to check the business vertical profile. If `BASIC` (B2C), hide the "Wholesale Threshold" column, brand, and B2B-specific metrics from the layout.
+  * **Acceptance Criteria**:
+    * *Given* a B2C user viewing `/trade/products`,
+    * *When* the page renders,
+    * *Then* the "Wholesale Threshold" column and "Brand" values are not displayed in the table.
+
+- [ ] Task 141.3: **Dynamic Catalog Drawer Form Gating**
+  * **Description**: Update the product configuration edit/create drawer form (`CatalogDrawer.tsx` or similar product form) to dynamically render input fields. If vertical is `BASIC` (B2C), hide inputs for `wholesale_threshold`, `brand`, and `unit_of_measure` (or default them in the request payload), showing only name, price, description, and categories.
+  * **Acceptance Criteria**:
+    * *Given* a B2C user opening the Add Product drawer,
+    * *When* the form renders,
+    * *Then* inputs for "Wholesale Threshold" and "Brand" are completely hidden from the user interface.
+
+- [ ] Task 141.4: **Update API Schema Tolerances & Unit Testing**
+  * **Description**: Ensure all Pydantic schemas in `schemas/trade.py` (such as `ProductCreate`/`ProductUpdate`) have B2B fields (`wholesale_threshold`, `brand`) defined as optional/nullable, and write unit tests verifying B2C product creations succeed with only basic fields.
+  * **Acceptance Criteria**:
+    * *Given* a B2C product payload with only name, price, and category_id,
+    * *When* creating the product via POST `/trade/products`,
+    * *Then* the product is successfully saved in the database with NULL B2B fields.
+
+- [ ] Task 141.5: **Build Compile and Integration Verification**
+  * **Description**: Regenerate frontend TypeScript clients, verify zero compilation/TypeScript errors during Next.js builds, and verify all unit/integration tests pass cleanly.
+  * **Acceptance Criteria**:
+    * *Given* the updated schemas and pages,
+    * *When* running `npm run build` in the frontend,
+    * *Then* the production compilation succeeds with no errors.
