@@ -803,14 +803,17 @@ The following tasks have been removed or deprecated from active epics because of
 ---
 
 ## Epic 141: B2C Product & Category Catalog Activation & UI Gating
-**Objective**: Activate the products and categories catalog for B2C (BASIC) vertical users by reusing the shared `Product` and `Category` database models and tables, while dynamically adapting the frontend catalog page and edit drawer layouts to hide B2B-only attributes (such as wholesale quantity thresholds, manufacturer brands, and distribution metrics).
+**Objective**: Activate the products and categories catalog for B2C (BASIC) vertical users by reusing the shared `Product` and `Category` database models and tables, while dynamically adapting the frontend catalog page, sidebar menu options, and edit drawer layouts to hide B2B-only attributes (such as wholesale quantity thresholds, manufacturer brands, and distribution metrics). Additionally, support admin-controlled toggles to enable or disable the Services Catalog (for B2C) and the Products Catalog (for B2C and B2B).
 
-- [ ] Task 141.1: **Map B2C Product and Category Sidebar Links**
-  * **Description**: Wire the B2C sidebar menu links for `Category (pending)` and `Products (pending)` in `Sidebar.tsx` to active routes `/trade/products?tab=categories` and `/trade/products?tab=products` respectively, removing the "Pending" tag and styling.
+- [ ] Task 141.1: **Map B2C Product and Category Sidebar Links & Feature Gate Sidebar Menus**
+  * **Description**: Wire the B2C sidebar menu links for `Category (pending)` and `Products (pending)` in `Sidebar.tsx` to active routes `/trade/products?tab=categories` and `/trade/products?tab=products` respectively, removing the "Pending" tag. Gate the B2C Services, B2C Category/Products, and B2B Products catalog links in `Sidebar.tsx` to conditionally display only if `features_config.services` and `features_config.products` are enabled.
   * **Acceptance Criteria**:
-    * *Given* a B2C (BASIC) user profile,
+    * *Given* a B2C user profile with `products.enabled = false` and `services.enabled = true`,
     * *When* the user views the sidebar,
-    * *Then* they see active "Category" and "Products" links pointing to the products route.
+    * *Then* they see the "Services" link, but Category/Products links are completely hidden.
+    * *Given* a B2B user profile with `products.enabled = false`,
+    * *When* they view the sidebar,
+    * *Then* the entire "Products" group folder is hidden.
 
 - [ ] Task 141.2: **Dynamic Product Catalog Page Vertical Filtering**
   * **Description**: Update the products list table/grid view (`frontend/app/trade/products/page.tsx`) to check the business vertical profile. If `BASIC` (B2C), hide the "Wholesale Threshold" column, brand, and B2B-specific metrics from the layout.
@@ -839,3 +842,17 @@ The following tasks have been removed or deprecated from active epics because of
     * *Given* the updated schemas and pages,
     * *When* running `npm run build` in the frontend,
     * *Then* the production compilation succeeds with no errors.
+
+- [ ] Task 141.6: **Admin User Modal Custom Feature Switches**
+  * **Description**: Add toggle components to the Admin panel user provisioning modal (`frontend/app/(admin)/admin/page.tsx`). For B2C (BASIC) accounts, show toggles for "Services Catalog" and "Products & Categories". For B2B (TRADE) accounts, show a toggle for "Products & Categories Catalog". Wire them to sanitize and serialize into `features_config` on save.
+  * **Acceptance Criteria**:
+    * *Given* the Admin User creation modal,
+    * *When* the admin configures a BASIC user's features,
+    * *Then* they can check/uncheck Services and Products, saving them as `services` and `products` flags.
+
+- [ ] Task 141.7: **Register Feature Defaults in Backend**
+  * **Description**: Register `services` and `products` keys in `DEFAULT_FEATURES_CONFIG` and `get_default_features_config(vertical_type)` inside `backend/app/api/business.py` to ensure B2C gets services default-enabled, and B2B gets products default-enabled.
+  * **Acceptance Criteria**:
+    * *Given* a new B2B profile is initialized in the database,
+    * *When* defaults are fetched,
+    * *Then* `features_config` includes `"products": {"enabled": true}` and `"services": {"enabled": false}`.
