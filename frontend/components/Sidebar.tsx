@@ -114,13 +114,15 @@ function SidebarContent() {
           <div className="space-y-1 pt-2 border-t border-gray-100">
             <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
             <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
-            <div className="pl-9 space-y-1">
-              <div className="flex items-center justify-between py-1.5 text-gray-300 cursor-not-allowed select-none">
-                <span className="text-sm font-bold">• Category (pending)</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5 text-gray-300 cursor-not-allowed select-none">
-                <span className="text-sm font-bold">• Products (pending)</span>
-              </div>
+            
+            <div className="flex items-center gap-3 px-4 py-2 text-gray-300 cursor-not-allowed select-none">
+              <Tag size={20} />
+              <span className="font-bold text-sm">Category (pending)</span>
+            </div>
+            
+            <div className="flex items-center gap-3 px-4 py-2 text-gray-300 cursor-not-allowed select-none">
+              <Package size={20} />
+              <span className="font-bold text-sm">Products (pending)</span>
             </div>
           </div>
         )}
