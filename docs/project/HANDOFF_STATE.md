@@ -1,25 +1,17 @@
-# Handoff State: 2026-06-29 (Epic 150 Cost Optimization Completed & Deployed)
+# Handoff State: 2026-06-29 (Epic 151 Admin Provisioning Simplification Completed)
 
 ## 🎯 Current Status
-We have successfully implemented, verified, and deployed the cost optimization and staging hardening changes under Epic 150. Staging is now running with strict RAM limits, Serverless sleep-on-idle settings, restricted Celery worker concurrency (concurrency=1), conditional connection pooling (`AsyncAdaptedQueuePool` for FastAPI, `NullPool` for Celery), and isolated fast/slow queues. The new configurations are live on Railway staging.
-
----
+We have successfully implemented and verified the simplified Admin User Provisioning modal layout and progressive disclosure logic under Epic 151. Staged on feature branch `feature/frontend/epic-151-admin-provisioning` and ready for merge.
 
 ## ✅ Accomplishments
-- **Celery Concurrency Controls**: Modified `backend/Procfile` and `docker-compose.yml` to limit worker concurrency (`--concurrency=1`, `--max-tasks-per-child=50`, and `--prefetch-multiplier=1`).
-- **Connection Pooling**: Configured `AsyncAdaptedQueuePool` for the API server and `NullPool` for Celery processes in `backend/app/core/database.py`, and disabled SQL query logging to prevent log bloating.
-- **Queue Isolation**: Defined `fast_queue` and `slow_queue` in `backend/app/core/celery_app.py`, routing instant webhook/reminder tasks to the fast queue and heavy AI/ingestion tasks to the slow queue.
-- **Next.js Standalone Build**: Added `output: 'standalone'` in `frontend/next.config.mjs` to optimize Next.js runtime memory.
-- **Manual Dashboard Configs**: Verified RAM limits (512MB for API, worker, frontend, db; 256MB for Redis) and enabled "Serverless" sleep-on-idle for API and web dashboard services on Railway.
-- **Secret Scan Cleanup**: Ignored database backups (`*.sql`, `*.dump`) locally and in `temp/` to prevent secret-scanning rule violations on push.
-- **Branch Merged & Pushed**: Merged changes into `staging`, pushed successfully to GitHub, and pushed the feature branch `feature/backend/epic-150-cost-optimization` to remote.
-
----
+- **Task 151.1 (Conditional Rendering & Progressive Disclosure)**: Updated the Admin User modal in `admin/page.tsx` to conditionally render B2B feature toggles only when **B2B (Trade Logistics)** is selected. For **B2C (Basic Scheduler)**, it renders a read-only list of core included features (Appointment Scheduler & CRM) and a locked upselling hint.
+- **Task 151.2 (B2B Label Refinements)**: Renamed features to "Automated Intake & Campaigns", "Store Routing & Order Logistics", and "Sales Intelligence & AI Briefs" with detailed B2B descriptions.
+- **Task 151.3 (Sanitized Payload & Core Hardening)**: Removed Appointment Scheduler and CRM from the modular toggles list (since they are always present). Added payload serialization sanitization in `handleUserSubmit` to guarantee core features are always saved as `enabled: true`, and B2B features are forced to `false` for B2C accounts.
+- **Build Validation**: Ran `npm run build` locally in `/frontend` to verify Next.js compiles with zero type or linting errors.
 
 ## 🚧 Blockers & Risks
 - **None**.
 
----
-
 ## 🚀 Next Steps
-1. **Epic 140 Implementation Authorization**: Await user authorization to begin executing Epic 140 tasks (enforcing feature-bound checks in backend API, webhook routing, sandbox frontend selector UI, dynamic profile defaults, admin vertical promotion patches, and Alembic data backfills).
+1. **Merge Epic 140**: Merge the backend access control branch `feature/backend/epic-140-access-control` into `staging`.
+2. **Merge Epic 151**: Merge the frontend user provisioning branch `feature/frontend/epic-151-admin-provisioning` into `staging`.
