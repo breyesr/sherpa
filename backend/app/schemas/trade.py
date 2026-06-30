@@ -85,6 +85,13 @@ class StoreBase(BaseModel):
     is_prospect: bool = False
     delivery_zip_codes: Optional[List[str]] = []
 
+    # Epic 138 Referral & Value Tracking Fields
+    assigned_store_id: Optional[str] = None
+    requested_product_id: Optional[str] = None
+    requested_quantity: Optional[int] = None
+    potential_value: Optional[float] = None
+    referred_at: Optional[datetime] = None
+
 
 class StoreCreate(StoreBase):
     client_ids: Optional[List[str]] = []
@@ -113,6 +120,13 @@ class StoreUpdate(BaseModel):
     client_ids: Optional[List[str]] = None
     is_prospect: Optional[bool] = None
     delivery_zip_codes: Optional[List[str]] = None
+
+    # Epic 138 Referral & Value Tracking Fields
+    assigned_store_id: Optional[str] = None
+    requested_product_id: Optional[str] = None
+    requested_quantity: Optional[int] = None
+    potential_value: Optional[float] = None
+    referred_at: Optional[datetime] = None
 
 
 class ClientMinimal(BaseModel):

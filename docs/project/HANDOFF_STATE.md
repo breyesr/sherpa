@@ -1,21 +1,18 @@
-# Handoff State: 2026-06-29 (Epic 152 Dual-Vertical Gating Completed)
+# Handoff State: 2026-06-29 (Epic 138 Referral Value Tracking Completed)
 
 ## 🎯 Current Status
-We have successfully implemented, verified, and unit-tested the dual-vertical webhook and sandbox gating (Epic 152) on the branch `feature/backend/epic-152-dual-vertical-gating`. It is fully complete and ready for review/merge.
+We have successfully implemented, verified, and unit-tested Epic 138 (Prospect-to-Store Redirection & Value Tracking) on the branch `feature/backend/epic-138-prospect-redirection`. It is fully complete and ready for review/merge.
 
 ## ✅ Accomplishments
-- **Task 152.1 (B2C Customer Role)**: Updated `IdentityResolver.resolve_sender` to resolve B2C (BASIC) incoming messages as `"customer"` instead of `"prospective_client"`, preventing collision with B2B wholesale lead logic.
-- **Task 152.2 (Dynamic Sandbox Gating)**: Updated the React settings sandbox in `AssistantSettings.tsx` to dynamically query and display only the **"Simulate Customer"** option for B2C accounts (sending `simulate_role: "customer"`), and dynamically display gated B2B simulation roles for B2B accounts. Updated `/test-chat` backend endpoint to validate and process the new `"customer"` role, routing it to the core scheduling/catalog AI without B2B qualifiers.
-- **Task 152.3 (Vertical-Aware Webhook Gates)**: Configured Telegram (`telegram.py`) and WhatsApp (`whatsapp.py`) webhook routes to dynamically enforce vertical-aware gates:
-  * `"customer"`: Gated by `scheduling` (always enabled for B2C).
-  * `"prospective_client"`: Gated by `campaign_flow`.
-  * `"distributor_retailer"`: Gated by `b2b_solutions`.
-  * `"sales_rep"`: Gated by `sales_intelligence`.
-- **Task 152.4 (Verification Suite)**: Updated `test_sandbox_gates.py` integration tests to include B2C customer routing and B2C blocks. Successfully executed the 12 integration scenarios and the 11 unit tests in pytest.
+- **Task 138.1 (Database Schema & Migration)**: Created the Alembic migration to add `assigned_store_id`, `requested_product_id`, `requested_quantity`, `potential_value`, and `referred_at` to `Store`, and created the `ClientStoreHistory` audit logging model. Applied the migration successfully to the local database.
+- **Task 138.2 (Lead Ingestion Update)**: Updated the `ProspectQualifier` LangGraph node (`qualify_lead`) to automatically calculate prospect `potential_value` and write all referral columns into the new prospect's `Store` record.
+- **Task 138.3 (API Schema & Validation)**: Configured schemas in `trade.py` schemas to handle the new fields. Implemented multi-tenant validity validation and circular reference checks on the `POST /stores` and `PATCH /stores/{id}` endpoints. Added `ClientStoreHistory` logging whenever store-client link reassignments happen.
+- **Task 138.4 (Dashboard & PII Masking UI)**: Added a "Referrals" tab panel to the Store details dashboard page showing referred prospects (date, product, quantity, value, and address). Displayed the **Total Referral Pipeline Value KPI metric** in the store header. Integrated distributor-based PII masking to hide prospect email/phone details for distributor users.
+- **Task 138.5 (API Type Regeneration & Build Verification)**: Regenerated frontend TypeScript types from `openapi.json`. Built the Next.js production app successfully with zero errors.
 
 ## 🚧 Blockers & Risks
 - **None**.
 
 ## 🚀 Next Steps
-1. **Merge Epic 152 to Staging**: Obtain user confirmation to merge `feature/backend/epic-152-dual-vertical-gating` into `staging` and deploy to Railway.
-2. **Begin Epic 138 (Account & Channel Association Logic)** or **Epic 139 (WhatsApp Business API Ingestion Integration)**.
+1. **Merge Epic 138 to Staging**: Obtain user confirmation to merge `feature/backend/epic-138-prospect-redirection` into `staging`.
+2. **Begin Epic 139 (Prospect Segmentation & Retail Referrals)**.

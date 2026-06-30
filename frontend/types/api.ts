@@ -476,6 +476,10 @@ export interface paths {
      */
     patch: operations["update_store_action_api_v1_trade_actions__action_id__patch"];
   };
+  "/": {
+    /** Root Redirect */
+    get: operations["root_redirect__get"];
+  };
   "/health": {
     /** Health Check */
     get: operations["health_check_health_get"];
@@ -1766,6 +1770,16 @@ export interface components {
        * @default []
        */
       delivery_zip_codes?: string[] | null;
+      /** Assigned Store Id */
+      assigned_store_id?: string | null;
+      /** Requested Product Id */
+      requested_product_id?: string | null;
+      /** Requested Quantity */
+      requested_quantity?: number | null;
+      /** Potential Value */
+      potential_value?: number | null;
+      /** Referred At */
+      referred_at?: string | null;
       /**
        * Client Ids
        * @default []
@@ -1911,6 +1925,16 @@ export interface components {
        * @default []
        */
       delivery_zip_codes?: string[] | null;
+      /** Assigned Store Id */
+      assigned_store_id?: string | null;
+      /** Requested Product Id */
+      requested_product_id?: string | null;
+      /** Requested Quantity */
+      requested_quantity?: number | null;
+      /** Potential Value */
+      potential_value?: number | null;
+      /** Referred At */
+      referred_at?: string | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -1976,6 +2000,16 @@ export interface components {
       is_prospect?: boolean | null;
       /** Delivery Zip Codes */
       delivery_zip_codes?: string[] | null;
+      /** Assigned Store Id */
+      assigned_store_id?: string | null;
+      /** Requested Product Id */
+      requested_product_id?: string | null;
+      /** Requested Quantity */
+      requested_quantity?: number | null;
+      /** Potential Value */
+      potential_value?: number | null;
+      /** Referred At */
+      referred_at?: string | null;
     };
     /** TestChatRequest */
     TestChatRequest: {
@@ -3249,6 +3283,8 @@ export interface operations {
       query?: {
         /** @description Filter by prospect status. If None, returns all. */
         is_prospect?: boolean | null;
+        /** @description Filter by assigned store ID. */
+        assigned_store_id?: string | null;
       };
     };
     responses: {
@@ -4053,6 +4089,17 @@ export interface operations {
       422: {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Root Redirect */
+  root_redirect__get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
     };

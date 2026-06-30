@@ -23,13 +23,14 @@ import {
   Target,
   AlertCircle,
   ExternalLink,
-  Trash2
+  Trash2,
+  Users
 } from 'lucide-react';
 import { StoreResponse, StoreNoteResponse, OrderResponse, ProductResponse, CompetitorResponse } from '@/types/api';
 import FieldNoteDrawer from '@/components/v2/FieldNoteDrawer';
 import OrderDrawer from '@/components/v2/OrderDrawer';
 
-type TabType = 'details' | 'products' | 'orders' | 'notes';
+type TabType = 'details' | 'products' | 'orders' | 'notes' | 'referrals';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
 
 export default function StoreDetailPageV2() {
@@ -93,16 +94,43 @@ export default function StoreDetailPageV2() {
     enabled: !!token,
   });
 
+  // Fetch Referred Prospects (Referrals)
+  const { data: referrals = [] } = useQuery<StoreResponse[]>({
+    queryKey: ['referrals', id],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/trade/stores?is_prospect=true&assigned_store_id=${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token && !!id,
+  });
+
+  // Fetch Current User
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
   if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400">Loading Account Intelligence...</div>;
   if (!store) return <div className="p-20 text-center font-bold text-red-500">Account not found or connection error.</div>;
 
   const totalOrderValue = orders.reduce((sum, order) => sum + order.total_amount, 0);
+  const totalReferralPipelineValue = referrals.reduce((sum, ref) => sum + (ref.potential_value || 0), 0);
 
   const tabs = [
     { id: 'details', label: 'Details', icon: FileText },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'notes', label: 'Timeline', icon: Activity },
+    { id: 'referrals', label: 'Referrals', icon: Users },
   ];
 
   const noteSubTabs = [
@@ -202,7 +230,7 @@ export default function StoreDetailPageV2() {
           </div>
 
           {/* Quick Actions / Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:flex gap-4 items-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:flex gap-4 items-center flex-wrap">
             <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Total Sales</span>
               <span className="text-2xl font-black text-gray-900">${totalOrderValue.toLocaleString()}</span>
@@ -217,6 +245,13 @@ export default function StoreDetailPageV2() {
               </span>
               <div className="flex items-center gap-1 text-blue-600 text-[10px] font-bold mt-1">
                 <ShoppingBag size={12} /> Per Order
+              </div>
+            </div>
+            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Referrals Value</span>
+              <span className="text-2xl font-black text-gray-900">${totalReferralPipelineValue.toLocaleString()}</span>
+              <div className="flex items-center gap-1 text-purple-600 text-[10px] font-bold mt-1">
+                <Users size={12} /> {referrals.length} Referrals
               </div>
             </div>
           </div>
@@ -515,6 +550,81 @@ export default function StoreDetailPageV2() {
                   <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
                     <Activity className="mx-auto text-gray-300 mb-4" size={32} />
                     <p className="text-gray-500 font-bold">No observations found for this category.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'referrals' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-black text-gray-900">Campaign Referrals</h3>
+                  <span className="bg-purple-100 text-purple-700 text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                    {referrals.length} Leads Referred
+                  </span>
+                </div>
+
+                {referrals.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          <th className="py-4 px-2">Prospect / Construction Site</th>
+                          <th className="py-4 px-2">Referred Date</th>
+                          <th className="py-4 px-2">Contact Details</th>
+                          <th className="py-4 px-2">Requested Product</th>
+                          <th className="py-4 px-2">Qty</th>
+                          <th className="py-4 px-2 text-right">Potential Value</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50 text-sm font-medium text-gray-700">
+                        {referrals.map((ref: any) => {
+                          const product = products.find(p => p.id === ref.requested_product_id);
+                          const productName = product ? product.name : 'Unknown Product';
+                          
+                          // PII Masking: If distributor_retailer, mask contact details
+                          const isDistributor = currentUser?.role === 'distributor_retailer' || currentUser?.role === 'distributor';
+                          
+                          const phoneDisplay = ref.phone 
+                            ? (isDistributor ? `${ref.phone.substring(0, 3)}****${ref.phone.substring(ref.phone.length - 2)}` : ref.phone)
+                            : 'N/A';
+                          
+                          const emailDisplay = ref.email
+                            ? (isDistributor ? 'Masked' : ref.email)
+                            : 'N/A';
+
+                          return (
+                            <tr key={ref.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="py-4 px-2">
+                                <div className="font-bold text-gray-900">{ref.name}</div>
+                                <div className="text-xs text-gray-400 font-medium">{ref.street_address || ref.address || 'No address'}</div>
+                              </td>
+                              <td className="py-4 px-2 text-xs text-gray-500 whitespace-nowrap">
+                                {ref.referred_at ? new Date(ref.referred_at).toLocaleDateString() : 'N/A'}
+                              </td>
+                              <td className="py-4 px-2 text-xs text-gray-500">
+                                <div>📞 {phoneDisplay}</div>
+                                <div className="mt-1">✉️ {emailDisplay}</div>
+                              </td>
+                              <td className="py-4 px-2 font-bold text-gray-900">
+                                {productName}
+                              </td>
+                              <td className="py-4 px-2 text-gray-500 font-bold">
+                                {ref.requested_quantity || 0}
+                              </td>
+                              <td className="py-4 px-2 text-right font-black text-blue-600">
+                                ${ref.potential_value ? ref.potential_value.toLocaleString() : '0'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
+                    <Users className="mx-auto text-gray-300 mb-4" size={32} />
+                    <p className="text-gray-500 font-bold">No referrals found for this store.</p>
                   </div>
                 )}
               </div>

@@ -156,6 +156,13 @@ class Store(Base):
     is_prospect = Column(Boolean, default=False, nullable=False)
     delivery_zip_codes = Column(JSON, nullable=True, default=list)
     
+    # Epic 138 Referral & Value Tracking Columns
+    assigned_store_id = Column(String, ForeignKey("stores.id"), nullable=True)
+    requested_product_id = Column(String, ForeignKey("products.id"), nullable=True)
+    requested_quantity = Column(Integer, nullable=True)
+    potential_value = Column(Float, nullable=True)
+    referred_at = Column(DateTime, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -166,6 +173,10 @@ class Store(Base):
     
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
     intelligence = relationship("AccountIntelligence", back_populates="store", uselist=False, cascade="all, delete-orphan")
+
+    # Epic 138 Referral Relationships
+    assigned_store = relationship("Store", remote_side="Store.id", backref="referred_prospects")
+    requested_product = relationship("Product")
 
     @property
     def formatted_address(self) -> str:
@@ -648,6 +659,22 @@ class AccountIntelligence(Base):
     __table_args__ = (
         Index('ix_account_intel_business_store', 'business_id', 'store_id'),
     )
+
+
+class ClientStoreHistory(Base):
+    __tablename__ = "client_store_history"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    client_id = Column(String, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    old_store_id = Column(String, ForeignKey("stores.id", ondelete="SET NULL"), nullable=True)
+    new_store_id = Column(String, ForeignKey("stores.id", ondelete="SET NULL"), nullable=True)
+    changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    changed_by_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    client = relationship("Client")
+    old_store = relationship("Store", foreign_keys=[old_store_id])
+    new_store = relationship("Store", foreign_keys=[new_store_id])
+    changed_by = relationship("User")
 
 
 

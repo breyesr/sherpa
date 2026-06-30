@@ -50,6 +50,7 @@ async def get_b2b_business(db: AsyncSession, current_user: User) -> BusinessProf
 @router.get("/stores", response_model=List[StoreResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def list_stores(
     is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
+    assigned_store_id: Optional[str] = Query(default=None, description="Filter by assigned store ID."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
@@ -58,6 +59,8 @@ async def list_stores(
     query = select(Store).where(Store.business_id == business.id)
     if is_prospect is not None:
         query = query.where(Store.is_prospect == is_prospect)
+    if assigned_store_id is not None:
+        query = query.where(Store.assigned_store_id == assigned_store_id)
         
     result = await db.execute(
         query.options(
@@ -76,6 +79,24 @@ async def create_store(
     """Create a new store."""
     business = await get_business(db, current_user.id)
     
+    # 1. Multi-tenant constraints validation
+    if store_in.assigned_store_id:
+        res_assigned = await db.execute(
+            select(Store).where(Store.id == store_in.assigned_store_id, Store.business_id == business.id)
+        )
+        if not res_assigned.scalars().first():
+            raise HTTPException(status_code=400, detail="Invalid assigned store ID for this business")
+            
+    if store_in.requested_product_id:
+        from app.models.trade import Product, Category
+        res_product = await db.execute(
+            select(Product)
+            .join(Category)
+            .where(Product.id == store_in.requested_product_id, Category.business_id == business.id)
+        )
+        if not res_product.scalars().first():
+            raise HTTPException(status_code=400, detail="Invalid product ID for this business")
+
     store = Store(
         business_id=business.id, 
         name=store_in.name,
@@ -94,7 +115,12 @@ async def create_store(
         opening_date=store_in.opening_date,
         external_id=store_in.external_id,
         is_prospect=store_in.is_prospect,
-        delivery_zip_codes=store_in.delivery_zip_codes
+        delivery_zip_codes=store_in.delivery_zip_codes,
+        assigned_store_id=store_in.assigned_store_id,
+        requested_product_id=store_in.requested_product_id,
+        requested_quantity=store_in.requested_quantity,
+        potential_value=store_in.potential_value,
+        referred_at=store_in.referred_at
     )
     
     # Handle multiple client_ids
@@ -107,6 +133,16 @@ async def create_store(
         if len(valid_clients) != len(store_in.client_ids):
             raise HTTPException(status_code=400, detail="One or more invalid client IDs for this business")
         store.clients = valid_clients
+        
+        # Log initial store assignment to history
+        from app.models.trade import ClientStoreHistory
+        for client in valid_clients:
+            history = ClientStoreHistory(
+                client_id=client.id,
+                new_store_id=store.id,
+                changed_by_id=current_user.id
+            )
+            db.add(history)
 
     db.add(store)
     await db.commit()
@@ -183,10 +219,45 @@ async def update_store(
     store = result.scalars().first()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
+        
+    # Sanitize empty strings
+    if store_in.assigned_store_id == "":
+        store_in.assigned_store_id = None
+    if store_in.requested_product_id == "":
+        store_in.requested_product_id = None
+
+    # Multi-tenant and circular reference checks
+    if store_in.assigned_store_id:
+        if store_in.assigned_store_id == store_id:
+            raise HTTPException(status_code=400, detail="A store cannot be assigned to itself")
+        res_assigned = await db.execute(
+            select(Store).where(Store.id == store_in.assigned_store_id, Store.business_id == business.id)
+        )
+        if not res_assigned.scalars().first():
+            raise HTTPException(status_code=400, detail="Invalid assigned store ID for this business")
+            
+    if store_in.requested_product_id:
+        from app.models.trade import Product, Category
+        res_product = await db.execute(
+            select(Product)
+            .join(Category)
+            .where(Product.id == store_in.requested_product_id, Category.business_id == business.id)
+        )
+        if not res_product.scalars().first():
+            raise HTTPException(status_code=400, detail="Invalid product ID for this business")
     
     # Handle multiple client_ids
     if store_in.client_ids is not None:
         from app.models.crm import Client
+        from app.models.trade import ClientStoreHistory
+        
+        # Get currently associated clients to compute diffs
+        old_client_ids = {c.id for c in store.clients}
+        new_client_ids = set(store_in.client_ids)
+        
+        added_ids = new_client_ids - old_client_ids
+        removed_ids = old_client_ids - new_client_ids
+        
         if not store_in.client_ids:
             store.clients = []
         else:
@@ -197,6 +268,23 @@ async def update_store(
             if len(valid_clients) != len(store_in.client_ids):
                 raise HTTPException(status_code=400, detail="One or more invalid client IDs for this business")
             store.clients = valid_clients
+
+        # Log additions and removals
+        for cid in added_ids:
+            history = ClientStoreHistory(
+                client_id=cid,
+                new_store_id=store.id,
+                changed_by_id=current_user.id
+            )
+            db.add(history)
+            
+        for cid in removed_ids:
+            history = ClientStoreHistory(
+                client_id=cid,
+                old_store_id=store.id,
+                changed_by_id=current_user.id
+            )
+            db.add(history)
 
     update_data = store_in.model_dump(exclude_unset=True, exclude={"client_ids"})
     for field, value in update_data.items():

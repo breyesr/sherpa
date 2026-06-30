@@ -530,6 +530,14 @@ Estado actual de los datos recopilados:
                     pc_city = pc_record.city
                     pc_state = pc_record.state
  
+            # Calculate potential value
+            potential_val = None
+            if qty is not None and product:
+                try:
+                    potential_val = float(qty) * product.price
+                except Exception as e:
+                    print(f"ERROR: Failed to calculate potential value: {e}")
+
             # 2. Create Store (as prospect)
             channel_name = "Telegram" if is_telegram else "WhatsApp"
             store = Store(
@@ -544,7 +552,12 @@ Estado actual de los datos recopilados:
                 country="México",
                 phone=phone_num,
                 email=email_addr,
-                is_prospect=True
+                is_prospect=True,
+                assigned_store_id=state.get("matched_store_id"),
+                requested_product_id=product.id if product else None,
+                requested_quantity=qty,
+                potential_value=potential_val,
+                referred_at=datetime.utcnow()
             )
             self.db.add(store)
             await self.db.flush()
