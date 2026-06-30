@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   MapPin,
   Tag,
-  Package
+  Package,
+  ArrowLeftRight
 } from 'lucide-react';
 
 import { Suspense } from 'react';
@@ -141,22 +142,44 @@ function SidebarContent() {
               </div>
             </div>
 
-            {/* Prospects Group */}
+            {/* Wholesale Prospects Group */}
             <div className="space-y-1 pt-2 border-t border-gray-50">
               <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
                 <Users size={16} />
-                <span>Prospects</span>
+                <span>Wholesale Leads</span>
               </div>
               <div className="pl-9 space-y-1">
                 <Link 
-                  href="/trade/prospects/accounts"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/prospects/accounts') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  href="/trade/prospects/accounts?segment=wholesale"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
                 >
                   • Accounts
                 </Link>
                 <Link 
-                  href="/trade/prospects/contacts"
-                  className={`block text-sm font-bold py-1.5 transition-all ${pathname.startsWith('/trade/prospects/contacts') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                  href="/trade/prospects/contacts?segment=wholesale"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Contacts
+                </Link>
+              </div>
+            </div>
+
+            {/* Retail Referrals Group */}
+            <div className="space-y-1 pt-2 border-t border-gray-50">
+              <div className="flex items-center gap-3 px-4 py-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
+                <ArrowLeftRight size={16} />
+                <span>Retail Referrals</span>
+              </div>
+              <div className="pl-9 space-y-1">
+                <Link 
+                  href="/trade/prospects/accounts?segment=retail"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  • Accounts
+                </Link>
+                <Link 
+                  href="/trade/prospects/contacts?segment=retail"
+                  className={`block text-sm font-bold py-1.5 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
                 >
                   • Contacts
                 </Link>

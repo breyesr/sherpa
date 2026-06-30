@@ -83,6 +83,7 @@ class StoreBase(BaseModel):
     opening_date: Optional[date] = None
     external_id: Optional[str] = None
     is_prospect: bool = False
+    prospect_segment: Optional[str] = "wholesale"
     delivery_zip_codes: Optional[List[str]] = []
 
     # Epic 138 Referral & Value Tracking Fields
@@ -119,6 +120,7 @@ class StoreUpdate(BaseModel):
     external_id: Optional[str] = None
     client_ids: Optional[List[str]] = None
     is_prospect: Optional[bool] = None
+    prospect_segment: Optional[str] = None
     delivery_zip_codes: Optional[List[str]] = None
 
     # Epic 138 Referral & Value Tracking Fields

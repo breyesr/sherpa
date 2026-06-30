@@ -185,6 +185,47 @@ Estado actual:
 - Dirección de la obra: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
 """
+            elif phase == "collecting_retail_address":
+                system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
+Tu objetivo actual es solicitar al cliente de manera muy amable su dirección de entrega y Código Postal de 5 dígitos para validar qué sucursal autorizada está más cerca de su zona.
+
+Instrucciones:
+- Pregunta amigablemente al cliente dónde desea que se realice la entrega (dirección de la obra y Código Postal de 5 dígitos).
+- NO solicites su nombre ni email todavía. Enfócate únicamente en obtener la dirección de entrega y el Código Postal.
+- Si el usuario te proporciona la dirección y el CP, llama a la herramienta `update_prospect_data` con los campos `location` y `zip_code`.
+"""
+            elif phase == "collecting_retail_details":
+                matched_store_id = state.get("matched_store_id")
+                res_store = await self.db.execute(select(Store).where(Store.id == matched_store_id))
+                matched_store = res_store.scalars().first()
+                matched_store_name = matched_store.name if matched_store else "nuestras tiendas autorizadas"
+                
+                res_prod = await self.db.execute(select(Product).where(Product.id == state.get("product")))
+                product = res_prod.scalars().first()
+                product_name = product.name if product else "el producto"
+                threshold = product.wholesale_threshold or 0 if product else 0
+                qty = state.get("quantity") or 0
+                
+                system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
+Tu objetivo actual es informarle amablemente al cliente que su pedido de {qty} unidades es menor a nuestro volumen mayorista ({threshold} unidades), por lo que lo referiremos a la sucursal autorizada '{matched_store_name}'.
+Solicita al cliente que te proporcione su nombre completo y correo electrónico (email) para registrar su referencia y coordinar con la sucursal.
+
+Instrucciones:
+- Explica de forma amable que por la cantidad solicitada, le daremos seguimiento refiriéndolo con la sucursal '{matched_store_name}'.
+- Solicita en un solo mensaje:
+  1. Nombre completo
+  2. Correo electrónico (email)
+- Si el usuario proporciona estos datos, llama a la herramienta `update_prospect_data` con los campos `name` y `email`.
+- Mantén un tono sumamente servicial y profesional.
+
+Estado actual de los datos recopilados:
+- Producto de interés (ID): {state.get('product') or 'No proporcionado'}
+- Cantidad: {qty}
+- Nombre: {state.get('name') or 'No proporcionado'}
+- Email: {state.get('email') or 'No proporcionado'}
+- Dirección de la obra: {state.get('location') or 'No proporcionada'}
+- Código Postal: {state.get('zip_code') or 'No proporcionado'}
+"""
             elif phase == "collecting_waitlist":
                 zip_val = state.get("zip_code")
                 res_prod = await self.db.execute(select(Product).where(Product.id == state.get("product")))
@@ -352,21 +393,22 @@ Estado actual de los datos recopilados:
                 threshold = product.wholesale_threshold or 0 if product else 0
                 
                 if stores_in_state:
-                    # We have stores in their state: suggest up to 3 stores in that state and complete
-                    store_list_str = "\n".join([f"- {s.name}: {s.address or 'Sin dirección'}" for s in stores_in_state[:3]])
-                    response = f"Muchas gracias por tu interés en {product_name}. Como tu pedido de {merged_quantity} unidades es menor a nuestro volumen mayorista ({threshold} unidades), te invitamos a adquirir el producto en una de nuestras tiendas físicas autorizadas en tu estado ({state_name}):\n{store_list_str}"
-                    
-                    state_update.update({
-                        "phase": "rejected",
-                        "is_completed": True,
-                        "final_response": response,
-                        "messages": new_messages + [AIMessage(content=response)]
-                    })
-                    return state_update
+                    # We have stores in their state: match to first store and collect contact details
+                    matched_store = stores_in_state[0]
+                    extracted_data["matched_store_id"] = matched_store.id
+                    extracted_data["phase"] = "collecting_retail_details"
+                    merged_phase = "collecting_retail_details"
                 else:
-                    # No coverage / no stores in their state! Apologize and offer waitlist lead capture
+                    # No coverage / no stores in their state! Offer waitlist lead capture
                     extracted_data["phase"] = "collecting_waitlist"
                     merged_phase = "collecting_waitlist"
+
+            if merged_phase == "collecting_retail_details":
+                required_fields = ["name", "email"]
+                has_all_contact = all(extracted_data.get(f) is not None or state.get(f) is not None for f in required_fields)
+                if has_all_contact:
+                    extracted_data["phase"] = "qualifying_retail"
+                    merged_phase = "qualifying_retail"
 
             # Step 4: Validate ZIP code and transition to qualify
             if merged_phase == "collecting" and merged_zip_code:
@@ -438,6 +480,7 @@ Estado actual de los datos recopilados:
             zip_val = state.get("zip_code")
             sender_phone = state.get("sender_phone")
             is_waitlist = state.get("phase") == "qualifying_waitlist"
+            is_retail = state.get("phase") == "qualifying_retail"
             platform = state.get("platform", "whatsapp")
             is_telegram = platform == "telegram"
             
@@ -483,6 +526,8 @@ Estado actual de los datos recopilados:
             if is_waitlist:
                 custom_fields_val["status"] = "waitlist"
                 custom_fields_val["reason"] = "Out of coverage delivery"
+            elif is_retail:
+                custom_fields_val["status"] = "retail_referral"
             
             if not client:
                 client = Client(
@@ -492,6 +537,7 @@ Estado actual de los datos recopilados:
                     email=email_addr,
                     custom_fields=custom_fields_val,
                     is_prospect=True,
+                    prospect_segment="retail" if is_retail else "wholesale",
                     whatsapp_opt_in=not is_telegram,
                     whatsapp_opt_in_at=datetime.utcnow() if not is_telegram else None,
                     telegram_id=sender_phone if is_telegram else None,
@@ -511,6 +557,7 @@ Estado actual de los datos recopilados:
                 client.email = email_addr
                 client.custom_fields = custom_fields_val
                 client.is_prospect = True
+                client.prospect_segment = "retail" if is_retail else "wholesale"
                 self.db.add(client)
                 await self.db.flush()
             
@@ -538,11 +585,19 @@ Estado actual de los datos recopilados:
                 except Exception as e:
                     print(f"ERROR: Failed to calculate potential value: {e}")
 
+            # Look up matched store name if retail referral
+            matched_store_name = "la sucursal"
+            if state.get("matched_store_id"):
+                res_store = await self.db.execute(select(Store).where(Store.id == state.get("matched_store_id")))
+                matched_store_obj = res_store.scalars().first()
+                if matched_store_obj:
+                    matched_store_name = matched_store_obj.name
+
             # 2. Create Store (as prospect)
             channel_name = "Telegram" if is_telegram else "WhatsApp"
             store = Store(
                 business_id=biz_id,
-                name=f"{comp} (Obra {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})",
+                name=f"{comp} (Referencia Minorista)" if is_retail else (f"{comp} (Obra {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})"),
                 street_address=loc,
                 colonia=pc_colonia,
                 municipality=pc_municipality,
@@ -553,6 +608,7 @@ Estado actual de los datos recopilados:
                 phone=phone_num,
                 email=email_addr,
                 is_prospect=True,
+                prospect_segment="retail" if is_retail else "wholesale",
                 assigned_store_id=state.get("matched_store_id"),
                 requested_product_id=product.id if product else None,
                 requested_quantity=qty,
@@ -577,12 +633,12 @@ Estado actual de los datos recopilados:
                 objective=ActionObjective.GENERAL,
                 status=ActionStatus.PROPOSED,
                 details={
-                    "lead_source": f"{channel_name} Prospection" if not is_waitlist else f"{channel_name} Prospection - Lista de Espera",
+                    "lead_source": f"{channel_name} Prospection - Referencia Minorista" if is_retail else (f"{channel_name} Prospection" if not is_waitlist else f"{channel_name} Prospection - Lista de Espera"),
                     "product_interest": product.name,
                     "requested_quantity": qty,
                     "matched_store_id": state.get("matched_store_id"),
                     "status": "waitlist" if is_waitlist else "qualified",
-                    "notes": f"Lead mayorista {name_val} interesada en comprar {qty} unidades de {product.name} en la obra {loc} (CP {zip_val})." if not is_waitlist else f"Lista de Espera: Coche de entrega sin cobertura en CP {zip_val}. Lead mayorista interesado en {qty} unidades de {product.name}."
+                    "notes": f"Referencia minorista {name_val} interesada en comprar {qty} unidades de {product.name} en la sucursal {matched_store_name}." if is_retail else (f"Lead mayorista {name_val} interesada en comprar {qty} unidades de {product.name} en la obra {loc} (CP {zip_val})." if not is_waitlist else f"Lista de Espera: Coche de entrega sin cobertura en CP {zip_val}. Lead mayorista interesado en {qty} unidades de {product.name}.")
                 }
             )
             self.db.add(action)
@@ -613,6 +669,8 @@ Estado actual de los datos recopilados:
                     store_list_str = f" Te sugerimos adquirir el producto en nuestras tiendas autorizadas en tu estado:\n{store_list_str}\n"
                 
                 response = f"¡Perfecto! Hemos registrado tus datos en nuestra lista de espera para la zona de Código Postal {zip_val}. Te notificaremos en cuanto tengamos cobertura de entrega directa en tu ubicación.{store_list_str} ¡Muchas gracias por tu interés!"
+            elif is_retail:
+                response = f"¡Listo! Hemos registrado tu referencia minorista con la sucursal '{matched_store_name}'. Un asesor de la tienda se pondrá en contacto contigo pronto para coordinar tu compra física de {qty} unidades de {product.name}."
             else:
                 response = f"¡Perfecto! Hemos registrado tu solicitud como cliente mayorista para {qty} unidades de {product.name}. Un representante comercial se pondrá en contacto contigo pronto al {phone_num} para programar una llamada de coordinación."
             
@@ -636,7 +694,7 @@ Estado actual de los datos recopilados:
             if last_message.tool_calls:
                 return "tools"
             
-            if state.get("phase") in ["qualifying", "qualifying_waitlist"] and not state.get("is_completed"):
+            if state.get("phase") in ["qualifying", "qualifying_waitlist", "qualifying_retail"] and not state.get("is_completed"):
                 return "qualify_lead"
             
             return END

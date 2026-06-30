@@ -77,14 +77,14 @@ async def main():
         
         # Ensure a valid product exists in the DB with a wholesale_threshold
         # Check for first category or create one
-        res_cat = await db.execute(select(Category).where(Category.business_id == biz.id).limit(1))
+        res_cat = await db.execute(select(Category).where(Category.business_id == biz.id, Category.name == "Construcción").limit(1))
         cat = res_cat.scalars().first()
         if not cat:
-            cat = Category(business_id=biz.id, name="Test Cement Cat", description="Test Category")
+            cat = Category(business_id=biz.id, name="Construcción", description="Materiales de Construcción")
             db.add(cat)
             await db.flush()
             
-        res_prod = await db.execute(select(Product).where(Product.category_id == cat.id).limit(1))
+        res_prod = await db.execute(select(Product).where(Product.category_id == cat.id, Product.name == "Cemento Especial Especial (Saco 25kg)").limit(1))
         prod = res_prod.scalars().first()
         if not prod:
             prod = Product(
@@ -98,10 +98,31 @@ async def main():
             db.add(prod)
             await db.flush()
         else:
-            # Enforce threshold for testing
-            prod.name = "Cemento Especial Especial (Saco 25kg)"
             prod.wholesale_threshold = 80
             db.add(prod)
+            await db.flush()
+        # Ensure a physical store in Ciudad de México exists for coverage matching
+        res_store_physical = await db.execute(
+            select(Store).where(Store.business_id == biz.id, Store.name == "Sucursal CDMX Poniente", Store.is_prospect == False)
+        )
+        store_physical = res_store_physical.scalars().first()
+        if not store_physical:
+            store_physical = Store(
+                business_id=biz.id,
+                name="Sucursal CDMX Poniente",
+                street_address="Av. Reforma 123",
+                city="Ciudad de México",
+                state="Ciudad de México",
+                zip_code="01210",
+                country="México",
+                is_prospect=False,
+                delivery_zip_codes=["01210", "04210"]
+            )
+            db.add(store_physical)
+            await db.flush()
+        else:
+            store_physical.delivery_zip_codes = ["01210", "04210"]
+            db.add(store_physical)
             await db.flush()
             
         await db.commit()
@@ -112,19 +133,35 @@ async def main():
         
         qualifier = ProspectQualifier(db)
         
-        # Scenario 1: Rejection on low quantity (< 80)
-        # Expected: Flow prompts for delivery address, then recommends stores in Ciudad de México, and completes.
+        # Scenario 1: Retail Referral on low quantity (< 80)
+        # Expected: Flow prompts for delivery address, then prompts for name/email, registers retail referral and completes.
         response, is_comp = await run_scenario(
             qualifier, biz.id, "sandbox_test_qty_fail",
             [
                 "Hola, me interesa comprar cemento",
                 f"Quiero 10 bultos de {prod.name}",
-                "Mi dirección es en Álvaro Obregón, CDMX, CP 01210"
+                "Mi dirección es en Álvaro Obregón, CDMX, CP 01210",
+                "Mi nombre es Juan Perez, y mi correo es juan@perez.com"
             ]
         )
-        assert is_comp is True, "Scenario 1 should mark is_completed=True after zip code is provided"
-        assert "el progreso" in response.lower() or "tiendas" in response.lower(), "Scenario 1 should route user to local physical stores in their state"
-        print("✅ SCENARIO 1 (Quantity Rejection) PASSED!")
+        assert is_comp is True, "Scenario 1 should mark is_completed=True after contact details are provided"
+        assert "referencia minorista" in response.lower() or "sucursal" in response.lower() or "registrado" in response.lower(), "Scenario 1 should refer user to physical store"
+        
+        # Verify retail Client in DB
+        client_hash_1 = Client.hash_id("sandbox_test_qty_fail")
+        res_cli_1 = await db.execute(select(Client).where(Client.business_id == biz.id, Client.whatsapp_id_hash == client_hash_1))
+        client_1 = res_cli_1.scalars().first()
+        assert client_1 is not None, "A retail prospect Client should have been created"
+        assert client_1.prospect_segment == "retail", "Client segment should be retail"
+        assert client_1.name == "Juan Perez", "Client name should match"
+        
+        # Verify retail Store in DB
+        res_store_1 = await db.execute(select(Store).where(Store.business_id == biz.id, Store.is_prospect == True, Store.prospect_segment == "retail"))
+        store_1 = res_store_1.scalars().first()
+        assert store_1 is not None, "A retail prospect Store should have been created"
+        assert store_1.prospect_segment == "retail", "Store segment should be retail"
+        assert store_1.assigned_store_id is not None, "Store should have matched physical store reference"
+        print("✅ SCENARIO 1 (Quantity Rejection Retail Referral) PASSED!")
 
         # Scenario 2: Waitlist on Out-of-Range ZIP Code
         # Expected: Passes quantity check (100 >= 80), prompts for info, receives invalid ZIP (64000 - Monterrey), transitions to waitlist registration, completes.

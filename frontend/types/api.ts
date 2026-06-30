@@ -141,12 +141,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -934,6 +934,11 @@ export interface components {
        */
       is_prospect?: boolean;
       /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
        * Whatsapp Opt In
        * @default false
        */
@@ -994,6 +999,11 @@ export interface components {
        */
       is_prospect?: boolean;
       /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
        * Whatsapp Opt In
        * @default false
        */
@@ -1034,6 +1044,8 @@ export interface components {
       } | null;
       /** Is Prospect */
       is_prospect?: boolean | null;
+      /** Prospect Segment */
+      prospect_segment?: string | null;
       /** Whatsapp Opt In */
       whatsapp_opt_in?: boolean | null;
       /** Whatsapp Opt In At */
@@ -1766,6 +1778,11 @@ export interface components {
        */
       is_prospect?: boolean;
       /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
        * Delivery Zip Codes
        * @default []
        */
@@ -1921,6 +1938,11 @@ export interface components {
        */
       is_prospect?: boolean;
       /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
        * Delivery Zip Codes
        * @default []
        */
@@ -1998,6 +2020,8 @@ export interface components {
       client_ids?: string[] | null;
       /** Is Prospect */
       is_prospect?: boolean | null;
+      /** Prospect Segment */
+      prospect_segment?: string | null;
       /** Delivery Zip Codes */
       delivery_zip_codes?: string[] | null;
       /** Assigned Store Id */
@@ -2439,6 +2463,8 @@ export interface operations {
       query?: {
         /** @description Filter by prospect status. If None, returns all. */
         is_prospect?: boolean | null;
+        /** @description Filter by prospect segment. */
+        prospect_segment?: string | null;
       };
     };
     responses: {
@@ -2842,7 +2868,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -3285,6 +3311,8 @@ export interface operations {
         is_prospect?: boolean | null;
         /** @description Filter by assigned store ID. */
         assigned_store_id?: string | null;
+        /** @description Filter by prospect segment. */
+        prospect_segment?: string | null;
       };
     };
     responses: {

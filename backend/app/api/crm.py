@@ -40,6 +40,7 @@ def normalize_to_utc_naive(dt: datetime) -> datetime:
 @router.get("/clients", response_model=List[ClientResponse])
 async def get_clients(
     is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
+    prospect_segment: Optional[str] = Query(default=None, description="Filter by prospect segment."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
@@ -47,6 +48,8 @@ async def get_clients(
     query = select(Client).where(Client.business_id == business.id)
     if is_prospect is not None:
         query = query.where(Client.is_prospect == is_prospect)
+    if prospect_segment is not None:
+        query = query.where(Client.prospect_segment == prospect_segment)
         
     result = await db.execute(query)
     return result.scalars().all()

@@ -85,7 +85,7 @@ async def test_above_threshold(business_id: str, product: Product):
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
         
         # Turn 4: Contact details
-        contact_info = "Mi teléfono es +525511223344, mi correo es gerardo@distribuidor.com y mi empresa es Distribuidora G"
+        contact_info = "Mi nombre es Gerardo Reyes, mi teléfono es +525511223344, mi correo es gerardo@distribuidor.com y mi empresa es Distribuidora G"
         print(f"[PROSPECT]: {contact_info}")
         response, is_comp = await qualifier.get_response(business_id, sender_phone, contact_info)
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
@@ -102,10 +102,15 @@ async def test_above_threshold(business_id: str, product: Product):
         assert client.custom_fields.get("company") == "Distribuidora G"
         
         # Fetch Store
-        res_store = await db.execute(select(Store).where(Store.business_id == business_id, Store.name == "Distribuidora G (Obra WhatsApp)"))
-        store = res_store.scalars().first()
+        res_store = await db.execute(
+            select(Store).where(
+                Store.business_id == business_id,
+                Store.is_prospect == True
+            )
+        )
+        stores_list = res_store.scalars().all()
+        store = next((s for s in stores_list if "constituyentes" in (s.street_address or "").lower() or "constituyentes" in s.name.lower()), None)
         assert store is not None, "Store should be created"
-        assert "Av. Constituyentes 123" in store.address
         
         # Fetch Action
         res_act = await db.execute(select(StoreAction).where(StoreAction.business_id == business_id, StoreAction.store_id == store.id))
@@ -145,9 +150,23 @@ async def test_below_threshold(business_id: str, product: Product):
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
         
         assert is_comp is True, "Flow should be completed"
-        assert "Monterrey Centro" in response or "Av. Constitución" in response, "Should recommend Monterrey store"
+        assert "referencia" in response.lower() or "sucursal" in response.lower() or "registrado" in response.lower(), "Should refer client to store"
         
-        print("✅ SUCCESS: Below-threshold flow direct-to-store logic executed successfully.")
+        # Verify retail Client and Store in DB
+        sender_hash = Client.hash_id(sender_phone)
+        res_cli = await db.execute(select(Client).where(Client.business_id == business_id, Client.whatsapp_id_hash == sender_hash))
+        client = res_cli.scalars().first()
+        assert client is not None, "Client should be created"
+        assert client.prospect_segment == "retail", "Client prospect_segment should be retail"
+        
+        # Verify Store
+        res_store = await db.execute(select(Store).where(Store.business_id == business_id, Store.is_prospect == True, Store.prospect_segment == "retail"))
+        store = res_store.scalars().first()
+        assert store is not None, "Store should be created"
+        assert store.prospect_segment == "retail", "Store prospect_segment should be retail"
+        assert store.assigned_store_id is not None, "Store should be assigned to the Monterrey store"
+        
+        print("✅ SUCCESS: Below-threshold flow retail lead capture and store mapping verified.")
 
 async def main():
     from sqlalchemy import text, delete

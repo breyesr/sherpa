@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
@@ -20,9 +21,11 @@ import {
 import { StoreResponse } from '@/types/api';
 import AccountDrawer from '@/components/v2/AccountDrawer';
 
-export default function ProspectStoresPage() {
+function ProspectStoresContent() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const segment = searchParams.get('segment') || 'wholesale';
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: any}>({
@@ -32,9 +35,9 @@ export default function ProspectStoresPage() {
 
   // Fetch Prospect Stores
   const { data: stores = [], isLoading } = useQuery<StoreResponse[]>({
-    queryKey: ['stores', { is_prospect: true }],
+    queryKey: ['stores', { is_prospect: true, segment }],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores?is_prospect=true`, {
+      const res = await fetch(`${API_BASE_URL}/trade/stores?is_prospect=true&prospect_segment=${segment}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch prospect accounts');
@@ -195,7 +198,7 @@ export default function ProspectStoresPage() {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['stores', { is_prospect: true }] });
+                              queryClient.invalidateQueries({ queryKey: ['stores'] });
                             } else {
                               alert('Failed to delete store');
                             }
@@ -253,7 +256,7 @@ export default function ProspectStoresPage() {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['stores', { is_prospect: true }] });
+                              queryClient.invalidateQueries({ queryKey: ['stores'] });
                             } else {
                               alert('Failed to delete store');
                             }
@@ -302,7 +305,7 @@ export default function ProspectStoresPage() {
         isOpen={accountDrawer.isOpen}
         onClose={() => {
           setAccountDrawer({ ...accountDrawer, isOpen: false });
-          queryClient.invalidateQueries({ queryKey: ['stores', { is_prospect: true }] });
+          queryClient.invalidateQueries({ queryKey: ['stores'] });
         }}
         token={token}
         storeId={accountDrawer.storeId}
@@ -310,5 +313,13 @@ export default function ProspectStoresPage() {
         isProspect={true}
       />
     </div>
+  );
+}
+
+export default function ProspectStoresPage() {
+  return (
+    <Suspense fallback={<div className="p-20 text-center font-bold text-gray-400">Loading prospects...</div>}>
+      <ProspectStoresContent />
+    </Suspense>
   );
 }

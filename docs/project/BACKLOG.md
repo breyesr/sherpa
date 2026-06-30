@@ -601,12 +601,12 @@ The following tasks have been removed or deprecated from active epics because of
 ## Epic 139: Prospects Segmentation & Retail Referrals
 **Objective**: Introduce dynamic segmentation to group campaign prospects into Wholesale Leads or Retail Referrals. Modify the prospect qualifying flow to capture retail leads in the CRM database, re-route them to physical stores, and expose them as separate Wholesale vs. Retail listings in the navigation sidebar and views.
 
-- [ ] Task 139.1: **Database Schema & Segment Migration**: Add a `prospect_segment` column (VARCHAR, default "wholesale", indexed) to both `Client` and `Store` tables. Create Alembic migration script to default all existing rows to "wholesale".
-- [ ] Task 139.2: **API Filters & Pydantic Schema Integration**: Update `schemas/trade.py` and `schemas/crm.py` schemas to include `prospect_segment`. Extend GET `/trade/stores` and `/clients` to accept and validate the `prospect_segment` query filter parameter.
-- [ ] Task 139.3: **Lead Qualification Flow Segmentation**: Update `ProspectQualifier` (prospect_qualifier.py) to ask for contact details (name, email) for below-threshold retail leads, saving them with `is_prospect=True` and `prospect_segment="retail"`, and assigned to the matched store.
-- [ ] Task 139.4: **Sidebar Restructure & List Filtering**: Update `Sidebar.tsx` to separate Prospects into "Wholesale" and "Retail Referrals" headings, mapping navigation links to corresponding segment query parameters. Update React Query keys in account/contact lists to support dynamic query invalidation.
-- [ ] Task 139.5: **Test Suite Alignment**: Refactor `test_whatsapp_campaign.py` and `test_simulated_session_3.py` assertions to expect retail lead CRM generation instead of immediate session termination, verifying all test validations pass.
-- [ ] Task 139.6: **Type Regeneration & Build Verification**: Update OpenAPI definitions, regenerate frontend TypeScript types, and verify production build compilation.
+- [x] Task 139.1: **Database Schema & Segment Migration**: Add a `prospect_segment` column (VARCHAR, default "wholesale", indexed) to both `Client` and `Store` tables. Create Alembic migration script to default all existing rows to "wholesale".
+- [x] Task 139.2: **API Filters & Pydantic Schema Integration**: Update `schemas/trade.py` and `schemas/crm.py` schemas to include `prospect_segment`. Extend GET `/trade/stores` and `/clients` to accept and validate the `prospect_segment` query filter parameter.
+- [x] Task 139.3: **Lead Qualification Flow Segmentation**: Update `ProspectQualifier` (prospect_qualifier.py) to ask for contact details (name, email) for below-threshold retail leads, saving them with `is_prospect=True` and `prospect_segment="retail"`, and assigned to the matched store.
+- [x] Task 139.4: **Sidebar Restructure & List Filtering**: Update `Sidebar.tsx` to separate Prospects into "Wholesale" and "Retail Referrals" headings, mapping navigation links to corresponding segment query parameters. Update React Query keys in account/contact lists to support dynamic query invalidation.
+- [x] Task 139.5: **Test Suite Alignment**: Refactor `test_whatsapp_campaign.py` and `test_simulated_session_3.py` assertions to expect retail lead CRM generation instead of immediate session termination, verifying all test validations pass.
+- [x] Task 139.6: **Type Regeneration & Build Verification**: Update OpenAPI definitions, regenerate frontend TypeScript types, and verify production build compilation.
 
 ---
 

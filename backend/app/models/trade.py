@@ -154,6 +154,7 @@ class Store(Base):
     opening_date = Column(Date, nullable=True)
     external_id = Column(String, nullable=True, index=True)
     is_prospect = Column(Boolean, default=False, nullable=False)
+    prospect_segment = Column(String, default="wholesale", server_default="wholesale", nullable=False, index=True)
     delivery_zip_codes = Column(JSON, nullable=True, default=list)
     
     # Epic 138 Referral & Value Tracking Columns

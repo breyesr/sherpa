@@ -51,6 +51,7 @@ async def get_b2b_business(db: AsyncSession, current_user: User) -> BusinessProf
 async def list_stores(
     is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
     assigned_store_id: Optional[str] = Query(default=None, description="Filter by assigned store ID."),
+    prospect_segment: Optional[str] = Query(default=None, description="Filter by prospect segment."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
@@ -61,6 +62,8 @@ async def list_stores(
         query = query.where(Store.is_prospect == is_prospect)
     if assigned_store_id is not None:
         query = query.where(Store.assigned_store_id == assigned_store_id)
+    if prospect_segment is not None:
+        query = query.where(Store.prospect_segment == prospect_segment)
         
     result = await db.execute(
         query.options(

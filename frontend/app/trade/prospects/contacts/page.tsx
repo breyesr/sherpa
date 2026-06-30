@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
@@ -22,9 +23,11 @@ import {
 import { ClientResponse } from '@/types/api';
 import ContactDrawer from '@/components/v2/ContactDrawer';
 
-export default function ProspectContactsPage() {
+function ProspectContactsContent() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const segment = searchParams.get('segment') || 'wholesale';
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: any}>({
@@ -34,9 +37,9 @@ export default function ProspectContactsPage() {
 
   // Fetch Prospect Contacts (Clients with is_prospect=true)
   const { data: prospects = [], isLoading } = useQuery<ClientResponse[]>({
-    queryKey: ['clients', { is_prospect: true }],
+    queryKey: ['clients', { is_prospect: true, segment }],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients?is_prospect=true`, {
+      const res = await fetch(`${API_BASE_URL}/crm/clients?is_prospect=true&prospect_segment=${segment}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch prospect contacts');
@@ -321,7 +324,7 @@ export default function ProspectContactsPage() {
         isOpen={contactDrawer.isOpen}
         onClose={() => {
           setContactDrawer({ ...contactDrawer, isOpen: false });
-          queryClient.invalidateQueries({ queryKey: ['clients', { is_prospect: true }] });
+          queryClient.invalidateQueries({ queryKey: ['clients'] });
         }}
         token={token}
         clientId={contactDrawer.clientId}
@@ -329,5 +332,13 @@ export default function ProspectContactsPage() {
         isProspect={true}
       />
     </div>
+  );
+}
+
+export default function ProspectContactsPage() {
+  return (
+    <Suspense fallback={<div className="p-20 text-center font-bold text-gray-400">Loading contacts...</div>}>
+      <ProspectContactsContent />
+    </Suspense>
   );
 }

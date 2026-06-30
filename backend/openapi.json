@@ -625,6 +625,24 @@
               "title": "Is Prospect"
             },
             "description": "Filter by prospect status. If None, returns all."
+          },
+          {
+            "name": "prospect_segment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by prospect segment.",
+              "title": "Prospect Segment"
+            },
+            "description": "Filter by prospect segment."
           }
         ],
         "responses": {
@@ -1467,7 +1485,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1485,7 +1503,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2371,6 +2389,24 @@
               "title": "Assigned Store Id"
             },
             "description": "Filter by assigned store ID."
+          },
+          {
+            "name": "prospect_segment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by prospect segment.",
+              "title": "Prospect Segment"
+            },
+            "description": "Filter by prospect segment."
           }
         ],
         "responses": {
@@ -5305,6 +5341,18 @@
             "title": "Is Prospect",
             "default": false
           },
+          "prospect_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prospect Segment",
+            "default": "wholesale"
+          },
           "whatsapp_opt_in": {
             "type": "boolean",
             "title": "Whatsapp Opt In",
@@ -5490,6 +5538,18 @@
             "title": "Is Prospect",
             "default": false
           },
+          "prospect_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prospect Segment",
+            "default": "wholesale"
+          },
           "whatsapp_opt_in": {
             "type": "boolean",
             "title": "Whatsapp Opt In",
@@ -5643,6 +5703,17 @@
               }
             ],
             "title": "Is Prospect"
+          },
+          "prospect_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prospect Segment"
           },
           "whatsapp_opt_in": {
             "anyOf": [
@@ -8027,6 +8098,18 @@
             "title": "Is Prospect",
             "default": false
           },
+          "prospect_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prospect Segment",
+            "default": "wholesale"
+          },
           "delivery_zip_codes": {
             "anyOf": [
               {
@@ -8514,6 +8597,18 @@
             "title": "Is Prospect",
             "default": false
           },
+          "prospect_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prospect Segment",
+            "default": "wholesale"
+          },
           "delivery_zip_codes": {
             "anyOf": [
               {
@@ -8833,6 +8928,17 @@
               }
             ],
             "title": "Is Prospect"
+          },
+          "prospect_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prospect Segment"
           },
           "delivery_zip_codes": {
             "anyOf": [
