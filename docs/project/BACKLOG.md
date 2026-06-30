@@ -757,3 +757,45 @@ The following tasks have been removed or deprecated from active epics because of
     * *When* saving the user features,
     * *Then* `scheduling` and `crm_suite` are always sent as `{ enabled: true }` in `features_config` to the backend.
 
+---
+
+## Epic 152: Dual-Vertical Sandbox & Webhook Gating Alignment
+**Objective**: Explicitly introduce the `customer` role for B2C end consumers to separate B2C scheduling/catalog interactions from B2B wholesale pipelines, dynamically gating webhooks and sandbox configurations.
+
+- [ ] Task 152.1: **Define B2C Customer Role in Identity Resolver**
+  * **Description**: Modify `IdentityResolver.resolve_sender` in `backend/app/services/identity_resolver.py`. If `vertical_type == 'BASIC'`, resolve unknown or standard contacts as `"customer"` instead of `"prospective_client"`.
+  * **Acceptance Criteria**:
+    * *Given* a business with vertical `BASIC`,
+    * *When* a message is received from a phone that is not a registered sales rep/staff,
+    * *Then* `resolve_sender` returns `("customer", client)`.
+
+- [ ] Task 152.2: **Dynamic Frontend Sandbox Dropdown Gating (B2C vs B2B)**
+  * **Description**: Refactor the role simulator selector in `AssistantSettings.tsx` to inspect `vertical_type`. If `BASIC`, display only the option **"Simulate Customer"** (value: `customer`). If `TRADE`, dynamically display **"Simulate Prospect (Wholesale Lead)"** (value: `prospective_client`, gated by `campaign_flow`), **"Simulate Distributor (Store Client)"** (value: `distributor_retailer`, gated by `b2b_solutions`), and **"Simulate Sales Rep (Field Agent)"** (value: `sales_rep`, gated by `sales_intelligence`).
+  * **Acceptance Criteria**:
+    * *Given* a B2C (BASIC) account,
+    * *When* the admin opens the settings sandbox,
+    * *Then* they only see "Simulate Customer" and selecting it sends `simulate_role: "customer"`.
+    * *Given* a B2B (TRADE) account,
+    * *When* the admin opens the settings sandbox,
+    * *Then* only enabled B2B role options are rendered.
+
+- [ ] Task 152.3: **Vertical-Aware Webhook Feature Gates (Telegram & WhatsApp)**
+  * **Description**: Update `telegram.py` and `whatsapp.py` webhook handlers.
+    * For `customer`: Allow if `vertical_type == 'BASIC'` and core `scheduling` is enabled. Routes to B2C scheduler/catalog response.
+    * For `prospective_client`: Gated strictly by B2B `campaign_flow`.
+    * For `distributor_retailer`: Gated strictly by B2B `b2b_solutions`.
+    * For `sales_rep`: Gated strictly by B2B `sales_intelligence`.
+  * **Acceptance Criteria**:
+    * *Given* a B2C profile,
+    * *When* a customer messages,
+    * *Then* the message is processed successfully by the scheduler AI.
+    * *Given* a B2B profile,
+    * *When* a customer/prospect messages,
+    * *Then* it is gated by `campaign_flow`.
+
+- [ ] Task 152.4: **Verification & Test Realignment**
+  * **Description**: Update the test cases in `backend/test_sandbox_gates.py` to cover the new `customer` role, B2C vertical gating, and correct routing.
+  * **Acceptance Criteria**:
+    * *Given* the integration test suite,
+    * *When* running pytest,
+    * *Then* all tests pass cleanly.
