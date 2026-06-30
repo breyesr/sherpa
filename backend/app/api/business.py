@@ -204,10 +204,16 @@ async def test_chat(
     # 1. Check if the simulated flow is enabled in company's features and routing configurations
     simulate_role = payload.simulate_role or "sales_rep"
     
+    from app.models.business import VerticalType
+    if business.vertical_type == VerticalType.BASIC:
+        simulate_role = "customer"
+    
     # Check feature flag entitlement first
     feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
     feature_enabled = True
-    if simulate_role == "prospective_client":
+    if simulate_role == "customer":
+        feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
+    elif simulate_role == "prospective_client":
         feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
     elif simulate_role == "distributor_retailer":
         feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
@@ -216,7 +222,9 @@ async def test_chat(
 
     cfg = business.routing_config or {}
     flow_enabled = False
-    if simulate_role == "prospective_client":
+    if simulate_role == "customer":
+        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
+    elif simulate_role == "prospective_client":
         flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
     elif simulate_role == "distributor_retailer":
         flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
@@ -227,7 +235,19 @@ async def test_chat(
         return {"response": "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."}
 
     # 2. Dispatch to the correct underlying message pipeline
-    if simulate_role == "prospective_client":
+    if simulate_role == "customer":
+        ai_service = AIService(business, db)
+        test_id = f"sandbox_cust_{current_user.id}"
+        response = await ai_service.get_response(
+            identifier=test_id,
+            user_message=payload.message,
+            metadata={
+                "name": "B2C Customer Test",
+                "platform": "sandbox",
+                "flow": "customer"
+            }
+        )
+    elif simulate_role == "prospective_client":
         from app.services.prospect_qualifier import ProspectQualifier
         qualifier = ProspectQualifier(db)
         test_phone = f"sandbox_prosp_{current_user.id}"

@@ -48,20 +48,32 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
   const [sandboxMessages, setSandboxMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [sandboxInput, setSandboxInput] = useState('');
   const [isSandboxLoading, setIsSandboxLoading] = useState(false);
-  const [sandboxRole, setSandboxRole] = useState<'sales_rep' | 'distributor_retailer' | 'prospective_client'>('sales_rep');
+  const [sandboxRole, setSandboxRole] = useState<'sales_rep' | 'distributor_retailer' | 'prospective_client' | 'customer'>(() => {
+    return business?.vertical_type === 'BASIC' ? 'customer' : 'sales_rep';
+  });
 
+  const isBasic = business?.vertical_type === 'BASIC';
   const features = (business?.features_config as Record<string, any>) || {};
   const isCampaignEnabled = features.campaign_flow?.enabled === true;
   const isB2bEnabled = features.b2b_solutions?.enabled === true;
+  const isSalesIntelligenceEnabled = features.sales_intelligence?.enabled === true;
 
   useEffect(() => {
-    if (sandboxRole === 'distributor_retailer' && !isB2bEnabled) {
-      setSandboxRole('sales_rep');
+    if (isBasic) {
+      if (sandboxRole !== 'customer') {
+        setSandboxRole('customer');
+      }
+    } else {
+      const enabledRoles: ('sales_rep' | 'distributor_retailer' | 'prospective_client')[] = [];
+      if (isCampaignEnabled) enabledRoles.push('prospective_client');
+      if (isB2bEnabled) enabledRoles.push('distributor_retailer');
+      if (isSalesIntelligenceEnabled) enabledRoles.push('sales_rep');
+
+      if (enabledRoles.length > 0 && !enabledRoles.includes(sandboxRole as any)) {
+        setSandboxRole(enabledRoles[0]);
+      }
     }
-    if (sandboxRole === 'prospective_client' && !isCampaignEnabled) {
-      setSandboxRole('sales_rep');
-    }
-  }, [isB2bEnabled, isCampaignEnabled, sandboxRole]);
+  }, [isBasic, isB2bEnabled, isCampaignEnabled, isSalesIntelligenceEnabled, sandboxRole]);
 
   const handleSaveAssistant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -346,12 +358,20 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
                 }}
                 className="text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
               >
-                <option value="sales_rep">Simulate Sales Rep</option>
-                {isB2bEnabled && (
-                  <option value="distributor_retailer">Simulate Distributor</option>
-                )}
-                {isCampaignEnabled && (
-                  <option value="prospective_client">Simulate Prospect</option>
+                {isBasic ? (
+                  <option value="customer">Simulate Customer</option>
+                ) : (
+                  <>
+                    {isSalesIntelligenceEnabled && (
+                      <option value="sales_rep">Simulate Sales Rep</option>
+                    )}
+                    {isB2bEnabled && (
+                      <option value="distributor_retailer">Simulate Distributor</option>
+                    )}
+                    {isCampaignEnabled && (
+                      <option value="prospective_client">Simulate Prospect</option>
+                    )}
+                  </>
                 )}
               </select>
               <button 

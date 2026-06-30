@@ -137,24 +137,28 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         from app.services.identity_resolver import IdentityResolver
         sender_type, client_obj = await IdentityResolver.resolve_sender(db, business.id, chat_id_str, is_telegram=True)
         
-        from app.api.business import DEFAULT_FEATURES_CONFIG
-        feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
-        feature_enabled = True
-        if sender_type == "prospective_client":
-            feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
-        elif sender_type == "distributor_retailer":
-            feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
-        elif sender_type == "sales_rep":
-            feature_enabled = feat_cfg.get("crm_suite", {}).get("enabled", True)
+        from app.models.business import VerticalType
+        is_trade = business.vertical_type == VerticalType.TRADE
 
-        cfg = business.routing_config or {}
+        # Determine feature/flow entitlement
+        feature_enabled = True
         flow_enabled = False
-        if sender_type == "prospective_client":
-            flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
+        
+        cfg = business.routing_config or {}
+        feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+
+        if sender_type == "customer":
+            feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
+            flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
+        elif sender_type == "prospective_client":
+            feature_enabled = is_trade and feat_cfg.get("campaign_flow", {}).get("enabled", False)
+            flow_enabled = is_trade and cfg.get("prospective_clients", {}).get("enabled", False)
         elif sender_type == "distributor_retailer":
-            flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
+            feature_enabled = is_trade and feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+            flow_enabled = is_trade and cfg.get("distributors_retailers", {}).get("enabled", False)
         elif sender_type == "sales_rep":
-            flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
+            feature_enabled = is_trade and feat_cfg.get("sales_intelligence", {}).get("enabled", False)
+            flow_enabled = is_trade and cfg.get("sales_reps", {}).get("enabled", True)
 
         if not feature_enabled or not flow_enabled:
             response_text = "Este servicio no está habilitado actualmente para este número."
@@ -178,12 +182,13 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                 from app.core.ai_service import AIService
                 ai = AIService(business, db)
                 
+                flow_name = "customer" if sender_type == "customer" else ("sales_rep" if sender_type == "sales_rep" else "distributor")
                 meta = {
                     "platform": "telegram",
                     "first_name": first_name,
                     "last_name": last_name,
                     "username": username,
-                    "flow": "sales_rep" if sender_type == "sales_rep" else "distributor",
+                    "flow": flow_name,
                     "client_id": client_obj.id if client_obj else None
                 }
                 

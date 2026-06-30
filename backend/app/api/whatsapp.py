@@ -242,24 +242,28 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         sender_type, client = await IdentityResolver.resolve_sender(db, business.id, sender_phone)
 
         # 4. Check dynamic routing and feature configuration flags
+        from app.models.business import VerticalType
+        is_trade = business.vertical_type == VerticalType.TRADE
+
         from app.api.business import DEFAULT_FEATURES_CONFIG
         feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
         feature_enabled = True
-        if sender_type == "prospective_client":
-            feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
-        elif sender_type == "distributor_retailer":
-            feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
-        elif sender_type == "sales_rep":
-            feature_enabled = feat_cfg.get("crm_suite", {}).get("enabled", True)
+        flow_enabled = False
 
         cfg = business.routing_config or {}
-        flow_enabled = False
-        if sender_type == "prospective_client":
-            flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
+
+        if sender_type == "customer":
+            feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
+            flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
+        elif sender_type == "prospective_client":
+            feature_enabled = is_trade and feat_cfg.get("campaign_flow", {}).get("enabled", False)
+            flow_enabled = is_trade and cfg.get("prospective_clients", {}).get("enabled", False)
         elif sender_type == "distributor_retailer":
-            flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
+            feature_enabled = is_trade and feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+            flow_enabled = is_trade and cfg.get("distributors_retailers", {}).get("enabled", False)
         elif sender_type == "sales_rep":
-            flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
+            feature_enabled = is_trade and feat_cfg.get("sales_intelligence", {}).get("enabled", False)
+            flow_enabled = is_trade and cfg.get("sales_reps", {}).get("enabled", True)
 
         if not feature_enabled or not flow_enabled:
             from twilio.twiml.messaging_response import MessagingResponse
@@ -268,9 +272,19 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
             return Response(content=str(twiml), media_type="text/xml")
 
         # 5. Dispatch to Celery queues
-        from app.tasks.messages import process_sales_rep_message, process_distributor_message, process_prospect_message
+        from app.tasks.messages import (
+            process_sales_rep_message, 
+            process_distributor_message, 
+            process_prospect_message,
+            process_customer_message
+        )
         
-        if sender_type == "sales_rep":
+        if sender_type == "customer":
+            client_id = client.id if client else None
+            process_customer_message.apply_async(
+                args=[business.id, client_id, payload], queue="prospects"
+            )
+        elif sender_type == "sales_rep":
             process_sales_rep_message.apply_async(
                 args=[business.id, client.id, payload], queue="sales-reps"
             )

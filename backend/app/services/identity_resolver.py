@@ -22,9 +22,10 @@ class IdentityResolver:
         id_hash = Client.hash_id(normalized_id)
 
         # Fetch business to get contact_phone
-        from app.models.business import BusinessProfile
+        from app.models.business import BusinessProfile, VerticalType
         result_biz = await db.execute(select(BusinessProfile).where(BusinessProfile.id == business_id))
         business = result_biz.scalars().first()
+        is_b2c = business and business.vertical_type == VerticalType.BASIC
         biz_phone = IdentityResolver.clean_identifier(business.contact_phone) if business and business.contact_phone else None
 
         # 1. Fetch Client with store relations pre-loaded
@@ -62,7 +63,10 @@ class IdentityResolver:
                 await db.refresh(client)
 
         if not client:
-            return "prospective_client", None
+            return "customer" if is_b2c else "prospective_client", None
+
+        if is_b2c:
+            return "customer", client
 
         # 2. Check representative status
         if (client.role in ("representative", "sales_rep", "agent")) or (biz_phone and client.phone == biz_phone):

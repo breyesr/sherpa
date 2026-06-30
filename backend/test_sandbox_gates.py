@@ -20,10 +20,11 @@ from app.models.integration import Integration
 mock_user = User(id="user_test_123", email="test@business.com")
 
 class MockBusinessProfile:
-    def __init__(self, features_config=None, routing_config=None):
+    def __init__(self, vertical_type="TRADE", features_config=None, routing_config=None):
         self.id = "biz_test_123"
         self.name = "Test Business"
         self.user_id = "user_test_123"
+        self.vertical_type = vertical_type
         self.features_config = features_config or {}
         self.routing_config = routing_config or {}
         self.agents = []
@@ -91,17 +92,20 @@ async def run_tests():
 
     # Scenarios for Sandbox tests
     sandbox_scenarios = [
-        {"name": "Prospect: Feature DISABLED, Routing ENABLED", "features_config": {"campaign_flow": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": True}}, "simulate_role": "prospective_client", "expected_blocked": True},
-        {"name": "Prospect: Feature ENABLED, Routing DISABLED", "features_config": {"campaign_flow": {"enabled": True}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": True},
-        {"name": "Prospect: Feature DISABLED, Routing DISABLED", "features_config": {"campaign_flow": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": True},
-        {"name": "Distributor: Feature DISABLED, Routing ENABLED", "features_config": {"b2b_solutions": {"enabled": False}}, "routing_config": {"distributors_retailers": {"enabled": True}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
-        {"name": "Distributor: Feature ENABLED, Routing DISABLED", "features_config": {"b2b_solutions": {"enabled": True}}, "routing_config": {"distributors_retailers": {"enabled": False}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
-        {"name": "Distributor: Feature DISABLED, Routing DISABLED", "features_config": {"b2b_solutions": {"enabled": False}}, "routing_config": {"distributors_retailers": {"enabled": False}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
+        {"name": "Prospect: Feature DISABLED, Routing ENABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": True}}, "simulate_role": "prospective_client", "expected_blocked": True},
+        {"name": "Prospect: Feature ENABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": True}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": True},
+        {"name": "Prospect: Feature DISABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": True},
+        {"name": "Distributor: Feature DISABLED, Routing ENABLED", "vertical_type": "TRADE", "features_config": {"b2b_solutions": {"enabled": False}}, "routing_config": {"distributors_retailers": {"enabled": True}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
+        {"name": "Distributor: Feature ENABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"b2b_solutions": {"enabled": True}}, "routing_config": {"distributors_retailers": {"enabled": False}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
+        {"name": "Distributor: Feature DISABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"b2b_solutions": {"enabled": False}}, "routing_config": {"distributors_retailers": {"enabled": False}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
+        {"name": "B2C Customer: Scheduling DISABLED", "vertical_type": "BASIC", "features_config": {"scheduling": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": True}}, "simulate_role": "customer", "expected_blocked": True},
+        {"name": "B2C Customer: Routing DISABLED", "vertical_type": "BASIC", "features_config": {"scheduling": {"enabled": True}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "customer", "expected_blocked": True},
     ]
 
     print("\n[SANDBOX /test-chat TESTS]")
     for scenario in sandbox_scenarios:
         mock_biz = MockBusinessProfile(
+            vertical_type=scenario["vertical_type"],
             features_config=scenario["features_config"],
             routing_config=scenario["routing_config"]
         )
