@@ -23,6 +23,7 @@ class UserCreateAdmin(UserBase):
     is_admin: bool = False
     vertical_type: Optional[str] = "BASIC"
     features_config: Optional[dict] = None
+    routing_config: Optional[dict] = None
 
 class BusinessProfileMinimal(BaseModel):
     id: str
