@@ -865,3 +865,37 @@ The following tasks have been removed or deprecated from active epics because of
     * *Given* a new B2B profile is initialized in the database,
     * *When* defaults are fetched,
     * *Then* `features_config` includes `"products": {"enabled": true}` and `"services": {"enabled": false}`.
+
+---
+
+## Epic 142: Sidebar Navigation Nomenclature & Hierarchy Alignment
+**Objective**: Redefine menu item nomenclatures in `Sidebar.tsx` to eliminate cognitive load and label repetition across active customer assets and prospective pipelines. Organize B2C links under clear thematic sections (CRM Operations & Catalog Setup) and standardize plural categories labels.
+
+- [ ] Task 142.1: **Differentiate B2B Hub and Prospecting Menu Leaf Labels**
+  * **Description**: Rename leaf nodes in `Sidebar.tsx` to ensure distinct terms:
+    - B2B Hub accounts -> "Active Accounts"
+    - Wholesale Prospecting accounts -> "Lead Accounts"
+    - Wholesale Prospecting contacts -> "Lead Contacts"
+    - Retail Prospecting accounts -> "Referral Stores"
+    - Retail Prospecting contacts -> "Referral Contacts"
+  * **Acceptance Criteria**:
+    - *Given* a B2B user viewing the sidebar,
+    - *When* the sidebar renders,
+    - *Then* they see unique labels: "Active Accounts", "Lead Accounts", and "Referral Stores".
+
+- [ ] Task 142.2: **Standardize B2C Plural Nomenclatures and Section Headers**
+  * **Description**: Update the B2C section in `Sidebar.tsx` to:
+    - Group B2C links under CRM Operations (Clients, Services) and Catalog Setup (Categories, Products) section headers.
+    - Rename "Category" to "Categories" for parity.
+  * **Acceptance Criteria**:
+    - *Given* a B2C user viewing the sidebar,
+    - *When* the sidebar renders,
+    - *Then* they see "Categories" and "Products" grouped under "Catalog Setup".
+
+- [ ] Task 142.3: **Compile & Verify**
+  * **Description**: Compile the Next.js frontend with no compiler or type warnings.
+  * **Acceptance Criteria**:
+    - *Given* the modified sidebar component,
+    - *When* running `npm run build` in the frontend,
+    - *Then* compilation completes successfully.
+

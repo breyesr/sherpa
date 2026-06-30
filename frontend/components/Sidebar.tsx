@@ -115,17 +115,26 @@ function SidebarContent() {
         </div>
         
         {showCRM && !showB2BSolutions && (
-          <div className="space-y-1 pt-2 border-t border-gray-100">
-            <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
-            {showServices && (
-              <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
-            )}
+          <div className="space-y-4 pt-2 border-t border-gray-100">
+            {/* CRM Operations Group */}
+            <div className="space-y-1">
+              <div className="px-4 py-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
+                CRM Operations
+              </div>
+              <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
+              {showServices && (
+                <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
+              )}
+            </div>
             
             {showProducts && (
-              <>
-                <SidebarLink href="/trade/products?tab=categories" icon={Tag} name="Category" active={pathname.startsWith('/trade/products') && activeTab === 'categories'} />
+              <div className="space-y-1 pt-2 border-t border-slate-100">
+                <div className="px-4 py-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
+                  Catalog Setup
+                </div>
+                <SidebarLink href="/trade/products?tab=categories" icon={Tag} name="Categories" active={pathname.startsWith('/trade/products') && activeTab === 'categories'} />
                 <SidebarLink href="/trade/products?tab=products" icon={Package} name="Products" active={pathname.startsWith('/trade/products') && activeTab !== 'categories'} />
-              </>
+              </div>
             )}
           </div>
         )}
@@ -140,7 +149,7 @@ function SidebarContent() {
                   href="/trade/stores"
                   className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  Accounts
+                  Active Accounts
                 </Link>
                 <Link 
                   href="/trade/retailers"
@@ -200,13 +209,13 @@ function SidebarContent() {
                             href="/trade/prospects/accounts?segment=wholesale"
                             className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
-                            Accounts
+                            Lead Accounts
                           </Link>
                           <Link 
                             href="/trade/prospects/contacts?segment=wholesale"
                             className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
-                            Contacts
+                            Lead Contacts
                           </Link>
                         </div>
                       )}
@@ -230,13 +239,13 @@ function SidebarContent() {
                             href="/trade/prospects/accounts?segment=retail"
                             className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
-                            Accounts
+                            Referral Stores
                           </Link>
                           <Link 
                             href="/trade/prospects/contacts?segment=retail"
                             className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-900'}`}
                           >
-                            Contacts
+                            Referral Contacts
                           </Link>
                         </div>
                       )}
