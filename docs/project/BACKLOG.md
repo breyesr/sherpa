@@ -805,8 +805,15 @@ The following tasks have been removed or deprecated from active epics because of
 ## Epic 141: B2C Product & Category Catalog Activation & UI Gating
 **Objective**: Activate the products and categories catalog for B2C (BASIC) vertical users by reusing the shared `Product` and `Category` database models and tables, while dynamically adapting the frontend catalog page, sidebar menu options, and edit drawer layouts to hide B2B-only attributes (such as wholesale quantity thresholds, manufacturer brands, and distribution metrics). Additionally, support admin-controlled toggles to enable or disable the Services Catalog (for B2C) and the Products Catalog (for B2C and B2B).
 
-- [ ] Task 141.1: **Map B2C Product and Category Sidebar Links & Feature Gate Sidebar Menus**
-  * **Description**: Wire the B2C sidebar menu links for `Category (pending)` and `Products (pending)` in `Sidebar.tsx` to active routes `/trade/products?tab=categories` and `/trade/products?tab=products` respectively, removing the "Pending" tag. Gate the B2C Services, B2C Category/Products, and B2B Products catalog links in `Sidebar.tsx` to conditionally display only if `features_config.services` and `features_config.products` are enabled.
+- [ ] Task 141.1: **Map B2C Product and Category Sidebar Links, Feature Gate Sidebar Menus, & Standardize Side Menu Look & Feel**
+  * **Description**: 
+    1. Wire the B2C sidebar menu links for `Category (pending)` and `Products (pending)` in `Sidebar.tsx` to active routes `/trade/products?tab=categories` and `/trade/products?tab=products` respectively, removing the "Pending" tag. 
+    2. Gate B2C Services, B2C Category/Products, and B2B Products catalog links in `Sidebar.tsx` to conditionally display only if `features_config.services` and `features_config.products` are enabled.
+    3. Overhaul the sidebar typography and layout hierarchy:
+       - **Hierarchy**: Apply standard sizes (`text-sm` for Tier 0 top-level items, `text-xs font-bold` for section headers, `text-xs font-semibold` for sub-folders, and `text-xs font-medium` for leaf links). Do not overuse `font-bold` for everything.
+       - **No Bullets**: Eliminate all `•` bullet characters from the menu text.
+       - **Indentation**: Standardize indentation (`pl-9` for Tier 1.5 sub-folders, `pl-12 ml-2 border-l border-slate-100` with guide line for Tier 2 leaf nodes).
+       - **Transitions & Indicator**: Implement active markers (using a 4px left-border blue pill `bg-blue-50/40 text-blue-600`) and rotate transitions on the folder chevrons (`duration-200 ease-in-out`).
   * **Acceptance Criteria**:
     * *Given* a B2C user profile with `products.enabled = false` and `services.enabled = true`,
     * *When* the user views the sidebar,
@@ -814,6 +821,8 @@ The following tasks have been removed or deprecated from active epics because of
     * *Given* a B2B user profile with `products.enabled = false`,
     * *When* they view the sidebar,
     * *Then* the entire "Products" group folder is hidden.
+    * *Given* any menu section,
+    * *Then* there are no raw bullet points (`•`), chevrons animate smoothly on click, and font weights reflect their respective depth tiers.
 
 - [ ] Task 141.2: **Dynamic Product Catalog Page Vertical Filtering**
   * **Description**: Update the products list table/grid view (`frontend/app/trade/products/page.tsx`) to check the business vertical profile. If `BASIC` (B2C), hide the "Wholesale Threshold" column, brand, and B2B-specific metrics from the layout.
