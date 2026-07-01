@@ -805,7 +805,7 @@ The following tasks have been removed or deprecated from active epics because of
 ## Epic 141: B2C Product & Category Catalog Activation & UI Gating
 **Objective**: Activate the products and categories catalog for B2C (BASIC) vertical users by reusing the shared `Product` and `Category` database models and tables, while dynamically adapting the frontend catalog page, sidebar menu options, and edit drawer layouts to hide B2B-only attributes (such as wholesale quantity thresholds, manufacturer brands, and distribution metrics). Additionally, support admin-controlled toggles to enable or disable the Services Catalog (for B2C) and the Products Catalog (for B2C and B2B).
 
-- [ ] Task 141.1: **Map B2C Product and Category Sidebar Links, Feature Gate Sidebar Menus, & Standardize Side Menu Look & Feel**
+- [x] Task 141.1: **Map B2C Product and Category Sidebar Links, Feature Gate Sidebar Menus, & Standardize Side Menu Look & Feel**
   * **Description**: 
     1. Wire the B2C sidebar menu links for `Category (pending)` and `Products (pending)` in `Sidebar.tsx` to active routes `/trade/products?tab=categories` and `/trade/products?tab=products` respectively, removing the "Pending" tag. 
     2. Gate B2C Services, B2C Category/Products, and B2B Products catalog links in `Sidebar.tsx` to conditionally display only if `features_config.services` and `features_config.products` are enabled.
@@ -824,42 +824,42 @@ The following tasks have been removed or deprecated from active epics because of
     * *Given* any menu section,
     * *Then* there are no raw bullet points (`•`), chevrons animate smoothly on click, and font weights reflect their respective depth tiers.
 
-- [ ] Task 141.2: **Dynamic Product Catalog Page Vertical Filtering**
+- [x] Task 141.2: **Dynamic Product Catalog Page Vertical Filtering**
   * **Description**: Update the products list table/grid view (`frontend/app/trade/products/page.tsx`) to check the business vertical profile. If `BASIC` (B2C), hide the "Wholesale Threshold" column, brand, and B2B-specific metrics from the layout.
   * **Acceptance Criteria**:
     * *Given* a B2C user viewing `/trade/products`,
     * *When* the page renders,
     * *Then* the "Wholesale Threshold" column and "Brand" values are not displayed in the table.
 
-- [ ] Task 141.3: **Dynamic Catalog Drawer Form Gating**
+- [x] Task 141.3: **Dynamic Catalog Drawer Form Gating**
   * **Description**: Update the product configuration edit/create drawer form (`CatalogDrawer.tsx` or similar product form) to dynamically render input fields. If vertical is `BASIC` (B2C), hide inputs for `wholesale_threshold`, `brand`, and `unit_of_measure` (or default them in the request payload), showing only name, price, description, and categories.
   * **Acceptance Criteria**:
     * *Given* a B2C user opening the Add Product drawer,
     * *When* the form renders,
     * *Then* inputs for "Wholesale Threshold" and "Brand" are completely hidden from the user interface.
 
-- [ ] Task 141.4: **Update API Schema Tolerances & Unit Testing**
+- [x] Task 141.4: **Update API Schema Tolerances & Unit Testing**
   * **Description**: Ensure all Pydantic schemas in `schemas/trade.py` (such as `ProductCreate`/`ProductUpdate`) have B2B fields (`wholesale_threshold`, `brand`) defined as optional/nullable, and write unit tests verifying B2C product creations succeed with only basic fields.
   * **Acceptance Criteria**:
     * *Given* a B2C product payload with only name, price, and category_id,
     * *When* creating the product via POST `/trade/products`,
     * *Then* the product is successfully saved in the database with NULL B2B fields.
 
-- [ ] Task 141.5: **Build Compile and Integration Verification**
+- [x] Task 141.5: **Build Compile and Integration Verification**
   * **Description**: Regenerate frontend TypeScript clients, verify zero compilation/TypeScript errors during Next.js builds, and verify all unit/integration tests pass cleanly.
   * **Acceptance Criteria**:
     * *Given* the updated schemas and pages,
     * *When* running `npm run build` in the frontend,
     * *Then* the production compilation succeeds with no errors.
 
-- [ ] Task 141.6: **Admin User Modal Custom Feature Switches**
+- [x] Task 141.6: **Admin User Modal Custom Feature Switches**
   * **Description**: Add toggle components to the Admin panel user provisioning modal (`frontend/app/(admin)/admin/page.tsx`). For B2C (BASIC) accounts, show toggles for "Services Catalog" and "Products & Categories". For B2B (TRADE) accounts, show a toggle for "Products & Categories Catalog". Wire them to sanitize and serialize into `features_config` on save.
   * **Acceptance Criteria**:
     * *Given* the Admin User creation modal,
     * *When* the admin configures a BASIC user's features,
     * *Then* they can check/uncheck Services and Products, saving them as `services` and `products` flags.
 
-- [ ] Task 141.7: **Register Feature Defaults in Backend**
+- [x] Task 141.7: **Register Feature Defaults in Backend**
   * **Description**: Register `services` and `products` keys in `DEFAULT_FEATURES_CONFIG` and `get_default_features_config(vertical_type)` inside `backend/app/api/business.py` to ensure B2C gets services default-enabled, and B2B gets products default-enabled.
   * **Acceptance Criteria**:
     * *Given* a new B2B profile is initialized in the database,
@@ -868,10 +868,10 @@ The following tasks have been removed or deprecated from active epics because of
 
 ---
 
-## Epic 142: Sidebar Navigation Nomenclature & Hierarchy Alignment
+## Epic 142: Sidebar Navigation Nomenclature & Hierarchy Alignment (COMPLETE)
 **Objective**: Redefine menu item nomenclatures in `Sidebar.tsx` to eliminate cognitive load and label repetition across active customer assets and prospective pipelines. Organize B2C links under clear thematic sections (CRM Operations & Catalog Setup) and standardize plural categories labels.
 
-- [ ] Task 142.1: **Differentiate B2B Hub and Prospecting Menu Leaf Labels**
+- [x] Task 142.1: **Differentiate B2B Hub and Prospecting Menu Leaf Labels**
   * **Description**: Rename leaf nodes in `Sidebar.tsx` to ensure distinct terms:
     - B2B Hub accounts -> "Active Accounts"
     - Wholesale Prospecting accounts -> "Lead Accounts"
@@ -883,7 +883,7 @@ The following tasks have been removed or deprecated from active epics because of
     - *When* the sidebar renders,
     - *Then* they see unique labels: "Active Accounts", "Lead Accounts", and "Referral Stores".
 
-- [ ] Task 142.2: **Standardize B2C Plural Nomenclatures and Section Headers**
+- [x] Task 142.2: **Standardize B2C Plural Nomenclatures and Section Headers**
   * **Description**: Update the B2C section in `Sidebar.tsx` to:
     - Group B2C links under CRM Operations (Clients, Services) and Catalog Setup (Categories, Products) section headers.
     - Rename "Category" to "Categories" for parity.
@@ -892,7 +892,7 @@ The following tasks have been removed or deprecated from active epics because of
     - *When* the sidebar renders,
     - *Then* they see "Categories" and "Products" grouped under "Catalog Setup".
 
-- [ ] Task 142.3: **Compile & Verify**
+- [x] Task 142.3: **Compile & Verify**
   * **Description**: Compile the Next.js frontend with no compiler or type warnings.
   * **Acceptance Criteria**:
     - *Given* the modified sidebar component,
