@@ -19,7 +19,7 @@ from langgraph.graph.message import add_messages
 from app.core.system_config import ConfigService
 from app.core.config import settings
 from app.models.business import BusinessProfile
-from app.models.trade import Store, Product, Category, StoreAction, ActionCategory, ActionObjective, ActionStatus, store_clients, PostalCode
+from app.models.trade import Store, Product, Category, StoreAction, ActionCategory, ActionStatus, store_clients, PostalCode
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
 from datetime import datetime
@@ -630,7 +630,7 @@ Estado actual de los datos recopilados:
                 store_id=store.id,
                 assigned_to_id=client.id,
                 category=ActionCategory.COMMERCIAL,
-                objective=ActionObjective.GENERAL,
+                objective="GENERAL",
                 status=ActionStatus.PROPOSED,
                 details={
                     "lead_source": f"{channel_name} Prospection - Referencia Minorista" if is_retail else (f"{channel_name} Prospection" if not is_waitlist else f"{channel_name} Prospection - Lista de Espera"),

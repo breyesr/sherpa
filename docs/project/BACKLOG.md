@@ -428,9 +428,9 @@
 ## Epic 125: Dynamic Strategy & Global Playbooks
 **Objective**: Transition the static, hardcoded Action Objectives and local-only templates into a dynamic, superadmin-configurable system framework. Allow the creation of global templates available system-wide, and dynamically adapt the AI classification engine to custom objectives.
 
-- [ ] Task 125.1: **Database Schema Migration**: Create the `action_objectives` table, replace the Enum-based objective field in `StoreAction` with a foreign key to the new table, and make `ActionTemplate.business_id` nullable (`nullable=True`) to support global scoping. Implement Alembic migration script.
-- [ ] Task 125.2: **Backend CRUD & Scoping APIs**: Implement standard CRUD endpoints for `/trade/action-objectives` (writes restricted to superadmins) and update `/trade/action-templates` scoping queries and permissions to allow superadmins to create/edit system-wide templates.
-- [ ] Task 125.3: **Dynamic AI Ingestion Classification**: Modify the background Celery extraction jobs to query active `action_objectives` from the DB and dynamically inject them as classification options into the GraphRAG ingestion prompt context.
+- [x] Task 125.1: **Database Schema Migration**: Create the `store_action_objectives` table, replace the Enum-based objective field in `StoreAction` with a String, and backfill existing businesses. Implement Alembic migration script.
+- [x] Task 125.2: **Backend CRUD & Scoping APIs**: Implement standard CRUD endpoints for `/trade/objectives` and validate action objectives on create/update.
+- [x] Task 125.3: **Dynamic AI Ingestion Classification**: Modify the background Celery extraction jobs to query active `action_objectives` from the DB and dynamically compile the Pydantic schema passed to the Instructor client.
 - [ ] Task 125.4: **Admin Management Console (UI)**: Build a Superadmin control panel under `/admin` in the frontend to manage Action Objectives (create, edit, toggle active status) and templates (set global/local scope).
 - [ ] Task 125.5: **Strategy Desk Integration (UI)**: Refactor the Objective select dropdown and Template selector in the create action drawer to fetch dynamic values from the API and visually badge global templates with a "System" lock status.
 

@@ -105,6 +105,19 @@ export default function ActionsStrategyDesk() {
     enabled: !!token,
   });
 
+  // Fetch Store Action Objectives
+  const { data: objectives = [] } = useQuery<any[]>({
+    queryKey: ['store-action-objectives'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/trade/objectives`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch objectives');
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
   // Fetch Accounts (Stores)
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
@@ -125,7 +138,7 @@ export default function ActionsStrategyDesk() {
   const [actionFormData, setActionFormData] = useState({
     store_id: '',
     template_id: '',
-    objective: 'GENERAL',
+    objective: 'THREAT_RESPONSE',
     assigned_to_id: '',
     due_date: '',
     impact_level: 'MEDIUM',
@@ -215,7 +228,7 @@ export default function ActionsStrategyDesk() {
       setActionFormData({
         store_id: '',
         template_id: '',
-        objective: 'GENERAL',
+        objective: 'THREAT_RESPONSE',
         assigned_to_id: '',
         due_date: '',
         impact_level: 'MEDIUM',
@@ -377,13 +390,23 @@ export default function ActionsStrategyDesk() {
     }
   };
 
-  const objectiveMap: Record<string, string> = {
-    THREAT_RESPONSE: 'Threat Response',
-    ANNIVERSARY: 'Anniversary Promo',
-    REPLENISHMENT: 'Replenishment Survey',
-    NEW_PRODUCT: 'New Placement',
-    RELATIONSHIP: 'Relationship Management',
-    GENERAL: 'General Audit'
+  const defaultObjectiveMap: Record<string, string> = {
+    THREAT_RESPONSE: 'THREAT_RESPONSE',
+    SHARE_OF_SHELF: 'Share of Shelf',
+    NEW_PRODUCT_INTRODUCTION: 'new product introduction',
+    INVENTORY_VELOCITY_OOS_PREVENTION: 'Inventory Velocity & OOS Prevention',
+    PERFECT_STORE_ASSORTMENT_COMPLIANCE: '"Perfect Store" & Assortment Compliance',
+    SEASONAL_EVENT_ACTIVATION: 'Seasonal & Event Activation',
+    TRADE_LOYALTY_VOLUME_PUSHING: 'Trade Loyalty & Volume Pushing (Sell-In)',
+    POSM_MAINTENANCE_ASSET_PURITY: 'POSM Maintenance & Asset Purity'
+  };
+
+  const objectiveMap = {
+    ...defaultObjectiveMap,
+    ...objectives.reduce((acc: Record<string, string>, obj: any) => {
+      acc[obj.name] = obj.label;
+      return acc;
+    }, {})
   };
 
   return (

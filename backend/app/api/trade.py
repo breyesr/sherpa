@@ -11,7 +11,7 @@ from app.core.ai_service import AIService
 from app.services.graphrag import GraphRAGService
 from app.models.user import User
 from app.models.business import BusinessProfile
-from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, ActionTemplate, StoreAction, PostalCode
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, ActionTemplate, StoreAction, PostalCode, StoreActionObjective
 from app.schemas.trade import (
     StoreResponse, StoreCreate, StoreUpdate,
     CategoryResponse, CategoryCreate,
@@ -21,7 +21,7 @@ from app.schemas.trade import (
     CompetitorResponse, CompetitorCreate,
     ActionTemplateCreate, ActionTemplateResponse, ActionTemplateUpdate,
     StoreActionCreate, StoreActionResponse, StoreActionUpdate,
-    PostalCodeResponse
+    PostalCodeResponse, StoreActionObjectiveCreate, StoreActionObjectiveResponse
 )
 
 from app.tasks.knowledge import sync_vector_task, delete_vector_task
@@ -904,6 +904,16 @@ async def create_store_action(
         
     action_data = action_in.model_dump()
     
+    # Verify objective is valid for this business
+    res_obj = await db.execute(
+        select(StoreActionObjective).where(
+            StoreActionObjective.business_id == business.id,
+            StoreActionObjective.name == action_in.objective
+        )
+    )
+    if not res_obj.scalars().first():
+        raise HTTPException(status_code=400, detail=f"Invalid objective '{action_in.objective}' for this business")
+        
     # Sanitize empty-string FK fields sent by the frontend (dropdowns default to '')
     for fk_field in ("assigned_to_id", "template_id", "note_source_id"):
         if fk_field in action_data and action_data[fk_field] == "":
@@ -978,6 +988,17 @@ async def update_store_action(
         
     update_data = action_in.model_dump(exclude_unset=True)
     
+    # Verify objective is valid for this business if updated
+    if "objective" in update_data and update_data["objective"]:
+        res_obj = await db.execute(
+            select(StoreActionObjective).where(
+                StoreActionObjective.business_id == business.id,
+                StoreActionObjective.name == update_data["objective"]
+            )
+        )
+        if not res_obj.scalars().first():
+            raise HTTPException(status_code=400, detail=f"Invalid objective '{update_data['objective']}' for this business")
+            
     # Strip timezone info from datetime fields to prevent asyncpg DataError
     if update_data.get("due_date") and update_data["due_date"].tzinfo:
         update_data["due_date"] = update_data["due_date"].replace(tzinfo=None)
@@ -1025,4 +1046,64 @@ async def delete_store_action(
     await db.delete(action)
     await db.commit()
     return {"status": "success", "message": "Action deleted"}
+
+@router.get("/objectives", response_model=List[StoreActionObjectiveResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
+async def list_objectives(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """List all dynamic action objectives for the business."""
+    business = await get_business(db, current_user.id)
+    result = await db.execute(
+        select(StoreActionObjective)
+        .where(StoreActionObjective.business_id == business.id)
+        .order_by(StoreActionObjective.created_at.desc())
+    )
+    return result.scalars().all()
+
+@router.post("/objectives", response_model=StoreActionObjectiveResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+async def create_objective(
+    obj_in: StoreActionObjectiveCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Create a new custom action objective."""
+    business = await get_business(db, current_user.id)
+    
+    # Check if objective with the same name already exists for this business
+    res_exist = await db.execute(
+        select(StoreActionObjective)
+        .where(StoreActionObjective.business_id == business.id, StoreActionObjective.name == obj_in.name)
+    )
+    if res_exist.scalars().first():
+        raise HTTPException(status_code=400, detail=f"Objective '{obj_in.name}' already exists")
+        
+    obj = StoreActionObjective(
+        business_id=business.id,
+        **obj_in.model_dump()
+    )
+    db.add(obj)
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+@router.delete("/objectives/{obj_id}", dependencies=[Depends(require_feature("b2b_solutions"))])
+async def delete_objective(
+    obj_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Delete a custom action objective."""
+    business = await get_business(db, current_user.id)
+    result = await db.execute(
+        select(StoreActionObjective)
+        .where(StoreActionObjective.id == obj_id, StoreActionObjective.business_id == business.id)
+    )
+    obj = result.scalars().first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Objective not found")
+        
+    await db.delete(obj)
+    await db.commit()
+    return {"status": "success", "message": "Objective deleted"}
 
