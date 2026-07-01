@@ -174,7 +174,22 @@ class AgenticOrchestrator:
                 active_store_id=state.get("store_id")
             ))
             
-            response = await llm.ainvoke([system_msg] + messages)
+            # Locate last human message to safely prune history without splitting tool calls
+            last_human_idx = -1
+            for i in range(len(messages) - 1, -1, -1):
+                if isinstance(messages[i], HumanMessage) or getattr(messages[i], "type", "") == "human":
+                    last_human_idx = i
+                    break
+            
+            if last_human_idx != -1:
+                current_turn = messages[last_human_idx:]
+                history = messages[:last_human_idx]
+                pruned_history = history[-2:] if len(history) > 2 else history
+                pruned_messages = pruned_history + current_turn
+            else:
+                pruned_messages = messages[-4:] if len(messages) > 4 else messages
+            
+            response = await llm.ainvoke([system_msg] + pruned_messages)
             logger.debug(f"Node [agent] - Responded with {len(response.tool_calls)} tool calls.")
             return {"messages": [response]}
 

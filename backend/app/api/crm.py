@@ -150,6 +150,7 @@ async def delete_client(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
+    from app.models.trade import CustomerNote
     business = await get_user_business(db, current_user.id)
     
     result = await db.execute(
@@ -159,9 +160,16 @@ async def delete_client(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
+    # Get customer note IDs before cascade deletion
+    res_notes = await db.execute(select(CustomerNote.id).where(CustomerNote.client_id == client_id))
+    note_ids = res_notes.scalars().all()
+
     await db.delete(client)
     await db.commit()
+    
     delete_vector_task.delay(str(client_id), "client", str(business.id))
+    for note_id in note_ids:
+        delete_vector_task.delay(str(note_id), "customer_note", str(business.id))
     return {"status": "deleted"}
 
 @router.get("/appointments", response_model=List[AppointmentResponse])

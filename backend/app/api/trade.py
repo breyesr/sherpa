@@ -331,20 +331,31 @@ async def delete_store(
         await db.execute(sqldelete(OrderItem).where(OrderItem.order_id.in_(order_ids)))
         await db.execute(sqldelete(Order).where(Order.id.in_(order_ids)))
         
-    # 2. Delete related observations and metadata
+    # 2. Get related observation and competitor IDs before SQL delete
+    res_notes = await db.execute(select(StoreNote.id).where(StoreNote.store_id == store_id))
+    note_ids = res_notes.scalars().all()
+    
+    res_competitors = await db.execute(select(Competitor.id).where(Competitor.store_id == store_id))
+    competitor_ids = res_competitors.scalars().all()
+
+    # 3. Delete related observations and metadata
     await db.execute(sqldelete(StoreNote).where(StoreNote.store_id == store_id))
     await db.execute(sqldelete(Competitor).where(Competitor.store_id == store_id))
     await db.execute(sqldelete(StoreAction).where(StoreAction.store_id == store_id))
     await db.execute(sqldelete(AccountIntelligence).where(AccountIntelligence.store_id == store_id))
     
-    # 3. Clean link tables
+    # 4. Clean link tables
     await db.execute(store_clients.delete().where(store_clients.c.store_id == store_id))
     
-    # 4. Finally delete the store
+    # 5. Finally delete the store
     await db.delete(store)
     await db.commit()
     
     delete_vector_task.delay(str(store_id), "store", str(business.id))
+    for note_id in note_ids:
+        delete_vector_task.delay(str(note_id), "store_note", str(business.id))
+    for comp_id in competitor_ids:
+        delete_vector_task.delay(str(comp_id), "competitor", str(business.id))
     return {"status": "deleted"}
 
 
@@ -668,6 +679,7 @@ async def create_competitor(
     )
     db.add(competitor)
     await db.commit()
+    sync_vector_task.delay(str(competitor.id), "competitor", str(business.id))
     await db.refresh(competitor)
     return competitor
 

@@ -27,6 +27,7 @@ async def _process_data_import_async(import_id: str):
         data_import.status = ImportStatus.PROCESSING
         await db.commit()
         
+        sync_queue = []
         try:
             results = {"processed": 0, "created": 0, "updated": 0, "errors": 0, "details": []}
             
@@ -37,7 +38,9 @@ async def _process_data_import_async(import_id: str):
                 reader = csv.DictReader(f)
                 for row in reader:
                     try:
-                        await _process_row(db, data_import, row, results)
+                        sync_item = await _process_row(db, data_import, row, results)
+                        if sync_item:
+                            sync_queue.append(sync_item)
                         results["processed"] += 1
                     except Exception as e:
                         results["errors"] += 1
@@ -51,6 +54,14 @@ async def _process_data_import_async(import_id: str):
             data_import.error_message = str(e)
             
         await db.commit()
+
+        # Enqueue vector sync tasks after commit
+        if data_import.status == ImportStatus.COMPLETED and sync_queue:
+            from app.tasks.knowledge import sync_vector_task
+            unique_syncs = list(set(sync_queue))
+            for entity_id, entity_type in unique_syncs:
+                sync_vector_task.delay(entity_id, entity_type, str(data_import.business_id))
+
         return f"Import {import_id} finished with status {data_import.status}"
 
 async def _process_row(db: Any, data_import: DataImport, row: Dict[str, str], results: Dict[str, Any]):
@@ -89,13 +100,17 @@ async def _process_row(db: Any, data_import: DataImport, row: Dict[str, str], re
             entity_data[model_field] = value
             
     if entity_type == "client":
-        await _sync_client(db, data_import.business_id, entity_data, custom_fields, results)
+        client = await _sync_client(db, data_import.business_id, entity_data, custom_fields, results)
+        return (str(client.id), "client") if client else None
     elif entity_type == "store":
-        await _sync_store(db, data_import.business_id, entity_data, results)
+        store = await _sync_store(db, data_import.business_id, entity_data, results)
+        return (str(store.id), "store") if store else None
     elif entity_type == "category":
         await _sync_category(db, data_import.business_id, entity_data, results)
+        return None
     elif entity_type == "product":
         await _sync_product(db, data_import.business_id, entity_data, results)
+        return None
     else:
         raise ValueError(f"Unsupported entity type: {entity_type}")
 
@@ -121,6 +136,8 @@ async def _sync_store(db: Any, business_id: str, data: Dict[str, Any], results: 
         store = Store(business_id=business_id, **data)
         db.add(store)
         results["created"] += 1
+    await db.flush()
+    return store
 
 async def _sync_category(db: Any, business_id: str, data: Dict[str, Any], results: Dict[str, Any]):
     """Sync a single category record."""
@@ -217,3 +234,5 @@ async def _sync_client(db: Any, business_id: str, data: Dict[str, Any], custom_f
         )
         db.add(client)
         results["created"] += 1
+    await db.flush()
+    return client

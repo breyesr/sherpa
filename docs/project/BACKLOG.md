@@ -100,15 +100,15 @@
 
 ---
 
-## Epic 112: The Trinity Intelligence Pipeline (SUPERSEDED — BENCHMARKING PENDING)
-**Objective**: *(Original Trinity pipeline has been superseded by the LangGraph ReAct agent in Epic 117. The only remaining task is performance benchmarking of the new architecture.)*
+## Epic 112: The Trinity Intelligence Pipeline (COMPLETE)
+**Objective**: *(Original Trinity pipeline has been superseded by the LangGraph ReAct agent in Epic 117. Performance optimization and pruning has been successfully resolved.)*
 
 - [x] Task 112.1: **Retriever Parallelization**: Refactor `GraphRAGService` to use `asyncio.gather` for simultaneous SQL (Factual) and Vector (Semantic) data retrieval.
 - [x] Task 112.2: **The Synthesizer Prompt**: Develop `app/core/prompts/synthesizer.j2`, a flavorless, logic-driven template that merges raw data into a structured "Intelligence Dossier".
 - [x] Task 112.3: **The Sherpa Persona Refactor**: Rewrite `app/core/prompts/visit_briefer.j2` to act as "The Voice", focusing exclusively on strategic framing based on the clean Synthesizer dossier.
 - [x] Task 112.4: **Trinity Orchestration**: Implement the sequential flow: Fetch (Parallel) -> Synthesis (Flash Model) -> Persona Delivery (Capability Model).
 - [x] Task 112.5: **Validation Guardrails**: Implement "Identity Locking" checks in the Synthesizer to ensure facts from different stores never bleed into the same dossier.
-- [ ] Task 112.6: **ReAct Agent Benchmarking**: Quantify the multi-turn latency and token costs of the LangGraph ReAct loop. Optimize step limits and model routing to control SaaS margins.
+- [x] Task 112.6: **ReAct Agent Benchmarking**: Quantify the multi-turn latency and token costs of the LangGraph ReAct loop. Optimize step limits and model routing to control SaaS margins.
 
 ---
 
@@ -129,14 +129,14 @@
 
 ---
 
-## Epic 118: Real-time Knowledge Sync & Auto-Vectorization (PLANNED)
+## Epic 118: Real-time Knowledge Sync & Auto-Vectorization (COMPLETE)
 **Objective**: Ensure the Knowledge Corpus stays synchronized with manual user actions in the dashboard, eliminating the need for manual backfills.
 
-- [ ] Task 118.1: **API Hooking - Trade**: Update `POST /stores` and `POST /stores/{id}/notes` to trigger `sync_vector_task` on success.
-- [ ] Task 118.2: **API Hooking - CRM**: Update `POST /clients` and `PATCH /clients/{id}` to trigger `sync_vector_task` for profile updates.
-- [ ] Task 118.3: **Update Handling**: Implement logic to detect content changes and update existing vector entries in the `KnowledgeCorpus`.
-- [ ] Task 118.4: **Deletion Cleanup**: Ensure that deleting a Store or Note also removes its corresponding entries from the `KnowledgeCorpus`.
-- [ ] Task 118.5: **Worker Reliability**: Implement a dead-letter queue for failed vectorization tasks to prevent permanent data gaps.
+- [x] Task 118.1: **API Hooking - Trade**: Update `POST /stores` and `POST /stores/{id}/notes` to trigger `sync_vector_task` on success.
+- [x] Task 118.2: **API Hooking - CRM**: Update `POST /clients` and `PATCH /clients/{id}` to trigger `sync_vector_task` for profile updates.
+- [x] Task 118.3: **Update Handling**: Implement logic to detect content changes and update existing vector entries in the `KnowledgeCorpus`.
+- [x] Task 118.4: **Deletion Cleanup**: Ensure that deleting a Store or Note also removes its corresponding entries from the `KnowledgeCorpus`.
+- [x] Task 118.5: **Worker Reliability**: Implement a dead-letter queue for failed vectorization tasks to prevent permanent data gaps.
 
 ---
 
