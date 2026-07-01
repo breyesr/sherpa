@@ -1,0 +1,128 @@
+# action_system_composition
+
+This document summarizes the composition of actions, templates, dynamic objectives, and their database relationships within the Sherpa platform.
+
+```mermaid
+erDiagram
+    BUSINESS-PROFILE ||--o{ STORE-ACTION : owns
+    BUSINESS-PROFILE ||--o{ STORE-ACTION-OBJECTIVE : defines
+    BUSINESS-PROFILE ||--o{ ACTION-TEMPLATE : configures
+    
+    STORE ||--o{ STORE-ACTION : receives
+    STORE ||--o{ STORE-NOTE : records
+    
+    USER ||--o{ STORE-ACTION : authors
+    CLIENT ||--o{ STORE-ACTION : performs_assignment
+    
+    STORE-NOTE ||--o{ STORE-ACTION : sources
+    ACTION-TEMPLATE ||--o{ STORE-ACTION : templates
+    
+    STORE-ACTION }o..o| STORE-ACTION-OBJECTIVE : validates_against
+
+    BUSINESS-PROFILE {
+        string id PK
+        string name
+        enum vertical_type
+        json features_config
+    }
+
+    STORE {
+        string id PK
+        string business_id FK
+        string name
+        string city
+    }
+
+    CLIENT {
+        string id PK
+        string business_id FK
+        string name
+        string phone
+    }
+
+    STORE-NOTE {
+        string id PK
+        string store_id FK
+        text note
+        string note_type
+    }
+
+    STORE-ACTION-OBJECTIVE {
+        string id PK
+        string business_id FK
+        string name "e.g., SHARE_OF_SHELF"
+        string label "e.g., Share of Shelf"
+        enum category "COMMERCIAL | MARKETING"
+        text description
+    }
+
+    ACTION-TEMPLATE {
+        string id PK
+        string business_id FK
+        string name
+        enum category "COMMERCIAL | MARKETING"
+        string default_unit
+    }
+
+    STORE-ACTION {
+        string id PK
+        string business_id FK
+        string store_id FK
+        string author_id FK
+        string assigned_to_id FK "Client ID"
+        string template_id FK
+        string note_source_id FK
+        enum category "COMMERCIAL | MARKETING"
+        string objective "Matches store_action_objectives.name"
+        string impact_level "high | medium | low"
+        enum status "proposed | pending | completed | cancelled"
+        json details
+        datetime due_date
+        text resolution_notes
+        numeric result_value
+        string result_unit
+        numeric revenue_impact
+    }
+```
+
+---
+
+## 🗄️ Detailed Table Composition & Constraints
+
+### 1. `store_actions`
+Stores the concrete actions assigned to representative clients at specific store accounts.
+* **`business_id`** (FK to `business_profiles`): Enforces multi-tenancy bounds.
+* **`store_id`** (FK to `stores`): Specifies the retail/distributor location.
+* **`assigned_to_id`** (FK to `clients`): Specifies the contact manager who must fulfill the action.
+* **`template_id`** (FK to `action_templates`, nullable): Links to standard action presets.
+* **`note_source_id`** (FK to `store_notes`, nullable): Traces the field intelligence note that triggered this action.
+* **`objective`** (VARCHAR, indexed): Decoupled text code validating against `store_action_objectives.name` for the current business.
+* **`details`** (JSON): Contains payload parameters (e.g. `{"discount": 0.05, "item": "cement_bag"}`).
+* **`status`** (`ActionStatus` Enum): Tracks progression (`proposed`, `pending`, `completed`, `cancelled`).
+* **Strict Completion Validation**: If status transitions to `completed`, the API requires both a numeric `result_value` and a non-empty `resolution_notes`.
+
+### 2. `store_action_objectives` (New in Epic 125)
+Stores the strategic objectives configurable by the business.
+* **`business_id`** (FK to `business_profiles`): Restricts strategies to their respective tenant.
+* **`name`** (VARCHAR, indexed): The code key (e.g., `SHARE_OF_SHELF`). Enforced unique per business.
+* **`label`** (VARCHAR): The human-readable string (e.g., `Share of Shelf`).
+* **`category`** (`ActionCategory` Enum): Categorized as `COMMERCIAL` or `MARKETING`.
+
+### 3. `action_templates`
+Pre-defined templates configurable by the business.
+* **`business_id`** (FK to `business_profiles`): Restricts templates to their tenant.
+* **`category`** (`ActionCategory` Enum): Categorized as `COMMERCIAL` or `MARKETING`.
+* **`default_unit`** (VARCHAR): Standard unit metric (e.g. `"sacos"`, `"exhibidores"`, `"visitas"`).
+
+---
+
+## 📊 Mapping UX & Execution Concepts to Database Columns
+
+Here is how the front-end/sales execution concepts map to our physical database schema:
+
+| UX / Product Concept | Database Column | Data Type | Notes |
+| :--- | :--- | :--- | :--- |
+| **Execute Status** | `status` | `ActionStatus` Enum | Tracks state transitions: `proposed`, `pending`, `completed`, `cancelled`. |
+| **Execution Metrics** | `result_value` <br> `result_unit` | `Numeric(10,2)` <br> `VARCHAR(255)` | **Required on Completion**. Tracks the raw outcome (e.g., `500` `sacos`, `1` `lona`, or `10` `exchanges`). |
+| **Revenue Impact** | `revenue_impact` | `Numeric(10,2)` | Optional. Monetary value generated by the action. |
+| **Resolution Notes** | `resolution_notes` | `TEXT` | **Required on Completion**. Explains how the action was resolved. |
