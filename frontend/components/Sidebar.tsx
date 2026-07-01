@@ -36,6 +36,8 @@ function SidebarContent() {
   const [isProspectingOpen, setIsProspectingOpen] = useState(true);
   const [isWholesaleOpen, setIsWholesaleOpen] = useState(true);
   const [isRetailOpen, setIsRetailOpen] = useState(true);
+  const [isB2BHubOpen, setIsB2BHubOpen] = useState(true);
+  const [isProductsCatalogOpen, setIsProductsCatalogOpen] = useState(false);
 
   // Resilient queries with try/catch
   const { data: user } = useQuery({
@@ -143,33 +145,48 @@ function SidebarContent() {
           <div className="space-y-4 pt-2 border-t border-gray-100">
             {/* B2B Hub Group */}
             <div className="space-y-1">
-              <SidebarLink href="/trade" icon={Store} name="B2B Hub" active={pathname === '/trade'} />
-              <div className="pl-9 space-y-1">
-                <Link 
-                  href="/trade/stores"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Active Accounts
-                </Link>
-                <Link 
-                  href="/trade/retailers"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Contacts
-                </Link>
-                <Link 
-                  href="/trade/orders"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Orders
-                </Link>
-                <Link 
-                  href="/trade/actions"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Actions
-                </Link>
-              </div>
+              <button 
+                onClick={() => setIsB2BHubOpen(!isB2BHubOpen)}
+                className={`flex items-center justify-between w-full px-4 py-2.5 rounded-lg transition-all text-sm font-semibold text-slate-600 hover:bg-slate-50/80 hover:text-slate-900`}
+              >
+                <div className="flex items-center gap-3">
+                  <Store size={20} />
+                  <span>B2B Hub</span>
+                </div>
+                <ChevronRight 
+                  size={14} 
+                  className={`transform transition-transform duration-200 text-slate-400 ${isB2BHubOpen ? 'rotate-90' : ''}`} 
+                />
+              </button>
+
+              {isB2BHubOpen && (
+                <div className="pl-9 space-y-1">
+                  <Link 
+                    href="/trade/stores"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Active Accounts
+                  </Link>
+                  <Link 
+                    href="/trade/retailers"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Contacts
+                  </Link>
+                  <Link 
+                    href="/trade/orders"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Orders
+                  </Link>
+                  <Link 
+                    href="/trade/actions"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Actions
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Prospecting (Automated Intake & Campaigns) Group */}
@@ -272,24 +289,36 @@ function SidebarContent() {
           <div className="space-y-1 pt-2 border-t border-gray-100">
             {/* Products Group */}
             <div className="space-y-1">
-              <div className="flex items-center gap-3 px-4 py-2 text-slate-400 font-bold text-xs uppercase tracking-wider">
-                <Package size={16} />
-                <span>Products</span>
-              </div>
-              <div className="pl-9 space-y-1">
-                <Link 
-                  href="/trade/products?tab=categories"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Categories
-                </Link>
-                <Link 
-                  href="/trade/products?tab=products"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Products
-                </Link>
-              </div>
+              <button 
+                onClick={() => setIsProductsCatalogOpen(!isProductsCatalogOpen)}
+                className="flex items-center justify-between w-full px-4 py-2 text-slate-400 font-bold text-xs uppercase tracking-wider hover:text-slate-600 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Package size={16} />
+                  <span>Products Catalog</span>
+                </div>
+                <ChevronRight 
+                  size={14} 
+                  className={`transform transition-transform duration-200 ${isProductsCatalogOpen ? 'rotate-90' : ''}`} 
+                />
+              </button>
+
+              {isProductsCatalogOpen && (
+                <div className="pl-9 space-y-1">
+                  <Link 
+                    href="/trade/products?tab=categories"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Categories
+                  </Link>
+                  <Link 
+                    href="/trade/products?tab=products"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Products
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
