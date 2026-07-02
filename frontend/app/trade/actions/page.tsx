@@ -866,17 +866,7 @@ export default function ActionsStrategyDesk() {
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Catalog Action Template (Optional)</label>
-              <select
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                value={actionFormData.template_id}
-                onChange={e => handleTemplateChange(e.target.value)}
-              >
-                <option value="">No Template (Custom Action)...</option>
-                {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.category})</option>)}
-              </select>
-            </div>
+
 
             <div className="grid grid-cols-2 gap-4">
               <div>
