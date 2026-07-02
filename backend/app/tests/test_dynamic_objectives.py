@@ -190,3 +190,70 @@ async def test_list_and_manage_objectives(mock_get_business):
     res = await create_objective(obj_in=obj_in, db=mock_db, current_user=mock_current_user)
     assert mock_db.add.call_count == 1
     assert mock_db.commit.call_count == 1
+
+
+@pytest.mark.anyio
+@patch("app.api.trade.get_business")
+async def test_create_store_action_validation_gates(mock_get_business):
+    mock_db = AsyncMock()
+    
+    mock_business = MagicMock()
+    mock_business.id = "biz_123"
+    mock_get_business.return_value = mock_business
+
+    mock_store = MagicMock(spec=Store)
+    mock_store.id = "store_456"
+
+    # Mock objective matches (so first call returns store, second returns objective)
+    mock_objective = MagicMock(spec=StoreActionObjective)
+    mock_objective.id = "obj_789"
+    mock_objective.category = "MARKETING"
+    
+    mock_execute_res = MagicMock()
+    
+    # 1. Test case: category mismatch (Action: COMMERCIAL, Objective: MARKETING)
+    mock_execute_res.scalars.return_value.first.side_effect = [
+        mock_store,
+        None  # No match in objectives query because of category mismatch filter in SQL
+    ]
+    mock_db.execute.return_value = mock_execute_res
+
+    from app.schemas.trade import StoreActionCreate
+    action_in = StoreActionCreate(
+        store_id="store_456",
+        category="COMMERCIAL",
+        objective="SHARE_OF_SHELF",
+        status="proposed"
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_store_action(
+            action_in=action_in,
+            db=mock_db,
+            current_user=MagicMock()
+        )
+    assert exc_info.value.status_code == 400
+    assert "Invalid objective" in exc_info.value.detail
+
+    # 2. Test case: SHARE_OF_SHELF with target_value > 100 (fails)
+    mock_execute_res.scalars.return_value.first.side_effect = [
+        mock_store,
+        mock_objective
+    ]
+    action_in_invalid_goal = StoreActionCreate(
+        store_id="store_456",
+        category="MARKETING",
+        objective="SHARE_OF_SHELF",
+        status="proposed",
+        details={"target_value": 150.0}
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_store_action(
+            action_in=action_in_invalid_goal,
+            db=mock_db,
+            current_user=MagicMock()
+        )
+    assert exc_info.value.status_code == 400
+    assert "Goal percentage must be between 1 and 100" in exc_info.value.detail
+

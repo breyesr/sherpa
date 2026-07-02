@@ -904,15 +904,30 @@ async def create_store_action(
         
     action_data = action_in.model_dump()
     
-    # Verify objective is valid for this business
+    # Verify objective is valid for this business and matches the specified category
     res_obj = await db.execute(
         select(StoreActionObjective).where(
             StoreActionObjective.business_id == business.id,
-            StoreActionObjective.name == action_in.objective
+            StoreActionObjective.name == action_in.objective,
+            StoreActionObjective.category == action_in.category
         )
     )
     if not res_obj.scalars().first():
-        raise HTTPException(status_code=400, detail=f"Invalid objective '{action_in.objective}' for this business")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid objective '{action_in.objective}' for category '{action_in.category}'"
+        )
+        
+    # Validate SHARE_OF_SHELF percentage goals
+    if action_in.objective == "SHARE_OF_SHELF" and action_in.details:
+        target_val = action_in.details.get("target_value")
+        if target_val is not None:
+            try:
+                val_float = float(target_val)
+                if val_float < 1.0 or val_float > 100.0:
+                    raise HTTPException(status_code=400, detail="Goal percentage must be between 1 and 100")
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="Invalid metric goal value")
         
     # Sanitize empty-string FK fields sent by the frontend (dropdowns default to '')
     for fk_field in ("assigned_to_id", "template_id", "note_source_id"):
@@ -988,16 +1003,23 @@ async def update_store_action(
         
     update_data = action_in.model_dump(exclude_unset=True)
     
-    # Verify objective is valid for this business if updated
-    if "objective" in update_data and update_data["objective"]:
+    # Verify objective and category alignment if updated
+    if "objective" in update_data or "category" in update_data:
+        val_objective = update_data.get("objective") or action.objective
+        val_category = update_data.get("category") or action.category
+        
         res_obj = await db.execute(
             select(StoreActionObjective).where(
                 StoreActionObjective.business_id == business.id,
-                StoreActionObjective.name == update_data["objective"]
+                StoreActionObjective.name == val_objective,
+                StoreActionObjective.category == val_category
             )
         )
         if not res_obj.scalars().first():
-            raise HTTPException(status_code=400, detail=f"Invalid objective '{update_data['objective']}' for this business")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid objective '{val_objective}' for category '{val_category}'"
+            )
             
     # Strip timezone info from datetime fields to prevent asyncpg DataError
     if update_data.get("due_date") and update_data["due_date"].tzinfo:
