@@ -52,10 +52,13 @@ def upgrade() -> None:
     for biz_id in business_ids:
         defaults = [
             ("THREAT_RESPONSE", "THREAT_RESPONSE", "Acción de respuesta rápida ante movimientos de competidores directos en la zona.", "COMMERCIAL"),
+            ("THREAT_RESPONSE", "THREAT_RESPONSE", "Acción de respuesta rápida ante movimientos de competidores directos en la zona.", "MARKETING"),
             ("SHARE_OF_SHELF", "Share of Shelf", "Medición y auditoría de la participación en anaquel de nuestros productos.", "MARKETING"),
             ("NEW_PRODUCT_INTRODUCTION", "new product introduction", "Acción para presentar o vender nuevos lanzamientos de catálogo.", "COMMERCIAL"),
+            ("NEW_PRODUCT_INTRODUCTION", "new product introduction", "Acción para presentar o vender nuevos lanzamientos de catálogo.", "MARKETING"),
             ("INVENTORY_VELOCITY_OOS_PREVENTION", "Inventory Velocity & OOS Prevention", "Acción para reabastecer inventario, acelerar rotación y prevenir agotados.", "COMMERCIAL"),
             ("PERFECT_STORE_ASSORTMENT_COMPLIANCE", '"Perfect Store" & Assortment Compliance', "Auditoría y ejecución de estándares de Tienda Perfecta y cumplimiento de portafolio.", "COMMERCIAL"),
+            ("PERFECT_STORE_ASSORTMENT_COMPLIANCE", '"Perfect Store" & Assortment Compliance', "Auditoría y ejecución de estándares de Tienda Perfecta y cumplimiento de portafolio.", "MARKETING"),
             ("SEASONAL_EVENT_ACTIVATION", "Seasonal & Event Activation", "Acciones promocionales especiales por temporalidad, festividades o eventos del canal.", "MARKETING"),
             ("TRADE_LOYALTY_VOLUME_PUSHING", "Trade Loyalty & Volume Pushing (Sell-In)", "Campaña de fidelización del canal de distribución y colocación de pedidos de volumen.", "COMMERCIAL"),
             ("POSM_MAINTENANCE_ASSET_PURITY", "POSM Maintenance & Asset Purity", "Auditoría, mantenimiento y colocación de material publicitario (POSM) y pureza de exhibidores.", "MARKETING")

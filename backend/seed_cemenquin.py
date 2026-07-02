@@ -67,6 +67,8 @@ async def seed_data():
             await db.execute(delete(StoreNote).where(StoreNote.store_id.in_(store_ids)))
             await db.execute(text("DELETE FROM store_clients WHERE store_id IN (SELECT id FROM stores WHERE business_id = :biz_id)"), {"biz_id": biz_id})
             
+        await db.execute(delete(StoreAction).where(StoreAction.business_id == biz_id))
+        await db.execute(delete(StoreActionObjective).where(StoreActionObjective.business_id == biz_id))
         await db.execute(delete(Client).where(Client.business_id == biz_id))
         await db.execute(delete(Store).where(Store.business_id == biz_id))
         await db.execute(delete(ActionTemplate).where(ActionTemplate.business_id == biz_id))
@@ -127,10 +129,13 @@ async def seed_data():
         print("Seeding store action objectives...")
         default_objectives = [
             StoreActionObjective(business_id=biz_id, name="THREAT_RESPONSE", label="THREAT_RESPONSE", category=ActionCategory.COMMERCIAL, description="Acción de respuesta rápida ante movimientos de competidores directos en la zona."),
+            StoreActionObjective(business_id=biz_id, name="THREAT_RESPONSE", label="THREAT_RESPONSE", category=ActionCategory.MARKETING, description="Acción de respuesta rápida ante movimientos de competidores directos en la zona."),
             StoreActionObjective(business_id=biz_id, name="SHARE_OF_SHELF", label="Share of Shelf", category=ActionCategory.MARKETING, description="Medición y auditoría de la participación en anaquel de nuestros productos."),
             StoreActionObjective(business_id=biz_id, name="NEW_PRODUCT_INTRODUCTION", label="new product introduction", category=ActionCategory.COMMERCIAL, description="Acción para presentar o vender nuevos lanzamientos de catálogo."),
+            StoreActionObjective(business_id=biz_id, name="NEW_PRODUCT_INTRODUCTION", label="new product introduction", category=ActionCategory.MARKETING, description="Acción para presentar o vender nuevos lanzamientos de catálogo."),
             StoreActionObjective(business_id=biz_id, name="INVENTORY_VELOCITY_OOS_PREVENTION", label="Inventory Velocity & OOS Prevention", category=ActionCategory.COMMERCIAL, description="Acción para reabastecer inventario, acelerar rotación y prevenir agotados."),
             StoreActionObjective(business_id=biz_id, name="PERFECT_STORE_ASSORTMENT_COMPLIANCE", label='"Perfect Store" & Assortment Compliance', category=ActionCategory.COMMERCIAL, description="Auditoría y ejecución de estándares de Tienda Perfecta y cumplimiento de portafolio."),
+            StoreActionObjective(business_id=biz_id, name="PERFECT_STORE_ASSORTMENT_COMPLIANCE", label='"Perfect Store" & Assortment Compliance', category=ActionCategory.MARKETING, description="Auditoría y ejecución de estándares de Tienda Perfecta y cumplimiento de portafolio."),
             StoreActionObjective(business_id=biz_id, name="SEASONAL_EVENT_ACTIVATION", label="Seasonal & Event Activation", category=ActionCategory.MARKETING, description="Acciones promocionales especiales por temporalidad, festividades o eventos del canal."),
             StoreActionObjective(business_id=biz_id, name="TRADE_LOYALTY_VOLUME_PUSHING", label="Trade Loyalty & Volume Pushing (Sell-In)", category=ActionCategory.COMMERCIAL, description="Campaña de fidelización del canal de distribución y colocación de pedidos de volumen."),
             StoreActionObjective(business_id=biz_id, name="POSM_MAINTENANCE_ASSET_PURITY", label="POSM Maintenance & Asset Purity", category=ActionCategory.MARKETING, description="Auditoría, mantenimiento y colocación de material publicitario (POSM) y pureza de exhibidores.")

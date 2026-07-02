@@ -1,30 +1,24 @@
-# Handoff State: 2026-07-01 (Epic 125 Backend Complete)
+# Handoff State: 2026-07-01 (Trade/Actions PM Evaluation & Epic 125 Backend Complete)
 
 ## 🎯 Current Status
-We have successfully implemented, verified, and unit-tested the backend architecture of **Epic 125 (Dynamic Strategy & Action Objectives)** on the feature branch `feature/backend/epic-125-dynamic-objectives`:
-1. **Database Schema & Migrations**:
+We have completed the **Product Manager scope evaluation, backlog alignment, and ticket definitions** for the new Trade/Actions flow:
+1. **MVP Scope Boundaries**:
+   - Decoupled high-complexity features (Vaul bottom-sheet offline IndexedDB write queue sync, live split-screen iframe preview on desktop, and AI-proposed Opportunity Inbox triggers) for a leaner MVP release.
+   - Identified and resolved the model schema mismatch (no `title`/`description` columns in `StoreAction`) by storing these fields in the existing `details` JSONB field.
+2. **Dynamic Strategy & Action Objectives (Epic 125 Backend Complete)**:
    - Created the `store_action_objectives` metadata table to hold business-specific objectives.
    - Converted `StoreAction.objective` from a static PostgreSQL Enum to a dynamic `VARCHAR(255)` string column.
-   - Built a robust Alembic migration featuring a SQL backfill script that automatically seeds all existing businesses with the $6$ default objectives (`THREAT_RESPONSE`, `REPLENISHMENT`, `NEW_PRODUCT`, `ANNIVERSARY`, `RELATIONSHIP`, `GENERAL`), ensuring full backward compatibility and zero data loss.
-2. **Dynamic AI Ingestion Compiler**:
-   - Updated the `IngestionAgent` extraction service to query the active objectives for the target business at runtime.
-   - Dynamically compiles the `ActionInfo` and `ExtractionResult` Pydantic models using `create_model()`, mapping objectives to a strict `Literal` enum matching only DB values.
-   - This eliminates LLM classification hallucinations by forcing structured JSON outputs to match database primary keys.
-3. **API & Seed Updates**:
-   - Implemented standard CRUD endpoints under `/trade/objectives` to list, create, and delete custom strategy objectives.
-   - Updated seed scripts to initialize dynamic objectives on Cemenquin startup.
-4. **Unit Testing & Type Sync**:
-   - Created a comprehensive test suite `test_dynamic_objectives.py` testing endpoints, validations, and dynamic compiler schema generation. All tests pass cleanly.
-   - Regenerated frontend types with `npm run gen:api` and successfully built Next.js with zero compile/type errors.
+   - Dynamic Ingestion: Custom dynamic schema generator prevents LLM hallucination during WhatsApp/Telegram notes extraction.
+   - API endpoints under `/trade/objectives` and unit tests passing cleanly.
 
 ## ✅ Accomplishments
-- **Decoupled Strategic Objectives**: Shifted objectives from static python code Enums to a dynamic PostgreSQL configuration table.
-- **Blocked LLM Hallucinations**: Implemented dynamic runtime schema compilation to force LLM extraction matching database entries.
-- **Zero-Error Frontend Compile**: Fully synchronized API contract types.
+- **Completed PM Scope & Evaluation**: Documented guardrails, aligned backlog tasks, and established Given/When/Then Gherkin scenarios for the outstanding integration tickets.
+- **Dynamic Action Objectives Backend**: Decoupled strategic objectives and synchronized generated Typescript types with the frontend with zero errors.
 
 ## 🚧 Blockers & Risks
 - **None**.
 
 ## 🚀 Next Steps
-1. **Frontend UI Components**: Implement the superadmin UI console under `/admin` and Strategy Desk selectors in the creation drawers to consume the new dynamic `/trade/objectives` CRUD endpoints.
-2. **Move to Epic 113 (Relational Graph-Enriched RAG)**: Build a recursive SQL CTE link layer in PostgreSQL for 2-hop Graph-Enriched retrieval.
+1. **Implement Ticket 1 (Action Creation Flow)**: Build the progressive desktop strategy desk form and mobile drawer interfaces, wrapping the Title and Guidelines inside the `details` JSON field.
+2. **Implement Ticket 2 (Action Outcome Resolution Drawer)**: Build the mobile bottom drawer with dynamic validation (result value and resolution notes required) to transition actions to the Completed status.
+3. **Implement Ticket 3 & 4 (Admin Management Consoles)**: Integrate CRUD interfaces under `/admin` to allow superadmins/managers to configure dynamic objectives and global action templates.
