@@ -202,17 +202,17 @@ export default function ActionsStrategyDesk() {
 
   const handleCategoryChange = (cat: 'COMMERCIAL' | 'MARKETING') => {
     const list = objectives.length > 0 ? objectives : [
-      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "COMMERCIAL" },
-      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "MARKETING" },
-      { name: "SHARE_OF_SHELF", label: "Share of Shelf", category: "MARKETING" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "COMMERCIAL" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "MARKETING" },
-      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Inventory Velocity & OOS Prevention", category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "MARKETING" },
-      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal & Event Activation", category: "MARKETING" },
-      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Trade Loyalty & Volume Pushing (Sell-In)", category: "COMMERCIAL" },
-      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "POSM Maintenance & Asset Purity", category: "MARKETING" }
+      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "COMMERCIAL" },
+      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "MARKETING" },
+      { name: "SHARE_OF_SHELF", label: "Shelf Presence Check", category: "MARKETING" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "COMMERCIAL" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "MARKETING" },
+      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Prevent Stockouts", category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "MARKETING" },
+      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
+      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
+      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
     ];
     const match = list.find(o => o.category === cat);
     setActionFormData(prev => ({
@@ -465,37 +465,37 @@ export default function ActionsStrategyDesk() {
   };
 
   const defaultObjectiveMap: Record<string, string> = {
-    THREAT_RESPONSE: 'THREAT_RESPONSE',
-    SHARE_OF_SHELF: 'Share of Shelf',
-    NEW_PRODUCT_INTRODUCTION: 'new product introduction',
-    INVENTORY_VELOCITY_OOS_PREVENTION: 'Inventory Velocity & OOS Prevention',
-    PERFECT_STORE_ASSORTMENT_COMPLIANCE: '"Perfect Store" & Assortment Compliance',
-    SEASONAL_EVENT_ACTIVATION: 'Seasonal & Event Activation',
-    TRADE_LOYALTY_VOLUME_PUSHING: 'Trade Loyalty & Volume Pushing (Sell-In)',
-    POSM_MAINTENANCE_ASSET_PURITY: 'POSM Maintenance & Asset Purity'
+    THREAT_RESPONSE: 'Competitive Response',
+    SHARE_OF_SHELF: 'Shelf Presence Check',
+    NEW_PRODUCT_INTRODUCTION: 'Launch New Product',
+    INVENTORY_VELOCITY_OOS_PREVENTION: 'Prevent Stockouts',
+    PERFECT_STORE_ASSORTMENT_COMPLIANCE: 'Store Standards Check',
+    SEASONAL_EVENT_ACTIVATION: 'Seasonal Promotion',
+    TRADE_LOYALTY_VOLUME_PUSHING: 'Drive Larger Orders',
+    POSM_MAINTENANCE_ASSET_PURITY: 'Maintain Promo Materials'
   };
 
   const objectiveMap = {
-    ...defaultObjectiveMap,
     ...objectives.reduce((acc: Record<string, string>, obj: any) => {
       acc[obj.name] = obj.label;
       return acc;
-    }, {})
+    }, {}),
+    ...defaultObjectiveMap
   };
 
   const filteredObjectives = useMemo(() => {
     const activeList = objectives.length > 0 ? objectives : [
-      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "COMMERCIAL" },
-      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "MARKETING" },
-      { name: "SHARE_OF_SHELF", label: "Share of Shelf", category: "MARKETING" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "COMMERCIAL" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "MARKETING" },
-      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Inventory Velocity & OOS Prevention", category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "MARKETING" },
-      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal & Event Activation", category: "MARKETING" },
-      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Trade Loyalty & Volume Pushing (Sell-In)", category: "COMMERCIAL" },
-      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "POSM Maintenance & Asset Purity", category: "MARKETING" }
+      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "COMMERCIAL" },
+      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "MARKETING" },
+      { name: "SHARE_OF_SHELF", label: "Shelf Presence Check", category: "MARKETING" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "COMMERCIAL" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "MARKETING" },
+      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Prevent Stockouts", category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "MARKETING" },
+      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
+      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
+      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
     ];
     return activeList.filter((o: any) => o.category === actionFormData.category);
   }, [objectives, actionFormData.category]);
@@ -547,13 +547,13 @@ export default function ActionsStrategyDesk() {
             <button 
               onClick={() => {
                 setSelectedTemplate(null);
-                setTemplateFormData({ name: '', category: 'COMMERCIAL', objective: 'THREAT_RESPONSE', default_unit: '', description: '' });
+                setTemplateFormData({ name: '', category: 'COMMERCIAL', objective: 'THREAT_RESPONSE', default_unit: '', description: '', target_value: '', impact_level: 'MEDIUM' });
                 setIsTemplateFormOpen(true);
               }}
               className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
             >
               <Plus size={16} />
-              Create Template
+              New Action Template
             </button>
           )}
         </div>
@@ -897,7 +897,7 @@ export default function ActionsStrategyDesk() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Action Type (Objective)</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Task Objective</label>
                 <select
                   required
                   className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
@@ -909,7 +909,7 @@ export default function ActionsStrategyDesk() {
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Select Blueprint (Template)</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Select Action</label>
                 {(() => {
                   const matchingTemplates = templates.filter(t => t.category === actionFormData.category && t.objective === actionFormData.objective);
                   if (matchingTemplates.length === 0) {
@@ -937,8 +937,8 @@ export default function ActionsStrategyDesk() {
                           <Plus size={14} className="text-amber-700" />
                         </div>
                         <div>
-                          <p className="text-xs font-black text-amber-800">No blueprints for this type yet</p>
-                          <p className="text-[10px] text-amber-600 mt-0.5">Click to create one — category & objective will be pre-filled</p>
+                          <p className="text-xs font-black text-amber-800">No actions created yet</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5">Click to create a reusable action for this objective.</p>
                         </div>
                       </button>
                     );
@@ -1186,8 +1186,8 @@ export default function ActionsStrategyDesk() {
       <Drawer
         isOpen={isTemplateFormOpen}
         onClose={() => setIsTemplateFormOpen(false)}
-        title={selectedTemplate ? "Edit Strategy Blueprint" : "New Strategy Blueprint"}
-        subtitle="Define a reusable action playbook for your team. No assignee or deadline required."
+        title={selectedTemplate ? "Edit Action Template" : "New Action Template"}
+        subtitle="Create a reusable action that you can quickly assign to stores."
         size="wide"
         footer={
           <div className="flex gap-4">
@@ -1202,7 +1202,7 @@ export default function ActionsStrategyDesk() {
               disabled={loading || !templateFormData.name || !templateFormData.default_unit}
               className="flex-1 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : (selectedTemplate ? 'Update Blueprint' : 'Save Blueprint')}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : (selectedTemplate ? 'Update Template' : 'Save Template')}
             </button>
           </div>
         }
@@ -1262,7 +1262,7 @@ export default function ActionsStrategyDesk() {
             {/* Action Type + UOM row */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Action Type (Objective)</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Task Objective</label>
                 <select
                   required
                   className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-indigo-500"
@@ -1270,17 +1270,17 @@ export default function ActionsStrategyDesk() {
                   onChange={e => setTemplateFormData({...templateFormData, objective: e.target.value})}
                 >
                   {(objectives.length > 0 ? objectives : [
-                    { name: "THREAT_RESPONSE", label: "Threat Response", category: "COMMERCIAL" },
-                    { name: "THREAT_RESPONSE", label: "Threat Response", category: "MARKETING" },
-                    { name: "SHARE_OF_SHELF", label: "Share of Shelf", category: "MARKETING" },
-                    { name: "NEW_PRODUCT_INTRODUCTION", label: "New Product Introduction", category: "COMMERCIAL" },
-                    { name: "NEW_PRODUCT_INTRODUCTION", label: "New Product Introduction", category: "MARKETING" },
-                    { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Inventory Velocity & OOS Prevention", category: "COMMERCIAL" },
-                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "COMMERCIAL" },
-                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "MARKETING" },
-                    { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal & Event Activation", category: "MARKETING" },
-                    { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Trade Loyalty & Volume Pushing (Sell-In)", category: "COMMERCIAL" },
-                    { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "POSM Maintenance & Asset Purity", category: "MARKETING" }
+                    { name: "THREAT_RESPONSE", label: "Competitive Response", category: "COMMERCIAL" },
+                    { name: "THREAT_RESPONSE", label: "Competitive Response", category: "MARKETING" },
+                    { name: "SHARE_OF_SHELF", label: "Shelf Presence Check", category: "MARKETING" },
+                    { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "COMMERCIAL" },
+                    { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "MARKETING" },
+                    { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Prevent Stockouts", category: "COMMERCIAL" },
+                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "COMMERCIAL" },
+                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "MARKETING" },
+                    { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
+                    { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
+                    { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
                   ]).filter((o: any) => o.category === templateFormData.category).map((o: any) => (
                     <option key={o.name} value={o.name}>{objectiveMap[o.name] || o.label}</option>
                   ))}
