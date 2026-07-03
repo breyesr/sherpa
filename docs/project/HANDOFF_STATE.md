@@ -1,20 +1,32 @@
-# Handoff State: 2026-07-03 (Epic 143 - Reusable Strategy Library & Dispatch Desk Complete)
+# Handoff State: 2026-07-03 (Session Wrap-up)
 
-## 🎯 Current Status
-We have completed all implementation tasks for **Epic 143: Reusable Strategy Library & Dispatch Desk**:
-1. **Model & Database Updates**: Added `details` JSON column to `ActionTemplate` database model, mapped it in migration upgrade/downgrade routines, populated defaults via seed script, and synchronized frontend API types.
-2. **Strategy Blueprint Library**: Fully refactored the template creation drawer in the Catalog settings. It now supports Category segmented control toggles, dynamically filtered Action Type/Objective selection, Default Metric Goal, and Impact Level.
-3. **Dispatch Desk (Assign Actions)**: Overhauled the action assignment drawer to require Store, Assignee Rep, Category, Objective, Metric Goal, and Deadline. It resolves matching Playbook templates, renders a read-only preview card, and pre-fills metric UOM units dynamically.
-4. **Conditional Empty-State Handlers**: Implemented a conditional amber CTA card in the Assign Action drawer. If no templates exist for the selected category/objective combo, the user can click it to close the drawer, auto-populate Category & Objective fields, and open the Template Creator instantly.
-5. **Backend Instantiation Validation**: The FastAPI `POST /trade/actions` controller successfully copies templates' core parameters (Category, Objective, Title, Description, Unit) into the new action's JSONB `details` field, merging custom targets and run-time details.
+## Current Branch
+`feature/frontend/settings-visibility-gating` (pushed to origin) — pending merge into `staging`.
 
-## ✅ Accomplishments
-- **Full Epic 143 Delivery**: Completed tasks 143.1, 143.2, 143.3, and 143.4.
-- **Verification**: All 27 backend unit tests pass cleanly, and the frontend builds successfully with zero TypeScript compilation errors.
+## Accomplishments This Session
+1. **Settings Visibility Gating**:
+   - Refactored [AssistantSettings.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/settings/components/AssistantSettings.tsx) to accept `user` prop.
+   - Passed `user` prop from [SettingsContent.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/settings/SettingsContent.tsx).
+   - Restricted visibility of complex settings (Logic Template, Custom Steps, Smart Escalation Chain, Core Controls) to `super_admin` users only. Regular users only see Assistant Name, Tone, and Standard Greeting.
+2. **Live Test Sandbox Feature Control**:
+   - Added `live_sandbox` toggle under both B2C and B2B feature lists in the User Management modal of the Admin dashboard ([page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/%28admin%29/admin/page.tsx)).
+   - Initialized, preset, and submitted `live_sandbox: { enabled: boolean }` inside `features_config` of `BusinessProfile`.
+   - Gated the visibility of the Sandbox panel in [AssistantSettings.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/settings/components/AssistantSettings.tsx) behind `isSandboxEnabled` OR `isSuperAdmin`.
+3. **Compilation & Build**:
+   - Verified compilation with a successful Next.js production build (`npm run build`).
+4. **Git Operations**:
+   - Created the feature branch `feature/frontend/settings-visibility-gating`, committed all changes, and pushed them to origin.
 
-## 🚧 Blockers & Risks
-- **None**.
+## Active Backlog State
+- **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED.
+  - Task 125.4: Build Superadmin control panel under `/admin` for managing Action Objectives (CRUD + toggle active).
+  - Task 125.5: Refactor Objective dropdown and Template selector in the create action drawer to fetch dynamic values and badge global templates.
+- **Epic 108, Tasks 108.4–108.6**: Pending (Dashboard API, Opportunity Inbox, Anniversary Trigger).
+- **Epic 113**: Pending (Relational Graph-Enriched RAG).
 
-## 🚀 Next Steps
-1. **Epic 121 (Action Outcome Resolution Drawer)**: Refactor outcome feedback and validation loops (resolving numeric boundaries, attachments, notes) for mobile/desktop.
-2. **Epic 122 (Route Consolidation & Core Dashboards)**: Consolidate navigation menus, map dashboards, and link Pulse feeds.
+## Blockers & Risks
+- None.
+
+## Next Steps
+- Ask for explicit user confirmation to merge `feature/frontend/settings-visibility-gating` into `staging`.
+- Proceed with **Task 125.4**: Admin Management Console for dynamic `StoreActionObjective` CRUD under `/admin`.
