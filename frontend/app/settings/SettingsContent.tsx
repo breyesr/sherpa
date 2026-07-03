@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2, Scissors } from 'lucide-react';
+import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -24,7 +24,7 @@ interface SettingsContentProps {
   token: string | null;
 }
 
-type TabType = 'general' | 'assistant' | 'services' | 'integrations';
+type TabType = 'general' | 'assistant' | 'integrations';
 
 export default function SettingsContent({ initialBusiness, initialUser, token }: SettingsContentProps) {
   const searchParams = useSearchParams();
@@ -62,7 +62,7 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   };
 
   useEffect(() => {
-    if (tabParam && ['general', 'assistant', 'services', 'integrations'].includes(tabParam) && tabParam !== activeTab) {
+    if (tabParam && ['general', 'assistant', 'integrations'].includes(tabParam) && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
   }, [tabParam, activeTab]);
@@ -102,7 +102,6 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   const tabs = [
     { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'assistant', label: 'AI Assistant', icon: MessageSquare },
-    { id: 'services', label: 'Services', icon: Scissors },
     { id: 'integrations', label: 'Integrations', icon: Calendar },
   ];
 
@@ -155,13 +154,7 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
             onDirtyChange={setIsDirty}
           />
         )}
-        {activeTab === 'services' && (
-          <ServiceCatalog 
-            token={token} 
-            onMessage={handleMessage} 
-            onDirtyChange={setIsDirty}
-          />
-        )}
+
         {activeTab === 'integrations' && (
           <IntegrationsPanel business={business} token={token} onMessage={handleMessage} />
         )}
