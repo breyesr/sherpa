@@ -16,8 +16,8 @@ from app.models.user import User
 from app.models.trade import (
     Category, Product, Store, StoreNote, Order, OrderItem,
     Competitor, CustomerNote, ActionTemplate, StoreAction,
-    ActionCategory, ActionObjective, ActionStatus, DataSourceType, OrderStatus,
-    store_clients
+    ActionCategory, ActionStatus, DataSourceType, OrderStatus,
+    store_clients, StoreActionObjective
 )
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
@@ -51,6 +51,7 @@ async def seed_data():
         # Delete related entities
         await db.execute(delete(KnowledgeCorpus).where(KnowledgeCorpus.business_id == biz_id))
         await db.execute(delete(StoreAction).where(StoreAction.business_id == biz_id))
+        await db.execute(delete(StoreActionObjective).where(StoreActionObjective.business_id == biz_id))
         await db.execute(delete(CustomerNote).where(CustomerNote.business_id == biz_id))
         await db.execute(delete(Competitor).where(Competitor.business_id == biz_id))
         
@@ -66,6 +67,8 @@ async def seed_data():
             await db.execute(delete(StoreNote).where(StoreNote.store_id.in_(store_ids)))
             await db.execute(text("DELETE FROM store_clients WHERE store_id IN (SELECT id FROM stores WHERE business_id = :biz_id)"), {"biz_id": biz_id})
             
+        await db.execute(delete(StoreAction).where(StoreAction.business_id == biz_id))
+        await db.execute(delete(StoreActionObjective).where(StoreActionObjective.business_id == biz_id))
         await db.execute(delete(Client).where(Client.business_id == biz_id))
         await db.execute(delete(Store).where(Store.business_id == biz_id))
         await db.execute(delete(ActionTemplate).where(ActionTemplate.business_id == biz_id))
@@ -122,6 +125,25 @@ async def seed_data():
             await db.commit()
             print("BusinessProfile set to TRADE vertical.")
 
+        # Seed Dynamic Store Action Objectives
+        print("Seeding store action objectives...")
+        default_objectives = [
+            StoreActionObjective(business_id=biz_id, name="THREAT_RESPONSE", label="THREAT_RESPONSE", category=ActionCategory.COMMERCIAL, description="Acción de respuesta rápida ante movimientos de competidores directos en la zona."),
+            StoreActionObjective(business_id=biz_id, name="THREAT_RESPONSE", label="THREAT_RESPONSE", category=ActionCategory.MARKETING, description="Acción de respuesta rápida ante movimientos de competidores directos en la zona."),
+            StoreActionObjective(business_id=biz_id, name="SHARE_OF_SHELF", label="Share of Shelf", category=ActionCategory.MARKETING, description="Medición y auditoría de la participación en anaquel de nuestros productos."),
+            StoreActionObjective(business_id=biz_id, name="NEW_PRODUCT_INTRODUCTION", label="new product introduction", category=ActionCategory.COMMERCIAL, description="Acción para presentar o vender nuevos lanzamientos de catálogo."),
+            StoreActionObjective(business_id=biz_id, name="NEW_PRODUCT_INTRODUCTION", label="new product introduction", category=ActionCategory.MARKETING, description="Acción para presentar o vender nuevos lanzamientos de catálogo."),
+            StoreActionObjective(business_id=biz_id, name="INVENTORY_VELOCITY_OOS_PREVENTION", label="Inventory Velocity & OOS Prevention", category=ActionCategory.COMMERCIAL, description="Acción para reabastecer inventario, acelerar rotación y prevenir agotados."),
+            StoreActionObjective(business_id=biz_id, name="PERFECT_STORE_ASSORTMENT_COMPLIANCE", label='"Perfect Store" & Assortment Compliance', category=ActionCategory.COMMERCIAL, description="Auditoría y ejecución de estándares de Tienda Perfecta y cumplimiento de portafolio."),
+            StoreActionObjective(business_id=biz_id, name="PERFECT_STORE_ASSORTMENT_COMPLIANCE", label='"Perfect Store" & Assortment Compliance', category=ActionCategory.MARKETING, description="Auditoría y ejecución de estándares de Tienda Perfecta y cumplimiento de portafolio."),
+            StoreActionObjective(business_id=biz_id, name="SEASONAL_EVENT_ACTIVATION", label="Seasonal & Event Activation", category=ActionCategory.MARKETING, description="Acciones promocionales especiales por temporalidad, festividades o eventos del canal."),
+            StoreActionObjective(business_id=biz_id, name="TRADE_LOYALTY_VOLUME_PUSHING", label="Trade Loyalty & Volume Pushing (Sell-In)", category=ActionCategory.COMMERCIAL, description="Campaña de fidelización del canal de distribución y colocación de pedidos de volumen."),
+            StoreActionObjective(business_id=biz_id, name="POSM_MAINTENANCE_ASSET_PURITY", label="POSM Maintenance & Asset Purity", category=ActionCategory.MARKETING, description="Auditoría, mantenimiento y colocación de material publicitario (POSM) y pureza de exhibidores.")
+        ]
+        for obj in default_objectives:
+            db.add(obj)
+        await db.commit()
+
         # --- 2. SEED CATEGORIES & PRODUCTS ---
         print("Seeding Categories & Products...")
         cat_gris = Category(business_id=biz_id, name="Cemento Gris", description="Cemento gris de alta resistencia estructural", category_type="Gris")
@@ -143,8 +165,8 @@ async def seed_data():
 
         # --- 3. SEED ACTION TEMPLATES ---
         print("Seeding Action Templates...")
-        t_comm = ActionTemplate(business_id=biz_id, name="Descuento por volumen", category=ActionCategory.COMMERCIAL, default_unit="pesos", description="Establecer descuentos y plazos de crédito especiales por compras a granel")
-        t_mkt = ActionTemplate(business_id=biz_id, name="Material Promocional y Puntos de Venta", category=ActionCategory.MARKETING, default_unit="piezas", description="Entregar lonas, gorras, folletos y playeras promocionales de Cemenquin")
+        t_comm = ActionTemplate(business_id=biz_id, name="Descuento por volumen", category=ActionCategory.COMMERCIAL, default_unit="pesos", objective="TRADE_LOYALTY_VOLUME_PUSHING", description="Establecer descuentos y plazos de crédito especiales por compras a granel")
+        t_mkt = ActionTemplate(business_id=biz_id, name="Material Promocional y Puntos de Venta", category=ActionCategory.MARKETING, default_unit="piezas", objective="POSM_MAINTENANCE_ASSET_PURITY", description="Entregar lonas, gorras, folletos y playeras promocionales de Cemenquin")
         
         db.add_all([t_comm, t_mkt])
         await db.flush()
@@ -382,17 +404,17 @@ async def seed_data():
         # --- 9. SEED STORE ACTIONS ---
         print("Seeding Actions...")
         # Store 1 Actions
-        sa1 = StoreAction(business_id=biz_id, store_id=store1.id, assigned_to_id=client1.id, template_id=t_comm.id, category=ActionCategory.COMMERCIAL, objective=ActionObjective.REPLENISHMENT, impact_level="high", note_source_id=sn1.id, status=ActionStatus.COMPLETED, details={"description": "Enviar propuesta de descuento por volumen a Mateo"}, resolution_notes="Se autorizó un 3% de descuento en compras mayores a 500 sacos. Mateo aceptó y firmó adenda de contrato comercial.", resolved_at=now - datetime.timedelta(days=40), result_value=Decimal("500.00"), result_unit="sacos", revenue_impact=Decimal("11000.00"), created_at=now - datetime.timedelta(days=44))
-        sa2 = StoreAction(business_id=biz_id, store_id=store1.id, assigned_to_id=client1.id, template_id=t_mkt.id, category=ActionCategory.MARKETING, objective=ActionObjective.RELATIONSHIP, impact_level="medium", note_source_id=sn2.id, status=ActionStatus.COMPLETED, details={"description": "Entrega y colocación de espectacular en Materiales Rivera"}, resolution_notes="Lona publicitaria instalada correctamente en fachada.", resolved_at=now - datetime.timedelta(days=28), result_value=Decimal("1.00"), result_unit="lona", revenue_impact=Decimal("0.00"), created_at=now - datetime.timedelta(days=29))
-        sa3 = StoreAction(business_id=biz_id, store_id=store1.id, assigned_to_id=client1.id, category=ActionCategory.COMMERCIAL, objective=ActionObjective.THREAT_RESPONSE, impact_level="high", note_source_id=sn4.id, status=ActionStatus.PENDING, details={"description": "Negociar plazo de crédito o descuento compensatorio ante oferta de CEMEX"}, due_date=now + datetime.timedelta(days=3), created_at=now - datetime.timedelta(days=9))
+        sa1 = StoreAction(business_id=biz_id, store_id=store1.id, assigned_to_id=client1.id, template_id=t_comm.id, category=ActionCategory.COMMERCIAL, objective="INVENTORY_VELOCITY_OOS_PREVENTION", impact_level="high", note_source_id=sn1.id, status=ActionStatus.COMPLETED, details={"description": "Enviar propuesta de descuento por volumen a Mateo"}, resolution_notes="Se autorizó un 3% de descuento en compras mayores a 500 sacos. Mateo aceptó y firmó adenda de contrato comercial.", resolved_at=now - datetime.timedelta(days=40), result_value=Decimal("500.00"), result_unit="sacos", revenue_impact=Decimal("11000.00"), created_at=now - datetime.timedelta(days=44))
+        sa2 = StoreAction(business_id=biz_id, store_id=store1.id, assigned_to_id=client1.id, template_id=t_mkt.id, category=ActionCategory.MARKETING, objective="TRADE_LOYALTY_VOLUME_PUSHING", impact_level="medium", note_source_id=sn2.id, status=ActionStatus.COMPLETED, details={"description": "Entrega y colocación de espectacular en Materiales Rivera"}, resolution_notes="Lona publicitaria instalada correctamente en fachada.", resolved_at=now - datetime.timedelta(days=28), result_value=Decimal("1.00"), result_unit="lona", revenue_impact=Decimal("0.00"), created_at=now - datetime.timedelta(days=29))
+        sa3 = StoreAction(business_id=biz_id, store_id=store1.id, assigned_to_id=client1.id, category=ActionCategory.COMMERCIAL, objective="THREAT_RESPONSE", impact_level="high", note_source_id=sn4.id, status=ActionStatus.PENDING, details={"description": "Negociar plazo de crédito o descuento compensatorio ante oferta de CEMEX"}, due_date=now + datetime.timedelta(days=3), created_at=now - datetime.timedelta(days=9))
 
         # Store 2 Actions
-        sa4 = StoreAction(business_id=biz_id, store_id=store2.id, assigned_to_id=client2.id, template_id=t_comm.id, category=ActionCategory.COMMERCIAL, objective=ActionObjective.REPLENISHMENT, impact_level="high", note_source_id=sn5.id, status=ActionStatus.COMPLETED, details={"description": "Cotización formal de 200 sacos de Mortero Seco para Sofía Ortiz"}, resolution_notes="Cotización enviada y aceptada. Se generó el pedido de Mortero.", resolved_at=now - datetime.timedelta(days=48), result_value=Decimal("200.00"), result_unit="sacos", revenue_impact=Decimal("27000.00"), created_at=now - datetime.timedelta(days=49))
-        sa5 = StoreAction(business_id=biz_id, store_id=store2.id, assigned_to_id=client2.id, template_id=t_mkt.id, category=ActionCategory.MARKETING, objective=ActionObjective.RELATIONSHIP, impact_level="low", note_source_id=sn6.id, status=ActionStatus.COMPLETED, details={"description": "Entrega de gorras y catálogos promocionales para vendedores de piso"}, resolution_notes="Material entregado a Sofía Ortiz para distribución.", resolved_at=now - datetime.timedelta(days=22), result_value=Decimal("25.00"), result_unit="piezas", revenue_impact=Decimal("0.00"), created_at=now - datetime.timedelta(days=24))
-        sa6 = StoreAction(business_id=biz_id, store_id=store2.id, assigned_to_id=client2.id, category=ActionCategory.COMMERCIAL, objective=ActionObjective.THREAT_RESPONSE, impact_level="high", note_source_id=sn7.id, status=ActionStatus.PENDING, details={"description": "Analizar costos logísticos en Centro para competir contra entregas bonificadas de Holcim"}, due_date=now + datetime.timedelta(days=5), created_at=now - datetime.timedelta(days=4))
+        sa4 = StoreAction(business_id=biz_id, store_id=store2.id, assigned_to_id=client2.id, template_id=t_comm.id, category=ActionCategory.COMMERCIAL, objective="INVENTORY_VELOCITY_OOS_PREVENTION", impact_level="high", note_source_id=sn5.id, status=ActionStatus.COMPLETED, details={"description": "Cotización formal de 200 sacos de Mortero Seco para Sofía Ortiz"}, resolution_notes="Cotización enviada y aceptada. Se generó el pedido de Mortero.", resolved_at=now - datetime.timedelta(days=48), result_value=Decimal("200.00"), result_unit="sacos", revenue_impact=Decimal("27000.00"), created_at=now - datetime.timedelta(days=49))
+        sa5 = StoreAction(business_id=biz_id, store_id=store2.id, assigned_to_id=client2.id, template_id=t_mkt.id, category=ActionCategory.MARKETING, objective="TRADE_LOYALTY_VOLUME_PUSHING", impact_level="low", note_source_id=sn6.id, status=ActionStatus.COMPLETED, details={"description": "Entrega de gorras y catálogos promocionales para vendedores de piso"}, resolution_notes="Material entregado a Sofía Ortiz para distribución.", resolved_at=now - datetime.timedelta(days=22), result_value=Decimal("25.00"), result_unit="piezas", revenue_impact=Decimal("0.00"), created_at=now - datetime.timedelta(days=24))
+        sa6 = StoreAction(business_id=biz_id, store_id=store2.id, assigned_to_id=client2.id, category=ActionCategory.COMMERCIAL, objective="THREAT_RESPONSE", impact_level="high", note_source_id=sn7.id, status=ActionStatus.PENDING, details={"description": "Analizar costos logísticos en Centro para competir contra entregas bonificadas de Holcim"}, due_date=now + datetime.timedelta(days=5), created_at=now - datetime.timedelta(days=4))
 
         # Store 3 Actions
-        sa7 = StoreAction(business_id=biz_id, store_id=store3.id, assigned_to_id=client3.id, category=ActionCategory.COMMERCIAL, objective=ActionObjective.NEW_PRODUCT, impact_level="medium", note_source_id=sn9.id, status=ActionStatus.PENDING, details={"description": "Cotizar aditivos impermeabilizantes para cimentación costera"}, due_date=now + datetime.timedelta(days=2), created_at=now - datetime.timedelta(days=19))
+        sa7 = StoreAction(business_id=biz_id, store_id=store3.id, assigned_to_id=client3.id, category=ActionCategory.COMMERCIAL, objective="NEW_PRODUCT_INTRODUCTION", impact_level="medium", note_source_id=sn9.id, status=ActionStatus.PENDING, details={"description": "Cotizar aditivos impermeabilizantes para cimentación costera"}, due_date=now + datetime.timedelta(days=2), created_at=now - datetime.timedelta(days=19))
 
         db.add_all([sa1, sa2, sa3, sa4, sa5, sa6, sa7])
         await db.flush()

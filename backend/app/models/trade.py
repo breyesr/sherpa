@@ -521,13 +521,21 @@ class ActionCategory(str, enum.Enum):
     MARKETING = "MARKETING"
     COMMERCIAL = "COMMERCIAL"
 
-class ActionObjective(str, enum.Enum):
-    THREAT_RESPONSE = "THREAT_RESPONSE"
-    ANNIVERSARY = "ANNIVERSARY"
-    REPLENISHMENT = "REPLENISHMENT"
-    NEW_PRODUCT = "NEW_PRODUCT"
-    RELATIONSHIP = "RELATIONSHIP"
-    GENERAL = "GENERAL"
+class StoreActionObjective(Base):
+    __tablename__ = "store_action_objectives"
+
+    id = Column(String, primary_key=True, index=True, default=uuid7str)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
+    
+    name = Column(String, nullable=False, index=True)
+    label = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business_profile = relationship("BusinessProfile")
 
 class ActionStatus(str, enum.Enum):
     PROPOSED = "proposed"
@@ -544,7 +552,9 @@ class ActionTemplate(Base):
     name = Column(String, nullable=False)
     category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
     default_unit = Column(String, nullable=False) # e.g. "exchanges", "participants"
+    objective = Column(String, nullable=True, index=True)
     description = Column(Text, nullable=True)
+    details = Column(JSON, nullable=True, default=dict)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -562,7 +572,7 @@ class StoreAction(Base):
     template_id = Column(String, ForeignKey("action_templates.id"), nullable=True)
     
     category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
-    objective = Column(SQLEnum(ActionObjective), nullable=False, index=True)
+    objective = Column(String, nullable=False, index=True)
     impact_level = Column(String, nullable=True)
     note_source_id = Column(String, ForeignKey("store_notes.id"), nullable=True)
     details = Column(JSON, nullable=True, default=dict)

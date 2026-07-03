@@ -141,12 +141,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -476,6 +476,25 @@ export interface paths {
      */
     patch: operations["update_store_action_api_v1_trade_actions__action_id__patch"];
   };
+  "/api/v1/trade/objectives": {
+    /**
+     * List Objectives
+     * @description List all dynamic action objectives for the business.
+     */
+    get: operations["list_objectives_api_v1_trade_objectives_get"];
+    /**
+     * Create Objective
+     * @description Create a new custom action objective.
+     */
+    post: operations["create_objective_api_v1_trade_objectives_post"];
+  };
+  "/api/v1/trade/objectives/{obj_id}": {
+    /**
+     * Delete Objective
+     * @description Delete a custom action objective.
+     */
+    delete: operations["delete_objective_api_v1_trade_objectives__obj_id__delete"];
+  };
   "/": {
     /** Root Redirect */
     get: operations["root_redirect__get"];
@@ -495,11 +514,6 @@ export interface components {
      * @enum {string}
      */
     ActionCategory: "MARKETING" | "COMMERCIAL";
-    /**
-     * ActionObjective
-     * @enum {string}
-     */
-    ActionObjective: "THREAT_RESPONSE" | "ANNIVERSARY" | "REPLENISHMENT" | "NEW_PRODUCT" | "RELATIONSHIP" | "GENERAL";
     /**
      * ActionStatus
      * @enum {string}
@@ -1626,7 +1640,8 @@ export interface components {
       /** Assigned To Id */
       assigned_to_id?: string | null;
       category: components["schemas"]["ActionCategory"];
-      objective: components["schemas"]["ActionObjective"];
+      /** Objective */
+      objective: string;
       /** Impact Level */
       impact_level?: string | null;
       /** Note Source Id */
@@ -1653,6 +1668,40 @@ export interface components {
       /** Revenue Impact */
       revenue_impact?: number | null;
     };
+    /** StoreActionObjectiveCreate */
+    StoreActionObjectiveCreate: {
+      /** Name */
+      name: string;
+      /** Label */
+      label: string;
+      /** Description */
+      description?: string | null;
+      category: components["schemas"]["ActionCategory"];
+    };
+    /** StoreActionObjectiveResponse */
+    StoreActionObjectiveResponse: {
+      /** Name */
+      name: string;
+      /** Label */
+      label: string;
+      /** Description */
+      description?: string | null;
+      category: components["schemas"]["ActionCategory"];
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** StoreActionResponse */
     StoreActionResponse: {
       /** Store Id */
@@ -1662,7 +1711,8 @@ export interface components {
       /** Assigned To Id */
       assigned_to_id?: string | null;
       category: components["schemas"]["ActionCategory"];
-      objective: components["schemas"]["ActionObjective"];
+      /** Objective */
+      objective: string;
       /** Impact Level */
       impact_level?: string | null;
       /** Note Source Id */
@@ -1718,7 +1768,8 @@ export interface components {
       /** Template Id */
       template_id?: string | null;
       category?: components["schemas"]["ActionCategory"] | null;
-      objective?: components["schemas"]["ActionObjective"] | null;
+      /** Objective */
+      objective?: string | null;
       /** Impact Level */
       impact_level?: string | null;
       status?: components["schemas"]["ActionStatus"] | null;
@@ -2872,7 +2923,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -4115,6 +4166,70 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["StoreActionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Objectives
+   * @description List all dynamic action objectives for the business.
+   */
+  list_objectives_api_v1_trade_objectives_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionObjectiveResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Objective
+   * @description Create a new custom action objective.
+   */
+  create_objective_api_v1_trade_objectives_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreActionObjectiveCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionObjectiveResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Objective
+   * @description Delete a custom action objective.
+   */
+  delete_objective_api_v1_trade_objectives__obj_id__delete: {
+    parameters: {
+      path: {
+        obj_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

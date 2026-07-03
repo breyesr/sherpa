@@ -428,9 +428,9 @@
 ## Epic 125: Dynamic Strategy & Global Playbooks
 **Objective**: Transition the static, hardcoded Action Objectives and local-only templates into a dynamic, superadmin-configurable system framework. Allow the creation of global templates available system-wide, and dynamically adapt the AI classification engine to custom objectives.
 
-- [ ] Task 125.1: **Database Schema Migration**: Create the `action_objectives` table, replace the Enum-based objective field in `StoreAction` with a foreign key to the new table, and make `ActionTemplate.business_id` nullable (`nullable=True`) to support global scoping. Implement Alembic migration script.
-- [ ] Task 125.2: **Backend CRUD & Scoping APIs**: Implement standard CRUD endpoints for `/trade/action-objectives` (writes restricted to superadmins) and update `/trade/action-templates` scoping queries and permissions to allow superadmins to create/edit system-wide templates.
-- [ ] Task 125.3: **Dynamic AI Ingestion Classification**: Modify the background Celery extraction jobs to query active `action_objectives` from the DB and dynamically inject them as classification options into the GraphRAG ingestion prompt context.
+- [x] Task 125.1: **Database Schema Migration**: Create the `store_action_objectives` table, replace the Enum-based objective field in `StoreAction` with a String, and backfill existing businesses. Implement Alembic migration script.
+- [x] Task 125.2: **Backend CRUD & Scoping APIs**: Implement standard CRUD endpoints for `/trade/objectives` and validate action objectives on create/update.
+- [x] Task 125.3: **Dynamic AI Ingestion Classification**: Modify the background Celery extraction jobs to query active `action_objectives` from the DB and dynamically compile the Pydantic schema passed to the Instructor client.
 - [ ] Task 125.4: **Admin Management Console (UI)**: Build a Superadmin control panel under `/admin` in the frontend to manage Action Objectives (create, edit, toggle active status) and templates (set global/local scope).
 - [ ] Task 125.5: **Strategy Desk Integration (UI)**: Refactor the Objective select dropdown and Template selector in the create action drawer to fetch dynamic values from the API and visually badge global templates with a "System" lock status.
 
@@ -898,4 +898,36 @@ The following tasks have been removed or deprecated from active epics because of
     - *Given* the modified sidebar component,
     - *When* running `npm run build` in the frontend,
     - *Then* compilation completes successfully.
+
+## Epic 143: Reusable Strategy Library & Dispatch Desk
+**Objective**: Split the action creation flow into two decoupled operations: (1) Defining Action Blueprints (Templates) inside the Strategy Library (store-agnostic, assignee-agnostic, and due-date-agnostic), and (2) Assigning Actions (Task Deployment) by selecting a blueprint and specifying the target store, assignee, due date, and metric goal.
+
+- [x] Task 143.1: **Define Action Blueprint UI (Strategy Library)**: Create a card-based form drawer to define operational Action Templates. The form must capture: Category (Commercial/Marketing Segmented Control), Action Type (Objective name, filtered by category), Main Action (Title), Description (Guidelines), and Metric Unit. Store, Assignee, and Due Date fields must be completely excluded.
+  * **Acceptance Criteria**:
+    - *Given* a sales manager on the Strategy Library settings,
+    - *When* they click "Create Strategy Action Blueprint",
+    - *Then* they are prompted only for Category, Action Type, Title, Description, and Metric Unit.
+    - *And* saving the blueprint posts to `/api/v1/trade/action-templates`.
+
+- [x] Task 143.2: **Assign Action UI (Deployment Desk)**: Build the dispatch drawer to assign actions to reps. The form captures: Target Store, Assignee Rep, Category, Action Type, a dropdown displaying active blueprints filtered by category/type, Metric Goal, and Operational Deadline.
+  * **Acceptance Criteria**:
+    - *Given* a manager dispatching an action,
+    - *When* they select Category and Action Type,
+    - *Then* the "Select Blueprint" dropdown displays only matching action templates.
+    - *And* selecting a blueprint pre-fills Title and Description in a read-only preview state.
+    - *And* the manager must specify Store, Assignee, Goal (with unit suffix), and Due Date.
+
+- [x] Task 143.3: **Dynamic Backend Blueprint Instantiation**: Update the backend `POST /trade/actions` controller to copy the baseline properties (Title, Description, Objective, Category, Unit) from the selected `template_id` blueprint, while overriding the target store, assignee, due date, and target goal value in the database.
+  * **Acceptance Criteria**:
+    - *Given* an assignment payload with `template_id`, `store_id`, `assigned_to_id`, `target_value` (Metric Goal), and `due_date`,
+    - *When* posting to `/api/v1/trade/actions`,
+    - *Then* the backend automatically resolves and duplicates the blueprint's properties, saving the result into `store_actions` inside the `details` JSONB field.
+
+- [x] Task 143.4: **Desktop & Mobile Execution Integration**: Update the Strategy Desk action cards to display the custom title and details from the `details` JSONB column, and verify the mobile outcome resolution sheet remains fully functional.
+  * **Acceptance Criteria**:
+    - *Given* an action instantiated from a template,
+    - *When* viewed on the desktop Strategy Desk or mobile client,
+    - *Then* the action card displays the customized Title instead of the generic template category name.
+    - *And* reps can resolve it with numeric validation.
+
 

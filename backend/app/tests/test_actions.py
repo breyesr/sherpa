@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from app.schemas.trade import StoreActionCreate, StoreActionUpdate, ActionStatus, ActionCategory, ActionObjective
+from app.schemas.trade import StoreActionCreate, StoreActionUpdate, ActionStatus, ActionCategory
 
 def test_action_status_enum():
     assert ActionStatus.PROPOSED == "proposed"
@@ -22,7 +22,7 @@ def test_pydantic_schema_action_create():
     action = StoreActionCreate(**action_data)
     assert action.store_id == "store_123"
     assert action.category == ActionCategory.COMMERCIAL
-    assert action.objective == ActionObjective.THREAT_RESPONSE
+    assert action.objective == "THREAT_RESPONSE"
     assert action.status == ActionStatus.PROPOSED
     assert action.result_value == 15.50
     assert action.result_unit == "units"

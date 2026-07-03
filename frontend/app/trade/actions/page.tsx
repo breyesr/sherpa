@@ -105,6 +105,19 @@ export default function ActionsStrategyDesk() {
     enabled: !!token,
   });
 
+  // Fetch Store Action Objectives
+  const { data: objectives = [] } = useQuery<any[]>({
+    queryKey: ['store-action-objectives'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/trade/objectives`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch objectives');
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
   // Fetch Accounts (Stores)
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
@@ -125,10 +138,15 @@ export default function ActionsStrategyDesk() {
   const [actionFormData, setActionFormData] = useState({
     store_id: '',
     template_id: '',
-    objective: 'GENERAL',
+    category: 'COMMERCIAL' as 'COMMERCIAL' | 'MARKETING',
+    objective: 'THREAT_RESPONSE',
     assigned_to_id: '',
     due_date: '',
     impact_level: 'MEDIUM',
+    title: '',
+    description: '',
+    result_unit: '',
+    target_value: '',
     details: {} as Record<string, any>
   });
 
@@ -150,8 +168,11 @@ export default function ActionsStrategyDesk() {
   const [templateFormData, setTemplateFormData] = useState({
     name: '',
     category: 'COMMERCIAL',
+    objective: 'THREAT_RESPONSE',
     default_unit: '',
-    description: ''
+    description: '',
+    target_value: '',
+    impact_level: 'MEDIUM'
   });
 
   // Filter actions based on status select
@@ -179,20 +200,79 @@ export default function ActionsStrategyDesk() {
   // API SUBMIT HANDLERS
   // -------------------------------------------------------------
 
+  const handleCategoryChange = (cat: 'COMMERCIAL' | 'MARKETING') => {
+    const list = objectives.length > 0 ? objectives : [
+      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "COMMERCIAL" },
+      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "MARKETING" },
+      { name: "SHARE_OF_SHELF", label: "Share of Shelf", category: "MARKETING" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "COMMERCIAL" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "MARKETING" },
+      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Inventory Velocity & OOS Prevention", category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "MARKETING" },
+      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal & Event Activation", category: "MARKETING" },
+      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Trade Loyalty & Volume Pushing (Sell-In)", category: "COMMERCIAL" },
+      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "POSM Maintenance & Asset Purity", category: "MARKETING" }
+    ];
+    const match = list.find(o => o.category === cat);
+    setActionFormData(prev => ({
+      ...prev,
+      category: cat,
+      objective: match ? match.name : ''
+    }));
+  };
+
+  const handleTemplateChange = (tplId: string) => {
+    const selectedTpl = templates.find(t => t.id === tplId);
+    if (selectedTpl) {
+      setActionFormData(prev => ({
+        ...prev,
+        template_id: tplId,
+        category: selectedTpl.category as 'COMMERCIAL' | 'MARKETING',
+        result_unit: selectedTpl.default_unit,
+        title: selectedTpl.name,
+        description: selectedTpl.description || ''
+      }));
+    } else {
+      setActionFormData(prev => ({
+        ...prev,
+        template_id: '',
+      }));
+    }
+  };
+
   const handleCreateAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Prepopulate Category / default result unit from selected template
-    const selectedTpl = templates.find(t => t.id === actionFormData.template_id);
+    // Front-end percentage validation for SHARE_OF_SHELF
+    if (actionFormData.objective === 'SHARE_OF_SHELF' && actionFormData.target_value) {
+      const val = parseFloat(actionFormData.target_value);
+      if (isNaN(val) || val < 1 || val > 100) {
+        setError('Goal percentage must be between 1 and 100');
+        setLoading(false);
+        return;
+      }
+    }
+
+    const targetValFloat = actionFormData.target_value ? parseFloat(actionFormData.target_value) : null;
     const postPayload = {
-      ...actionFormData,
-      category: selectedTpl ? selectedTpl.category : 'COMMERCIAL',
-      result_unit: selectedTpl ? selectedTpl.default_unit : 'unit',
+      store_id: actionFormData.store_id,
+      template_id: actionFormData.template_id || null,
+      category: actionFormData.category,
+      objective: actionFormData.objective,
       assigned_to_id: actionFormData.assigned_to_id || null,
       due_date: actionFormData.due_date ? new Date(actionFormData.due_date).toISOString() : null,
-      status: 'pending' // default status for newly assigned desk actions
+      status: 'pending',
+      impact_level: actionFormData.impact_level,
+      result_unit: actionFormData.result_unit || 'unit',
+      details: {
+        title: actionFormData.title,
+        description: actionFormData.description,
+        target_value: targetValFloat,
+        ...actionFormData.details
+      }
     };
 
     try {
@@ -215,10 +295,15 @@ export default function ActionsStrategyDesk() {
       setActionFormData({
         store_id: '',
         template_id: '',
-        objective: 'GENERAL',
+        category: 'COMMERCIAL',
+        objective: 'THREAT_RESPONSE',
         assigned_to_id: '',
         due_date: '',
         impact_level: 'MEDIUM',
+        title: '',
+        description: '',
+        result_unit: '',
+        target_value: '',
         details: {}
       });
     } catch (err: any) {
@@ -313,6 +398,7 @@ export default function ActionsStrategyDesk() {
       setTemplateFormData({
         name: '',
         category: 'COMMERCIAL',
+        objective: 'THREAT_RESPONSE',
         default_unit: '',
         description: ''
       });
@@ -356,6 +442,7 @@ export default function ActionsStrategyDesk() {
     setTemplateFormData({
       name: tpl.name,
       category: tpl.category,
+      objective: tpl.objective || 'THREAT_RESPONSE',
       default_unit: tpl.default_unit,
       description: tpl.description || ''
     });
@@ -377,14 +464,41 @@ export default function ActionsStrategyDesk() {
     }
   };
 
-  const objectiveMap: Record<string, string> = {
-    THREAT_RESPONSE: 'Threat Response',
-    ANNIVERSARY: 'Anniversary Promo',
-    REPLENISHMENT: 'Replenishment Survey',
-    NEW_PRODUCT: 'New Placement',
-    RELATIONSHIP: 'Relationship Management',
-    GENERAL: 'General Audit'
+  const defaultObjectiveMap: Record<string, string> = {
+    THREAT_RESPONSE: 'THREAT_RESPONSE',
+    SHARE_OF_SHELF: 'Share of Shelf',
+    NEW_PRODUCT_INTRODUCTION: 'new product introduction',
+    INVENTORY_VELOCITY_OOS_PREVENTION: 'Inventory Velocity & OOS Prevention',
+    PERFECT_STORE_ASSORTMENT_COMPLIANCE: '"Perfect Store" & Assortment Compliance',
+    SEASONAL_EVENT_ACTIVATION: 'Seasonal & Event Activation',
+    TRADE_LOYALTY_VOLUME_PUSHING: 'Trade Loyalty & Volume Pushing (Sell-In)',
+    POSM_MAINTENANCE_ASSET_PURITY: 'POSM Maintenance & Asset Purity'
   };
+
+  const objectiveMap = {
+    ...defaultObjectiveMap,
+    ...objectives.reduce((acc: Record<string, string>, obj: any) => {
+      acc[obj.name] = obj.label;
+      return acc;
+    }, {})
+  };
+
+  const filteredObjectives = useMemo(() => {
+    const activeList = objectives.length > 0 ? objectives : [
+      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "COMMERCIAL" },
+      { name: "THREAT_RESPONSE", label: "THREAT_RESPONSE", category: "MARKETING" },
+      { name: "SHARE_OF_SHELF", label: "Share of Shelf", category: "MARKETING" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "COMMERCIAL" },
+      { name: "NEW_PRODUCT_INTRODUCTION", label: "new product introduction", category: "MARKETING" },
+      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Inventory Velocity & OOS Prevention", category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "COMMERCIAL" },
+      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "MARKETING" },
+      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal & Event Activation", category: "MARKETING" },
+      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Trade Loyalty & Volume Pushing (Sell-In)", category: "COMMERCIAL" },
+      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "POSM Maintenance & Asset Purity", category: "MARKETING" }
+    ];
+    return activeList.filter((o: any) => o.category === actionFormData.category);
+  }, [objectives, actionFormData.category]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20">
@@ -427,13 +541,13 @@ export default function ActionsStrategyDesk() {
               className="flex items-center gap-2 bg-gray-900 text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
             >
               <Plus size={16} />
-              Create Action
+              Assign Action
             </button>
           ) : (
             <button 
               onClick={() => {
                 setSelectedTemplate(null);
-                setTemplateFormData({ name: '', category: 'COMMERCIAL', default_unit: '', description: '' });
+                setTemplateFormData({ name: '', category: 'COMMERCIAL', objective: 'THREAT_RESPONSE', default_unit: '', description: '' });
                 setIsTemplateFormOpen(true);
               }}
               className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
@@ -546,11 +660,16 @@ export default function ActionsStrategyDesk() {
                         </span>
                       </div>
 
-                      {/* Store Details */}
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Account</span>
-                      <h3 className="text-xl font-black text-gray-900 mt-0.5 truncate group-hover:text-blue-600 transition-colors">
-                        {action.store_name || 'Unknown Account'}
+                      {/* Action Title & Store */}
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Action Title</span>
+                      <h3 className="text-lg font-black text-gray-900 mt-0.5 truncate group-hover:text-blue-600 transition-colors">
+                        {action.details?.title || action.template_name || 'Manual Audit'}
                       </h3>
+
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mt-3">Account</span>
+                      <p className="text-xs font-bold text-gray-600 mt-0.5 truncate">
+                        {action.store_name || 'Unknown Account'}
+                      </p>
 
                       {/* Action Specs */}
                       <div className="mt-4 space-y-2.5 pt-4 border-t border-gray-50">
@@ -676,13 +795,13 @@ export default function ActionsStrategyDesk() {
       )}
 
       {/* -------------------------------------------------------------
-          DRAWER: CREATE MANUA STORE ACTION
+          DRAWER: ASSIGN ACTION (DEPLOYMENT DESK)
       ------------------------------------------------------------- */}
       <Drawer
         isOpen={isActionFormOpen}
         onClose={() => setIsActionFormOpen(false)}
-        title="Create Store Action"
-        subtitle="Define tactical requirements for reps on site."
+        title="Assign Action"
+        subtitle="Deploy a strategy blueprint to a store and assign it to a rep."
         size="wide"
         footer={
           <div className="flex gap-4">
@@ -694,7 +813,7 @@ export default function ActionsStrategyDesk() {
             </button>
             <button 
               onClick={handleCreateAction}
-              disabled={loading || !actionFormData.store_id || !actionFormData.template_id}
+              disabled={loading || !actionFormData.store_id || !actionFormData.template_id || !actionFormData.target_value}
               className="flex-1 px-6 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : 'Dispatch Action'}
@@ -711,42 +830,17 @@ export default function ActionsStrategyDesk() {
           )}
 
           <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Target Account Location</label>
-              <select
-                required
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                value={actionFormData.store_id}
-                onChange={e => setActionFormData({...actionFormData, store_id: e.target.value, assigned_to_id: ''})}
-              >
-                <option value="">Select Account...</option>
-                {stores.map(s => <option key={s.id} value={s.id}>{s.name} ({s.region})</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Catalog Action Template</label>
-              <select
-                required
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                value={actionFormData.template_id}
-                onChange={e => setActionFormData({...actionFormData, template_id: e.target.value})}
-              >
-                <option value="">Select Operational Template...</option>
-                {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.category})</option>)}
-              </select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Objective</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Target Account Location</label>
                 <select
                   required
                   className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                  value={actionFormData.objective}
-                  onChange={e => setActionFormData({...actionFormData, objective: e.target.value})}
+                  value={actionFormData.store_id}
+                  onChange={e => setActionFormData({...actionFormData, store_id: e.target.value})}
                 >
-                  {Object.entries(objectiveMap).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  <option value="">Select Account...</option>
+                  {stores.map(s => <option key={s.id} value={s.id}>{s.name} ({s.region})</option>)}
                 </select>
               </div>
 
@@ -768,13 +862,166 @@ export default function ActionsStrategyDesk() {
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Operational Deadline</label>
-              <input
-                type="date"
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                value={actionFormData.due_date}
-                onChange={e => setActionFormData({...actionFormData, due_date: e.target.value})}
-              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Category</label>
+              <div className="flex gap-4 p-1 bg-gray-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleCategoryChange('COMMERCIAL');
+                    setActionFormData(prev => ({ ...prev, template_id: '', result_unit: '' }));
+                  }}
+                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
+                    actionFormData.category === 'COMMERCIAL'
+                      ? 'bg-white shadow text-gray-900'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  Commercial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleCategoryChange('MARKETING');
+                    setActionFormData(prev => ({ ...prev, template_id: '', result_unit: '' }));
+                  }}
+                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
+                    actionFormData.category === 'MARKETING'
+                      ? 'bg-white shadow text-gray-900'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  Marketing
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Action Type (Objective)</label>
+                <select
+                  required
+                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
+                  value={actionFormData.objective}
+                  onChange={e => setActionFormData({...actionFormData, objective: e.target.value, template_id: '', result_unit: ''})}
+                >
+                  {filteredObjectives.map(o => <option key={o.name} value={o.name}>{objectiveMap[o.name] || o.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Select Blueprint (Template)</label>
+                {(() => {
+                  const matchingTemplates = templates.filter(t => t.category === actionFormData.category && t.objective === actionFormData.objective);
+                  if (matchingTemplates.length === 0) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsActionFormOpen(false);
+                          setSelectedTemplate(null);
+                          setTemplateFormData(prev => ({
+                            ...prev,
+                            name: '',
+                            category: actionFormData.category,
+                            objective: actionFormData.objective,
+                            default_unit: '',
+                            description: '',
+                            target_value: '',
+                            impact_level: 'MEDIUM'
+                          }));
+                          setIsTemplateFormOpen(true);
+                        }}
+                        className="w-full p-4 bg-amber-50 border border-dashed border-amber-300 rounded-xl flex items-center gap-3 text-left hover:bg-amber-100 transition-all group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-amber-200 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-300 transition-colors">
+                          <Plus size={14} className="text-amber-700" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-amber-800">No blueprints for this type yet</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5">Click to create one — category & objective will be pre-filled</p>
+                        </div>
+                      </button>
+                    );
+                  }
+                  return (
+                    <select
+                      required
+                      className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
+                      value={actionFormData.template_id}
+                      onChange={e => {
+                        const tplId = e.target.value;
+                        const selectedTpl = templates.find(t => t.id === tplId);
+                        setActionFormData(prev => ({
+                          ...prev,
+                          template_id: tplId,
+                          result_unit: selectedTpl ? selectedTpl.default_unit : ''
+                        }));
+                      }}
+                    >
+                      <option value="">Choose Template Blueprint...</option>
+                      {matchingTemplates.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Blueprint Preview Card */}
+            {actionFormData.template_id && (() => {
+              const selectedTpl = templates.find(t => t.id === actionFormData.template_id);
+              if (!selectedTpl) return null;
+              return (
+                <div className="p-6 bg-blue-50/40 border border-blue-100/50 rounded-2xl space-y-2 animate-in fade-in duration-300">
+                  <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest block">Blueprint Guidelines</span>
+                  <h4 className="text-sm font-bold text-gray-900">{selectedTpl.name}</h4>
+                  {selectedTpl.description && (
+                    <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{selectedTpl.description}</p>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">
+                  Metric Goal {actionFormData.result_unit ? `(${actionFormData.result_unit})` : ''}
+                </label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  placeholder={actionFormData.result_unit ? `Target in ${actionFormData.result_unit}` : "e.g. 150"}
+                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={actionFormData.target_value}
+                  onChange={e => setActionFormData({...actionFormData, target_value: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Operational Deadline</label>
+                <input
+                  type="date"
+                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={actionFormData.due_date}
+                  onChange={e => setActionFormData({...actionFormData, due_date: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Impact Level</label>
+              <select
+                required
+                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
+                value={actionFormData.impact_level}
+                onChange={e => setActionFormData({...actionFormData, impact_level: e.target.value})}
+              >
+                <option value="LOW">Low Priority</option>
+                <option value="MEDIUM">Medium Priority</option>
+                <option value="HIGH">High Priority</option>
+              </select>
             </div>
           </div>
         </form>
@@ -835,6 +1082,32 @@ export default function ActionsStrategyDesk() {
                 </div>
               </div>
             </div>
+
+            {/* Custom Action details */}
+            {(selectedAction.details?.title || selectedAction.details?.description || selectedAction.details?.target_value) && (
+              <div className="p-6 bg-blue-50/30 rounded-[2rem] space-y-4 border border-blue-50/50">
+                {selectedAction.details?.title && (
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Main Action</span>
+                    <h4 className="text-base font-black text-gray-900 mt-0.5">{selectedAction.details.title}</h4>
+                  </div>
+                )}
+                {selectedAction.details?.description && (
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Description / Guidelines</span>
+                    <p className="text-sm font-semibold text-gray-700 mt-1 whitespace-pre-line">{selectedAction.details.description}</p>
+                  </div>
+                )}
+                {selectedAction.details?.target_value && (
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Goal</span>
+                    <span className="text-sm font-black text-gray-900 mt-0.5">
+                      {selectedAction.details.target_value} <span className="text-2xs font-bold text-gray-400 uppercase">{selectedAction.result_unit || 'units'}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Status Select */}
             <div>
@@ -913,8 +1186,8 @@ export default function ActionsStrategyDesk() {
       <Drawer
         isOpen={isTemplateFormOpen}
         onClose={() => setIsTemplateFormOpen(false)}
-        title={selectedTemplate ? "Edit Catalog Template" : "New Catalog Template"}
-        subtitle="Configure action criteria category and metric UOM units."
+        title={selectedTemplate ? "Edit Strategy Blueprint" : "New Strategy Blueprint"}
+        subtitle="Define a reusable action playbook for your team. No assignee or deadline required."
         size="wide"
         footer={
           <div className="flex gap-4">
@@ -929,7 +1202,7 @@ export default function ActionsStrategyDesk() {
               disabled={loading || !templateFormData.name || !templateFormData.default_unit}
               className="flex-1 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Save Template'}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : (selectedTemplate ? 'Update Blueprint' : 'Save Blueprint')}
             </button>
           </div>
         }
@@ -943,38 +1216,83 @@ export default function ActionsStrategyDesk() {
           )}
 
           <div className="space-y-4">
+            {/* Category Toggle */}
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Template Name</label>
-              <input
-                required
-                type="text"
-                placeholder="e.g. Replenish Premium Arabica SKU"
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                value={templateFormData.name}
-                onChange={e => setTemplateFormData({...templateFormData, name: e.target.value})}
-              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Category</label>
+              <div className="flex gap-4 p-1 bg-gray-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const list = objectives.length > 0 ? objectives : [
+                      { name: "THREAT_RESPONSE", category: "COMMERCIAL" },
+                      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", category: "COMMERCIAL" },
+                    ];
+                    const match = list.find(o => o.category === 'COMMERCIAL');
+                    setTemplateFormData(prev => ({ ...prev, category: 'COMMERCIAL', objective: match ? match.name : 'THREAT_RESPONSE' }));
+                  }}
+                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
+                    templateFormData.category === 'COMMERCIAL'
+                      ? 'bg-white shadow text-gray-900'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  Commercial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const list = objectives.length > 0 ? objectives : [
+                      { name: "SHARE_OF_SHELF", category: "MARKETING" },
+                      { name: "POSM_MAINTENANCE_ASSET_PURITY", category: "MARKETING" },
+                    ];
+                    const match = list.find(o => o.category === 'MARKETING');
+                    setTemplateFormData(prev => ({ ...prev, category: 'MARKETING', objective: match ? match.name : 'SHARE_OF_SHELF' }));
+                  }}
+                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
+                    templateFormData.category === 'MARKETING'
+                      ? 'bg-white shadow text-gray-900'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  Marketing
+                </button>
+              </div>
             </div>
 
+            {/* Action Type + UOM row */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Category</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Action Type (Objective)</label>
                 <select
                   required
                   className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-indigo-500"
-                  value={templateFormData.category}
-                  onChange={e => setTemplateFormData({...templateFormData, category: e.target.value})}
+                  value={templateFormData.objective}
+                  onChange={e => setTemplateFormData({...templateFormData, objective: e.target.value})}
                 >
-                  <option value="COMMERCIAL">Commercial (Sales)</option>
-                  <option value="MARKETING">Marketing (Promo)</option>
+                  {(objectives.length > 0 ? objectives : [
+                    { name: "THREAT_RESPONSE", label: "Threat Response", category: "COMMERCIAL" },
+                    { name: "THREAT_RESPONSE", label: "Threat Response", category: "MARKETING" },
+                    { name: "SHARE_OF_SHELF", label: "Share of Shelf", category: "MARKETING" },
+                    { name: "NEW_PRODUCT_INTRODUCTION", label: "New Product Introduction", category: "COMMERCIAL" },
+                    { name: "NEW_PRODUCT_INTRODUCTION", label: "New Product Introduction", category: "MARKETING" },
+                    { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Inventory Velocity & OOS Prevention", category: "COMMERCIAL" },
+                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "COMMERCIAL" },
+                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: '"Perfect Store" & Assortment Compliance', category: "MARKETING" },
+                    { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal & Event Activation", category: "MARKETING" },
+                    { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Trade Loyalty & Volume Pushing (Sell-In)", category: "COMMERCIAL" },
+                    { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "POSM Maintenance & Asset Purity", category: "MARKETING" }
+                  ]).filter((o: any) => o.category === templateFormData.category).map((o: any) => (
+                    <option key={o.name} value={o.name}>{objectiveMap[o.name] || o.label}</option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Default UOM Result Unit</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Metric Unit (UOM)</label>
                 <input
                   required
                   type="text"
-                  placeholder="e.g. exchanges, placements, interactions"
+                  placeholder="e.g. sacos, frentes, exchanges"
                   className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   value={templateFormData.default_unit}
                   onChange={e => setTemplateFormData({...templateFormData, default_unit: e.target.value})}
@@ -982,15 +1300,60 @@ export default function ActionsStrategyDesk() {
               </div>
             </div>
 
+            {/* Title */}
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Instructions / Action Guidelines</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Main Action (Title)</label>
+              <input
+                required
+                type="text"
+                maxLength={50}
+                placeholder="e.g. Despliegue de Activo Permanente"
+                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                value={templateFormData.name}
+                onChange={e => setTemplateFormData({...templateFormData, name: e.target.value})}
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Description / Guidelines</label>
               <textarea
-                rows={4}
-                placeholder="Give reps background details on what actions to perform on site..."
+                rows={3}
+                placeholder="e.g. Proveer un activo de la marca condicionado a un acuerdo de exclusividad..."
                 className="w-full p-4 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-900 resize-none text-sm"
                 value={templateFormData.description}
                 onChange={e => setTemplateFormData({...templateFormData, description: e.target.value})}
               />
+            </div>
+
+            {/* Metric Goal + Impact Level */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">
+                  Default Metric Goal {templateFormData.default_unit ? `(${templateFormData.default_unit})` : ''}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder={templateFormData.default_unit ? `Target in ${templateFormData.default_unit}` : 'e.g. 150'}
+                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={templateFormData.target_value}
+                  onChange={e => setTemplateFormData({...templateFormData, target_value: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Impact Level</label>
+                <select
+                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-indigo-500"
+                  value={templateFormData.impact_level}
+                  onChange={e => setTemplateFormData({...templateFormData, impact_level: e.target.value})}
+                >
+                  <option value="LOW">Low Priority</option>
+                  <option value="MEDIUM">Medium Priority</option>
+                  <option value="HIGH">High Priority</option>
+                </select>
+              </div>
             </div>
           </div>
         </form>

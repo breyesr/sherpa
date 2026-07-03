@@ -11,7 +11,7 @@ from app.core.ai_service import AIService
 from app.services.graphrag import GraphRAGService
 from app.models.user import User
 from app.models.business import BusinessProfile
-from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, ActionTemplate, StoreAction, PostalCode
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, ActionTemplate, StoreAction, PostalCode, StoreActionObjective
 from app.schemas.trade import (
     StoreResponse, StoreCreate, StoreUpdate,
     CategoryResponse, CategoryCreate,
@@ -21,7 +21,7 @@ from app.schemas.trade import (
     CompetitorResponse, CompetitorCreate,
     ActionTemplateCreate, ActionTemplateResponse, ActionTemplateUpdate,
     StoreActionCreate, StoreActionResponse, StoreActionUpdate,
-    PostalCodeResponse
+    PostalCodeResponse, StoreActionObjectiveCreate, StoreActionObjectiveResponse
 )
 
 from app.tasks.knowledge import sync_vector_task, delete_vector_task
@@ -760,6 +760,21 @@ async def create_action_template(
     """Create a new action template."""
     business = await get_business(db, current_user.id)
     
+    # Verify objective matches category if specified
+    if template_in.objective:
+        res_obj = await db.execute(
+            select(StoreActionObjective).where(
+                StoreActionObjective.business_id == business.id,
+                StoreActionObjective.name == template_in.objective,
+                StoreActionObjective.category == template_in.category
+            )
+        )
+        if not res_obj.scalars().first():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid objective '{template_in.objective}' for category '{template_in.category}'"
+            )
+            
     template = ActionTemplate(
         business_id=business.id,
         **template_in.model_dump()
@@ -787,6 +802,25 @@ async def update_action_template(
         raise HTTPException(status_code=404, detail="Action template not found")
         
     update_data = template_in.model_dump(exclude_unset=True)
+    
+    # Verify objective/category match if updated
+    if "objective" in update_data or "category" in update_data:
+        val_objective = update_data.get("objective") or template.objective
+        val_category = update_data.get("category") or template.category
+        if val_objective:
+            res_obj = await db.execute(
+                select(StoreActionObjective).where(
+                    StoreActionObjective.business_id == business.id,
+                    StoreActionObjective.name == val_objective,
+                    StoreActionObjective.category == val_category
+                )
+            )
+            if not res_obj.scalars().first():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid objective '{val_objective}' for category '{val_category}'"
+                )
+                
     for field, value in update_data.items():
         setattr(template, field, value)
         
@@ -908,12 +942,8 @@ async def create_store_action(
     for fk_field in ("assigned_to_id", "template_id", "note_source_id"):
         if fk_field in action_data and action_data[fk_field] == "":
             action_data[fk_field] = None
-            
-    # Strip timezone info from datetime fields to prevent asyncpg DataError
-    if action_data.get("due_date") and action_data["due_date"].tzinfo:
-        action_data["due_date"] = action_data["due_date"].replace(tzinfo=None)
-    
-    # Auto-assign result_unit and category from template if template_id is provided
+
+    # Auto-assign fields from template if template_id is provided
     if action_data.get("template_id"):
         res_tpl = await db.execute(
             select(ActionTemplate)
@@ -923,9 +953,46 @@ async def create_store_action(
         if not template:
             raise HTTPException(status_code=400, detail="Invalid template ID")
         
+        # Override properties from template blueprint
         action_data["category"] = template.category
-        if not action_data.get("result_unit"):
-            action_data["result_unit"] = template.default_unit
+        if template.objective:
+            action_data["objective"] = template.objective
+        action_data["result_unit"] = template.default_unit
+        
+        # Merge template's name & description into details JSONB
+        details = action_data.get("details") or {}
+        details["title"] = template.name
+        details["description"] = template.description or ""
+        action_data["details"] = details
+        
+    # Verify objective is valid for this business and matches the specified category
+    res_obj = await db.execute(
+        select(StoreActionObjective).where(
+            StoreActionObjective.business_id == business.id,
+            StoreActionObjective.name == action_data["objective"],
+            StoreActionObjective.category == action_data["category"]
+        )
+    )
+    if not res_obj.scalars().first():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid objective '{action_data['objective']}' for category '{action_data['category']}'"
+        )
+        
+    # Validate SHARE_OF_SHELF percentage goals
+    if action_data["objective"] == "SHARE_OF_SHELF" and action_data.get("details"):
+        target_val = action_data["details"].get("target_value")
+        if target_val is not None:
+            try:
+                val_float = float(target_val)
+                if val_float < 1.0 or val_float > 100.0:
+                    raise HTTPException(status_code=400, detail="Goal percentage must be between 1 and 100")
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="Invalid metric goal value")
+            
+    # Strip timezone info from datetime fields to prevent asyncpg DataError
+    if action_data.get("due_date") and action_data["due_date"].tzinfo:
+        action_data["due_date"] = action_data["due_date"].replace(tzinfo=None)
             
     action = StoreAction(
         business_id=business.id,
@@ -978,6 +1045,24 @@ async def update_store_action(
         
     update_data = action_in.model_dump(exclude_unset=True)
     
+    # Verify objective and category alignment if updated
+    if "objective" in update_data or "category" in update_data:
+        val_objective = update_data.get("objective") or action.objective
+        val_category = update_data.get("category") or action.category
+        
+        res_obj = await db.execute(
+            select(StoreActionObjective).where(
+                StoreActionObjective.business_id == business.id,
+                StoreActionObjective.name == val_objective,
+                StoreActionObjective.category == val_category
+            )
+        )
+        if not res_obj.scalars().first():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid objective '{val_objective}' for category '{val_category}'"
+            )
+            
     # Strip timezone info from datetime fields to prevent asyncpg DataError
     if update_data.get("due_date") and update_data["due_date"].tzinfo:
         update_data["due_date"] = update_data["due_date"].replace(tzinfo=None)
@@ -1025,4 +1110,64 @@ async def delete_store_action(
     await db.delete(action)
     await db.commit()
     return {"status": "success", "message": "Action deleted"}
+
+@router.get("/objectives", response_model=List[StoreActionObjectiveResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
+async def list_objectives(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """List all dynamic action objectives for the business."""
+    business = await get_business(db, current_user.id)
+    result = await db.execute(
+        select(StoreActionObjective)
+        .where(StoreActionObjective.business_id == business.id)
+        .order_by(StoreActionObjective.created_at.desc())
+    )
+    return result.scalars().all()
+
+@router.post("/objectives", response_model=StoreActionObjectiveResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+async def create_objective(
+    obj_in: StoreActionObjectiveCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Create a new custom action objective."""
+    business = await get_business(db, current_user.id)
+    
+    # Check if objective with the same name already exists for this business
+    res_exist = await db.execute(
+        select(StoreActionObjective)
+        .where(StoreActionObjective.business_id == business.id, StoreActionObjective.name == obj_in.name)
+    )
+    if res_exist.scalars().first():
+        raise HTTPException(status_code=400, detail=f"Objective '{obj_in.name}' already exists")
+        
+    obj = StoreActionObjective(
+        business_id=business.id,
+        **obj_in.model_dump()
+    )
+    db.add(obj)
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+@router.delete("/objectives/{obj_id}", dependencies=[Depends(require_feature("b2b_solutions"))])
+async def delete_objective(
+    obj_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Delete a custom action objective."""
+    business = await get_business(db, current_user.id)
+    result = await db.execute(
+        select(StoreActionObjective)
+        .where(StoreActionObjective.id == obj_id, StoreActionObjective.business_id == business.id)
+    )
+    obj = result.scalars().first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Objective not found")
+        
+    await db.delete(obj)
+    await db.commit()
+    return {"status": "success", "message": "Objective deleted"}
 

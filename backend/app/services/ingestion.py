@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import litellm
 from app.core.system_config import ConfigService
-from app.models.trade import Store, StoreNote, Competitor, StoreAction, ActionCategory, ActionObjective
+from app.models.trade import Store, StoreNote, Competitor, StoreAction, ActionCategory
 from sqlalchemy.future import select
 from sqlalchemy import or_
 from app.tasks.knowledge import sync_vector_task, update_account_intelligence_task
@@ -19,12 +19,6 @@ prompt_env = Environment(
     autoescape=select_autoescape()
 )
 
-class ActionInfo(BaseModel):
-    category: ActionCategory = Field(..., description="Category of the action: marketing or commercial")
-    objective: ActionObjective = Field(..., description="Strategic objective: threat_response, anniversary, replenishment, new_product, relationship, general")
-    impact: str = Field(..., description="Anticipated impact level: high, medium, low")
-    details: Dict[str, Any] = Field(default_factory=dict, description="Structured payload (e.g., {'discount': 0.1, 'item': 'SKU_ABC'})")
-
 class CompetitorInfo(BaseModel):
     name: str = Field(..., description="Name of the competitor")
     strengths: Optional[str] = Field(None, description="Reported strengths")
@@ -33,31 +27,64 @@ class CompetitorInfo(BaseModel):
     market: Optional[str] = Field(None, description="Market type of the competitor")
     presence_level: Optional[str] = Field(None, description="Presence level (high, low, medium)")
 
-class ExtractionResult(BaseModel):
-    store_name: Optional[str] = Field(None, description="Name of the store or account")
-    store_region: Optional[str] = Field(None, description="Region of the store")
-    store_market: Optional[str] = Field(None, description="Market type of the store")
-    store_segment: Optional[str] = Field(None, description="Segment of the store")
-    
-    contact_name: Optional[str] = Field(None, description="Name of the contact person")
-    contact_role: Optional[str] = Field(None, description="Job role of the contact")
-    
-    general_note: str = Field(..., description="Main takeaway of the visit")
-    risks: Optional[str] = Field(None, description="Identified risks or threats")
-    opportunities: Optional[str] = Field(None, description="Identified opportunities")
-    preferred_actions: Optional[str] = Field(None, description="Suggested next steps")
-    execution_level: Optional[str] = Field(None, description="Execution level (high, medium, low)")
-    
-    competitors: List[CompetitorInfo] = Field(default_factory=list)
-    actions: List[ActionInfo] = Field(default_factory=list, description="Structured commercial/marketing actions extracted from the report")
-
 class IngestionAgent:
     def __init__(self, db: Any):
         self.db = db
 
-    async def extract_intelligence(self, user_message: str) -> ExtractionResult:
-        """Extract structured intelligence from unstructured text using Instructor."""
+    async def extract_intelligence(self, business_id: str, user_message: str) -> Any:
+        """Extract structured intelligence from unstructured text using Instructor with dynamic schemas."""
         try:
+            # Query active objectives for the business
+            from app.models.trade import StoreActionObjective
+            res_objs = await self.db.execute(
+                select(StoreActionObjective.name).where(StoreActionObjective.business_id == business_id)
+            )
+            objective_names = res_objs.scalars().all()
+            if not objective_names:
+                objective_names = [
+                    "THREAT_RESPONSE",
+                    "SHARE_OF_SHELF",
+                    "NEW_PRODUCT_INTRODUCTION",
+                    "INVENTORY_VELOCITY_OOS_PREVENTION",
+                    "PERFECT_STORE_ASSORTMENT_COMPLIANCE",
+                    "SEASONAL_EVENT_ACTIVATION",
+                    "TRADE_LOYALTY_VOLUME_PUSHING",
+                    "POSM_MAINTENANCE_ASSET_PURITY"
+                ]
+            
+            # Create Literal type containing active objective names
+            from typing import Literal
+            ObjectiveType = Literal[tuple(objective_names)]
+            
+            from pydantic import create_model
+            
+            # 1. Dynamic ActionInfo
+            DynamicActionInfo = create_model(
+                'ActionInfo',
+                category=(ActionCategory, Field(..., description="Category of the action: marketing or commercial")),
+                objective=(ObjectiveType, Field(..., description=f"Strategic objective: {', '.join(objective_names)}")),
+                impact=(str, Field(..., description="Anticipated impact level: high, medium, low")),
+                details=(Dict[str, Any], Field(default_factory=dict, description="Structured payload"))
+            )
+            
+            # 2. Dynamic ExtractionResult
+            DynamicExtractionResult = create_model(
+                'ExtractionResult',
+                store_name=(Optional[str], Field(None, description="Name of the store or account")),
+                store_region=(Optional[str], Field(None, description="Region of the store")),
+                store_market=(Optional[str], Field(None, description="Market type of the store")),
+                store_segment=(Optional[str], Field(None, description="Segment of the store")),
+                contact_name=(Optional[str], Field(None, description="Name of the contact person")),
+                contact_role=(Optional[str], Field(None, description="Job role of the contact")),
+                general_note=(str, Field(..., description="Main takeaway of the visit")),
+                risks=(Optional[str], Field(None, description="Identified risks or threats")),
+                opportunities=(Optional[str], Field(None, description="Identified opportunities")),
+                preferred_actions=(Optional[str], Field(None, description="Suggested next steps")),
+                execution_level=(Optional[str], Field(None, description="Execution level (high, medium, low)")),
+                competitors=(List[CompetitorInfo], Field(default_factory=list)),
+                actions=(List[DynamicActionInfo], Field(default_factory=list, description="Structured actions extracted"))
+            )
+
             template = prompt_env.get_template("ingestion_extractor.j2")
             system_prompt = template.render(user_message=user_message)
 
@@ -75,7 +102,7 @@ class IngestionAgent:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
                 ],
-                response_model=ExtractionResult,
+                response_model=DynamicExtractionResult,
                 api_key=api_key
             )
             return result
@@ -86,7 +113,7 @@ class IngestionAgent:
     async def process_report(self, business_id: str, user_message: str) -> Dict[str, Any]:
         """The full ingestion pipeline: Extract -> Link -> Save -> Sync."""
         # 1. Extraction
-        extracted = await self.extract_intelligence(user_message)
+        extracted = await self.extract_intelligence(business_id, user_message)
         
         # 2. Entity Linking (Fuzzy match store)
         store = None
