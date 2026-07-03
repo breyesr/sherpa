@@ -8,15 +8,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import { components } from '@/types/api';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+type UserResponse = components['schemas']['UserResponse'];
 
 interface AssistantSettingsProps {
   business: BusinessProfileResponse;
+  user?: UserResponse;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
   onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function AssistantSettings({ business, token, onMessage, onDirtyChange }: AssistantSettingsProps) {
+export default function AssistantSettings({ business, user, token, onMessage, onDirtyChange }: AssistantSettingsProps) {
   const queryClient = useQueryClient();
   const [savingAssistant, setSavingAssistant] = useState(false);
   
@@ -57,6 +59,8 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
   const isCampaignEnabled = features.campaign_flow?.enabled === true;
   const isB2bEnabled = features.b2b_solutions?.enabled === true;
   const isSalesIntelligenceEnabled = features.sales_intelligence?.enabled === true;
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isSandboxEnabled = features.live_sandbox?.enabled !== false;
 
   useEffect(() => {
     if (isBasic) {
@@ -180,150 +184,154 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
               />
             </div>
             
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Logic Template</label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setEditAssistant({...editAssistant, logic_template: 'standard'})}
-                  className={`flex-1 p-3 rounded-xl border font-bold text-sm transition-all ${
-                    editAssistant.logic_template === 'standard' 
-                    ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
-                    : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                  }`}
-                >
-                  Standard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditAssistant({...editAssistant, logic_template: 'custom_steps'})}
-                  className={`flex-1 p-3 rounded-xl border font-bold text-sm transition-all ${
-                    editAssistant.logic_template === 'custom_steps' 
-                    ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
-                    : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                  }`}
-                >
-                  Custom Steps
-                </button>
-              </div>
-            </div>
+            {isSuperAdmin && (
+              <>
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Logic Template</label>
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setEditAssistant({...editAssistant, logic_template: 'standard'})}
+                      className={`flex-1 p-3 rounded-xl border font-bold text-sm transition-all ${
+                        editAssistant.logic_template === 'standard' 
+                        ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
+                        : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                      }`}
+                    >
+                      Standard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditAssistant({...editAssistant, logic_template: 'custom_steps'})}
+                      className={`flex-1 p-3 rounded-xl border font-bold text-sm transition-all ${
+                        editAssistant.logic_template === 'custom_steps' 
+                        ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
+                        : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                      }`}
+                    >
+                      Custom Steps
+                    </button>
+                  </div>
+                </div>
 
-            {editAssistant.logic_template === 'custom_steps' && (
-              <div className="col-span-1 md:col-span-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Custom Steps / Instructions</label>
-                <textarea 
-                  value={editAssistant.custom_steps}
-                  onChange={e => setEditAssistant({...editAssistant, custom_steps: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all min-h-[120px] font-medium"
-                  placeholder="e.g. 1. Greet the user. 2. Ask for their pet's name..."
-                />
-              </div>
+                {editAssistant.logic_template === 'custom_steps' && (
+                  <div className="col-span-1 md:col-span-2 space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Custom Steps / Instructions</label>
+                    <textarea 
+                      value={editAssistant.custom_steps}
+                      onChange={e => setEditAssistant({...editAssistant, custom_steps: e.target.value})}
+                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all min-h-[120px] font-medium"
+                      placeholder="e.g. 1. Greet the user. 2. Ask for their pet's name..."
+                    />
+                  </div>
+                )}
+
+                {/* Smart Escalation Path */}
+                <div className="space-y-4 col-span-1 md:col-span-2 bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100 mt-4">
+                  <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Smart Escalation Chain (AI Fallback)</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.enable_honesty}
+                        onChange={e => setEditAssistant({...editAssistant, enable_honesty: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Admit Ignorance</span>
+                        <span className="text-[10px] text-gray-400">AI won't guess unknown info</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.enable_internal_alert}
+                        onChange={e => setEditAssistant({...editAssistant, enable_internal_alert: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Flag for Review</span>
+                        <span className="text-[10px] text-gray-400">Notify you via dashboard alerts</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.enable_lead_capture}
+                        onChange={e => setEditAssistant({...editAssistant, enable_lead_capture: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Take Human Message</span>
+                        <span className="text-[10px] text-gray-400">AI offers to leave a note for you</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.enable_emergency_phone}
+                        onChange={e => setEditAssistant({...editAssistant, enable_emergency_phone: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Direct Phone Fallback</span>
+                        <span className="text-[10px] text-gray-400">Give business phone as last resort</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Standard Behavioral Controls */}
+                <div className="space-y-4 col-span-1 md:col-span-2 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mt-2">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Core Controls</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.require_reason}
+                        onChange={e => setEditAssistant({...editAssistant, require_reason: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Require Reason</span>
+                        <span className="text-[10px] text-gray-400">Mandatory booking reason</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.confirm_details}
+                        onChange={e => setEditAssistant({...editAssistant, confirm_details: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Confirm Info</span>
+                        <span className="text-[10px] text-gray-400">Verify user details first</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        checked={editAssistant.strict_guardrails}
+                        onChange={e => setEditAssistant({...editAssistant, strict_guardrails: e.target.checked})}
+                        className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Guardrails</span>
+                        <span className="text-[10px] text-gray-400">Strict topic focus</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </>
             )}
-
-            {/* Smart Escalation Path */}
-            <div className="space-y-4 col-span-1 md:col-span-2 bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100 mt-4">
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Smart Escalation Chain (AI Fallback)</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.enable_honesty}
-                    onChange={e => setEditAssistant({...editAssistant, enable_honesty: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Admit Ignorance</span>
-                    <span className="text-[10px] text-gray-400">AI won't guess unknown info</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.enable_internal_alert}
-                    onChange={e => setEditAssistant({...editAssistant, enable_internal_alert: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Flag for Review</span>
-                    <span className="text-[10px] text-gray-400">Notify you via dashboard alerts</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.enable_lead_capture}
-                    onChange={e => setEditAssistant({...editAssistant, enable_lead_capture: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Take Human Message</span>
-                    <span className="text-[10px] text-gray-400">AI offers to leave a note for you</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.enable_emergency_phone}
-                    onChange={e => setEditAssistant({...editAssistant, enable_emergency_phone: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Direct Phone Fallback</span>
-                    <span className="text-[10px] text-gray-400">Give business phone as last resort</span>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Standard Behavioral Controls */}
-            <div className="space-y-4 col-span-1 md:col-span-2 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mt-2">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Core Controls</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.require_reason}
-                    onChange={e => setEditAssistant({...editAssistant, require_reason: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Require Reason</span>
-                    <span className="text-[10px] text-gray-400">Mandatory booking reason</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.confirm_details}
-                    onChange={e => setEditAssistant({...editAssistant, confirm_details: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Confirm Info</span>
-                    <span className="text-[10px] text-gray-400">Verify user details first</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox"
-                    checked={editAssistant.strict_guardrails}
-                    onChange={e => setEditAssistant({...editAssistant, strict_guardrails: e.target.checked})}
-                    className="w-5 h-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Guardrails</span>
-                    <span className="text-[10px] text-gray-400">Strict topic focus</span>
-                  </div>
-                </label>
-              </div>
-            </div>
           </div>
           <div className="flex justify-end pt-4">
             <button 
@@ -338,7 +346,8 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
         </form>
 
         {/* Sandbox */}
-        <div className="mt-12 bg-gray-50/80 rounded-[2.5rem] border border-gray-100 p-8 space-y-6">
+        {(isSandboxEnabled || isSuperAdmin) && (
+          <div className="mt-12 bg-gray-50/80 rounded-[2.5rem] border border-gray-100 p-8 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
@@ -432,6 +441,7 @@ export default function AssistantSettings({ business, token, onMessage, onDirtyC
             </div>
           </div>
         </div>
+        )}
       </section>
     </div>
   );

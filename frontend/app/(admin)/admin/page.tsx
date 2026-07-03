@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check, Package, Scissors } from 'lucide-react';
+import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check, Package, Scissors, Play } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { components } from '@/types/api';
 
@@ -57,7 +57,8 @@ export default function AdminSettingsPage() {
       crm_suite: { enabled: true },
       campaign_flow: { enabled: false },
       b2b_solutions: { enabled: false },
-      sales_intelligence: { enabled: false }
+      sales_intelligence: { enabled: false },
+      live_sandbox: { enabled: true }
     }
   });
 
@@ -166,7 +167,8 @@ export default function AdminSettingsPage() {
           b2b_solutions: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.b2b_solutions?.enabled ?? true) : false },
           sales_intelligence: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.sales_intelligence?.enabled ?? true) : false },
           services: { enabled: userForm.vertical_type === 'BASIC' ? (userForm.features_config?.services?.enabled ?? true) : false },
-          products: { enabled: userForm.features_config?.products?.enabled ?? (userForm.vertical_type === 'TRADE') }
+          products: { enabled: userForm.features_config?.products?.enabled ?? (userForm.vertical_type === 'TRADE') },
+          live_sandbox: { enabled: userForm.features_config?.live_sandbox?.enabled ?? true }
         }
       };
       
@@ -429,7 +431,8 @@ export default function AdminSettingsPage() {
                     crm_suite: { enabled: true },
                     campaign_flow: { enabled: false },
                     b2b_solutions: { enabled: false },
-                    sales_intelligence: { enabled: false }
+                    sales_intelligence: { enabled: false },
+                    live_sandbox: { enabled: true }
                   }
                 });
                 setShowUserModal(true);
@@ -501,7 +504,8 @@ export default function AdminSettingsPage() {
                               crm_suite: { enabled: true },
                               campaign_flow: { enabled: false },
                               b2b_solutions: { enabled: false },
-                              sales_intelligence: { enabled: false }
+                              sales_intelligence: { enabled: false },
+                              live_sandbox: { enabled: true }
                             }
                           });
                           setShowUserModal(true);
@@ -630,7 +634,8 @@ export default function AdminSettingsPage() {
                             crm_suite: { enabled: true },
                             campaign_flow: { enabled: false },
                             b2b_solutions: { enabled: false },
-                            sales_intelligence: { enabled: false }
+                            sales_intelligence: { enabled: false },
+                            live_sandbox: { enabled: userForm.features_config?.live_sandbox?.enabled ?? true }
                           }
                         });
                       }}
@@ -668,7 +673,8 @@ export default function AdminSettingsPage() {
                             crm_suite: { enabled: true },
                             campaign_flow: { enabled: true },
                             b2b_solutions: { enabled: true },
-                            sales_intelligence: { enabled: true }
+                            sales_intelligence: { enabled: true },
+                            live_sandbox: { enabled: userForm.features_config?.live_sandbox?.enabled ?? true }
                           }
                         });
                       }}
@@ -785,6 +791,40 @@ export default function AdminSettingsPage() {
                           <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Enable products catalog page for B2C retail listings.</p>
                         </div>
                       </div>
+
+                      {/* Live Test Sandbox Toggle */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            live_sandbox: { enabled: !(userForm.features_config?.live_sandbox?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.live_sandbox?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.live_sandbox?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Play className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Live Test Sandbox</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.live_sandbox?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.live_sandbox?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Enable simulated chat widget in assistant settings for behavior testing.</p>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 ) : (
@@ -921,6 +961,39 @@ export default function AdminSettingsPage() {
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Manage products and categories definitions catalog (quantities, prices, and unit measurements).</p>
+                        </div>
+                      </div>
+
+                      {/* Live Test Sandbox Toggle */}
+                      <div
+                        onClick={() => setUserForm({
+                          ...userForm,
+                          features_config: {
+                            ...userForm.features_config,
+                            live_sandbox: { enabled: !(userForm.features_config?.live_sandbox?.enabled ?? true) }
+                          }
+                        })}
+                        className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
+                          userForm.features_config?.live_sandbox?.enabled ?? true
+                            ? 'border-blue-200 bg-blue-50/5 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${userForm.features_config?.live_sandbox?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <Play className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700">Live Test Sandbox</span>
+                            <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              (userForm.features_config?.live_sandbox?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                            }`}>
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
+                                (userForm.features_config?.live_sandbox?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Enable simulated chat widget in assistant settings for behavior testing.</p>
                         </div>
                       </div>
 

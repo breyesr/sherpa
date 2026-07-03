@@ -149,6 +149,7 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
         {activeTab === 'assistant' && (
           <AssistantSettings 
             business={business} 
+            user={user}
             token={token} 
             onMessage={handleMessage} 
             onDirtyChange={setIsDirty}
