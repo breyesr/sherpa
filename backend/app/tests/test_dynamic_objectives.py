@@ -257,3 +257,71 @@ async def test_create_store_action_validation_gates(mock_get_business):
     assert exc_info.value.status_code == 400
     assert "Goal percentage must be between 1 and 100" in exc_info.value.detail
 
+
+@pytest.mark.anyio
+@patch("app.api.trade.get_business")
+async def test_create_store_action_from_template_resolution(mock_get_business):
+    mock_db = AsyncMock()
+    
+    mock_business = MagicMock()
+    mock_business.id = "biz_123"
+    mock_get_business.return_value = mock_business
+
+    mock_store = MagicMock(spec=Store)
+    mock_store.id = "store_456"
+    mock_store.name = "Store Name ABC"
+
+    # Mock template
+    mock_template = MagicMock(spec=ActionTemplate)
+    mock_template.id = "tpl_789"
+    mock_template.name = "Template Title"
+    mock_template.description = "Template Instructions"
+    mock_template.category = "COMMERCIAL"
+    mock_template.objective = "TRADE_LOYALTY_VOLUME_PUSHING"
+    mock_template.default_unit = "pesos"
+
+    # Mock objective
+    mock_objective = MagicMock(spec=StoreActionObjective)
+    mock_objective.id = "obj_abc"
+
+    # Mock action created/reloaded
+    mock_action = MagicMock(spec=StoreAction)
+    mock_action.id = "action_xyz"
+    mock_action.store = mock_store
+    mock_action.assigned_to = None
+    mock_action.template = mock_template
+    
+    mock_execute_res = MagicMock()
+    mock_execute_res.scalars.return_value.first.side_effect = [
+        mock_store,     # For store check
+        mock_template,  # For template lookup
+        mock_objective, # For objective validation
+        mock_action     # For action reload
+    ]
+    mock_db.execute.return_value = mock_execute_res
+
+    from app.schemas.trade import StoreActionCreate
+    action_in = StoreActionCreate(
+        store_id="store_456",
+        template_id="tpl_789",
+        category="COMMERCIAL",  # Will be overridden
+        objective="GENERAL",    # Will be overridden
+        details={"target_value": 5000.0}
+    )
+
+    res = await create_store_action(
+        action_in=action_in,
+        db=mock_db,
+        current_user=MagicMock()
+    )
+
+    # Check database add parameter values
+    added_action_dict = mock_db.add.call_args[0][0].__dict__
+    assert added_action_dict["category"] == "COMMERCIAL"
+    assert added_action_dict["objective"] == "TRADE_LOYALTY_VOLUME_PUSHING"
+    assert added_action_dict["result_unit"] == "pesos"
+    assert added_action_dict["details"]["title"] == "Template Title"
+    assert added_action_dict["details"]["description"] == "Template Instructions"
+    assert added_action_dict["details"]["target_value"] == 5000.0
+
+

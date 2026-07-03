@@ -552,7 +552,9 @@ class ActionTemplate(Base):
     name = Column(String, nullable=False)
     category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
     default_unit = Column(String, nullable=False) # e.g. "exchanges", "participants"
+    objective = Column(String, nullable=True, index=True)
     description = Column(Text, nullable=True)
+    details = Column(JSON, nullable=True, default=dict)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

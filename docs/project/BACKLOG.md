@@ -899,3 +899,35 @@ The following tasks have been removed or deprecated from active epics because of
     - *When* running `npm run build` in the frontend,
     - *Then* compilation completes successfully.
 
+## Epic 143: Reusable Strategy Library & Dispatch Desk
+**Objective**: Split the action creation flow into two decoupled operations: (1) Defining Action Blueprints (Templates) inside the Strategy Library (store-agnostic, assignee-agnostic, and due-date-agnostic), and (2) Assigning Actions (Task Deployment) by selecting a blueprint and specifying the target store, assignee, due date, and metric goal.
+
+- [x] Task 143.1: **Define Action Blueprint UI (Strategy Library)**: Create a card-based form drawer to define operational Action Templates. The form must capture: Category (Commercial/Marketing Segmented Control), Action Type (Objective name, filtered by category), Main Action (Title), Description (Guidelines), and Metric Unit. Store, Assignee, and Due Date fields must be completely excluded.
+  * **Acceptance Criteria**:
+    - *Given* a sales manager on the Strategy Library settings,
+    - *When* they click "Create Strategy Action Blueprint",
+    - *Then* they are prompted only for Category, Action Type, Title, Description, and Metric Unit.
+    - *And* saving the blueprint posts to `/api/v1/trade/action-templates`.
+
+- [x] Task 143.2: **Assign Action UI (Deployment Desk)**: Build the dispatch drawer to assign actions to reps. The form captures: Target Store, Assignee Rep, Category, Action Type, a dropdown displaying active blueprints filtered by category/type, Metric Goal, and Operational Deadline.
+  * **Acceptance Criteria**:
+    - *Given* a manager dispatching an action,
+    - *When* they select Category and Action Type,
+    - *Then* the "Select Blueprint" dropdown displays only matching action templates.
+    - *And* selecting a blueprint pre-fills Title and Description in a read-only preview state.
+    - *And* the manager must specify Store, Assignee, Goal (with unit suffix), and Due Date.
+
+- [x] Task 143.3: **Dynamic Backend Blueprint Instantiation**: Update the backend `POST /trade/actions` controller to copy the baseline properties (Title, Description, Objective, Category, Unit) from the selected `template_id` blueprint, while overriding the target store, assignee, due date, and target goal value in the database.
+  * **Acceptance Criteria**:
+    - *Given* an assignment payload with `template_id`, `store_id`, `assigned_to_id`, `target_value` (Metric Goal), and `due_date`,
+    - *When* posting to `/api/v1/trade/actions`,
+    - *Then* the backend automatically resolves and duplicates the blueprint's properties, saving the result into `store_actions` inside the `details` JSONB field.
+
+- [x] Task 143.4: **Desktop & Mobile Execution Integration**: Update the Strategy Desk action cards to display the custom title and details from the `details` JSONB column, and verify the mobile outcome resolution sheet remains fully functional.
+  * **Acceptance Criteria**:
+    - *Given* an action instantiated from a template,
+    - *When* viewed on the desktop Strategy Desk or mobile client,
+    - *Then* the action card displays the customized Title instead of the generic template category name.
+    - *And* reps can resolve it with numeric validation.
+
+

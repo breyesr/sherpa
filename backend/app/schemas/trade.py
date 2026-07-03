@@ -310,7 +310,9 @@ class ActionTemplateBase(BaseModel):
     name: str
     category: ActionCategory
     default_unit: str
+    objective: Optional[str] = None
     description: Optional[str] = None
+    details: Optional[dict] = None
 
 class ActionTemplateCreate(ActionTemplateBase):
     pass
@@ -319,7 +321,9 @@ class ActionTemplateUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[ActionCategory] = None
     default_unit: Optional[str] = None
+    objective: Optional[str] = None
     description: Optional[str] = None
+    details: Optional[dict] = None
 
 class ActionTemplateResponse(ActionTemplateBase):
     id: str

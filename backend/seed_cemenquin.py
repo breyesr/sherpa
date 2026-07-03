@@ -165,8 +165,8 @@ async def seed_data():
 
         # --- 3. SEED ACTION TEMPLATES ---
         print("Seeding Action Templates...")
-        t_comm = ActionTemplate(business_id=biz_id, name="Descuento por volumen", category=ActionCategory.COMMERCIAL, default_unit="pesos", description="Establecer descuentos y plazos de crédito especiales por compras a granel")
-        t_mkt = ActionTemplate(business_id=biz_id, name="Material Promocional y Puntos de Venta", category=ActionCategory.MARKETING, default_unit="piezas", description="Entregar lonas, gorras, folletos y playeras promocionales de Cemenquin")
+        t_comm = ActionTemplate(business_id=biz_id, name="Descuento por volumen", category=ActionCategory.COMMERCIAL, default_unit="pesos", objective="TRADE_LOYALTY_VOLUME_PUSHING", description="Establecer descuentos y plazos de crédito especiales por compras a granel")
+        t_mkt = ActionTemplate(business_id=biz_id, name="Material Promocional y Puntos de Venta", category=ActionCategory.MARKETING, default_unit="piezas", objective="POSM_MAINTENANCE_ASSET_PURITY", description="Entregar lonas, gorras, folletos y playeras promocionales de Cemenquin")
         
         db.add_all([t_comm, t_mkt])
         await db.flush()

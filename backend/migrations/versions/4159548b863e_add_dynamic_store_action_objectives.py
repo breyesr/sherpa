@@ -37,7 +37,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_store_action_objectives_id'), 'store_action_objectives', ['id'], unique=False)
     op.create_index(op.f('ix_store_action_objectives_name'), 'store_action_objectives', ['name'], unique=False)
     
-    # 2. Alter column store_actions.objective to VARCHAR
+    # 2. Add objective and details columns to action_templates table
+    op.add_column('action_templates', sa.Column('objective', sa.String(), nullable=True))
+    op.create_index(op.f('ix_action_templates_objective'), 'action_templates', ['objective'], unique=False)
+    op.add_column('action_templates', sa.Column('details', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
+    
+    # 3. Alter column store_actions.objective to VARCHAR
     op.alter_column('store_actions', 'objective',
                existing_type=postgresql.ENUM('THREAT_RESPONSE', 'ANNIVERSARY', 'REPLENISHMENT', 'NEW_PRODUCT', 'RELATIONSHIP', 'GENERAL', name='actionobjective'),
                type_=sa.String(),
@@ -84,4 +89,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_store_action_objectives_id'), table_name='store_action_objectives')
     op.drop_index(op.f('ix_store_action_objectives_category'), table_name='store_action_objectives')
     op.drop_table('store_action_objectives')
+    
+    # 3. Drop action_templates.objective and details columns and indexes
+    op.drop_index(op.f('ix_action_templates_objective'), table_name='action_templates')
+    op.drop_column('action_templates', 'objective')
+    op.drop_column('action_templates', 'details')
     # ### end Alembic commands ###

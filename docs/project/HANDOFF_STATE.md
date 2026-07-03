@@ -1,24 +1,20 @@
-# Handoff State: 2026-07-01 (Trade/Actions PM Evaluation & Epic 125 Backend Complete)
+# Handoff State: 2026-07-03 (Epic 143 - Reusable Strategy Library & Dispatch Desk Complete)
 
 ## 🎯 Current Status
-We have completed the **Product Manager scope evaluation, backlog alignment, and ticket definitions** for the new Trade/Actions flow:
-1. **MVP Scope Boundaries**:
-   - Decoupled high-complexity features (Vaul bottom-sheet offline IndexedDB write queue sync, live split-screen iframe preview on desktop, and AI-proposed Opportunity Inbox triggers) for a leaner MVP release.
-   - Identified and resolved the model schema mismatch (no `title`/`description` columns in `StoreAction`) by storing these fields in the existing `details` JSONB field.
-2. **Dynamic Strategy & Action Objectives (Epic 125 Backend Complete)**:
-   - Created the `store_action_objectives` metadata table to hold business-specific objectives.
-   - Converted `StoreAction.objective` from a static PostgreSQL Enum to a dynamic `VARCHAR(255)` string column.
-   - Dynamic Ingestion: Custom dynamic schema generator prevents LLM hallucination during WhatsApp/Telegram notes extraction.
-   - API endpoints under `/trade/objectives` and unit tests passing cleanly.
+We have completed all implementation tasks for **Epic 143: Reusable Strategy Library & Dispatch Desk**:
+1. **Model & Database Updates**: Added `details` JSON column to `ActionTemplate` database model, mapped it in migration upgrade/downgrade routines, populated defaults via seed script, and synchronized frontend API types.
+2. **Strategy Blueprint Library**: Fully refactored the template creation drawer in the Catalog settings. It now supports Category segmented control toggles, dynamically filtered Action Type/Objective selection, Default Metric Goal, and Impact Level.
+3. **Dispatch Desk (Assign Actions)**: Overhauled the action assignment drawer to require Store, Assignee Rep, Category, Objective, Metric Goal, and Deadline. It resolves matching Playbook templates, renders a read-only preview card, and pre-fills metric UOM units dynamically.
+4. **Conditional Empty-State Handlers**: Implemented a conditional amber CTA card in the Assign Action drawer. If no templates exist for the selected category/objective combo, the user can click it to close the drawer, auto-populate Category & Objective fields, and open the Template Creator instantly.
+5. **Backend Instantiation Validation**: The FastAPI `POST /trade/actions` controller successfully copies templates' core parameters (Category, Objective, Title, Description, Unit) into the new action's JSONB `details` field, merging custom targets and run-time details.
 
 ## ✅ Accomplishments
-- **Completed PM Scope & Evaluation**: Documented guardrails, aligned backlog tasks, and established Given/When/Then Gherkin scenarios for the outstanding integration tickets.
-- **Dynamic Action Objectives Backend**: Decoupled strategic objectives and synchronized generated Typescript types with the frontend with zero errors.
+- **Full Epic 143 Delivery**: Completed tasks 143.1, 143.2, 143.3, and 143.4.
+- **Verification**: All 27 backend unit tests pass cleanly, and the frontend builds successfully with zero TypeScript compilation errors.
 
 ## 🚧 Blockers & Risks
 - **None**.
 
 ## 🚀 Next Steps
-1. **Implement Ticket 1 (Action Creation Flow)**: Build the progressive desktop strategy desk form and mobile drawer interfaces, wrapping the Title and Guidelines inside the `details` JSON field.
-2. **Implement Ticket 2 (Action Outcome Resolution Drawer)**: Build the mobile bottom drawer with dynamic validation (result value and resolution notes required) to transition actions to the Completed status.
-3. **Implement Ticket 3 & 4 (Admin Management Consoles)**: Integrate CRUD interfaces under `/admin` to allow superadmins/managers to configure dynamic objectives and global action templates.
+1. **Epic 121 (Action Outcome Resolution Drawer)**: Refactor outcome feedback and validation loops (resolving numeric boundaries, attachments, notes) for mobile/desktop.
+2. **Epic 122 (Route Consolidation & Core Dashboards)**: Consolidate navigation menus, map dashboards, and link Pulse feeds.
