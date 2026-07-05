@@ -58,3 +58,39 @@
 - [ ] Task 125.4: **Admin Management Console (UI)**: Build a Superadmin control panel under `/admin` in the frontend to manage Action Objectives (create, edit, toggle active status) and templates (set global/local scope).
 - [ ] Task 125.5: **Strategy Desk Integration (UI)**: Refactor the Objective select dropdown and Template selector in the create action drawer to fetch dynamic values from the API and visually badge global templates with a "System" lock status.
 ---
+
+## Epic 153: Multi-Tenant Dedicated WhatsApp Senders & Usage Control
+**Objective**: Replace the shared Twilio Sandbox proxy with automated per-tenant dedicated WhatsApp numbers. Each business gets its own Twilio subaccount (+52 MX number), provisioned programmatically. Implement a 200-message/month free-tier usage cap with manual credit purchasing, and abstract the messaging layer for future Meta Cloud API coexistence.
+
+**Dependencies**: Epic 2 (Auth & Business Profile — completed), Epic 22 (Modular Architecture — completed).
+**Reference**: [Implementation Plan](file:///Users/bernardo/projects/sherpa/temp/multitenant-whatsapp-implementation-plan.md)
+
+### Phase 1: Foundation (DB + Encryption + Adapter Pattern)
+- [ ] Task 153.1: **Encryption Utility**: Investigate existing CRM model encryption listeners (`crm.py`). Extract or create a reusable `encrypt_value()`/`decrypt_value()` utility in `backend/app/core/encryption.py` using Fernet with `ENCRYPTION_KEY` env var.
+- [ ] Task 153.2: **JSONB Migration**: Migrate Integration model's `settings` column from `JSON` to `JSONB` to enable indexed phone number lookups. Create Alembic migration in `backend/migrations/versions/`.
+- [ ] Task 153.3: **Abstract Messaging Layer**: Create `BaseMessagingEngine` (abstract) with `send_text()`, `send_media()`, `register_webhook()` methods. Implement `TwilioSubaccountEngine` as the concrete WhatsApp adapter. Create `MessagingService` factory to resolve engines by provider type. All in `backend/app/services/messaging/`.
+- [ ] Task 153.4: **Twilio Provisioning Service**: Build automated provisioning (`create_subaccount()`, `provision_number(country="MX")`, `register_webhook()`) with exponential backoff retry (3 attempts). On failure, mark integration status as `error` and alert Superadmin. Create `POST /api/integrations/whatsapp/provision` endpoint.
+- [ ] Task 153.5: **Tenant Isolation Tests**: Write tests asserting two separate tenant credential blocks have zero data leakage across subaccounts.
+
+### Phase 2: Inbound Routing Overhaul
+- [ ] Task 153.6: **Destination-Driven Routing**: Refactor `backend/app/api/whatsapp.py` to route inbound webhooks by the `To` phone number via JSONB index lookup on `settings["phone_number"]`. Remove the shared Twilio Sandbox flow ("join flower-leaf") entirely.
+- [ ] Task 153.7: **Per-Tenant Webhook Validation**: Implement Twilio signature validation using each tenant's subaccount auth token. Return 404 for unmapped numbers without crashing.
+- [ ] Task 153.8: **LangGraph Context Binding**: Pass the resolved `business_id` from the matched integration directly into the LangGraph state machine context.
+- [ ] Task 153.9: **Routing Tests**: Mock inbound webhooks from two separate tenant phone numbers. Assert each routes to the correct business with isolated LangGraph state tracking.
+
+### Phase 3: Usage Control & Credit System
+- [ ] Task 153.10: **Redis Usage Counter**: Create `backend/app/core/limiter.py` with atomic `INCR` on key `usage:whatsapp:{biz_id}:YYYY-MM` (TTL = end of calendar month). Count ALL messages (inbound + outbound).
+- [ ] Task 153.11: **Pre-LangGraph Usage Gate**: Check `used < 200 + purchased_credits` BEFORE entering LangGraph loop. If over limit: store inbound message in DB (visible in conversations UI) but skip AI processing and outbound delivery.
+- [ ] Task 153.12: **Purchased Credits Model**: Add `purchased_credits` (integer, default 0) to `BusinessProfile` model. Resets monthly on the 1st. Create Alembic migration.
+- [ ] Task 153.13: **Usage Alerts**: At 80% (160 msgs): send in-app banner + WhatsApp notification to tenant's business number. At 100%: same + in-app alert to Superadmin. Alert messages count toward cap.
+- [ ] Task 153.14: **Admin Credit Endpoint**: Create `PATCH /admin/business/{id}/credits` for Superadmin to manually set `purchased_credits`. Also expose `GET /api/usage/{business_id}` returning `{ used, free_limit, purchased, remaining, percent_used }`.
+- [ ] Task 153.15: **Capping Tests**: Simulate 200 consecutive messages → assert 201st outbound is blocked. Verify 80% and 100% alert triggers. Verify inbound passthrough when capped.
+
+### Phase 4: Frontend Integration UI
+- [ ] Task 153.16: **WhatsApp Setup Wizard Redesign**: Replace current Sandbox wizard in `WhatsAppModal.tsx` with a multi-step configuration flow (explanation → area code preference + business display name → provisioning spinner → success with assigned number). Spanish UI.
+- [ ] Task 153.17: **Connection Status & Usage Display**: Update `IntegrationsPanel.tsx` to show assigned number, connection health, provider status, and usage indicator ("145 / 200 mensajes usados" progress bar). Red error indicator if provisioning failed.
+- [ ] Task 153.18: **Disconnect Flow**: Add disconnect confirmation modal warning that the number is released permanently. On confirm: release Twilio number + clean up integration record.
+- [ ] Task 153.19: **Admin Tenant Management**: Extend `/app/(admin)/admin/page.tsx` with tenant WhatsApp overview table (status, usage metrics) and `purchased_credits` input field.
+- [ ] Task 153.20: **Onboarding Cleanup**: Remove WhatsApp from onboarding Step 4. WhatsApp enablement is now post-onboarding via Settings → Integrations only.
+
+---
