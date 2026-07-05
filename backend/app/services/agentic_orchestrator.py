@@ -181,13 +181,42 @@ class AgenticOrchestrator:
                     last_human_idx = i
                     break
             
+            def group_by_blocks(msgs):
+                blocks = []
+                idx = 0
+                n_msgs = len(msgs)
+                while idx < n_msgs:
+                    m = msgs[idx]
+                    if hasattr(m, "tool_calls") and m.tool_calls:
+                        block = [m]
+                        idx += 1
+                        while idx < n_msgs and (isinstance(msgs[idx], ToolMessage) or getattr(msgs[idx], "type", "") == "tool"):
+                            block.append(msgs[idx])
+                            idx += 1
+                        blocks.append(block)
+                    elif isinstance(m, ToolMessage) or getattr(m, "type", "") == "tool":
+                        if blocks:
+                            blocks[-1].append(m)
+                        else:
+                            blocks.append([m])
+                        idx += 1
+                    else:
+                        blocks.append([m])
+                        idx += 1
+                return blocks
+
             if last_human_idx != -1:
                 current_turn = messages[last_human_idx:]
                 history = messages[:last_human_idx]
-                pruned_history = history[-2:] if len(history) > 2 else history
+                
+                blocks = group_by_blocks(history)
+                pruned_blocks = blocks[-2:] if len(blocks) > 2 else blocks
+                pruned_history = [msg for block in pruned_blocks for msg in block]
                 pruned_messages = pruned_history + current_turn
             else:
-                pruned_messages = messages[-4:] if len(messages) > 4 else messages
+                blocks = group_by_blocks(messages)
+                pruned_blocks = blocks[-4:] if len(blocks) > 4 else blocks
+                pruned_messages = [msg for block in pruned_blocks for msg in block]
             
             response = await llm.ainvoke([system_msg] + pruned_messages)
             logger.debug(f"Node [agent] - Responded with {len(response.tool_calls)} tool calls.")

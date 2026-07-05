@@ -12,14 +12,11 @@
   - /docs/project/PRODUCTION_STATUS.md: Current state of Railway services.
   - /docs/deployment_guide.md: Full service mapping and root directory configurations.
 
-
 ## 1. Execution & Context Hygiene (Mandatory)
 To maintain high response speeds and prevent context saturation, all agents must:
 - **Delegate Verbose Tasks**: Use invoke_agent for investigations, batch edits, or large file reviews to "compress" history.
 - **Surgical Reads**: NEVER read files >400 lines in full. Use grep_search to identify targets and read_file with start_line/end_line.
-- **Surgical Writes**: Do not replace entire large files. Use `replace_file_content` or `multi_replace_file_content` targeting the smallest possible block of modifications to avoid pushing huge file payloads back and forth.
-- **Cap Command Output**: When executing terminal commands like `npm run build` or running test suites, use output limiting (e.g., piping to `tail -20` or targeting specific test files/methods) to prevent dumping hundreds of lines of standard output into the chat history.
-- **Partition Documentation & Backlog**: Keep `docs/project/BACKLOG.md` under 400 lines by moving fully completed Epics and tasks to `docs/project/ARCHIVE_BACKLOG.md` periodically. Future agents should only read `ARCHIVE_BACKLOG.md` when researching historical task descriptions.
+- **Partition Documentation**: Move completed items from the Backlog to /docs/project/ARCHIVE_BACKLOG.md periodically.
 - **NPM/Pip Optimization**: Only read package.json or requirements.txt when strictly necessary for dependency verification.
 
 ## 2. Branching & Deployment Safety

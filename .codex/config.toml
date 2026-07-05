@@ -1,0 +1,37 @@
+[features]
+multi_agent = true
+
+[agents.default]
+description = "General-purpose helper for coordination."
+
+[agents.pm]
+description = "Scope enforcer, orchestrator, and operational scalability evaluator"
+config_file = "agents/pm.toml"
+
+[agents.backend_dev]
+description = "Python/FastAPI engineer building the core API, database layer and assessing backend scaling limits"
+config_file = "agents/backend_dev.toml"
+
+[agents.frontend_dev]
+description = "Next.js engineer building the user interface and assessing client-side performance"
+config_file = "agents/frontend_dev.toml"
+
+[agents.devops]
+description = "Infrastructure and CI/CD specialist assessing system elasticity"
+config_file = "agents/devops.toml"
+
+[agents.ai_engineer]
+description = "AI Systems Engineer"
+config_file = "agents/ai_engineer.toml"
+
+[agents.llmops_engineer]
+description = "LLMOps Reliability Engineer"
+config_file = "agents/llmops_engineer.toml"
+
+[agents.ux_ui]
+description = "User flows, wireframing, and extreme-scale UX evaluation"
+config_file = "agents/ux_ui.toml"
+
+[agents.scalemaster]
+description = "Lead architect synthesizing all scale audits into the final assessment report."
+config_file = "agents/scalemaster.toml"
