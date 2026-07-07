@@ -263,3 +263,27 @@ async def retry_dlq_entry(
         "message": f"Successfully re-dispatched task {dlq_entry.task_name} for entity {dlq_entry.entity_id}"
     }
 
+@router.patch("/businesses/{business_id}/credits")
+async def update_business_credits(
+    business_id: str,
+    payload: Dict[str, int],
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+) -> Any:
+    """Update manual purchased credits for a business (Admin only)."""
+    credits = payload.get("purchased_credits")
+    if credits is None or credits < 0:
+        raise HTTPException(status_code=400, detail="Invalid purchased_credits value.")
+        
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.id == business_id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    business.purchased_credits = credits
+    db.add(business)
+    await db.commit()
+    
+    return {"status": "success", "business_id": business_id, "purchased_credits": business.purchased_credits}
+
+

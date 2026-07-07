@@ -48,12 +48,15 @@ async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
         
     try:
         from app.services.messaging import MessagingService
+        from app.core.limiter import increment_whatsapp_usage
         engine = MessagingService.get_engine(integration)
         await engine.send_text(to_number=sender_phone, text=body)
+        await increment_whatsapp_usage(integration.business_id)
         print(f"DEBUG: Sent WhatsApp reply to {sender_phone} via MessagingService")
     except Exception as e:
         print(f"ERROR: Failed to send reply via MessagingService: {e}")
         traceback.print_exc()
+
 
 
 async def run_sales_rep_message(business_id: str, client_id: str, payload: dict):
@@ -65,6 +68,11 @@ async def run_sales_rep_message(business_id: str, client_id: str, payload: dict)
     profile_name = payload.get("ProfileName", "")
     
     async with SessionLocal() as db:
+        from app.core.limiter import process_usage_and_check_gate
+        allowed = await process_usage_and_check_gate(db, business_id, payload, client_id)
+        if not allowed:
+            return
+
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == business_id)
@@ -95,6 +103,11 @@ async def run_distributor_message(business_id: str, client_id: str, payload: dic
     profile_name = payload.get("ProfileName", "")
     
     async with SessionLocal() as db:
+        from app.core.limiter import process_usage_and_check_gate
+        allowed = await process_usage_and_check_gate(db, business_id, payload, client_id)
+        if not allowed:
+            return
+
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == business_id)
@@ -124,6 +137,11 @@ async def run_prospect_message(business_id: str, client_id: Optional[str], paylo
     text = payload.get("Body", "")
     
     async with SessionLocal() as db:
+        from app.core.limiter import process_usage_and_check_gate
+        allowed = await process_usage_and_check_gate(db, business_id, payload, client_id)
+        if not allowed:
+            return
+
         qualifier = ProspectQualifier(db)
         try:
             response_text, is_completed = await qualifier.get_response(
@@ -171,6 +189,11 @@ async def run_customer_message(business_id: str, client_id: Optional[str], paylo
     profile_name = payload.get("ProfileName", "")
     
     async with SessionLocal() as db:
+        from app.core.limiter import process_usage_and_check_gate
+        allowed = await process_usage_and_check_gate(db, business_id, payload, client_id)
+        if not allowed:
+            return
+
         result = await db.execute(
             select(BusinessProfile)
             .where(BusinessProfile.id == business_id)
@@ -195,6 +218,7 @@ async def run_customer_message(business_id: str, client_id: Optional[str], paylo
             response_text = "Error interno procesando mensaje de cliente."
             
         await send_twilio_reply(db, to_phone, sender_phone, response_text)
+
 
 @celery_app.task(bind=True, name="process_customer_message", max_retries=3, default_retry_delay=5)
 def process_customer_message(self, business_id: str, client_id: Optional[str], payload: dict):

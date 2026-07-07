@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Enum
+from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Enum, Integer
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -32,6 +32,9 @@ class BusinessProfile(Base):
 
     # Modular Features Configuration (Epic 128)
     features_config = Column(JSON, nullable=True, default=dict)
+    
+    # Dedicated WhatsApp limits
+    purchased_credits = Column(Integer, default=0, nullable=False, server_default="0")
 
     user = relationship("User", back_populates="business_profile")
     agents = relationship("Agent", back_populates="business_profile", cascade="all, delete-orphan")

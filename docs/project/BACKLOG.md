@@ -81,12 +81,12 @@
 
 
 ### Phase 3: Usage Control & Credit System
-- [ ] Task 153.10: **Redis Usage Counter**: Create `backend/app/core/limiter.py` with atomic `INCR` on key `usage:whatsapp:{biz_id}:YYYY-MM` (TTL = end of calendar month). Count ALL messages (inbound + outbound).
-- [ ] Task 153.11: **Pre-LangGraph Usage Gate**: Check `used < 200 + purchased_credits` BEFORE entering LangGraph loop. If over limit: store inbound message in DB (visible in conversations UI) but skip AI processing and outbound delivery.
-- [ ] Task 153.12: **Purchased Credits Model**: Add `purchased_credits` (integer, default 0) to `BusinessProfile` model. Resets monthly on the 1st. Create Alembic migration.
-- [ ] Task 153.13: **Usage Alerts**: At 80% (160 msgs): send in-app banner + WhatsApp notification to tenant's business number. At 100%: same + in-app alert to Superadmin. Alert messages count toward cap.
-- [ ] Task 153.14: **Admin Credit Endpoint**: Create `PATCH /admin/business/{id}/credits` for Superadmin to manually set `purchased_credits`. Also expose `GET /api/usage/{business_id}` returning `{ used, free_limit, purchased, remaining, percent_used }`.
-- [ ] Task 153.15: **Capping Tests**: Simulate 200 consecutive messages → assert 201st outbound is blocked. Verify 80% and 100% alert triggers. Verify inbound passthrough when capped.
+- [x] Task 153.10: **Redis Usage Counter**: Create `backend/app/core/limiter.py` with atomic `INCR` on key `usage:whatsapp:{biz_id}:YYYY-MM` (TTL = end of calendar month). Count ALL messages (inbound + outbound).
+- [x] Task 153.11: **Pre-LangGraph Usage Gate**: Check `used < 200 + purchased_credits` BEFORE entering LangGraph loop. If over limit: store inbound message in DB (visible in conversations UI) but skip AI processing and outbound delivery.
+- [x] Task 153.12: **Purchased Credits Model**: Add `purchased_credits` (integer, default 0) to `BusinessProfile` model. Resets monthly on the 1st. Create Alembic migration.
+- [x] Task 153.13: **Usage Alerts**: At 80% (160 msgs): send in-app banner + WhatsApp notification to tenant's business number. At 100%: same + in-app alert to Superadmin. Alert messages count toward cap.
+- [x] Task 153.14: **Admin Credit Endpoint**: Create `PATCH /admin/business/{id}/credits` for Superadmin to manually set `purchased_credits`. Also expose `GET /api/usage/{business_id}` returning `{ used, free_limit, purchased, remaining, percent_used }`.
+- [x] Task 153.15: **Capping Tests**: Simulate 200 consecutive messages → assert 201st outbound is blocked. Verify 80% and 100% alert triggers. Verify inbound passthrough when capped.
 
 ### Phase 4: Frontend Integration UI
 - [ ] Task 153.16: **WhatsApp Setup Wizard Redesign**: Replace current Sandbox wizard in `WhatsAppModal.tsx` with a multi-step configuration flow (explanation → area code preference + business display name → provisioning spinner → success with assigned number). Spanish UI.

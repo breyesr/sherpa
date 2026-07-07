@@ -279,3 +279,39 @@ async def disconnect_integration(
     
     await db.commit()
     return {"status": "disconnected"}
+
+@router.get("/whatsapp/usage/{business_id}")
+async def get_whatsapp_usage_endpoint(
+    business_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Get monthly message usage statistics for WhatsApp integration."""
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.id == business_id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+        
+    if business.user_id != current_user.id and current_user.role not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to access usage data for this business.")
+        
+    from app.core.limiter import get_whatsapp_usage
+    used = await get_whatsapp_usage(business_id)
+    free_limit = 200
+    purchased = business.purchased_credits
+    total_limit = free_limit + purchased
+    remaining = max(total_limit - used, 0)
+    percent_used = min(float(used) / float(total_limit) * 100.0 if total_limit > 0 else 0.0, 100.0)
+    
+    return {
+        "used": used,
+        "free_limit": free_limit,
+        "purchased": purchased,
+        "total_limit": total_limit,
+        "remaining": remaining,
+        "percent_used": round(percent_used, 1)
+    }
+

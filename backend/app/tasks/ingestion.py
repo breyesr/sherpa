@@ -39,6 +39,11 @@ async def run_prospect_qualification(business_id: str, payload: dict):
     normalized_to = clean_num(to_phone)
     
     async with SessionLocal() as db:
+        from app.core.limiter import process_usage_and_check_gate
+        allowed = await process_usage_and_check_gate(db, business_id, payload, client_id=None)
+        if not allowed:
+            return {"status": "capped_blocked", "is_completed": False}
+
         # Resolve Integration
         result = await db.execute(
             select(Integration)
@@ -71,11 +76,14 @@ async def run_prospect_qualification(business_id: str, payload: dict):
             try:
                 engine = MessagingService.get_engine(integration)
                 await engine.send_text(to_number=sender_phone, text=response_text)
+                from app.core.limiter import increment_whatsapp_usage
+                await increment_whatsapp_usage(integration.business_id)
                 print(f"DEBUG: Sent WhatsApp prospect campaign reply to {sender_phone} via MessagingService")
             except Exception as e:
                 print(f"ERROR: Failed to send prospect reply via MessagingService: {e}")
         else:
             print("ERROR: Integration or response text not available. Cannot send async reply.")
+
             
     return {"status": "success", "is_completed": is_completed}
 

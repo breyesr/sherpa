@@ -16,10 +16,18 @@
    - **Task 153.7 (Per-Tenant Webhook Validation)**: Updated request validation in `api/whatsapp.py` to dynamically load and decrypt the matching subaccount's auth token for signature verification. Implemented clean `404` error handling for unmapped numbers.
    - **Task 153.8 (LangGraph Context Binding)**: Refactored Celery outgoing message queues in `tasks/messages.py` and `tasks/ingestion.py` to decouple from hardcoded Twilio client libraries, routing all outgoing messages through `MessagingService` resolved by the matching business integration.
    - **Task 153.9 (Routing Tests)**: Created [test_inbound_routing.py](file:///Users/bernardo/projects/sherpa/backend/app/tests/test_inbound_routing.py) asserting destination-driven routing, multi-tenant isolation, and clean `404` status outputs.
-   - All 42 project tests pass successfully (`pytest` passed 100%).
+
+3. **Multi-Tenant WhatsApp Senders Phase 3 Complete (Epic 153)**:
+   - **Task 153.10 (Redis Usage Counter)**: Extended `app/core/limiter.py` with atomic monthly usage counters in Redis, implementing automatic end-of-month key TTLs. Tracked all inbound and outbound WhatsApp communications.
+   - **Task 153.11 (Pre-LangGraph Usage Gate)**: Implemented usage gating within all Celery processing task routes, blocking outbound execution and storing the raw inbound user message in the DB (conversations UI) when over limit.
+   - **Task 153.12 (Purchased Credits Model)**: Added `purchased_credits` field to `BusinessProfile` database model and generated/ran Alembic migration revision `7d558932e49c` locally.
+   - **Task 153.13 (Usage Alerts)**: Added dynamic 80% (warning notification + in-app flag) and 100% (hard cap block alert + superadmin notification log entry) triggers with monthly deduplication flags in Redis.
+   - **Task 153.14 (Admin Credit Endpoint)**: Exposed `PATCH /api/v1/admin/businesses/{id}/credits` for manual credit upgrades and `GET /api/v1/integrations/whatsapp/usage/{id}` returning consumption profiles.
+   - **Task 153.15 (Capping Tests)**: Created [test_capping.py](file:///Users/bernardo/projects/sherpa/backend/app/tests/test_capping.py) covering atomic increments, alert thresholds, gating, and usage/admin API endpoints.
+   - All 47 project tests pass successfully (`pytest` passed 100%).
 
 ## Active Backlog State
-- **Epic 153 (Multi-Tenant WhatsApp)**: Phases 1 and 2 complete (`[x] 153.1 - 153.9`). Phases 3-4 pending.
+- **Epic 153 (Multi-Tenant WhatsApp)**: Phases 1, 2, and 3 complete (`[x] 153.1 - 153.15`). Phase 4 pending.
 - **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED (Admin console for objectives, strategy library dropdown integration).
 - **Epic 108, Tasks 108.4–108.6**: Pending (Dashboard API, Opportunity Inbox, Anniversary Trigger).
 - **Epic 113**: Pending (Relational Graph-Enriched RAG).
@@ -28,7 +36,8 @@
 - None.
 
 ## Next Steps
-- Begin **Phase 3 (Usage Control & Credit System)**: Implement Redis usage counters (Task 153.10) and pre-LangGraph usage gates (Task 153.11).
+- Begin **Phase 4 (Frontend Integration UI)**: Redesign `WhatsAppModal.tsx` as a multi-step Spanish setup wizard, connect provisioning endpoint, display real-time usage indicators in Settings, and enable disconnecting/releasing numbers.
+
 
 
 
