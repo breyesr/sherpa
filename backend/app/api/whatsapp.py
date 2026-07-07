@@ -168,16 +168,59 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
     try:
         form_data = await request.form()
         payload = dict(form_data)
-        
         raw_sender = payload.get("From", "")
         raw_to = payload.get("To", "")
         text = payload.get("Body")
         profile_name = payload.get("ProfileName")
 
-        # Validate Twilio request signature
-        signature = request.headers.get("X-Twilio-Signature")
-        auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
+        import re
+        def clean_num(n: str): return re.sub(r"\D", "", n)
         
+        sender_phone = clean_num(raw_sender)
+        to_phone = clean_num(raw_to)
+
+        print(f"DEBUG: Normalized To={to_phone}, From={sender_phone}, Text='{text}'")
+
+        if not text:
+            return Response(content="<Response></Response>", media_type="text/xml")
+
+        # 1. Find integration matching the destination phone number
+        result = await db.execute(
+            select(Integration).where(Integration.provider == 'whatsapp')
+        )
+        all_wa = result.scalars().all()
+        
+        integration = None
+        for i in all_wa:
+            int_phone = i.settings.get("phone_number", "") or i.settings.get("twilio_from_number", "")
+            if int_phone:
+                int_clean = clean_num(int_phone)
+                if int_clean == to_phone:
+                    integration = i
+                    break
+                    
+        # Sandbox Fallback for local testing / platform config
+        if not integration:
+            master_number_raw = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
+            master_number = clean_num(master_number_raw or "")
+            if to_phone == master_number and all_wa:
+                print("DEBUG: Using Sandbox fallback")
+                integration = all_wa[0]
+
+        if not integration:
+            print(f"ERROR: Routing failed. Could not find business for number: {to_phone}")
+            return Response(content="Sender registration unmapped.", status_code=404)
+
+        # 2. Resolve credentials & validate Twilio request signature
+        signature = request.headers.get("X-Twilio-Signature")
+        
+        provider_type = integration.settings.get("provider_type", "twilio_subaccount")
+        if provider_type == "twilio_subaccount":
+            from app.core.encryption import decrypt_value
+            auth_token = decrypt_value(integration.settings.get("auth_token_encrypted"))
+        else:
+            auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
+            
         import os
         is_testing = os.getenv("TESTING") == "true" or "sandbox" in raw_sender.lower()
         if auth_token and signature and not is_testing:
@@ -191,38 +234,6 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
             if not validator.validate(url, payload, signature):
                 print(f"WARNING: Invalid Twilio request signature validation failed! URL={url}")
                 return Response(content="Forbidden: Invalid Signature", status_code=403)
-
-        import re
-        def clean_num(n: str): return re.sub(r"\D", "", n)
-        
-        sender_phone = clean_num(raw_sender)
-        to_phone = clean_num(raw_to)
-
-        print(f"DEBUG: Normalized To={to_phone}, From={sender_phone}, Text='{text}'")
-
-        if not text:
-            return Response(content="<Response></Response>", media_type="text/xml")
-
-        # 1. Find integration
-        result = await db.execute(
-            select(Integration).where(Integration.provider == 'whatsapp')
-        )
-        all_wa = result.scalars().all()
-        
-        integration = next((i for i in all_wa if clean_num(i.settings.get("twilio_from_number", "")) == to_phone), None)
-        
-        # Sandbox Fallback
-        master_number_raw = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
-        master_number = clean_num(master_number_raw or "")
-        
-        if not integration and to_phone == master_number:
-            print("DEBUG: Using Sandbox fallback")
-            if len(all_wa) > 0:
-                integration = all_wa[0]
-
-        if not integration:
-            print(f"ERROR: Routing failed. Could not find business for number: {to_phone}")
-            return Response(content="<Response></Response>", media_type="text/xml")
 
         # 2. Fetch Business
         result = await db.execute(
@@ -371,9 +382,15 @@ async def get_whatsapp_status(
         return {"status": "pending_verification", "error_message": "Configure un número de WhatsApp en la configuración de la integración."}
         
     # Active Connection Health Check
-    account_sid = await ConfigService.get(db, "TWILIO_ACCOUNT_SID", settings.TWILIO_ACCOUNT_SID)
-    auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
-    
+    provider_type = settings_dict.get("provider_type", "twilio_subaccount")
+    if provider_type == "twilio_subaccount":
+        account_sid = settings_dict.get("subaccount_sid")
+        from app.core.encryption import decrypt_value
+        auth_token = decrypt_value(settings_dict.get("auth_token_encrypted"))
+    else:
+        account_sid = await ConfigService.get(db, "TWILIO_ACCOUNT_SID", settings.TWILIO_ACCOUNT_SID)
+        auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
+        
     if not account_sid or not auth_token:
         return {
             "status": "error",

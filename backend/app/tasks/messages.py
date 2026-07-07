@@ -14,24 +14,47 @@ def clean_num(n: str):
     return re.sub(r"\D", "", n)
 
 async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
-    from app.core.system_config import ConfigService
-    account_sid = await ConfigService.get(db, "TWILIO_ACCOUNT_SID", settings.TWILIO_ACCOUNT_SID)
-    auth_token = await ConfigService.get(db, "TWILIO_AUTH_TOKEN", settings.TWILIO_AUTH_TOKEN)
-    if not account_sid or not auth_token:
-        print("ERROR: Twilio credentials not configured in database or settings. Cannot send async reply.")
+    if not body:
         return
         
-    client = Client(account_sid, auth_token)
-    from_wa = to_phone if to_phone.startswith("whatsapp:") else f"whatsapp:{to_phone}"
-    to_wa = sender_phone if sender_phone.startswith("whatsapp:") else f"whatsapp:{sender_phone}"
+    from app.models.integration import Integration
+    clean_to = clean_num(to_phone)
     
-    if body:
-        client.messages.create(
-            body=body,
-            from_=from_wa,
-            to=to_wa
-        )
-        print(f"DEBUG: Sent WhatsApp reply to {to_wa} from {from_wa}")
+    # 1. Find integration by phone number
+    result = await db.execute(
+        select(Integration).where(Integration.provider == "whatsapp")
+    )
+    all_wa = result.scalars().all()
+    
+    integration = None
+    for i in all_wa:
+        int_phone = i.settings.get("phone_number", "") or i.settings.get("twilio_from_number", "")
+        if int_phone:
+            int_clean = re.sub(r"\D", "", int_phone)
+            if int_clean == clean_to:
+                integration = i
+                break
+                
+    # Sandbox Fallback for local testing / platform config
+    if not integration:
+        master_number_raw = settings.TWILIO_WHATSAPP_NUMBER
+        master_number = clean_num(master_number_raw or "")
+        if clean_to == master_number and all_wa:
+            integration = all_wa[0]
+            
+    if not integration:
+        print(f"ERROR: send_twilio_reply failed. No integration found for number: {to_phone}")
+        return
+        
+    try:
+        from app.services.messaging import MessagingService
+        engine = MessagingService.get_engine(integration)
+        await engine.send_text(to_number=sender_phone, text=body)
+        print(f"DEBUG: Sent WhatsApp reply to {sender_phone} via MessagingService")
+    except Exception as e:
+        print(f"ERROR: Failed to send reply via MessagingService: {e}")
+        traceback.print_exc()
+
 
 async def run_sales_rep_message(business_id: str, client_id: str, payload: dict):
     from app.core.ai_service import AIService

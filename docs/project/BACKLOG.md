@@ -74,10 +74,11 @@
 
 
 ### Phase 2: Inbound Routing Overhaul
-- [ ] Task 153.6: **Destination-Driven Routing**: Refactor `backend/app/api/whatsapp.py` to route inbound webhooks by the `To` phone number via JSONB index lookup on `settings["phone_number"]`. Remove the shared Twilio Sandbox flow ("join flower-leaf") entirely.
-- [ ] Task 153.7: **Per-Tenant Webhook Validation**: Implement Twilio signature validation using each tenant's subaccount auth token. Return 404 for unmapped numbers without crashing.
-- [ ] Task 153.8: **LangGraph Context Binding**: Pass the resolved `business_id` from the matched integration directly into the LangGraph state machine context.
-- [ ] Task 153.9: **Routing Tests**: Mock inbound webhooks from two separate tenant phone numbers. Assert each routes to the correct business with isolated LangGraph state tracking.
+- [x] Task 153.6: **Destination-Driven Routing**: Refactor `backend/app/api/whatsapp.py` to route inbound webhooks by the `To` phone number via JSONB index lookup on `settings["phone_number"]`. Remove the shared Twilio Sandbox flow ("join flower-leaf") entirely.
+- [x] Task 153.7: **Per-Tenant Webhook Validation**: Implement Twilio signature validation using each tenant's subaccount auth token. Return 404 for unmapped numbers without crashing.
+- [x] Task 153.8: **LangGraph Context Binding**: Pass the resolved `business_id` from the matched integration directly into the LangGraph state machine context.
+- [x] Task 153.9: **Routing Tests**: Mock inbound webhooks from two separate tenant phone numbers. Assert each routes to the correct business with isolated LangGraph state tracking.
+
 
 ### Phase 3: Usage Control & Credit System
 - [ ] Task 153.10: **Redis Usage Counter**: Create `backend/app/core/limiter.py` with atomic `INCR` on key `usage:whatsapp:{biz_id}:YYYY-MM` (TTL = end of calendar month). Count ALL messages (inbound + outbound).
