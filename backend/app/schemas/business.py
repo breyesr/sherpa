@@ -96,6 +96,8 @@ class BusinessProfileResponse(BusinessProfileBase):
     agents: List[AgentResponse] = []
     assistant_config: Optional[AgentResponse] = None # Support backward compatibility property
     integrations: List[IntegrationResponse] = []
+    purchased_credits: int = 0
 
     class Config:
         from_attributes = True
+

@@ -65,6 +65,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [creditEdits, setCreditEdits] = useState<Record<string, number>>({});
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -229,6 +230,29 @@ export default function AdminSettingsPage() {
       console.error(err);
     }
   };
+
+  const handleSaveCredits = async (businessId: string, credits: number) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/businesses/${businessId}/credits`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ purchased_credits: credits })
+      });
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Credits updated successfully.' });
+        fetchUsers();
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || 'Failed to update credits.');
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  };
+
 
   if (loading) return <div className="p-8 text-center animate-pulse text-gray-500 font-bold text-xl h-screen flex items-center justify-center">Authenticating Admin...</div>;
 
@@ -452,6 +476,7 @@ export default function AdminSettingsPage() {
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Business / Vertical</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Role</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">WhatsApp Credits</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
@@ -487,6 +512,31 @@ export default function AdminSettingsPage() {
                     <td className="px-6 py-4">
                       <span className={`w-3 h-3 rounded-full inline-block mr-2 ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
                       <span className="text-sm font-medium">{user.is_active ? 'Active' : 'Inactive'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.business_profile ? (
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="number"
+                            min={0}
+                            className="w-20 p-1.5 border border-gray-200 rounded-lg text-sm font-bold text-center bg-gray-50 focus:bg-white outline-none"
+                            value={creditEdits[user.business_profile.id] !== undefined ? creditEdits[user.business_profile.id] : (user.business_profile.purchased_credits || 0)}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 0;
+                              setCreditEdits(prev => ({ ...prev, [user.business_profile!.id]: val }));
+                            }}
+                          />
+                          <button
+                            onClick={() => handleSaveCredits(user.business_profile!.id, creditEdits[user.business_profile!.id] ?? user.business_profile!.purchased_credits ?? 0)}
+                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                            title="Guardar créditos"
+                          >
+                            <Save size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">N/A</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button

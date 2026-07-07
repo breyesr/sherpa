@@ -195,13 +195,12 @@ export default function OnboardingPage() {
         );
       case 2:
       case 3:
-      case 4:
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <h2 className="text-2xl font-extrabold text-gray-900">
-                  {step === 2 ? 'Customize your AI' : step === 3 ? 'Sync Calendar' : 'Connect WhatsApp'}
+                  {step === 2 ? 'Customize your AI' : 'Sync Calendar'}
                 </h2>
                 <p className="text-gray-500 text-sm font-medium">
                   {step === 2 ? 'Define how your assistant speaks to clients.' : 'Check availability automatically.'}
@@ -215,7 +214,7 @@ export default function OnboardingPage() {
               </button>
             </div>
             
-            {/* Step-specific content (Assistant, Google, WhatsApp) */}
+            {/* Step-specific content (Assistant, Google) */}
             <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 border-dashed">
               {step === 2 && (
                 <div className="space-y-4">
@@ -236,11 +235,6 @@ export default function OnboardingPage() {
                    </button>
                 </div>
               )}
-              {step === 4 && (
-                <div className="text-center py-4 text-gray-400 text-sm italic">
-                   Integration coming soon. You can skip this step.
-                </div>
-              )}
             </div>
 
             <div className="p-4 bg-blue-50 rounded-2xl flex gap-3 items-center">
@@ -251,7 +245,7 @@ export default function OnboardingPage() {
             </div>
           </div>
         );
-      case 5:
+      case 4:
         return (
           <div className="space-y-6 text-center">
             <div className="space-y-2">
@@ -279,7 +273,7 @@ export default function OnboardingPage() {
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
           <div 
             className="h-full bg-blue-600 transition-all duration-500 ease-out"
-            style={{ width: `${(step / 5) * 100}%` }}
+            style={{ width: `${(step / 4) * 100}%` }}
           />
         </div>
 
@@ -302,7 +296,7 @@ export default function OnboardingPage() {
             Go Back
           </button>
           
-          {step < 5 ? (
+          {step < 4 ? (
             <button
               onClick={handleNext}
               disabled={step === 1 && !isStep1Complete}

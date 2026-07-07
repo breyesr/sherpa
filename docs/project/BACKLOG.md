@@ -89,10 +89,10 @@
 - [x] Task 153.15: **Capping Tests**: Simulate 200 consecutive messages → assert 201st outbound is blocked. Verify 80% and 100% alert triggers. Verify inbound passthrough when capped.
 
 ### Phase 4: Frontend Integration UI
-- [ ] Task 153.16: **WhatsApp Setup Wizard Redesign**: Replace current Sandbox wizard in `WhatsAppModal.tsx` with a multi-step configuration flow (explanation → area code preference + business display name → provisioning spinner → success with assigned number). Spanish UI.
-- [ ] Task 153.17: **Connection Status & Usage Display**: Update `IntegrationsPanel.tsx` to show assigned number, connection health, provider status, and usage indicator ("145 / 200 mensajes usados" progress bar). Red error indicator if provisioning failed.
-- [ ] Task 153.18: **Disconnect Flow**: Add disconnect confirmation modal warning that the number is released permanently. On confirm: release Twilio number + clean up integration record.
-- [ ] Task 153.19: **Admin Tenant Management**: Extend `/app/(admin)/admin/page.tsx` with tenant WhatsApp overview table (status, usage metrics) and `purchased_credits` input field.
-- [ ] Task 153.20: **Onboarding Cleanup**: Remove WhatsApp from onboarding Step 4. WhatsApp enablement is now post-onboarding via Settings → Integrations only.
+- [x] Task 153.16: **WhatsApp Setup Wizard Redesign**: Replace current Sandbox wizard in `WhatsAppModal.tsx` with a multi-step configuration flow (explanation → area code preference + business display name → provisioning spinner → success with assigned number). Spanish UI.
+- [x] Task 153.17: **Connection Status & Usage Display**: Update `IntegrationsPanel.tsx` to show assigned number, connection health, provider status, and usage indicator ("145 / 200 mensajes usados" progress bar). Red error indicator if provisioning failed.
+- [x] Task 153.18: **Disconnect Flow**: Add disconnect confirmation modal warning that the number is released permanently. On confirm: release Twilio number + clean up integration record.
+- [x] Task 153.19: **Admin Tenant Management**: Extend `/app/(admin)/admin/page.tsx` with tenant WhatsApp overview table (status, usage metrics) and `purchased_credits` input field.
+- [x] Task 153.20: **Onboarding Cleanup**: Remove WhatsApp from onboarding Step 4. WhatsApp enablement is now post-onboarding via Settings → Integrations only.
 
 ---

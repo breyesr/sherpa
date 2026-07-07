@@ -24,10 +24,16 @@
    - **Task 153.13 (Usage Alerts)**: Added dynamic 80% (warning notification + in-app flag) and 100% (hard cap block alert + superadmin notification log entry) triggers with monthly deduplication flags in Redis.
    - **Task 153.14 (Admin Credit Endpoint)**: Exposed `PATCH /api/v1/admin/businesses/{id}/credits` for manual credit upgrades and `GET /api/v1/integrations/whatsapp/usage/{id}` returning consumption profiles.
    - **Task 153.15 (Capping Tests)**: Created [test_capping.py](file:///Users/bernardo/projects/sherpa/backend/app/tests/test_capping.py) covering atomic increments, alert thresholds, gating, and usage/admin API endpoints.
-   - All 47 project tests pass successfully (`pytest` passed 100%).
+
+4. **Multi-Tenant WhatsApp Senders Phase 4 Complete (Epic 153)**:
+   - **Task 153.16 (WhatsApp Setup Wizard Redesign)**: Redesigned the setup wizard modal `WhatsAppModal.tsx` as a multi-step Spanish provisioning flow (Intro -> Lada / Friendly name preferences -> Provisioning spinner with `POST /api/v1/integrations/whatsapp/provision` -> Success showing dedicated number).
+   - **Task 153.17 (Connection Status & Usage Display)**: Updated `IntegrationsPanel.tsx` to retrieve consumption and credit usage profiles dynamically from `GET /api/v1/integrations/whatsapp/usage/{business_id}` and render progress bars with corresponding warning alerts for thresholds >= 80% and >= 100%.
+   - **Task 153.18 (Disconnect & Release Handler)**: Added twilio resource releasing helper `release_whatsapp_sender` to disconnect routes and cleaned up database mappings.
+   - **Task 153.19 (Admin Credit Dashboard)**: Extended `/admin` view with a Credit allocation input column and Save action trigger matching schema updates synced using `npm run gen:api`.
+   - **Task 153.20 (Onboarding Clean Up)**: Removed the placeholder step from the first-time onboarding wizard, moving it fully post-onboarding inside settings integrations.
 
 ## Active Backlog State
-- **Epic 153 (Multi-Tenant WhatsApp)**: Phases 1, 2, and 3 complete (`[x] 153.1 - 153.15`). Phase 4 pending.
+- **Epic 153 (Multi-Tenant WhatsApp)**: All Phases complete (`[x] 153.1 - 153.20`).
 - **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED (Admin console for objectives, strategy library dropdown integration).
 - **Epic 108, Tasks 108.4–108.6**: Pending (Dashboard API, Opportunity Inbox, Anniversary Trigger).
 - **Epic 113**: Pending (Relational Graph-Enriched RAG).
@@ -36,8 +42,5 @@
 - None.
 
 ## Next Steps
-- Begin **Phase 4 (Frontend Integration UI)**: Redesign `WhatsAppModal.tsx` as a multi-step Spanish setup wizard, connect provisioning endpoint, display real-time usage indicators in Settings, and enable disconnecting/releasing numbers.
-
-
-
-
+- Coordinate human verification and validation tests of the final React frontend flows.
+- Plan release and preparation for epic closures.

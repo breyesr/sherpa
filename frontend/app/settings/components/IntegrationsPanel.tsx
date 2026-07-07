@@ -28,11 +28,20 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
     twilio_from_number?: string;
     error_message?: string;
   }>({ status: 'loading' });
+  const [whatsappUsage, setWhatsappUsage] = useState<{
+    used: number;
+    free_limit: number;
+    purchased: number;
+    total_limit: number;
+    remaining: number;
+    percent_used: number;
+  } | null>(null);
 
   const fetchWhatsAppStatus = async () => {
     const waIntegration = (business?.integrations as any[])?.find((i: any) => i.provider === 'whatsapp');
     if (!waIntegration) {
       setWhatsappStatus({ status: 'disconnected' });
+      setWhatsappUsage(null);
       return;
     }
     try {
@@ -50,9 +59,30 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
     }
   };
 
+  const fetchWhatsAppUsage = async () => {
+    const waIntegration = (business?.integrations as any[])?.find((i: any) => i.provider === 'whatsapp');
+    if (!waIntegration) {
+      setWhatsappUsage(null);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/integrations/whatsapp/usage/${business.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWhatsappUsage(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch WhatsApp usage', err);
+    }
+  };
+
   useEffect(() => {
     fetchWhatsAppStatus();
-  }, [business?.integrations]);
+    fetchWhatsAppUsage();
+  }, [business?.integrations, business?.id]);
+
 
   const handleGoogleConnect = async () => {
     try {
@@ -211,75 +241,108 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
           </div>
 
           {/* WhatsApp */}
-          <div className="flex flex-col md:flex-row md:items-start justify-between p-6 bg-gray-50/50 rounded-2xl border border-gray-100 gap-4">
-            <div className="flex items-center gap-5">
-              <div className={`w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center ${isWhatsAppConnected ? 'text-green-500' : 'text-gray-400'}`}>
-                <MessageSquare size={28} />
+          <div className="flex flex-col p-6 bg-gray-50/50 rounded-2xl border border-gray-100 gap-4">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="flex items-center gap-5">
+                <div className={`w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center ${isWhatsAppConnected ? 'text-green-500' : 'text-gray-400'}`}>
+                  <MessageSquare size={28} />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="font-bold text-lg text-gray-900">WhatsApp Business</p>
+                  <p className="text-sm text-gray-500">
+                    {isWhatsAppConnected 
+                      ? 'Línea dedicada exclusiva conectada.' 
+                      : 'Automatiza mensajes con tus clientes usando una línea dedicada (+52).'}
+                  </p>
+                  {whatsappStatus.status === 'error' && whatsappStatus.error_message && (
+                    <div className="flex items-center gap-2 text-red-600 text-xs font-semibold bg-red-50 px-3.5 py-2 rounded-xl border border-red-100 shadow-sm w-fit mt-1">
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span>{whatsappStatus.error_message}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <p className="font-bold text-lg text-gray-900">WhatsApp Business</p>
-                <p className="text-sm text-gray-500">
-                  {isWhatsAppConnected 
-                    ? `Connected via ${whatsappProvider}` 
-                    : 'Automate client messaging via Twilio or Meta API.'}
-                </p>
-                {whatsappStatus.status === 'error' && whatsappStatus.error_message && (
-                  <div className="flex items-center gap-2 text-red-600 text-xs font-semibold bg-red-50 px-3.5 py-2 rounded-xl border border-red-100 shadow-sm w-fit mt-1">
-                    <AlertCircle size={14} className="shrink-0" />
-                    <span>{whatsappStatus.error_message}</span>
+              <div className="flex items-center gap-3 self-center md:self-start">
+                {whatsappStatus.status === 'loading' ? (
+                  <span className="flex items-center gap-1.5 text-gray-400 font-bold text-sm bg-gray-100 px-4 py-2 rounded-xl border border-gray-200">
+                    <Loader2 size={16} className="animate-spin" />
+                    Checking...
+                  </span>
+                ) : isWhatsAppConnected ? (
+                  <div className="flex items-center gap-3">
+                    {(whatsappIntegration?.settings?.phone_number || whatsappIntegration?.settings?.twilio_from_number) && (
+                      <div className="text-right mr-2">
+                        <p className="text-sm font-bold text-gray-900">
+                          +{ (whatsappIntegration.settings.phone_number || whatsappIntegration.settings.twilio_from_number).replace(/\D/g, '') }
+                        </p>
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Activo</p>
+                      </div>
+                    )}
+                    {whatsappStatus.status === 'connected' && (
+                      <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
+                        <CheckCircle2 size={16} />
+                        Conectado
+                      </span>
+                    )}
+                    {whatsappStatus.status === 'pending_verification' && (
+                      <span className="flex items-center gap-1.5 text-amber-600 font-bold text-sm bg-amber-50 px-4 py-2 rounded-xl border border-amber-100">
+                        <AlertTriangle size={16} />
+                        Pendiente
+                      </span>
+                    )}
+                    {whatsappStatus.status === 'error' && (
+                      <span className="flex items-center gap-1.5 text-red-600 font-bold text-sm bg-red-50 px-4 py-2 rounded-xl border border-red-100">
+                        <AlertCircle size={16} />
+                        Error de Conexión
+                      </span>
+                    )}
+                    <button 
+                      onClick={() => handleDisconnect('whatsapp')}
+                      disabled={isDisconnecting}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={20} />
+                    </button>
                   </div>
+                ) : (
+                  <button 
+                    onClick={() => setIsWhatsAppModalOpen(true)}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md"
+                  >
+                    Conectar WhatsApp
+                  </button>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3 self-center">
-              {whatsappStatus.status === 'loading' ? (
-                <span className="flex items-center gap-1.5 text-gray-400 font-bold text-sm bg-gray-100 px-4 py-2 rounded-xl border border-gray-200">
-                  <Loader2 size={16} className="animate-spin" />
-                  Checking...
-                </span>
-              ) : isWhatsAppConnected ? (
-                <div className="flex items-center gap-3">
-                  {whatsappIntegration?.settings?.twilio_from_number && (
-                    <div className="text-right mr-2">
-                      <p className="text-sm font-bold text-gray-900">+{whatsappIntegration.settings.twilio_from_number}</p>
-                      <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Twilio Active</p>
-                    </div>
-                  )}
-                  {whatsappStatus.status === 'connected' && (
-                    <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
-                      <CheckCircle2 size={16} />
-                      Connected
-                    </span>
-                  )}
-                  {whatsappStatus.status === 'pending_verification' && (
-                    <span className="flex items-center gap-1.5 text-amber-600 font-bold text-sm bg-amber-50 px-4 py-2 rounded-xl border border-amber-100">
-                      <AlertTriangle size={16} />
-                      Pending Verify
-                    </span>
-                  )}
-                  {whatsappStatus.status === 'error' && (
-                    <span className="flex items-center gap-1.5 text-red-600 font-bold text-sm bg-red-50 px-4 py-2 rounded-xl border border-red-100">
-                      <AlertCircle size={16} />
-                      Connection Error
-                    </span>
-                  )}
-                  <button 
-                    onClick={() => handleDisconnect('whatsapp')}
-                    disabled={isDisconnecting}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+
+            {/* Consumption and usage limits */}
+            {isWhatsAppConnected && whatsappUsage && (
+              <div className="mt-2 pt-4 border-t border-gray-100 space-y-2 animate-in fade-in duration-300">
+                <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <span>Mensajes Enviados / Recibidos</span>
+                  <span className={`${whatsappUsage.percent_used >= 100 ? 'text-red-600 font-extrabold' : whatsappUsage.percent_used >= 80 ? 'text-amber-600' : 'text-green-600'}`}>
+                    {whatsappUsage.used} / {whatsappUsage.total_limit} mensajes
+                  </span>
                 </div>
-              ) : (
-                <button 
-                  onClick={() => setIsWhatsAppModalOpen(true)}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md"
-                >
-                  Connect WhatsApp
-                </button>
-              )}
-            </div>
+                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner relative">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      whatsappUsage.percent_used >= 100 
+                        ? 'bg-red-500 shadow-md shadow-red-500/20' 
+                        : whatsappUsage.percent_used >= 80 
+                          ? 'bg-amber-500 shadow-md shadow-amber-500/20' 
+                          : 'bg-green-500 shadow-md shadow-green-500/20'
+                    }`}
+                    style={{ width: `${whatsappUsage.percent_used}%` }}
+                  />
+                </div>
+                {whatsappUsage.percent_used >= 100 ? (
+                  <p className="text-xs text-red-600 font-medium">Límite mensual alcanzado. La IA de Sherpa está en pausa hasta el fin de mes o hasta que compres más créditos.</p>
+                ) : whatsappUsage.percent_used >= 80 ? (
+                  <p className="text-xs text-amber-600 font-medium font-bold animate-pulse">Advertencia: Has consumido el 80% de tus mensajes mensuales. Contacta soporte para añadir más créditos.</p>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       </section>

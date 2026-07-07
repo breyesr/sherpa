@@ -264,11 +264,26 @@ async def disconnect_integration(
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
     
-    # 1. Delete the integration record
-    await db.execute(
-        delete(Integration)
+    # 1. Fetch integration first to check settings
+    result = await db.execute(
+        select(Integration)
         .where(Integration.business_id == business.id, Integration.provider == provider)
     )
+    integration = result.scalars().first()
+    
+    if integration:
+        if provider == 'whatsapp':
+            from app.services.messaging.provisioner import release_whatsapp_sender
+            try:
+                await release_whatsapp_sender(integration.settings or {})
+            except Exception as release_err:
+                print(f"ERROR: Failed to release whatsapp integration: {release_err}")
+                
+        # Delete the integration record
+        await db.execute(
+            delete(Integration)
+            .where(Integration.id == integration.id)
+        )
     
     # 2. If it's Google, also clear the busy slots cache
     if provider == 'google':
@@ -279,6 +294,7 @@ async def disconnect_integration(
     
     await db.commit()
     return {"status": "disconnected"}
+
 
 @router.get("/whatsapp/usage/{business_id}")
 async def get_whatsapp_usage_endpoint(

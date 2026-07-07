@@ -16,7 +16,7 @@ async def test_provision_whatsapp_sender_success(
 ):
     # Mock Twilio subaccount and number purchase functions
     mock_create_subaccount.return_value = ("AC_SUB_123", "AUTH_TOKEN_SUB_123")
-    mock_buy_number.return_value = "+5215555555555"
+    mock_buy_number.return_value = ("+5215555555555", "PN12345")
     
     # Mock MessagingService & Webhook Engine
     mock_engine = MagicMock()
@@ -46,8 +46,10 @@ async def test_provision_whatsapp_sender_success(
     assert integration.settings["status"] == "connected"
     assert integration.settings["subaccount_sid"] == "AC_SUB_123"
     assert integration.settings["phone_number"] == "+5215555555555"
+    assert integration.settings["phone_number_sid"] == "PN12345"
     assert integration.settings["twilio_from_number"] == "+5215555555555"
     assert decrypt_value(integration.settings["auth_token_encrypted"]) == "AUTH_TOKEN_SUB_123"
+
     
     # Assert webhook registration was triggered
     mock_messaging_service_cls.get_engine.assert_called_once_with(integration)

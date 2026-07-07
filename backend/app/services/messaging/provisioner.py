@@ -72,7 +72,7 @@ async def buy_mexican_number(subaccount_sid: str, subaccount_auth_token: str, ar
         number = available[0]
         # Purchase the number
         purchased = sub_client.incoming_phone_numbers.create(phone_number=number.phone_number)
-        return purchased.phone_number
+        return purchased.phone_number, purchased.sid
         
     return await anyio.to_thread.run_sync(_search_and_buy)
 
@@ -111,21 +111,21 @@ async def provision_whatsapp_sender(
         
         # Step B: Buy Phone Number
         logger.info(f"Step B: Purchasing MX Phone Number for subaccount {sub_sid}")
-        phone_number = await buy_mexican_number(sub_sid, sub_token, area_code)
+        phone_number, phone_number_sid = await buy_mexican_number(sub_sid, sub_token, area_code)
         
-        return sub_sid, sub_token, phone_number
+        return sub_sid, sub_token, phone_number, phone_number_sid
 
     # Retry wrapper with exponential backoff (3 attempts: 1s, 2s, 4s delay)
     max_attempts = 3
     delay = 1.0
     backoff_factor = 2.0
     
-    sub_sid, sub_token, phone_number = None, None, None
+    sub_sid, sub_token, phone_number, phone_number_sid = None, None, None, None
     provisioning_error = None
     
     for attempt in range(1, max_attempts + 1):
         try:
-            sub_sid, sub_token, phone_number = await _provision_flow()
+            sub_sid, sub_token, phone_number, phone_number_sid = await _provision_flow()
             break
         except Exception as e:
             logger.warning(f"Provisioning attempt {attempt} failed: {e}")
@@ -147,6 +147,7 @@ async def provision_whatsapp_sender(
             "subaccount_sid": sub_sid,
             "auth_token_encrypted": encrypted_token,
             "phone_number": phone_number,
+            "phone_number_sid": phone_number_sid,
             "twilio_from_number": phone_number.replace("whatsapp:", "").strip()
         }
         await db.commit()
@@ -179,3 +180,40 @@ async def provision_whatsapp_sender(
             error_details=provisioning_error
         )
         raise Exception(f"WhatsApp provisioning failed: {provisioning_error}")
+
+
+async def release_whatsapp_sender(settings_dict: dict):
+    """Suspend the Twilio subaccount and release the purchased phone number to prevent ongoing costs."""
+    subaccount_sid = settings_dict.get("subaccount_sid")
+    from app.core.encryption import decrypt_value
+    auth_token = decrypt_value(settings_dict.get("auth_token_encrypted"))
+    phone_number_sid = settings_dict.get("phone_number_sid")
+    
+    if not subaccount_sid or not auth_token:
+        return
+        
+    import anyio
+    from twilio.rest import Client
+    
+    def _release():
+        from app.core.config import settings
+        platform_client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        
+        # 1. Release the phone number if SID is available
+        if phone_number_sid:
+            try:
+                sub_client = Client(subaccount_sid, auth_token)
+                sub_client.incoming_phone_numbers(phone_number_sid).delete()
+                logger.info(f"Successfully released Twilio phone number {phone_number_sid}")
+            except Exception as num_err:
+                logger.error(f"Failed to release phone number {phone_number_sid}: {num_err}")
+                
+        # 2. Suspend subaccount to stop billing
+        try:
+            platform_client.api.v2010.accounts(subaccount_sid).update(status="suspended")
+            logger.info(f"Successfully suspended Twilio subaccount {subaccount_sid}")
+        except Exception as sub_err:
+            logger.error(f"Failed to suspend Twilio subaccount {subaccount_sid}: {sub_err}")
+            
+    await anyio.to_thread.run_sync(_release)
+
