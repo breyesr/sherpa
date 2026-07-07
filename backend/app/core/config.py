@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Sherpa MVP"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "supersecretkey_please_change_in_production"
+    ENCRYPTION_KEY: str | None = None
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

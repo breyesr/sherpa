@@ -66,11 +66,12 @@
 **Reference**: [Implementation Plan](file:///Users/bernardo/projects/sherpa/temp/multitenant-whatsapp-implementation-plan.md)
 
 ### Phase 1: Foundation (DB + Encryption + Adapter Pattern)
-- [ ] Task 153.1: **Encryption Utility**: Investigate existing CRM model encryption listeners (`crm.py`). Extract or create a reusable `encrypt_value()`/`decrypt_value()` utility in `backend/app/core/encryption.py` using Fernet with `ENCRYPTION_KEY` env var.
-- [ ] Task 153.2: **JSONB Migration**: Migrate Integration model's `settings` column from `JSON` to `JSONB` to enable indexed phone number lookups. Create Alembic migration in `backend/migrations/versions/`.
-- [ ] Task 153.3: **Abstract Messaging Layer**: Create `BaseMessagingEngine` (abstract) with `send_text()`, `send_media()`, `register_webhook()` methods. Implement `TwilioSubaccountEngine` as the concrete WhatsApp adapter. Create `MessagingService` factory to resolve engines by provider type. All in `backend/app/services/messaging/`.
-- [ ] Task 153.4: **Twilio Provisioning Service**: Build automated provisioning (`create_subaccount()`, `provision_number(country="MX")`, `register_webhook()`) with exponential backoff retry (3 attempts). On failure, mark integration status as `error` and alert Superadmin. Create `POST /api/integrations/whatsapp/provision` endpoint.
-- [ ] Task 153.5: **Tenant Isolation Tests**: Write tests asserting two separate tenant credential blocks have zero data leakage across subaccounts.
+- [x] Task 153.1: **Encryption Utility**: Investigate existing CRM model encryption listeners (`crm.py`). Extract or create a reusable `encrypt_value()`/`decrypt_value()` utility in `backend/app/core/encryption.py` using Fernet with `ENCRYPTION_KEY` env var.
+- [x] Task 153.2: **JSONB Migration**: Migrate Integration model's `settings` column from `JSON` to `JSONB` to enable indexed phone number lookups. Create Alembic migration in `backend/migrations/versions/`.
+- [x] Task 153.3: **Abstract Messaging Layer**: Create `BaseMessagingEngine` (abstract) with `send_text()`, `send_media()`, `register_webhook()` methods. Implement `TwilioSubaccountEngine` as the concrete WhatsApp adapter. Create `MessagingService` factory to resolve engines by provider type. All in `backend/app/services/messaging/`.
+- [x] Task 153.4: **Twilio Provisioning Service**: Build automated provisioning (`create_subaccount()`, `provision_number(country="MX")`, `register_webhook()`) with exponential backoff retry (3 attempts). On failure, mark integration status as `error` and alert Superadmin. Create `POST /api/integrations/whatsapp/provision` endpoint.
+- [x] Task 153.5: **Tenant Isolation Tests**: Write tests asserting two separate tenant credential blocks have zero data leakage across subaccounts.
+
 
 ### Phase 2: Inbound Routing Overhaul
 - [ ] Task 153.6: **Destination-Driven Routing**: Refactor `backend/app/api/whatsapp.py` to route inbound webhooks by the `To` phone number via JSONB index lookup on `settings["phone_number"]`. Remove the shared Twilio Sandbox flow ("join flower-leaf") entirely.

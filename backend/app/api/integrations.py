@@ -215,6 +215,40 @@ async def trigger_google_sync(
     
     return {"status": "sync_triggered"}
 
+@router.post("/whatsapp/provision")
+async def provision_whatsapp(
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Automate Twilio subaccount and MX number provisioning for this business."""
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.user_id == current_user.id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    area_code = data.get("area_code")
+    friendly_name = data.get("friendly_name") or f"{business.name} WhatsApp"
+    
+    from app.services.messaging.provisioner import provision_whatsapp_sender
+    try:
+        integration = await provision_whatsapp_sender(
+            db=db,
+            business_id=business.id,
+            friendly_name=friendly_name,
+            area_code=area_code
+        )
+        return {
+            "status": "success",
+            "phone_number": integration.settings.get("phone_number"),
+            "provider_type": "twilio_subaccount"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/{provider}")
 async def disconnect_integration(
     provider: str,

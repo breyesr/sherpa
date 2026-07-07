@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -17,9 +18,10 @@ class Integration(Base):
     token_expiry = Column(DateTime, nullable=True)
     
     # Provider-specific metadata (e.g., calendar ID, WhatsApp number ID)
-    settings = Column(JSON, nullable=True, default={})
+    settings = Column(JSONB, nullable=True, default={})
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_profile = relationship("BusinessProfile", back_populates="integrations")
+
