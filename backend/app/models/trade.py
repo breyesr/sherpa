@@ -247,6 +247,10 @@ class Store(Base):
             recent_notes = " | ".join([n.note[:100] for n in self.notes[:3]])
             summary += f" Notas recientes: {recent_notes}."
             
+        if self.delivery_zip_codes and isinstance(self.delivery_zip_codes, list):
+            zips_str = ", ".join(str(z) for z in self.delivery_zip_codes)
+            summary += f" Zona de entrega a domicilio (Códigos Postales con cobertura): {zips_str}."
+            
         return summary
 
     def get_knowledge_metadata(self) -> dict:
@@ -257,7 +261,8 @@ class Store(Base):
             "name": self.name,
             "state": self.state,
             "city": self.city,
-            "zip_code": self.zip_code
+            "zip_code": self.zip_code,
+            "delivery_zip_codes": self.delivery_zip_codes or []
         }
 
     __table_args__ = (

@@ -1,4 +1,4 @@
-# Handoff State: 2026-07-07 (Session Wrap-up)
+# Handoff State: 2026-07-08 (Session Wrap-up)
 
 ## Current Branch
 `feature/backend/multitenant-whatsapp` (active development branch).
@@ -32,15 +32,22 @@
    - **Task 153.19 (Admin Credit Dashboard)**: Extended `/admin` view with a Credit allocation input column and Save action trigger matching schema updates synced using `npm run gen:api`.
    - **Task 153.20 (Onboarding Clean Up)**: Removed the placeholder step from the first-time onboarding wizard, moving it fully post-onboarding inside settings integrations.
 
+5. **RAG Delivery Coverage Fix (Epic 113)**:
+   - **Task 113.1 (Delivery Coverage RAG Sync)**: Resolved the bug where store delivery ZIP codes were invisible to the AI agent. Included delivery ZIP codes in `Store.get_semantic_summary()` (triggering automatic hash-invalidation & Celery re-embedding), added them to `Store.get_knowledge_metadata()`, and propagated them to `GraphRAGService.get_store_context()` context outputs.
+   - **Task 113.1 (Robust Retail ZIP Code Validation)**: Refactored step 2.5 (retail referral block) in `prospect_qualifier.py` to validate ZIP codes using store `delivery_zip_codes` and `zip_code` fields before querying `PostalCode` table, preventing validation failures on unseeded database tables.
+   - **Task 113.1 (LangGraph Checkpointer Greeting Reset)**: Modified the reset logic in `prospect_qualifier.py` to trigger a database checkpoint wipe when a greeting is received and `has_existing_state` is active. This allows sandbox users to start a fresh simulation session naturally using "Hola" without getting stuck in stale terminal states.
+   - **Test Coverage**: Added three new unit tests in `test_delivery_zones_rag.py` covering model summaries, metadata, and service contexts. Ran the 5-scenario integration simulation suite `test_simulated_session_3.py` with 100% success.
+
 ## Active Backlog State
 - **Epic 153 (Multi-Tenant WhatsApp)**: All Phases complete (`[x] 153.1 - 153.20`).
 - **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED (Admin console for objectives, strategy library dropdown integration).
 - **Epic 108, Tasks 108.4–108.6**: Pending (Dashboard API, Opportunity Inbox, Anniversary Trigger).
-- **Epic 113**: Pending (Relational Graph-Enriched RAG).
+- **Epic 113**: Task 113.1 complete, remaining Tasks 113.2-113.6 pending (Relational Graph-Enriched RAG).
 
 ## Blockers & Risks
 - None.
 
 ## Next Steps
 - Coordinate human verification and validation tests of the final React frontend flows.
+- Run `full_backfill_corpus.py` script on the target environment to rebuild vector embeddings for existing stores so their summaries include the updated delivery ZIP codes.
 - Plan release and preparation for epic closures.

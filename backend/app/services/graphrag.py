@@ -553,7 +553,8 @@ class GraphRAGService:
             "segment": store.segment,
             "contacts": contacts,
             "history": notes,
-            "competitors": competitors
+            "competitors": competitors,
+            "delivery_zip_codes": store.delivery_zip_codes or []
         }
 
     async def search_store_profiles(self, query_text: str, business_id: str, limit: int = 5, filters: Dict[str, str] = None) -> List[Dict[str, Any]]:

@@ -377,15 +377,28 @@ Estado actual de los datos recopilados:
                 )
                 stores = res_stores.scalars().all()
                 
-                # Resolve the state for this ZIP code
-                res_pc = await self.db.execute(select(PostalCode).where(PostalCode.zip_code == merged_zip_code))
-                pc_record = res_pc.scalars().first()
-                state_name = pc_record.state if pc_record else None
+                # Check if any store explicitly covers this ZIP code in delivery_zip_codes or physical zip_code
+                stores_in_state = [
+                    s for s in stores 
+                    if (s.delivery_zip_codes and merged_zip_code in s.delivery_zip_codes) or s.zip_code == merged_zip_code
+                ]
                 
-                stores_in_state = []
-                if state_name:
-                    norm_target = normalize_state(state_name)
-                    stores_in_state = [s for s in stores if normalize_state(s.state) == norm_target]
+                if not stores_in_state:
+                    # Resolve the state for this ZIP code
+                    res_pc = await self.db.execute(select(PostalCode).where(PostalCode.zip_code == merged_zip_code))
+                    pc_record = res_pc.scalars().first()
+                    state_name = pc_record.state if pc_record else None
+                    
+                    if state_name:
+                        norm_target = normalize_state(state_name)
+                        stores_in_state = [s for s in stores if normalize_state(s.state) == norm_target]
+                    else:
+                        # Fallback for CDMX prefixes
+                        if any(merged_zip_code.startswith(pref) for pref in ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16"]):
+                            stores_in_state = [
+                                s for s in stores 
+                                if normalize_state(s.state) in ["ciudad de mexico", "cdmx", "distrito federal"]
+                            ]
                 
                 res_prod = await self.db.execute(select(Product).where(Product.id == merged_product))
                 product = res_prod.scalars().first()
@@ -808,10 +821,11 @@ Estado actual de los datos recopilados:
                 
                 state = await app.aget_state(config)
                 is_completed_state = state.values and state.values.get("is_completed")
+                has_existing_state = bool(state.values and state.values.get("phase"))
                 
                 greetings = ["hola", "buen", "dia", "hello", "hi", "iniciar", "start", "buenos", "buenas"]
                 is_greeting_reset = (
-                    is_completed_state
+                    (is_completed_state or has_existing_state)
                     and (any(g in normalized_msg for g in greetings) or len(normalized_msg) < 15)
                 )
                 
