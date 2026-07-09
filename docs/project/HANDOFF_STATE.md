@@ -13,6 +13,7 @@
    - **Database Unique Constraint Fixes**: Prevented unique key violations on `telegram_id_hash` during QR binding, `/link`, and contact sharing by verifying client existence first and releasing old bindings cleanly.
    - **Settings Integration UX Enhancements**: Added an action button "Vincular Administrador" directly to the settings integrations panel for connected bots. Configured it to hide and show a "Connected & Admin Linked" badge once admin linking is confirmed.
    - **Real-Time Polling & Step 3 Error Visibility**: Added `/bind-status` endpoint (and unit tests) to check bind status. Polled this status from the modal in Step 3 to show a success checkmark immediately upon binding. Added error visibility to Step 3 so token errors are rendered rather than failing silently.
+   - **Settings Null-Safety Fix**: Resolved a 500 crash inside `generate_bind_token` when integration settings was NULL by enforcing settings dict checks and added generic traceback logging.
    - **Testing Suite**: Created `test_telegram_admin_bind.py` verifying all routes, prompts, and binds (all 5 tests passed).
 
 2. **Telegram Webhook Disconnect & Gating Fixes**:
