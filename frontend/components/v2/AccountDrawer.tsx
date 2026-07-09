@@ -57,7 +57,13 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   const [colonias, setColonias] = useState<string[]>([]);
 
   // Delivery zip codes UI helper state
-  const [allPostalCodes, setAllPostalCodes] = useState<any[]>([]);
+  const [addressStates, setAddressStates] = useState<string[]>([]);
+  const [addressMunicipalities, setAddressMunicipalities] = useState<string[]>([]);
+  const [addressZipCodes, setAddressZipCodes] = useState<string[]>([]);
+  const [addressColonias, setAddressColonias] = useState<string[]>([]);
+  const [deliveryMunicipalities, setDeliveryMunicipalities] = useState<string[]>([]);
+  const [deliveryZipCodesList, setDeliveryZipCodesList] = useState<any[]>([]);
+
   const [selectedState, setSelectedState] = useState<string>('');
   const [selectedMunicipality, setSelectedMunicipality] = useState<string>('');
   const [selectedZipCodesArray, setSelectedZipCodesArray] = useState<string[]>([]);
@@ -211,33 +217,31 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     lookupZIP();
   }, [formData.zip_code, manualAddress, token]);
 
-  // Fetch all preloaded postal codes on drawer open
+  // Fetch unique states on drawer open
   useEffect(() => {
     if (isOpen) {
-      const fetchPostalCodes = async () => {
+      const fetchStates = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes`, {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/states`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
             const data = await res.json();
-            setAllPostalCodes(data);
+            setAddressStates(data);
             
-            // Check if active store state/municipality exists in loaded data, if not auto-toggle manual mode
-            if (storeId && formData.state && formData.municipality) {
-              const hasMatch = data.some(
-                (pc: any) => pc.state === formData.state && pc.municipality === formData.municipality
-              );
+            // Check if active store state exists in loaded states data, if not auto-toggle manual mode
+            if (storeId && formData.state) {
+              const hasMatch = data.includes(formData.state);
               if (!hasMatch) {
                 setManualAddress(true);
               }
             }
           }
         } catch (err) {
-          console.error('Failed to fetch postal codes list', err);
+          console.error('Failed to fetch states list', err);
         }
       };
-      fetchPostalCodes();
+      fetchStates();
       // Reset dropdown values
       setSelectedState(formData.state || '');
       setSelectedMunicipality(formData.municipality || '');
@@ -247,6 +251,113 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       setManualAddress(false);
     }
   }, [isOpen, storeId, token]);
+
+  // Fetch municipalities when physical address State changes
+  useEffect(() => {
+    if (formData.state) {
+      const fetchMunicipalities = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/municipalities?state=${encodeURIComponent(formData.state)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setAddressMunicipalities(data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch municipalities', err);
+        }
+      };
+      fetchMunicipalities();
+    } else {
+      setAddressMunicipalities([]);
+      setAddressZipCodes([]);
+      setAddressColonias([]);
+    }
+  }, [formData.state, token]);
+
+  // Fetch ZIP codes when physical address State & Municipality change
+  useEffect(() => {
+    if (formData.state && formData.municipality) {
+      const fetchZipCodes = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/zip-codes?state=${encodeURIComponent(formData.state)}&municipality=${encodeURIComponent(formData.municipality)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setDeliveryZipCodesList(data);
+            const zips = Array.from(new Set(data.map((pc: any) => pc.zip_code))).sort() as string[];
+            setAddressZipCodes(zips);
+          }
+        } catch (err) {
+          console.error('Failed to fetch zip codes', err);
+        }
+      };
+      fetchZipCodes();
+    } else {
+      setAddressZipCodes([]);
+      setAddressColonias([]);
+    }
+  }, [formData.state, formData.municipality, token]);
+
+  // Derive colonias when physical address ZIP Code changes
+  useEffect(() => {
+    if (formData.zip_code && deliveryZipCodesList.length > 0) {
+      const filtered = deliveryZipCodesList
+        .filter((pc: any) => pc.zip_code === formData.zip_code)
+        .map((pc: any) => pc.colonia);
+      setAddressColonias(Array.from(new Set(filtered)).sort() as string[]);
+    } else {
+      setAddressColonias([]);
+    }
+  }, [formData.zip_code, deliveryZipCodesList]);
+
+  // Fetch delivery municipalities when delivery State changes
+  useEffect(() => {
+    if (selectedState) {
+      const fetchDeliveryMunicipalities = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/municipalities?state=${encodeURIComponent(selectedState)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setDeliveryMunicipalities(data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch delivery municipalities', err);
+        }
+      };
+      fetchDeliveryMunicipalities();
+    } else {
+      setDeliveryMunicipalities([]);
+      setSelectedZipCodesArray([]);
+    }
+  }, [selectedState, token]);
+
+  // Fetch delivery ZIP codes when delivery State & Municipality change
+  useEffect(() => {
+    if (selectedState && selectedMunicipality) {
+      const fetchDeliveryZipCodes = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/zip-codes?state=${encodeURIComponent(selectedState)}&municipality=${encodeURIComponent(selectedMunicipality)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const zips = Array.from(new Set(data.map((pc: any) => pc.zip_code))).sort() as string[];
+            setSelectedZipCodesArray(zips);
+          }
+        } catch (err) {
+          console.error('Failed to fetch delivery zip codes', err);
+        }
+      };
+      fetchDeliveryZipCodes();
+    } else {
+      setSelectedZipCodesArray([]);
+    }
+  }, [selectedState, selectedMunicipality, token]);
 
   // Preselect delivery zone State and Municipality based on Store Address
   useEffect(() => {
@@ -417,33 +528,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     </div>
   );
 
-  // Physical address options calculations
-  const addressStates = Array.from(new Set(allPostalCodes.map(pc => pc.state))).sort();
-  const addressMunicipalities = Array.from(
-    new Set(
-      allPostalCodes
-        .filter(pc => pc.state === formData.state)
-        .map(pc => pc.municipality)
-    )
-  ).sort();
-  const addressZipCodes = Array.from(
-    new Set(
-      allPostalCodes
-        .filter(pc => pc.state === formData.state && pc.municipality === formData.municipality)
-        .map(pc => pc.zip_code)
-    )
-  ).sort();
-  const addressColonias = Array.from(
-    new Set(
-      allPostalCodes
-        .filter(pc => 
-          pc.state === formData.state && 
-          pc.municipality === formData.municipality && 
-          pc.zip_code === formData.zip_code
-        )
-        .map(pc => pc.colonia)
-    )
-  ).sort();
+
 
   return (
     <Drawer 
@@ -587,13 +672,12 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
                     value={formData.municipality}
                     onChange={e => {
-                      const match = allPostalCodes.find(pc => pc.state === formData.state && pc.municipality === e.target.value);
                       setFormData({
                         ...formData,
                         municipality: e.target.value,
                         zip_code: '',
                         colonia: '',
-                        city: match?.city || match?.municipality || ''
+                        city: e.target.value
                       });
                     }}
                     disabled={!formData.state}
@@ -713,27 +797,13 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
               : [];
             
             // Get unique states sorted
-            const uniqueStates = Array.from(
-              new Set(allPostalCodes.map(pc => pc.state))
-            ).sort();
+            const uniqueStates = addressStates;
 
             // Get unique municipalities filtered by state
-            const filteredMunicipalities = Array.from(
-              new Set(
-                allPostalCodes
-                  .filter(pc => pc.state === selectedState)
-                  .map(pc => pc.municipality)
-              )
-            ).sort();
+            const filteredMunicipalities = deliveryMunicipalities;
             
             // Get unique zip codes filtered by state and municipality
-            const filteredZipCodes = Array.from(
-              new Set(
-                allPostalCodes
-                  .filter(pc => pc.state === selectedState && pc.municipality === selectedMunicipality)
-                  .map(pc => pc.zip_code)
-              )
-            ).sort();
+            const filteredZipCodes = selectedZipCodesArray;
 
             return (
               <div className="space-y-4">

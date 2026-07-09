@@ -26,7 +26,7 @@ from app.schemas.trade import (
 
 from app.tasks.knowledge import sync_vector_task, delete_vector_task
 
-router = APIRouter(dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 async def get_business(db: AsyncSession, user_id: str) -> BusinessProfile:
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == user_id))
@@ -361,16 +361,55 @@ async def delete_store(
 
 # --- POSTAL CODES ---
 
-@router.get("/postal-codes", response_model=List[PostalCodeResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+@router.get("/postal-codes", response_model=List[PostalCodeResponse])
 async def list_postal_codes(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """Retrieve all preloaded Mexican postal codes."""
-    result = await db.execute(select(PostalCode))
+    """Retrieve preloaded Mexican postal codes (limited for performance)."""
+    result = await db.execute(select(PostalCode).limit(100))
     return result.scalars().all()
 
 
-@router.get("/postal-codes/{zip_code}", response_model=List[PostalCodeResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+@router.get("/postal-codes/states", response_model=List[str])
+async def list_states(
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Retrieve all unique states."""
+    result = await db.execute(select(PostalCode.state).distinct().order_by(PostalCode.state))
+    return [r[0] for r in result.all()]
+
+
+@router.get("/postal-codes/municipalities", response_model=List[str])
+async def list_municipalities(
+    state: str,
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Retrieve all unique municipalities for a given state."""
+    result = await db.execute(
+        select(PostalCode.municipality)
+        .where(PostalCode.state == state)
+        .distinct()
+        .order_by(PostalCode.municipality)
+    )
+    return [r[0] for r in result.all()]
+
+
+@router.get("/postal-codes/zip-codes", response_model=List[PostalCodeResponse])
+async def list_zip_codes(
+    state: str,
+    municipality: str,
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Retrieve all zip codes and colonias for a given state and municipality."""
+    result = await db.execute(
+        select(PostalCode)
+        .where(PostalCode.state == state, PostalCode.municipality == municipality)
+        .order_by(PostalCode.zip_code)
+    )
+    return result.scalars().all()
+
+
+@router.get("/postal-codes/{zip_code}", response_model=List[PostalCodeResponse])
 async def lookup_postal_code(
     zip_code: str,
     db: AsyncSession = Depends(get_db)
@@ -384,7 +423,7 @@ async def lookup_postal_code(
 
 # --- CATEGORIES ---
 
-@router.get("/categories", response_model=List[CategoryResponse])
+@router.get("/categories", response_model=List[CategoryResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def list_categories(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -394,7 +433,7 @@ async def list_categories(
     result = await db.execute(select(Category).where(Category.business_id == business.id))
     return result.scalars().all()
 
-@router.post("/categories", response_model=CategoryResponse)
+@router.post("/categories", response_model=CategoryResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def create_category(
     category_in: CategoryCreate,
     db: AsyncSession = Depends(get_db),
@@ -410,7 +449,7 @@ async def create_category(
 
 # --- PRODUCTS ---
 
-@router.get("/products", response_model=List[ProductResponse])
+@router.get("/products", response_model=List[ProductResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def list_products(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -424,7 +463,7 @@ async def list_products(
     )
     return result.scalars().all()
 
-@router.post("/products", response_model=ProductResponse)
+@router.post("/products", response_model=ProductResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def create_product(
     product_in: ProductCreate,
     db: AsyncSession = Depends(get_db),
@@ -445,7 +484,7 @@ async def create_product(
     await db.refresh(product)
     return product
 
-@router.get("/products/{product_id}", response_model=ProductResponse)
+@router.get("/products/{product_id}", response_model=ProductResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def get_product(
     product_id: str,
     db: AsyncSession = Depends(get_db),
@@ -463,7 +502,7 @@ async def get_product(
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@router.patch("/products/{product_id}", response_model=ProductResponse)
+@router.patch("/products/{product_id}", response_model=ProductResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def update_product(
     product_id: str,
     product_in: ProductUpdate,
@@ -496,7 +535,7 @@ async def update_product(
     await db.refresh(product)
     return product
 
-@router.delete("/products/{product_id}")
+@router.delete("/products/{product_id}", dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
 async def delete_product(
     product_id: str,
     db: AsyncSession = Depends(get_db),
