@@ -290,3 +290,47 @@ async def test_webhook_contact_prompt_fallback(mock_resolve, mock_send_msg, mock
         
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+@pytest.mark.anyio
+async def test_bind_status_endpoint():
+    mock_session = AsyncMock()
+    
+    mock_scalars_biz = MagicMock()
+    mock_scalars_biz.first.return_value = mock_business
+    mock_result_biz = MagicMock()
+    mock_result_biz.scalars.return_value = mock_scalars_biz
+    
+    # Mock integration with admin_telegram_id set
+    mock_int_linked = MagicMock()
+    mock_int_linked.settings = {"admin_telegram_id": "12345", "bot_username": "test_bot"}
+    mock_scalars_int = MagicMock()
+    mock_scalars_int.first.return_value = mock_int_linked
+    mock_result_int = MagicMock()
+    mock_result_int.scalars.return_value = mock_scalars_int
+    
+    def mock_db_execute(stmt):
+        stmt_str = str(stmt).lower()
+        if "from integrations" in stmt_str:
+            return mock_result_int
+        elif "from business_profiles" in stmt_str:
+            return mock_result_biz
+        return MagicMock()
+        
+    mock_session.execute.side_effect = mock_db_execute
+    
+    from app.core.database import get_db
+    app.dependency_overrides[get_current_user] = override_current_user
+    app.dependency_overrides[get_db] = lambda: mock_session
+    
+    try:
+        client = TestClient(app)
+        response = client.get("/api/v1/telegram/bind-status")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["connected"] is True
+        assert data["admin_linked"] is True
+        assert data["admin_telegram_id"] == "12345"
+        assert data["bot_username"] == "test_bot"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_current_user, None)

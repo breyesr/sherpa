@@ -218,19 +218,28 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
                     <p className="text-sm font-bold text-gray-900">@{telegramBot.settings?.bot_username}</p>
                     <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest tracking-tighter">Active Bot</p>
                   </div>
-                  <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
-                    <CheckCircle2 size={16} />
-                    Connected
-                  </span>
-                  <button 
-                    onClick={() => {
-                      setTelegramModalStep(3);
-                      setIsTelegramModalOpen(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all shadow-sm"
-                  >
-                    Vincular Administrador
-                  </button>
+                  {telegramBot.settings?.admin_telegram_id ? (
+                    <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
+                      <CheckCircle2 size={16} />
+                      Connected & Admin Linked
+                    </span>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
+                        <CheckCircle2 size={16} />
+                        Connected
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setTelegramModalStep(3);
+                          setIsTelegramModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all shadow-sm"
+                      >
+                        Vincular Administrador
+                      </button>
+                    </>
+                  )}
                   <button 
                     onClick={() => handleDisconnect('telegram')}
                     disabled={isDisconnecting}

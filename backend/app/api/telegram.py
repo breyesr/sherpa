@@ -529,6 +529,33 @@ async def generate_bind_token(
         "deep_link_url": deep_link_url
     }
 
+@router.get("/bind-status")
+async def get_bind_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Check if the admin's Telegram account is linked to the current user's business."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found.")
+        
+    result = await db.execute(
+        select(Integration).where(Integration.business_id == business.id, Integration.provider == "telegram")
+    )
+    integration = result.scalars().first()
+    if not integration:
+        return {"connected": False, "admin_linked": False}
+        
+    settings_dict = integration.settings if (integration.settings and isinstance(integration.settings, dict)) else {}
+    admin_telegram_id = settings_dict.get("admin_telegram_id")
+    return {
+        "connected": True,
+        "admin_linked": bool(admin_telegram_id),
+        "admin_telegram_id": admin_telegram_id,
+        "bot_username": settings_dict.get("bot_username")
+    }
+
 @router.post("/link")
 async def link_telegram(
     data: dict,
