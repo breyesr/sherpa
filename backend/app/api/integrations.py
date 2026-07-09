@@ -278,6 +278,15 @@ async def disconnect_integration(
                 await release_whatsapp_sender(integration.settings or {})
             except Exception as release_err:
                 print(f"ERROR: Failed to release whatsapp integration: {release_err}")
+        elif provider == 'telegram':
+            try:
+                from app.core.security import decrypt_token
+                import httpx
+                token = decrypt_token(integration.access_token)
+                async with httpx.AsyncClient() as http_client:
+                    await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
+            except Exception as release_err:
+                print(f"ERROR: Failed to delete telegram webhook on disconnect: {release_err}")
                 
         # Delete the integration record
         await db.execute(
