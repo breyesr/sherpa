@@ -56,12 +56,15 @@ class TelegramService:
                 return {"ok": False, "description": str(e)}
 
     @staticmethod
-    async def send_message(token: str, chat_id: int, text: str):
-        """Send a message to a specific chat."""
+    async def send_message(token: str, chat_id: int, text: str, reply_markup: Optional[Dict[str, Any]] = None):
+        """Send a message to a specific chat with optional reply_markup."""
         url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {"chat_id": chat_id, "text": text}
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
         async with httpx.AsyncClient() as client:
             try:
-                await client.post(url, json={"chat_id": chat_id, "text": text})
+                await client.post(url, json=payload)
             except Exception as e:
                 print(f"ERROR: Failed to send Telegram message: {e}")
 

@@ -16,6 +16,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
   const [botToken, setBotToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deepLinkUrl, setDeepLinkUrl] = useState('');
 
   if (!isOpen) return null;
 
@@ -24,6 +25,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
     setError('');
 
     try {
+      // 1. Link Telegram Bot
       const res = await fetch(`${API_BASE_URL}/telegram/link`, {
         method: 'POST',
         headers: {
@@ -38,13 +40,26 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
         throw new Error(errorData.detail || 'Failed to save Telegram settings');
       }
 
-      setStep(4); // Success step
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-        setStep(1);
-        setBotToken('');
-      }, 2000);
+      // 2. Generate Admin Deep Link Token
+      try {
+        const tokenRes = await fetch(`${API_BASE_URL}/telegram/generate-bind-token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (tokenRes.ok) {
+          const tokenData = await tokenRes.json();
+          if (tokenData.deep_link_url) {
+            setDeepLinkUrl(tokenData.deep_link_url);
+          }
+        }
+      } catch (tokenErr) {
+        console.error('Failed to generate admin bind token:', tokenErr);
+      }
+
+      setStep(3); // Go to Admin Deep Link/QR step
+      setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -124,6 +139,57 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
                 {loading ? 'Connecting...' : 'Connect my Bot'}
               </button>
             </div>
+          </div>
+        );
+      case 3:
+        return (
+          <div className="space-y-6 text-center">
+            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 flex flex-col items-center">
+              <p className="font-bold text-blue-900 text-lg">Vincular Administrador</p>
+              <p className="text-sm text-blue-700 mt-2">
+                Para que Sherpa te reconozca como Administrador/Vendedor y responda con los reportes de ventas, vincula tu cuenta de Telegram:
+              </p>
+              
+              {deepLinkUrl ? (
+                <div className="mt-5 space-y-5 w-full">
+                  <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-gray-100 mx-auto">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(deepLinkUrl)}`} 
+                      alt="Telegram Admin QR Link" 
+                      className="w-44 h-44 object-contain mx-auto"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-wider">Escanea con tu celular</p>
+                  </div>
+
+                  <a 
+                    href={deepLinkUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 w-full"
+                  >
+                    Vincular mi Telegram <ExternalLink size={18} />
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mt-4">Generando enlace de vinculación...</p>
+              )}
+            </div>
+            
+            <button 
+              onClick={() => {
+                setStep(4);
+                setTimeout(() => {
+                  onSuccess();
+                  onClose();
+                  setStep(1);
+                  setBotToken('');
+                  setDeepLinkUrl('');
+                }, 2000);
+              }}
+              className="w-full py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+            >
+              Finalizar / Siguiente
+            </button>
           </div>
         );
       case 4:
