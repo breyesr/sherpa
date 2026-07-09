@@ -144,9 +144,10 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         feature_enabled = True
         flow_enabled = False
         
-        cfg = business.routing_config or {}
-        from app.api.business import DEFAULT_FEATURES_CONFIG
-        feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+        from app.api.business import get_default_features_config, get_default_routing_config
+        vertical = business.vertical_type.value if hasattr(business.vertical_type, "value") else (business.vertical_type or "BASIC")
+        feat_cfg = business.features_config or get_default_features_config(vertical)
+        cfg = business.routing_config or get_default_routing_config(vertical)
 
         if sender_type == "customer":
             feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)

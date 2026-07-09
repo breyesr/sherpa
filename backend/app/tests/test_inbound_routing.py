@@ -15,8 +15,8 @@ async def test_inbound_webhook_routing_isolation(
     mock_resolve_sender
 ):
     # Setup mock businesses
-    biz_1 = BusinessProfile(id="biz_id_1", name="Tenant Business 1")
-    biz_2 = BusinessProfile(id="biz_id_2", name="Tenant Business 2")
+    biz_1 = BusinessProfile(id="biz_id_1", name="Tenant Business 1", vertical_type="TRADE")
+    biz_2 = BusinessProfile(id="biz_id_2", name="Tenant Business 2", vertical_type="TRADE")
     
     # Setup mock integrations matching two different phone numbers
     integration_1 = Integration(
