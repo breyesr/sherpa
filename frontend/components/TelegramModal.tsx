@@ -241,6 +241,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
                 <p className="text-sm text-gray-500 mt-4">Generando enlace de vinculación...</p>
               )}
             </div>
+            {error && <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl font-medium border border-red-100 mt-4">{error}</p>}
             
             <button 
               onClick={() => {
