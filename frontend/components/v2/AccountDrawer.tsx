@@ -166,11 +166,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
             if (data.colonia) {
               setColonias(prev => prev.includes(data.colonia) ? prev : [...prev, data.colonia]);
             }
-            if (data.state && data.municipality && allPostalCodes.length > 0) {
-              const hasMatch = allPostalCodes.some(
-                pc => pc.state === data.state && pc.municipality === data.municipality
-              );
-              if (!hasMatch) {
+            if (data.state && data.municipality && addressStates.length > 0) {
+              const hasMatch = addressStates.includes(data.state);
+              if (!hasMatch && data.state) {
                 setManualAddress(true);
               }
             }
@@ -182,7 +180,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       };
       fetchStore();
     }
-  }, [isOpen, storeId, token, allPostalCodes.length]);
+  }, [isOpen, storeId, token, addressStates.length]);
 
   // Autocomplete geographic fields on ZIP Code change (Manual Address Mode)
   useEffect(() => {
