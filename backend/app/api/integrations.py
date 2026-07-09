@@ -284,7 +284,7 @@ async def disconnect_integration(
                 import httpx
                 token = decrypt_token(integration.access_token)
                 async with httpx.AsyncClient() as http_client:
-                    await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
+                    await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook", params={"drop_pending_updates": True})
             except Exception as release_err:
                 print(f"ERROR: Failed to delete telegram webhook on disconnect: {release_err}")
                 
