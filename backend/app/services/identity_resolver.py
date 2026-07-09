@@ -28,6 +28,45 @@ class IdentityResolver:
         is_b2c = business and business.vertical_type == VerticalType.BASIC
         biz_phone = IdentityResolver.clean_identifier(business.contact_phone) if business and business.contact_phone else None
 
+        # Check Telegram Admin integration setting
+        if is_telegram:
+            from app.models.integration import Integration
+            from app.core.security import encrypt_token
+            res_int = await db.execute(
+                select(Integration)
+                .where(Integration.business_id == business_id, Integration.provider == "telegram")
+            )
+            tg_integration = res_int.scalars().first()
+            if tg_integration and tg_integration.settings and str(tg_integration.settings.get("admin_telegram_id")) == str(normalized_id):
+                # This is the linked Telegram admin! Find or create a sales rep Client record
+                res_biz_cli = await db.execute(
+                    select(Client).where(Client.business_id == business_id, Client.phone == biz_phone) if biz_phone else
+                    select(Client).where(Client.business_id == business_id, Client.telegram_id_hash == id_hash)
+                )
+                client = res_biz_cli.scalars().first()
+                if not client:
+                    client = Client(
+                        business_id=business_id,
+                        name="Sales Rep (Admin)",
+                        phone=biz_phone,
+                        role="sales_rep",
+                        is_prospect=False,
+                        telegram_id=encrypt_token(normalized_id),
+                        telegram_id_hash=id_hash
+                    )
+                    db.add(client)
+                    await db.commit()
+                    await db.refresh(client)
+                elif not client.telegram_id_hash or client.telegram_id_hash != id_hash:
+                    # Update existing client with Telegram ID
+                    client.telegram_id = encrypt_token(normalized_id)
+                    client.telegram_id_hash = id_hash
+                    db.add(client)
+                    await db.commit()
+                    await db.refresh(client)
+                
+                return "sales_rep", client
+
         # 1. Fetch Client with store relations pre-loaded
         query = select(Client).where(
             Client.business_id == business_id
