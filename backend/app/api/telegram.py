@@ -60,10 +60,12 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         
         # 1. Find the integration
         result = await db.execute(
-            select(Integration).where(Integration.provider == 'telegram')
+            select(Integration).where(
+                Integration.provider == 'telegram',
+                Integration.settings['webhook_id'].astext == webhook_id
+            )
         )
-        all_tg = result.scalars().all()
-        integration = next((i for i in all_tg if i.settings.get("webhook_id") == webhook_id), None)
+        integration = result.scalars().first()
         
         if not integration:
             print(f"ERROR: Webhook ID {webhook_id} not found in database.")

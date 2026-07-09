@@ -1,10 +1,14 @@
-# Handoff State: 2026-07-08 (Session Wrap-up)
+# Handoff State: 2026-07-09 (Session Update)
 
 ## Current Branch
-`feature/backend/epic-154` (active development branch for Admin Binding & Routing).
+`feature/backend/telegram-data-isolation-fix` (active development branch for Telegram Multi-Tenant Data Isolation Fix).
 
 ## Accomplishments This Session
-1. **Epic 154 - Cross-Platform Admin Binding & Frictionless CRM Routing**:
+1. **Epic 154 - Telegram Multi-Tenant Data Isolation Fix (Started)**:
+   - Created active feature branch `feature/backend/telegram-data-isolation-fix`.
+   - Copied the diagnosis report `diagnosis_cross_tenant_data_leak.md` to `temp/`.
+   - Added Epic 154 tasks to `docs/project/BACKLOG.md`.
+2. **Epic 154 - Cross-Platform Admin Binding & Frictionless CRM Routing (Completed)**:
    - **Backend Token Generation (Task 154.1)**: Created `POST /api/v1/telegram/generate-bind-token` returning secure, 10-minute Redis tokens mapping to business/user contexts.
    - **Deep Link QR UI (Task 154.2)**: Redesigned frontend `TelegramModal.tsx` to include Step 3, displaying a scannable QR Code and button for quick mobile linking.
    - **Webhook Start Handler (Task 154.3)**: Intercepted `/start admin_bind_<token>` inside `telegram.py` webhook, resolving token and binding `admin_telegram_id` to integration settings.
@@ -65,6 +69,7 @@
    - **Staging Database Populated**: Dumped the fully populated local database tables using PostgreSQL `COPY` format and imported all 157,525 Mexican geography records into the remote Railway Postgres database in under 2 seconds.
 
 ## Active Backlog State
+- **Epic 154 (Telegram Multi-Tenant Data Isolation Fix)**: Complete (`[x] 154.1 - 154.3`).
 - **Epic 154 (Admin Binding & CRM Routing)**: Backend implementation and Frontend modal QR integration complete (`[x] 154.1 - 154.7`).
 - **Epic 153 (Multi-Tenant WhatsApp)**: All Phases complete (`[x] 153.1 - 153.20`).
 - **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED (Admin console for objectives, strategy library dropdown integration).
@@ -75,7 +80,7 @@
 - None.
 
 ## Next Steps
-- Verify the cascading address dropdowns live on the deployed Staging environment.
-- Test the Telegram Admin Link button and scannable QR code live in staging.
-- Verify Telegram webhook routing for unknown and known numbers on staging.
-- Plan release and preparation for epic closures.
+- Verify the fixes on the staging environment once merged.
+- Execute SQL purge on production checkpoints (see diagnosis report in `/temp/diagnosis_cross_tenant_data_leak.md`) to clear out-of-coverage/cross-tenant leaked states.
+
+

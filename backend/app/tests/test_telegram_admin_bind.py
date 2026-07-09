@@ -104,6 +104,7 @@ async def test_webhook_start_admin_bind(mock_send_msg, mock_get_redis):
     # We query integrations (webhook lookup) and business profile
     mock_scalars_int = MagicMock()
     mock_scalars_int.all.return_value = [mock_integration]
+    mock_scalars_int.first.return_value = mock_integration
     mock_result_int = MagicMock()
     mock_result_int.scalars.return_value = mock_scalars_int
     
@@ -166,6 +167,7 @@ async def test_webhook_contact_share_admin(mock_send_msg, mock_get_redis):
     # Webhook integration check queries
     mock_scalars_int = MagicMock()
     mock_scalars_int.all.return_value = [mock_integration]
+    mock_scalars_int.first.return_value = mock_integration
     mock_result_int = MagicMock()
     mock_result_int.scalars.return_value = mock_scalars_int
     
@@ -241,6 +243,7 @@ async def test_webhook_contact_prompt_fallback(mock_resolve, mock_send_msg, mock
     mock_session = AsyncMock()
     mock_scalars_int = MagicMock()
     mock_scalars_int.all.return_value = [mock_integration]
+    mock_scalars_int.first.return_value = mock_integration
     mock_result_int = MagicMock()
     mock_result_int.scalars.return_value = mock_scalars_int
     

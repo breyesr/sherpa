@@ -801,7 +801,7 @@ Estado actual de los datos recopilados:
             
             # 2. Run graph with checkpointer
             uri = self._get_pool_uri()
-            thread_id = f"prospect_{sender_phone}"
+            thread_id = f"prospect_{business_id}_{sender_phone}"
             
             response_content = ""
             is_completed = False

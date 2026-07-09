@@ -97,3 +97,12 @@
 - [x] Task 153.20: **Onboarding Cleanup**: Remove WhatsApp from onboarding Step 4. WhatsApp enablement is now post-onboarding via Settings → Integrations only.
 
 ---
+
+## Epic 154: Telegram Multi-Tenant Data Isolation Fix
+**Objective**: Fix the critical cross-tenant data leak where Telegram bots for different accounts loaded/shared the same conversational state due to un-scoped LangGraph thread IDs, and optimize the webhook route.
+
+- [x] Task 154.1: **Thread ID Scoping**: Scope the LangGraph `thread_id` with `business_id` in `prospect_qualifier.py`.
+- [x] Task 154.2: **State Purge Scoping**: Ensure the reset/delete SQL queries in `prospect_qualifier.py` are scoped to the business-scoped thread ID.
+- [x] Task 154.3: **Webhook Query Optimization**: Optimize the webhook integration lookup in `telegram.py` to query directly by `webhook_id` using PostgreSQL JSONB operators instead of pulling all rows.
+
+

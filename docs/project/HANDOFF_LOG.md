@@ -1,5 +1,7 @@
 # Handoff Log
 
+- **2026-07-09 (Epic 154 - Telegram Multi-Tenant Data Isolation Fix)**: Started branch `feature/backend/telegram-data-isolation-fix` and logged the epic in `BACKLOG.md` to address the critical cross-tenant data leak. Copied the detailed diagnosis report `diagnosis_cross_tenant_data_leak.md` to `temp/`.
+
 - **2026-07-09 (Epic 154 - Redis-less Database Fallback)**: Implemented a robust database-backed fallback for admin bind token storage and in-memory module-level fallback dictionary for prospect contact prompt tracking. This eliminates any crashes or failures if the Redis service is sleeping or unreachable, guaranteeing 100% functionality of the Telegram admin binding.
 
 - **2026-07-09 (Epic 154 - Fix 500 Crash on Null Settings)**: Resolved an HTTP 500 error in `/generate-bind-token` caused by an unhandled `AttributeError` when `integration.settings` is NULL. Wrapped the token generator in a try-except block to return descriptive error payloads and log tracebacks.
