@@ -18,6 +18,35 @@ from app.core.limiter import limiter
 
 router = APIRouter()
 
+@router.get("/debug/info")
+async def telegram_debug_info(db: AsyncSession = Depends(get_db)):
+    """Fetch debug information about all registered Telegram bots and their current webhooks."""
+    result = await db.execute(
+        select(Integration).where(Integration.provider == 'telegram')
+    )
+    all_tg = result.scalars().all()
+    
+    debug_results = []
+    for integration in all_tg:
+        try:
+            token = decrypt_token(integration.access_token)
+            tg_info = await TelegramService.get_webhook_info(token)
+        except Exception as e:
+            tg_info = {"error": f"Failed to decrypt or call Telegram: {e}"}
+            
+        debug_results.append({
+            "integration_id": integration.id,
+            "business_id": integration.business_id,
+            "settings": integration.settings,
+            "telegram_webhook_info": tg_info
+        })
+        
+    return {
+        "settings_base_url": settings.BASE_URL,
+        "integrations_count": len(all_tg),
+        "integrations": debug_results
+    }
+
 @router.post("/webhook/{webhook_id}")
 @limiter.limit("60/minute")
 async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession = Depends(get_db)):

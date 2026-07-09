@@ -29,10 +29,10 @@ class TelegramService:
 
         webhook_url = f"{settings.BASE_URL}{settings.API_V1_STR}/telegram/webhook/{webhook_id}"
         url = f"https://api.telegram.org/bot{token}/setWebhook"
-        print(f"DEBUG: Calling Telegram setWebhook API with url={webhook_url}")
+        print(f"DEBUG: Calling Telegram setWebhook API with url={webhook_url} and drop_pending_updates=True")
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(url, params={"url": webhook_url})
+                response = await client.get(url, params={"url": webhook_url, "drop_pending_updates": True})
                 data = response.json()
                 print(f"DEBUG: Telegram setWebhook response status={response.status_code}, data={data}")
                 if response.status_code == 200:
@@ -40,6 +40,19 @@ class TelegramService:
                 return {"ok": False, "description": data.get("description", "Unknown error")}
             except Exception as e:
                 print(f"ERROR: Failed to set Telegram webhook: {e}")
+                return {"ok": False, "description": str(e)}
+
+    @staticmethod
+    async def get_webhook_info(token: str) -> dict:
+        """Fetch the current webhook status from Telegram's servers."""
+        url = f"https://api.telegram.org/bot{token}/getWebhookInfo"
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+                if response.status_code == 200:
+                    return response.json()
+                return {"ok": False, "description": response.text}
+            except Exception as e:
                 return {"ok": False, "description": str(e)}
 
     @staticmethod
