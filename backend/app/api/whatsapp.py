@@ -256,12 +256,13 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         from app.models.business import VerticalType
         is_trade = business.vertical_type == VerticalType.TRADE
 
-        from app.api.business import DEFAULT_FEATURES_CONFIG
-        feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+        from app.api.business import get_default_features_config, get_default_routing_config
+        vertical = business.vertical_type.value if hasattr(business.vertical_type, "value") else (business.vertical_type or "BASIC")
+        feat_cfg = business.features_config or get_default_features_config(vertical)
         feature_enabled = True
         flow_enabled = False
 
-        cfg = business.routing_config or {}
+        cfg = business.routing_config or get_default_routing_config(vertical)
 
         if sender_type == "customer":
             feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
