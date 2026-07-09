@@ -18,6 +18,8 @@ from app.core.limiter import limiter
 
 router = APIRouter()
 
+TG_CONTACT_PROMPTS = {}
+
 @router.get("/debug/info")
 async def telegram_debug_info(db: AsyncSession = Depends(get_db)):
     """Fetch debug information about all registered Telegram bots and their current webhooks."""
@@ -156,10 +158,14 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         reply_markup=reply_markup
                     )
                     
-                    from app.core.limiter import _get_redis_client
-                    redis_client = _get_redis_client()
-                    await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
-                    await redis_client.aclose()
+                    try:
+                        from app.core.limiter import _get_redis_client
+                        redis_client = _get_redis_client()
+                        await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
+                        await redis_client.aclose()
+                    except Exception as redis_err:
+                        print(f"DEBUG: Redis delete prompt failed, using memory fallback: {redis_err}")
+                        TG_CONTACT_PROMPTS.pop(chat_id_str, None)
                     
                     return {"status": "ok"}
                 
@@ -195,10 +201,14 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         reply_markup=reply_markup
                     )
                     
-                    from app.core.limiter import _get_redis_client
-                    redis_client = _get_redis_client()
-                    await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
-                    await redis_client.aclose()
+                    try:
+                        from app.core.limiter import _get_redis_client
+                        redis_client = _get_redis_client()
+                        await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
+                        await redis_client.aclose()
+                    except Exception as redis_err:
+                        print(f"DEBUG: Redis delete prompt failed, using memory fallback: {redis_err}")
+                        TG_CONTACT_PROMPTS.pop(chat_id_str, None)
                     
                     return {"status": "ok"}
                 else:
@@ -228,10 +238,14 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         reply_markup=reply_markup
                     )
                     
-                    from app.core.limiter import _get_redis_client
-                    redis_client = _get_redis_client()
-                    await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
-                    await redis_client.aclose()
+                    try:
+                        from app.core.limiter import _get_redis_client
+                        redis_client = _get_redis_client()
+                        await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
+                        await redis_client.aclose()
+                    except Exception as redis_err:
+                        print(f"DEBUG: Redis delete prompt failed, using memory fallback: {redis_err}")
+                        TG_CONTACT_PROMPTS.pop(chat_id_str, None)
                     
                     text = "Hola"
             else:
@@ -250,39 +264,58 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
             parts = clean_text.split(None, 1)
             start_arg = parts[1].strip() if len(parts) > 1 else ""
             if start_arg.startswith("admin_bind_"):
+                # 1. Try checking Redis
+                token_biz_id = None
                 from app.core.limiter import _get_redis_client
                 import json
                 
-                redis_client = _get_redis_client()
-                key = f"tg_bind:{start_arg}"
-                bind_data_bytes = await redis_client.get(key)
-                if bind_data_bytes:
-                    bind_data = json.loads(bind_data_bytes.decode("utf-8"))
-                    token_biz_id = bind_data.get("business_id")
-                    
-                    if token_biz_id == business.id:
-                        # Save admin_telegram_id to integration settings
-                        integration.settings = {
-                            **integration.settings,
-                            "admin_telegram_id": chat_id_str
-                        }
-                        db.add(integration)
-                        
-                        # Clean up Redis
+                try:
+                    redis_client = _get_redis_client()
+                    key = f"tg_bind:{start_arg}"
+                    bind_data_bytes = await redis_client.get(key)
+                    if bind_data_bytes:
+                        bind_data = json.loads(bind_data_bytes.decode("utf-8"))
+                        token_biz_id = bind_data.get("business_id")
                         await redis_client.delete(key)
-                        await redis_client.aclose()
-                        await db.commit()
-                        
-                        bot_token = decrypt_token(integration.access_token)
-                        await TelegramService.send_message(
-                            bot_token, chat_id, 
-                            "✅ ¡Vinculación como Administrador exitosa! A partir de ahora, tus mensajes serán procesados como Representante de Ventas."
-                        )
-                        return {"status": "ok"}
-                    else:
-                        await redis_client.aclose()
-                else:
                     await redis_client.aclose()
+                except Exception as redis_err:
+                    print(f"DEBUG: Redis check failed, checking DB fallback: {redis_err}")
+                
+                # 2. Try checking DB fallback if Redis didn't yield anything
+                if not token_biz_id:
+                    settings_dict = integration.settings if (integration.settings and isinstance(integration.settings, dict)) else {}
+                    saved_token = settings_dict.get("admin_bind_token")
+                    expires_str = settings_dict.get("admin_bind_token_expires")
+                    
+                    if saved_token == start_arg and expires_str:
+                        import datetime
+                        try:
+                            expires_at = datetime.datetime.fromisoformat(expires_str)
+                            if datetime.datetime.utcnow() < expires_at:
+                                token_biz_id = business.id
+                        except Exception as parse_err:
+                            print(f"ERROR parsing expiration timestamp: {parse_err}")
+                
+                # 3. If verified, link admin
+                if token_biz_id == business.id:
+                    settings_dict = integration.settings if (integration.settings and isinstance(integration.settings, dict)) else {}
+                    # Clean up DB token settings
+                    settings_dict.pop("admin_bind_token", None)
+                    settings_dict.pop("admin_bind_token_expires", None)
+                    
+                    integration.settings = {
+                        **settings_dict,
+                        "admin_telegram_id": chat_id_str
+                    }
+                    db.add(integration)
+                    await db.commit()
+                    
+                    bot_token = decrypt_token(integration.access_token)
+                    await TelegramService.send_message(
+                        bot_token, chat_id, 
+                        "✅ ¡Vinculación como Administrador exitosa! A partir de ahora, tus mensajes serán procesados como Representante de Ventas."
+                    )
+                    return {"status": "ok"}
                 
                 bot_token = decrypt_token(integration.access_token)
                 await TelegramService.send_message(
@@ -370,15 +403,30 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         
         # Fallback onboarding check for unknown Telegram users
         if sender_type == "prospective_client" and client_obj is None:
-            from app.core.limiter import _get_redis_client
-            redis_client = _get_redis_client()
             prompt_key = f"tg_contact_prompt:{chat_id_str}"
-            already_prompted = await redis_client.get(prompt_key)
+            already_prompted = False
+            
+            # Try Redis first
+            try:
+                from app.core.limiter import _get_redis_client
+                redis_client = _get_redis_client()
+                val = await redis_client.get(prompt_key)
+                already_prompted = bool(val)
+                if not already_prompted:
+                    await redis_client.set(prompt_key, "true", ex=3600)  # 1 hour TTL
+                await redis_client.aclose()
+            except Exception as redis_err:
+                print(f"DEBUG: Redis unavailable for prompt check, using memory fallback: {redis_err}")
+                import datetime
+                now = datetime.datetime.utcnow()
+                expire_time = TG_CONTACT_PROMPTS.get(chat_id_str)
+                if expire_time and now < expire_time:
+                    already_prompted = True
+                else:
+                    TG_CONTACT_PROMPTS[chat_id_str] = now + datetime.timedelta(hours=1)
+                    already_prompted = False
             
             if not already_prompted:
-                await redis_client.set(prompt_key, "true", ex=3600)  # 1 hour TTL
-                await redis_client.aclose()
-                
                 bot_token = decrypt_token(integration.access_token)
                 reply_markup = {
                     "keyboard": [[
@@ -396,8 +444,6 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                     reply_markup=reply_markup
                 )
                 return {"status": "ok"}
-            else:
-                await redis_client.aclose()
         
         from app.models.business import VerticalType
         is_trade = business.vertical_type == VerticalType.TRADE
@@ -503,24 +549,38 @@ async def generate_bind_token(
     try:
         token = f"admin_bind_{uuid.uuid4().hex}"
         
-        # Store in Redis
+        # 1. Store in Redis (try first)
         from app.core.limiter import _get_redis_client
         import json
+        import datetime
         
-        redis_client = _get_redis_client()
-        payload = {
-            "business_id": str(business.id),
-            "user_id": str(current_user.id)
-        }
-        
-        # 10 minutes TTL
-        key = f"tg_bind:{token}"
         try:
-            await redis_client.set(key, json.dumps(payload), ex=600)
-        finally:
-            await redis_client.aclose()
-        
+            redis_client = _get_redis_client()
+            payload = {
+                "business_id": str(business.id),
+                "user_id": str(current_user.id)
+            }
+            # 10 minutes TTL
+            key = f"tg_bind:{token}"
+            try:
+                await redis_client.set(key, json.dumps(payload), ex=600)
+            finally:
+                await redis_client.aclose()
+        except Exception as redis_err:
+            print(f"DEBUG: Redis is unavailable for generate-bind-token, storing in DB: {redis_err}")
+            
+        # 2. Store in DB as primary/fallback storage
         settings_dict = integration.settings if (integration.settings and isinstance(integration.settings, dict)) else {}
+        expires_at = (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).isoformat()
+        
+        integration.settings = {
+            **settings_dict,
+            "admin_bind_token": token,
+            "admin_bind_token_expires": expires_at
+        }
+        db.add(integration)
+        await db.commit()
+        
         bot_username = settings_dict.get("bot_username")
         deep_link_url = f"https://t.me/{bot_username}?start={token}" if bot_username else ""
         

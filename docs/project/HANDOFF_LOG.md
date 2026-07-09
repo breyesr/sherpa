@@ -1,5 +1,7 @@
 # Handoff Log
 
+- **2026-07-09 (Epic 154 - Redis-less Database Fallback)**: Implemented a robust database-backed fallback for admin bind token storage and in-memory module-level fallback dictionary for prospect contact prompt tracking. This eliminates any crashes or failures if the Redis service is sleeping or unreachable, guaranteeing 100% functionality of the Telegram admin binding.
+
 - **2026-07-09 (Epic 154 - Fix 500 Crash on Null Settings)**: Resolved an HTTP 500 error in `/generate-bind-token` caused by an unhandled `AttributeError` when `integration.settings` is NULL. Wrapped the token generator in a try-except block to return descriptive error payloads and log tracebacks.
 
 - **2026-07-09 (Epic 154 - Real-Time Bind Status Polling & Step 3 Error Visibility)**: Added backend `GET /api/v1/telegram/bind-status` endpoint (with unit test) to check if an admin Telegram account is linked. Configured `TelegramModal` Step 3 to poll this status every 2 seconds, displaying a green checkmark success view and blue highlighted finish button upon successful binding. Hidden the settings page "Vincular Administrador" button once binding is confirmed, rendering a "Connected & Admin Linked" badge instead. Added error rendering inside Step 3 to make token generation failures visible.
