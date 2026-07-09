@@ -18,6 +18,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [deepLinkUrl, setDeepLinkUrl] = useState('');
+  const [adminLinked, setAdminLinked] = useState(false);
 
   const fetchBindToken = async () => {
     setError('');
@@ -51,11 +52,45 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
       setError('');
       setBotToken('');
       setDeepLinkUrl('');
+      setAdminLinked(false);
       if (initialStep === 3) {
         fetchBindToken();
       }
     }
   }, [isOpen, initialStep]);
+
+  // Poll for admin binding status when on step 3
+  useEffect(() => {
+    let intervalId: any;
+    if (step === 3 && isOpen) {
+      setAdminLinked(false);
+      const checkStatus = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/telegram/bind-status`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.admin_linked) {
+              setAdminLinked(true);
+              clearInterval(intervalId);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to check bind status:', err);
+        }
+      };
+      
+      checkStatus();
+      intervalId = setInterval(checkStatus, 2000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [step, isOpen, token]);
 
   if (!isOpen) return null;
 
@@ -171,11 +206,19 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
             <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 flex flex-col items-center">
               <p className="font-bold text-blue-900 text-lg">Vincular Administrador</p>
               <p className="text-sm text-blue-700 mt-2">
-                Para que Sherpa te reconozca como Administrador/Vendedor y responda con los reportes de ventas, vincula tu cuenta de Telegram:
+                Para que Sherpa te reconozca como Administrador/Vendedor y responda con los reportes de ventas, escanea el código QR con tu celular o haz clic en el botón de abajo para abrir Telegram y vincular tu cuenta:
               </p>
               
-              {deepLinkUrl ? (
-                <div className="mt-5 space-y-5 w-full">
+              {adminLinked ? (
+                <div className="mt-6 space-y-4 w-full p-4 bg-white rounded-2xl border border-green-100 shadow-sm animate-in zoom-in duration-300">
+                  <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-green-500 border border-green-200 mx-auto">
+                    <CheckCircle2 size={36} />
+                  </div>
+                  <p className="font-bold text-green-900 text-lg">¡Administrador Vinculado!</p>
+                  <p className="text-sm text-green-600">Tu cuenta de Telegram ha sido correctamente asociada a tu perfil de Sherpa.</p>
+                </div>
+              ) : deepLinkUrl ? (
+                <div className="mt-5 space-y-5 w-full animate-in fade-in duration-300">
                   <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-gray-100 mx-auto">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(deepLinkUrl)}`} 
@@ -210,9 +253,9 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
                   setDeepLinkUrl('');
                 }, 2000);
               }}
-              className="w-full py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+              className={`w-full py-4 rounded-2xl font-bold transition-all shadow-md ${adminLinked ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
-              Finalizar / Siguiente
+              {adminLinked ? 'Terminar Configuración' : 'Finalizar / Siguiente'}
             </button>
           </div>
         );
