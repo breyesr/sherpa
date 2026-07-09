@@ -500,34 +500,41 @@ async def generate_bind_token(
         raise HTTPException(status_code=400, detail="Telegram integration is not configured. Please link the bot first.")
 
     # Generate a unique token
-    token = f"admin_bind_{uuid.uuid4().hex}"
-    
-    # Store in Redis
-    from app.core.limiter import _get_redis_client
-    import json
-    
-    redis_client = _get_redis_client()
-    payload = {
-        "business_id": str(business.id),
-        "user_id": str(current_user.id)
-    }
-    
-    # 10 minutes TTL
-    key = f"tg_bind:{token}"
     try:
-        await redis_client.set(key, json.dumps(payload), ex=600)
-    finally:
-        await redis_client.aclose()
-    
-    bot_username = integration.settings.get("bot_username")
-    deep_link_url = f"https://t.me/{bot_username}?start={token}" if bot_username else ""
-    
-    return {
-        "status": "success",
-        "token": token,
-        "bot_username": bot_username,
-        "deep_link_url": deep_link_url
-    }
+        token = f"admin_bind_{uuid.uuid4().hex}"
+        
+        # Store in Redis
+        from app.core.limiter import _get_redis_client
+        import json
+        
+        redis_client = _get_redis_client()
+        payload = {
+            "business_id": str(business.id),
+            "user_id": str(current_user.id)
+        }
+        
+        # 10 minutes TTL
+        key = f"tg_bind:{token}"
+        try:
+            await redis_client.set(key, json.dumps(payload), ex=600)
+        finally:
+            await redis_client.aclose()
+        
+        settings_dict = integration.settings if (integration.settings and isinstance(integration.settings, dict)) else {}
+        bot_username = settings_dict.get("bot_username")
+        deep_link_url = f"https://t.me/{bot_username}?start={token}" if bot_username else ""
+        
+        return {
+            "status": "success",
+            "token": token,
+            "bot_username": bot_username,
+            "deep_link_url": deep_link_url
+        }
+    except Exception as e:
+        print(f"ERROR in generate_bind_token: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.get("/bind-status")
 async def get_bind_status(

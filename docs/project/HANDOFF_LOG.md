@@ -1,5 +1,7 @@
 # Handoff Log
 
+- **2026-07-09 (Epic 154 - Fix 500 Crash on Null Settings)**: Resolved an HTTP 500 error in `/generate-bind-token` caused by an unhandled `AttributeError` when `integration.settings` is NULL. Wrapped the token generator in a try-except block to return descriptive error payloads and log tracebacks.
+
 - **2026-07-09 (Epic 154 - Real-Time Bind Status Polling & Step 3 Error Visibility)**: Added backend `GET /api/v1/telegram/bind-status` endpoint (with unit test) to check if an admin Telegram account is linked. Configured `TelegramModal` Step 3 to poll this status every 2 seconds, displaying a green checkmark success view and blue highlighted finish button upon successful binding. Hidden the settings page "Vincular Administrador" button once binding is confirmed, rendering a "Connected & Admin Linked" badge instead. Added error rendering inside Step 3 to make token generation failures visible.
 
 - **2026-07-08 (Epic 154 - Unique Constraint Fixes & Frontend UX Enhancements)**: Fixed database `UniqueViolationError` on `telegram_id_hash` by checking for existing Telegram clients/prospects first and merging details instead of inserting duplicates. Implemented clean old-bind releasing for `/link` and contact webhook paths to avoid unique key crashes. Propagated `/generate-bind-token` API errors to the frontend modal, and added a "Vincular Administrador" button on `IntegrationsPanel.tsx` to let connected Telegram bot integrations view their QR codes and deep links directly at any time. Passed all 54 unit and integration tests.
