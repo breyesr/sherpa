@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Send, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
@@ -9,14 +9,53 @@ interface TelegramModalProps {
   onClose: () => void;
   onSuccess: () => void;
   token: string | null;
+  initialStep?: number;
 }
 
-export default function TelegramModal({ isOpen, onClose, onSuccess, token }: TelegramModalProps) {
-  const [step, setStep] = useState(1);
+export default function TelegramModal({ isOpen, onClose, onSuccess, token, initialStep = 1 }: TelegramModalProps) {
+  const [step, setStep] = useState(initialStep);
   const [botToken, setBotToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [deepLinkUrl, setDeepLinkUrl] = useState('');
+
+  const fetchBindToken = async () => {
+    setError('');
+    try {
+      const tokenRes = await fetch(`${API_BASE_URL}/telegram/generate-bind-token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        if (tokenData.deep_link_url) {
+          setDeepLinkUrl(tokenData.deep_link_url);
+        } else {
+          throw new Error('Telegram bot is linked, but has no username configured.');
+        }
+      } else {
+        const errorData = await tokenRes.json();
+        throw new Error(errorData.detail || 'Failed to generate admin binding token');
+      }
+    } catch (tokenErr: any) {
+      console.error('Failed to generate admin bind token:', tokenErr);
+      setError(tokenErr.message);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(initialStep);
+      setError('');
+      setBotToken('');
+      setDeepLinkUrl('');
+      if (initialStep === 3) {
+        fetchBindToken();
+      }
+    }
+  }, [isOpen, initialStep]);
 
   if (!isOpen) return null;
 
@@ -41,22 +80,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
       }
 
       // 2. Generate Admin Deep Link Token
-      try {
-        const tokenRes = await fetch(`${API_BASE_URL}/telegram/generate-bind-token`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (tokenRes.ok) {
-          const tokenData = await tokenRes.json();
-          if (tokenData.deep_link_url) {
-            setDeepLinkUrl(tokenData.deep_link_url);
-          }
-        }
-      } catch (tokenErr) {
-        console.error('Failed to generate admin bind token:', tokenErr);
-      }
+      await fetchBindToken();
 
       setStep(3); // Go to Admin Deep Link/QR step
       setLoading(false);
