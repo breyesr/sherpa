@@ -39,11 +39,19 @@ class IdentityResolver:
             tg_integration = res_int.scalars().first()
             if tg_integration and tg_integration.settings and str(tg_integration.settings.get("admin_telegram_id")) == str(normalized_id):
                 # This is the linked Telegram admin! Find or create a sales rep Client record
+                # Query by telegram_id_hash first to avoid unique key violations
                 res_biz_cli = await db.execute(
-                    select(Client).where(Client.business_id == business_id, Client.phone == biz_phone) if biz_phone else
                     select(Client).where(Client.business_id == business_id, Client.telegram_id_hash == id_hash)
                 )
                 client = res_biz_cli.scalars().first()
+                
+                if not client and biz_phone:
+                    # Fallback: Query by phone
+                    res_biz_cli_phone = await db.execute(
+                        select(Client).where(Client.business_id == business_id, Client.phone == biz_phone)
+                    )
+                    client = res_biz_cli_phone.scalars().first()
+                    
                 if not client:
                     client = Client(
                         business_id=business_id,

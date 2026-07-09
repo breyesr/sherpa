@@ -114,10 +114,19 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                     }
                     db.add(integration)
                     
-                    res_biz_cli = await db.execute(
-                        select(Client).where(Client.business_id == business.id, Client.phone == biz_phone)
+                    # Check by telegram_id_hash first to prevent duplicate key violations
+                    res_tg_cli = await db.execute(
+                        select(Client).where(Client.business_id == business.id, Client.telegram_id_hash == Client.hash_id(chat_id_str))
                     )
-                    client_obj = res_biz_cli.scalars().first()
+                    client_obj = res_tg_cli.scalars().first()
+                    
+                    if not client_obj:
+                        # Fallback: check by phone
+                        res_biz_cli = await db.execute(
+                            select(Client).where(Client.business_id == business.id, Client.phone == biz_phone)
+                        )
+                        client_obj = res_biz_cli.scalars().first()
+                        
                     if not client_obj:
                         client_obj = Client(
                             business_id=business.id,
@@ -130,6 +139,10 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         )
                         db.add(client_obj)
                     else:
+                        client_obj.name = "Sales Rep (Admin)"
+                        client_obj.phone = biz_phone
+                        client_obj.role = "sales_rep"
+                        client_obj.is_prospect = False
                         client_obj.telegram_id = encrypt_token(chat_id_str)
                         client_obj.telegram_id_hash = Client.hash_id(chat_id_str)
                         db.add(client_obj)
@@ -150,12 +163,25 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                     
                     return {"status": "ok"}
                 
-                # If not Admin, check if it matches a Client/Distributor
+                # Fetch existing client with this Telegram ID if any
+                res_tg_cli = await db.execute(
+                    select(Client).where(Client.business_id == business.id, Client.telegram_id_hash == Client.hash_id(chat_id_str))
+                )
+                existing_tg_client = res_tg_cli.scalars().first()
+
+                # If not Admin, check if it matches a Client/Distributor by phone
                 res_cli = await db.execute(
                     select(Client).where(Client.business_id == business.id, Client.phone == norm_phone)
                 )
                 client_obj = res_cli.scalars().first()
                 if client_obj:
+                    # If another client already has this Telegram ID hash, release it first
+                    if existing_tg_client and existing_tg_client.id != client_obj.id:
+                        existing_tg_client.telegram_id = None
+                        existing_tg_client.telegram_id_hash = None
+                        db.add(existing_tg_client)
+                        await db.flush()
+
                     client_obj.telegram_id = encrypt_token(chat_id_str)
                     client_obj.telegram_id_hash = Client.hash_id(chat_id_str)
                     db.add(client_obj)
@@ -176,16 +202,22 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                     
                     return {"status": "ok"}
                 else:
-                    # It's a new Prospect! Register them as prospect
-                    client_obj = Client(
-                        business_id=business.id,
-                        name=f"{first_name or ''} {last_name or ''}".strip() or "Prospecto Telegram",
-                        phone=norm_phone,
-                        role="client",
-                        is_prospect=True,
-                        telegram_id=encrypt_token(chat_id_str),
-                        telegram_id_hash=Client.hash_id(chat_id_str)
-                    )
+                    # It's a new Prospect! Use existing tg client if any, otherwise create new
+                    if existing_tg_client:
+                        client_obj = existing_tg_client
+                        client_obj.phone = norm_phone
+                        if not client_obj.name or client_obj.name == "Prospecto Telegram":
+                            client_obj.name = f"{first_name or ''} {last_name or ''}".strip() or "Prospecto Telegram"
+                    else:
+                        client_obj = Client(
+                            business_id=business.id,
+                            name=f"{first_name or ''} {last_name or ''}".strip() or "Prospecto Telegram",
+                            phone=norm_phone,
+                            role="client",
+                            is_prospect=True,
+                            telegram_id=encrypt_token(chat_id_str),
+                            telegram_id_hash=Client.hash_id(chat_id_str)
+                        )
                     db.add(client_obj)
                     await db.commit()
                     
@@ -295,6 +327,17 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                 await db.flush()
             
             if client_to_link:
+                # If another client already has this Telegram ID hash, release it first
+                res_tg_cli = await db.execute(
+                    select(Client).where(Client.business_id == business.id, Client.telegram_id_hash == Client.hash_id(chat_id_str))
+                )
+                existing_tg_client = res_tg_cli.scalars().first()
+                if existing_tg_client and existing_tg_client.id != client_to_link.id:
+                    existing_tg_client.telegram_id = None
+                    existing_tg_client.telegram_id_hash = None
+                    db.add(existing_tg_client)
+                    await db.flush()
+
                 # Link this Telegram chat ID
                 client_to_link.telegram_id = chat_id_str
                 client_to_link.telegram_id_hash = Client.hash_id(chat_id_str)
