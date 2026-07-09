@@ -1,14 +1,23 @@
 # Handoff State: 2026-07-08 (Session Wrap-up)
 
 ## Current Branch
-`feature/backend/telegram-fix` (active development branch).
+`feature/backend/epic-154` (active development branch for Admin Binding & Routing).
 
 ## Accomplishments This Session
-1. **Telegram & WhatsApp Gating Configuration Fixes**:
-   - **Vertical-Aware Default Configurations**: Replaced the static, all-disabled `DEFAULT_FEATURES_CONFIG` fallback with `get_default_features_config(vertical)` and `get_default_routing_config(vertical)` in `app/api/telegram.py` and `app/api/whatsapp.py` to prevent B2B TRADE businesses with empty config/routing in the DB from having all their messaging flows blocked.
-   - **Robust Enum/String Resolution**: Added safe property checks (`hasattr(..., "value")`) when retrieving `business.vertical_type` to handle both SQLalchemy Enum values and raw Python strings seamlessly without raising `AttributeError`.
-   - **Test Alignment**: Updated the mocked `BusinessProfile` instances in `test_inbound_routing.py` to have `vertical_type="TRADE"` to ensure that their default gating config resolves features as active, fixing test execution failures and restoring the full 50-test backend suite to 100% success.
-   - **Critical Import Fix**: Added the missing import for `DEFAULT_FEATURES_CONFIG` in `telegram.py`.
+1. **Epic 154 - Cross-Platform Admin Binding & Frictionless CRM Routing**:
+   - **Backend Token Generation (Task 154.1)**: Created `POST /api/v1/telegram/generate-bind-token` returning secure, 10-minute Redis tokens mapping to business/user contexts.
+   - **Deep Link QR UI (Task 154.2)**: Redesigned frontend `TelegramModal.tsx` to include Step 3, displaying a scannable QR Code and button for quick mobile linking.
+   - **Webhook Start Handler (Task 154.3)**: Intercepted `/start admin_bind_<token>` inside `telegram.py` webhook, resolving token and binding `admin_telegram_id` to integration settings.
+   - **Telegram Routing Engine (Task 154.5)**: Updated `IdentityResolver` to check Telegram integration settings and resolve linked admin users as `sales_rep` instantly.
+   - **Fallback Contact Keyboard (Tasks 154.6 & 154.7)**: Sent `request_contact=True` keyboard markup to unknown Telegram senders. Intercepted shared `contact` payloads to link IDs to existing records or register new Prospects.
+   - **Testing Suite**: Created `test_telegram_admin_bind.py` verifying all routes, prompts, and binds (all 4 new tests passed).
+
+2. **Telegram Webhook Disconnect & Gating Fixes**:
+   - **Webhook Deletion**: Fixed an issue where disconnecting a Telegram integration deleted the DB record but left the webhook URL registered on Telegram's servers. Now explicitly calls `deleteWebhook(drop_pending_updates=True)` in `api/integrations.py`.
+   - **Pending Updates Drop**: Added `drop_pending_updates=True` to the `setWebhook` call in `telegram_service.py` to prevent old, queued messages from being erroneously delivered to new webhooks.
+   - **Diagnostic Endpoint**: Created `/api/v1/telegram/debug/info` to securely query the database's decrypted bot token and directly fetch its active webhook URL from Telegram's servers for instant debugging.
+   - **Vertical-Aware Fallbacks**: Replaced static `DEFAULT_FEATURES_CONFIG` fallback with vertical-aware configs in telegram and whatsapp routers to prevent gating B2B TRADE accounts.
+   - **Admin Binding Planning**: Evaluated cross-platform admin binding constraints and authored the implementation plan for **Epic 154** (QR/Deep Link Admin Binding & Routing).
 
 2. **Multi-Tenant WhatsApp Senders Phase 1 Complete (Epic 153)**:
    - **Task 153.1 (Encryption Utility)**: Created reusable `encrypt_value`/`decrypt_value` Fernet functions in `app/core/encryption.py` supporting optional `ENCRYPTION_KEY` env var; refactored `security.py` to delegate to the new helper.
@@ -51,6 +60,7 @@
    - **Staging Database Populated**: Dumped the fully populated local database tables using PostgreSQL `COPY` format and imported all 157,525 Mexican geography records into the remote Railway Postgres database in under 2 seconds.
 
 ## Active Backlog State
+- **Epic 154 (Admin Binding & CRM Routing)**: Backend implementation and Frontend modal QR integration complete (`[x] 154.1 - 154.7`).
 - **Epic 153 (Multi-Tenant WhatsApp)**: All Phases complete (`[x] 153.1 - 153.20`).
 - **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED (Admin console for objectives, strategy library dropdown integration).
 - **Epic 108, Tasks 108.4–108.6**: Pending (Dashboard API, Opportunity Inbox, Anniversary Trigger).
@@ -61,6 +71,6 @@
 
 ## Next Steps
 - Verify the cascading address dropdowns live on the deployed Staging environment.
-- Run `full_backfill_corpus.py` script on the target environment to rebuild vector embeddings for existing stores so their summaries include the updated delivery ZIP codes.
-- Verify Telegram webhook connectivity and verify webhook registration URL in Staging.
+- Test the Telegram Admin Link button and scannable QR code live in staging.
+- Verify Telegram webhook routing for unknown and known numbers on staging.
 - Plan release and preparation for epic closures.
