@@ -261,6 +261,7 @@ async def link_telegram(
         "bot_name": bot_info.get("first_name"),
         "local_testing": webhook_res.get("local_skip", False)
     }
+    print(f"DEBUG: Saving integration to DB. settings={integration.settings}")
     
     await db.commit()
     return {"status": "success", "bot_username": bot_info.get("username")}
