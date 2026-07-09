@@ -10,6 +10,8 @@
    - **Webhook Start Handler (Task 154.3)**: Intercepted `/start admin_bind_<token>` inside `telegram.py` webhook, resolving token and binding `admin_telegram_id` to integration settings.
    - **Telegram Routing Engine (Task 154.5)**: Updated `IdentityResolver` to check Telegram integration settings and resolve linked admin users as `sales_rep` instantly.
    - **Fallback Contact Keyboard (Tasks 154.6 & 154.7)**: Sent `request_contact=True` keyboard markup to unknown Telegram senders. Intercepted shared `contact` payloads to link IDs to existing records or register new Prospects.
+   - **Database Unique Constraint Fixes**: Prevented unique key violations on `telegram_id_hash` during QR binding, `/link`, and contact sharing by verifying client existence first and releasing old bindings cleanly.
+   - **Settings Integration UX Enhancements**: Added an action button "Vincular Administrador" directly to the settings integrations panel for connected bots, allowing users to view the QR/link modal directly.
    - **Testing Suite**: Created `test_telegram_admin_bind.py` verifying all routes, prompts, and binds (all 4 new tests passed).
 
 2. **Telegram Webhook Disconnect & Gating Fixes**:
