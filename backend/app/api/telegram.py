@@ -145,6 +145,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         flow_enabled = False
         
         cfg = business.routing_config or {}
+        from app.api.business import DEFAULT_FEATURES_CONFIG
         feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
 
         if sender_type == "customer":
