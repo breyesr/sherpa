@@ -536,6 +536,7 @@
 - **Task 156.2 Completed**: Implemented the segmented orders API endpoint `GET /api/v1/trade/prospects/orders` in [trade.py](file:///Users/bernardo/projects/sherpa/backend/app/api/trade.py#L558-L578) with dynamic segment filter joins. Regenerated `openapi.json` and ran `npm run gen:api` to sync TypeScript definitions with the frontend.
 - **Task 156.3 Completed**: Added segment-filtered Orders submenu links (`/trade/prospects/orders?segment=wholesale` and `/trade/prospects/orders?segment=retail`) in [Sidebar.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/Sidebar.tsx).
 - **Task 156.4 Completed**: Created the high-fidelity Next.js page at [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/orders/page.tsx) to query and render segmented prospect orders, supporting quick-verification updates.
+- **Task 156.5 Completed**: Wrote and integrated explicit database assertions verifying automated `Order` and `OrderItem` generation inside the test suite [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py). Verified that all 5 simulation scenarios pass correctly.
 
 
 
