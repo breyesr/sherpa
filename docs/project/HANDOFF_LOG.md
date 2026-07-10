@@ -525,3 +525,10 @@
 - **Lower-Tier Orders Integration**: Scoped the inclusion of direct wholesale Orders (`/trade/orders`) alongside Point of Sale (`/trade/stores`) as fallback links for lower-tier profiles without full B2B Solutions access.
 - **Documentation**: Generated and moved the complete design specs and code recommendations report to [sidebar_diagnostic_report.md](file:///Users/bernardo/projects/sherpa/temp/sidebar_diagnostic_report.md) under `/temp`.
 - **Handoff Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to slate Epic 155 as the next active task.
+
+## [2026-07-09] - Epic 156 Creation: Automated Order Generation & Segmented Prospecting Orders UI
+- **Backlog Entry (Epic 156)**: Expanded Epic 156 in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) to cover automated order creation during qualification and segmented frontend Prospecting Orders views/routes (Wholesale vs. Retail).
+- **Workflow Scoping**: Defined database model usage and frontend query parameter mapping (`?segment=wholesale` and `?segment=retail`) to partition orders.
+- **State Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to log the expanded Epic 156.
+
+

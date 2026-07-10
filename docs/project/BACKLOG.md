@@ -113,5 +113,16 @@
 - [ ] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
 - [ ] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
 
+## Epic 156: Automated Order Generation & Segmented Prospecting Orders UI
+**Objective**: Automatically generate a pending, unverified wholesale Order and OrderItem in the database during the final stage of inbound prospect qualification, and implement the frontend list views partitioned by pipeline segment (Wholesale vs. Retail) under the Prospecting sidebar menu.
+
+- [ ] Task 156.1: **Order Integration in Qualifier**: Update the `qualify_lead` node in `prospect_qualifier.py` to instantiate and add `Order` and `OrderItem` records upon successful qualification, setting `source_type` to `INTEGRATION` and `is_verified` to `False`.
+- [ ] Task 156.2: **Segmented Orders API**: Implement `GET /api/v1/trade/prospects/orders` supporting a `segment` filter (`wholesale` or `retail`) to return orders linked to prospect stores matching the segment.
+- [ ] Task 156.3: **Prospecting Orders Sidebar Links**: Update `frontend/components/Sidebar.tsx` to render "Orders" under both the Wholesale and Retail Prospecting submenus, linking to `/trade/prospects/orders?segment=wholesale` and `/trade/prospects/orders?segment=retail` respectively.
+- [ ] Task 156.4: **Segmented Orders Dashboard View**: Create the frontend view for `/trade/prospects/orders` that renders a list of pending orders filtered by the segment query parameter.
+- [ ] Task 156.5: **Ingestion & UI Integration Tests**: Add integration tests verifying that qualifying a lead over WhatsApp correctly creates a pending Order, and that the segmented API returns correct results.
+
+
+
 
 
