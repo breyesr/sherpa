@@ -62,6 +62,42 @@ class ProspectQualifier:
     def __init__(self, db: AsyncSession):
         self.db = db
         
+    async def _get_product_by_id_or_name(self, identifier: str, business_id: str) -> Optional[Product]:
+        if not identifier:
+            return None
+        from sqlalchemy import func
+        # Try finding by ID
+        try:
+            res = await self.db.execute(
+                select(Product)
+                .join(Category)
+                .where(Product.id == identifier, Category.business_id == business_id)
+            )
+            p = res.scalars().first()
+            if p:
+                return p
+        except Exception:
+            pass
+        # Try finding by name (case-insensitive)
+        res = await self.db.execute(
+            select(Product)
+            .join(Category)
+            .where(func.lower(Product.name) == identifier.lower(), Category.business_id == business_id)
+        )
+        p = res.scalars().first()
+        if p:
+            return p
+        # Try finding by prefix/fuzzy name (handles trailing parentheses truncation)
+        clean_id = identifier.strip().rstrip("()[] ")
+        if clean_id:
+            res = await self.db.execute(
+                select(Product)
+                .join(Category)
+                .where(Product.name.ilike(f"%{clean_id}%"), Category.business_id == business_id)
+            )
+            return res.scalars().first()
+        return None
+        
     def _get_pool_uri(self):
         """Get psycopg compatible URI."""
         return settings.SQLALCHEMY_DATABASE_URI.replace("postgresql+asyncpg://", "postgresql://")
@@ -148,7 +184,15 @@ class ProspectQualifier:
         async def call_model(state: ProspectQualifierState):
             messages = state["messages"]
             phase = state.get("phase") or "intent"
-                     # System Prompt based on phase
+            
+            # Fetch human-readable product name to avoid exposing database ID
+            prod_name = "No proporcionado"
+            if state.get("product"):
+                p_obj = await self._get_product_by_id_or_name(state.get("product"), business_id)
+                if p_obj:
+                    prod_name = p_obj.name
+
+            # System Prompt based on phase
             if phase == "intent":
                 system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
 Tu objetivo actual (Paso 1) es saludar al usuario amigablemente y capturar exactamente dos datos iniciales:
@@ -161,75 +205,49 @@ Catálogo de productos disponibles:
 Instrucciones:
 - Saluda amigablemente si es el primer mensaje.
 - Pregunta explícitamente en qué producto de nuestro catálogo está interesado y la cantidad que desea.
+- Si el usuario menciona el producto y la cantidad, debes llamar inmediatamente a la herramienta `update_prospect_data` con el ID del producto y la cantidad requerida. Esto es obligatorio para poder avanzar de fase.
+- Si el usuario solicita una cantidad menor al umbral mayorista del catálogo, NO intentes persuadirlo de comprar al mayoreo ni de subir la cantidad. Registra la cantidad de inmediato llamando a la herramienta `update_prospect_data`, y explica amablemente en tu respuesta que lo canalizaremos a la opción minorista (tienda física autorizada) para su zona.
 - NO pidas nombres, correos, ni direcciones aún. Mantén el foco únicamente en capturar el producto y la cantidad.
-- Si el usuario menciona el producto y la cantidad, llama a la herramienta `update_prospect_data` con el ID del producto y la cantidad requerida.
+- BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario. Utiliza únicamente los nombres comerciales de los productos.
 - Si te proporciona otros datos, ignóralos por ahora o regístralos usando la herramienta, pero no los solicites.
 
 Estado actual:
-- Producto (ID): {state.get('product') or 'No proporcionado'}
+- Producto: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
-"""
-            elif phase == "collecting_retail_address":
-                system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
-Tu objetivo actual es solicitar al cliente de venta al menudeo (pedido menor al umbral mayorista) su ubicación de entrega (dirección de la obra y Código Postal de 5 dígitos) para sugerirle las tiendas físicas autorizadas más cercanas o verificar si no hay cobertura en su zona.
-
-Instrucciones:
-- Explica de manera amable que, al ser un pedido menor a nuestro volumen de mayoreo, requerimos su Código Postal y dirección de entrega para ver si contamos con una tienda física autorizada cercana o cobertura en su zona.
-- Pregunta amigablemente dónde desea que se realice la entrega (dirección y Código Postal de 5 dígitos).
-- NO solicites su nombre completo, teléfono, email ni empresa todavía. Enfócate únicamente en obtener la dirección y el Código Postal.
-- Si el usuario te proporciona la dirección y el CP, llama a la herramienta `update_prospect_data` con los campos `location` y `zip_code`.
-
-Estado actual:
-- Producto (ID): {state.get('product') or 'No proporcionado'}
-- Cantidad: {state.get('quantity') or 'No proporcionada'}
-- Dirección de la obra: {state.get('location') or 'No proporcionada'}
-- Código Postal: {state.get('zip_code') or 'No proporcionado'}
-"""
-            elif phase == "collecting_retail_address":
-                system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
-Tu objetivo actual es solicitar al cliente de manera muy amable su dirección de entrega y Código Postal de 5 dígitos para validar qué sucursal autorizada está más cerca de su zona.
-
-Instrucciones:
-- Pregunta amigablemente al cliente dónde desea que se realice la entrega (dirección de la obra y Código Postal de 5 dígitos).
-- NO solicites su nombre ni email todavía. Enfócate únicamente en obtener la dirección de entrega y el Código Postal.
-- Si el usuario te proporciona la dirección y el CP, llama a la herramienta `update_prospect_data` con los campos `location` y `zip_code`.
 """
             elif phase == "collecting_retail_details":
-                matched_store_id = state.get("matched_store_id")
-                res_store = await self.db.execute(select(Store).where(Store.id == matched_store_id))
-                matched_store = res_store.scalars().first()
-                matched_store_name = matched_store.name if matched_store else "nuestras tiendas autorizadas"
-                
-                res_prod = await self.db.execute(select(Product).where(Product.id == state.get("product")))
-                product = res_prod.scalars().first()
-                product_name = product.name if product else "el producto"
+                product = await self._get_product_by_id_or_name(state.get("product"), business_id)
                 threshold = product.wholesale_threshold or 0 if product else 0
                 qty = state.get("quantity") or 0
                 
                 system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
-Tu objetivo actual es informarle amablemente al cliente que su pedido de {qty} unidades es menor a nuestro volumen mayorista ({threshold} unidades), por lo que lo referiremos a la sucursal autorizada '{matched_store_name}'.
-Solicita al cliente que te proporcione su nombre completo y correo electrónico (email) para registrar su referencia y coordinar con la sucursal.
+Tu objetivo actual es informarle amablemente al cliente que su pedido de {qty} unidades es menor a nuestro volumen mayorista ({threshold} unidades), por lo que lo referiremos a una sucursal física autorizada cercana.
+Requerimos capturar en un solo mensaje los siguientes datos para sugerirle la tienda más cercana y registrar su referencia:
+1. Dirección de entrega de la obra
+2. Código Postal de 5 dígitos
+3. Nombre completo
+4. Correo electrónico (email)
+5. Nombre de su empresa (opcional, si aplica)
 
 Instrucciones:
-- Explica de forma amable que por la cantidad solicitada, le daremos seguimiento refiriéndolo con la sucursal '{matched_store_name}'.
-- Solicita en un solo mensaje:
-  1. Nombre completo
-  2. Correo electrónico (email)
-- Si el usuario proporciona estos datos, llama a la herramienta `update_prospect_data` con los campos `name` y `email`.
-- Mantén un tono sumamente servicial y profesional.
+- Explica de manera amable que, al ser un pedido menor a nuestro volumen de mayoreo, lo canalizaremos a una sucursal autorizada física.
+- Solicita de forma amigable los datos faltantes en un solo mensaje.
+- NO solicites su número de teléfono bajo ninguna circunstancia, ya que nos estamos comunicando por su número activo.
+- BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
+- Si el usuario te proporciona cualquiera de los datos solicitados (ya sea uno de ellos o varios), debes llamar INMEDIATAMENTE a la herramienta `update_prospect_data` con los campos correspondientes (`location`, `zip_code`, `name`, `email`, `company`) para registrarlos en el estado. No esperes a que el usuario proporcione todos los datos para llamar a la herramienta.
 
 Estado actual de los datos recopilados:
-- Producto de interés (ID): {state.get('product') or 'No proporcionado'}
+- Producto de interés: {prod_name}
 - Cantidad: {qty}
 - Nombre: {state.get('name') or 'No proporcionado'}
 - Email: {state.get('email') or 'No proporcionado'}
 - Dirección de la obra: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
+- Empresa: {state.get('company') or 'No proporcionada'}
 """
             elif phase == "collecting_waitlist":
                 zip_val = state.get("zip_code")
-                res_prod = await self.db.execute(select(Product).where(Product.id == state.get("product")))
-                product = res_prod.scalars().first()
+                product = await self._get_product_by_id_or_name(state.get("product"), business_id)
                 product_name = product.name if product else "el producto"
                 
                 # Look up prospect state to filter alternative stores
@@ -266,10 +284,11 @@ Instrucciones:
   3. Correo electrónico (email)
   4. Nombre de su empresa (si aplica)
 - Deja claro que le avisaremos en cuanto ampliemos la cobertura a su zona.
+- BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
 - Si el usuario proporciona estos datos, llama a la herramienta `update_prospect_data` con todos los campos correspondientes (`name`, `phone`, `email`, `company`).
 
 Estado actual de los datos recopilados:
-- Producto de interés (ID): {state.get('product') or 'No proporcionado'}
+- Producto de interés: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 - Nombre: {state.get('name') or 'No proporcionado'}
 - Teléfono: {state.get('phone') or 'No proporcionado'}
@@ -287,10 +306,11 @@ Tu objetivo actual (Paso 3) es solicitar al cliente la ubicación de entrega (di
 Instrucciones:
 - Pregunta amigablemente al cliente dónde desea que se realice la entrega (dirección de la obra y Código Postal de 5 dígitos).
 - NO solicites su nombre completo, teléfono, email ni empresa todavía. Enfócate únicamente en obtener la dirección de entrega y el Código Postal.
+- BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
 - Si el usuario te proporciona la dirección y el CP, llama a la herramienta `update_prospect_data` con los campos `location` y `zip_code`. Si el usuario de forma proactiva también proporciona su nombre, teléfono, correo o empresa, inclúyelos en la llamada a la herramienta.
 
 Estado actual:
-- Producto (ID): {state.get('product') or 'No proporcionado'}
+- Producto: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 - Dirección de la obra: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
@@ -306,10 +326,11 @@ Instrucciones:
   3. Correo electrónico (email)
   4. Nombre de su empresa (si aplica)
 - Explica que con estos datos finales procederás a registrar su solicitud para que un asesor lo contacte de inmediato.
+- BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
 - Si el usuario proporciona estos datos, llama a la herramienta `update_prospect_data` con todos los campos correspondientes (`name`, `phone`, `email`, `company`).
 
 Estado actual de los datos recopilados:
-- Producto de interés (ID): {state.get('product') or 'No proporcionado'}
+- Producto de interés: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 - Nombre: {state.get('name') or 'No proporcionado'}
 - Teléfono: {state.get('phone') or 'No proporcionado'}
@@ -347,21 +368,23 @@ Estado actual de los datos recopilados:
             # Step 2: Quantity check (runs as soon as we have product and quantity, and phase is 'intent')
             if merged_phase == "intent" and merged_product and merged_quantity is not None:
                 # Look up product threshold
-                res_prod = await self.db.execute(select(Product).where(Product.id == merged_product))
-                product = res_prod.scalars().first()
+                product = await self._get_product_by_id_or_name(merged_product, business_id)
                 if product:
+                    if merged_product != product.id:
+                        extracted_data["product"] = product.id
+                        merged_product = product.id
                     threshold = product.wholesale_threshold or 0
                     if merged_quantity < threshold:
-                        # Below threshold: transition to collecting_retail_address instead of rejecting immediately
-                        extracted_data["phase"] = "collecting_retail_address"
-                        merged_phase = "collecting_retail_address"
+                        # Below threshold: transition directly to collecting retail details
+                        extracted_data["phase"] = "collecting_retail_details"
+                        merged_phase = "collecting_retail_details"
                     else:
                         # Qualified for Step 3: transition to collecting details
                         extracted_data["phase"] = "collecting"
                         merged_phase = "collecting"
             
             # Try to auto-extract ZIP Code from location if not explicitly provided
-            if merged_phase in ["collecting", "collecting_retail_address"] and merged_location and not merged_zip_code:
+            if merged_phase in ["collecting", "collecting_retail_details"] and merged_location and not merged_zip_code:
                 import re
                 cp_match = re.search(r'\b\d{5}\b', merged_location)
                 if cp_match:
@@ -370,7 +393,7 @@ Estado actual de los datos recopilados:
                     merged_zip_code = zip_code_val
             
             # Step 2.5: Retail-specific coverage validation block
-            if merged_phase == "collecting_retail_address" and merged_zip_code:
+            if merged_phase == "collecting_retail_details" and merged_zip_code:
                 # Perform ZIP Code verification per store
                 res_stores = await self.db.execute(
                     select(Store).where(Store.business_id == business_id, Store.is_prospect == False)
@@ -400,24 +423,21 @@ Estado actual de los datos recopilados:
                                 if normalize_state(s.state) in ["ciudad de mexico", "cdmx", "distrito federal"]
                             ]
                 
-                res_prod = await self.db.execute(select(Product).where(Product.id == merged_product))
-                product = res_prod.scalars().first()
+                product = await self._get_product_by_id_or_name(merged_product, business_id)
                 product_name = product.name if product else "el producto"
                 threshold = product.wholesale_threshold or 0 if product else 0
                 
                 if stores_in_state:
-                    # We have stores in their state: match to first store and collect contact details
+                    # We have stores in their state: match to first store
                     matched_store = stores_in_state[0]
                     extracted_data["matched_store_id"] = matched_store.id
-                    extracted_data["phase"] = "collecting_retail_details"
-                    merged_phase = "collecting_retail_details"
                 else:
                     # No coverage / no stores in their state! Offer waitlist lead capture
                     extracted_data["phase"] = "collecting_waitlist"
                     merged_phase = "collecting_waitlist"
 
             if merged_phase == "collecting_retail_details":
-                required_fields = ["name", "email"]
+                required_fields = ["name", "email", "location", "zip_code"]
                 has_all_contact = all(extracted_data.get(f) is not None or state.get(f) is not None for f in required_fields)
                 if has_all_contact:
                     extracted_data["phase"] = "qualifying_retail"
@@ -498,8 +518,7 @@ Estado actual de los datos recopilados:
             is_telegram = platform == "telegram"
             
             # Fetch Product
-            res_prod = await self.db.execute(select(Product).where(Product.id == prod_id))
-            product = res_prod.scalars().first()
+            product = await self._get_product_by_id_or_name(prod_id, biz_id)
             
             if not product:
                 err_response = "Hubo un error al procesar tu solicitud. El producto seleccionado no coincide con nuestro catálogo."
@@ -598,13 +617,17 @@ Estado actual de los datos recopilados:
                 except Exception as e:
                     print(f"ERROR: Failed to calculate potential value: {e}")
 
-            # Look up matched store name if retail referral
+            # Look up matched store name, address and phone if retail referral
             matched_store_name = "la sucursal"
+            matched_store_address = None
+            matched_store_phone = None
             if state.get("matched_store_id"):
                 res_store = await self.db.execute(select(Store).where(Store.id == state.get("matched_store_id")))
                 matched_store_obj = res_store.scalars().first()
                 if matched_store_obj:
                     matched_store_name = matched_store_obj.name
+                    matched_store_address = matched_store_obj.address or matched_store_obj.street_address
+                    matched_store_phone = matched_store_obj.phone
 
             # 2. Create Store (as prospect)
             channel_name = "Telegram" if is_telegram else "WhatsApp"
@@ -712,7 +735,17 @@ Estado actual de los datos recopilados:
                 
                 response = f"¡Perfecto! Hemos registrado tus datos en nuestra lista de espera para la zona de Código Postal {zip_val}. Te notificaremos en cuanto tengamos cobertura de entrega directa en tu ubicación.{store_list_str} ¡Muchas gracias por tu interés!"
             elif is_retail:
-                response = f"¡Listo! Hemos registrado tu referencia minorista con la sucursal '{matched_store_name}'. Un asesor de la tienda se pondrá en contacto contigo pronto para coordinar tu compra física de {qty} unidades de {product.name}."
+                store_info = f"'{matched_store_name}'"
+                if matched_store_address:
+                    store_info += f", ubicada en {matched_store_address}"
+                if matched_store_phone:
+                    store_info += f" (Teléfono: {matched_store_phone})"
+                
+                response = (
+                    f"¡Listo! Hemos registrado tu referencia minorista con la sucursal {store_info}. "
+                    f"Un asesor de la tienda se pondrá en contacto contigo pronto para coordinar tu compra física de {qty} unidades de {product.name}. "
+                    f"Puedes contactarlos directamente si lo deseas. ¡Muchas gracias por tu preferencia!"
+                )
             else:
                 response = f"¡Perfecto! Hemos registrado tu solicitud como cliente mayorista para {qty} unidades de {product.name}. Un representante comercial se pondrá en contacto contigo pronto al {phone_num} para programar una llamada de coordinación."
             

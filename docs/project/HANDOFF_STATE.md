@@ -1,90 +1,33 @@
 # Handoff State: 2026-07-09 (Session Update)
 
 ## Current Branch
-`feature/backend/telegram-data-isolation-fix` (active development branch for Telegram Multi-Tenant Data Isolation Fix).
+`feature/frontend/epic-155-sidebar-modularity` (active development branch).
 
 ## Accomplishments This Session
-1. **Epic 154 - Telegram Multi-Tenant Data Isolation Fix (Started)**:
-   - Created active feature branch `feature/backend/telegram-data-isolation-fix`.
-   - Copied the diagnosis report `diagnosis_cross_tenant_data_leak.md` to `temp/`.
-   - Added Epic 154 tasks to `docs/project/BACKLOG.md`.
-2. **Epic 154 - Cross-Platform Admin Binding & Frictionless CRM Routing (Completed)**:
-   - **Backend Token Generation (Task 154.1)**: Created `POST /api/v1/telegram/generate-bind-token` returning secure, 10-minute Redis tokens mapping to business/user contexts.
-   - **Deep Link QR UI (Task 154.2)**: Redesigned frontend `TelegramModal.tsx` to include Step 3, displaying a scannable QR Code and button for quick mobile linking.
-   - **Webhook Start Handler (Task 154.3)**: Intercepted `/start admin_bind_<token>` inside `telegram.py` webhook, resolving token and binding `admin_telegram_id` to integration settings.
-   - **Telegram Routing Engine (Task 154.5)**: Updated `IdentityResolver` to check Telegram integration settings and resolve linked admin users as `sales_rep` instantly.
-   - **Fallback Contact Keyboard (Tasks 154.6 & 154.7)**: Sent `request_contact=True` keyboard markup to unknown Telegram senders. Intercepted shared `contact` payloads to link IDs to existing records or register new Prospects.
-   - **Database Unique Constraint Fixes**: Prevented unique key violations on `telegram_id_hash` during QR binding, `/link`, and contact sharing by verifying client existence first and releasing old bindings cleanly.
-   - **Settings Integration UX Enhancements**: Added an action button "Vincular Administrador" directly to the settings integrations panel for connected bots. Configured it to hide and show a "Connected & Admin Linked" badge once admin linking is confirmed.
-   - **Real-Time Polling & Step 3 Error Visibility**: Added `/bind-status` endpoint (and unit tests) to check bind status. Polled this status from the modal in Step 3 to show a success checkmark immediately upon binding. Added error visibility to Step 3 so token errors are rendered rather than failing silently.
-   - **Settings Null-Safety Fix**: Resolved a 500 crash inside `generate_bind_token` when integration settings was NULL by enforcing settings dict checks and added generic traceback logging.
-   - **Redis-less DB Fallback & Resilience**: Built PostgreSQL-backed database fallback for admin bind tokens and module-level memory fallback dictionary for prospect contact prompt tracking. This guarantees 100% functionality of the Telegram admin binding and routing flows even when the Redis database is sleeping or unreachable.
-   - **Testing Suite**: Created `test_telegram_admin_bind.py` verifying all routes, prompts, and binds (all 5 tests passed).
+1. **Lead Qualification & Referral Flow Optimizations (Completed & Verified)**:
+   - **Product ID Protection**: Implemented dynamic resolution of human-readable product names inside the `call_model` node, substituting the raw database IDs/UUIDs across all system prompts. Added a strict negative constraint forbidding the assistant from leaking internal product database IDs to prospects.
+   - **Below-Wholesale Handshake**: Instructed the qualifier model in the `intent` phase to accept below-threshold quantities immediately without pressing the user to buy the wholesale minimum.
+   - **Single-Turn Retail Detail Collection**: Merged the split address and contact detail collection phases into a unified `collecting_retail_details` phase, requesting the prospect's delivery address, ZIP code, name, and email in a single turn. Added instructions to explicitly skip phone number collection (as we already communicate with their active number).
+   - **Fuzzy/Prefix Product Matcher**: Enhanced the `_get_product_by_id_or_name` database helper to perform prefix and suffix-resilient matching (e.g., stripping trailing brackets/spaces). This resolves issues where the model generates duplicate or truncated product names in parallel tool calls (like missing the closing parenthesis).
+   - **High-Fidelity Store Referrals**: Enriched the final retail confirmation message with the matched physical store's name, address, and telephone number, thanking the prospect for their preference.
+   - **Test Verification**: Confirmed that the 5-scenario integration simulation test suite in `test_simulated_session_3.py` passes successfully with 100% correct assertions.
 
-2. **Telegram Webhook Disconnect & Gating Fixes**:
-   - **Webhook Deletion**: Fixed an issue where disconnecting a Telegram integration deleted the DB record but left the webhook URL registered on Telegram's servers. Now explicitly calls `deleteWebhook(drop_pending_updates=True)` in `api/integrations.py`.
-   - **Pending Updates Drop**: Added `drop_pending_updates=True` to the `setWebhook` call in `telegram_service.py` to prevent old, queued messages from being erroneously delivered to new webhooks.
-   - **Diagnostic Endpoint**: Created `/api/v1/telegram/debug/info` to securely query the database's decrypted bot token and directly fetch its active webhook URL from Telegram's servers for instant debugging.
-   - **Vertical-Aware Fallbacks**: Replaced static `DEFAULT_FEATURES_CONFIG` fallback with vertical-aware configs in telegram and whatsapp routers to prevent gating B2B TRADE accounts.
-   - **Admin Binding Planning**: Evaluated cross-platform admin binding constraints and authored the implementation plan for **Epic 154** (QR/Deep Link Admin Binding & Routing).
+2. **Obsolete orders link cleanup (Completed & Verified)**:
+   - Removed the obsolete `/trade/orders` fallback link in `Sidebar.tsx` and successfully validated the Next.js compilation.
 
-2. **Multi-Tenant WhatsApp Senders Phase 1 Complete (Epic 153)**:
-   - **Task 153.1 (Encryption Utility)**: Created reusable `encrypt_value`/`decrypt_value` Fernet functions in `app/core/encryption.py` supporting optional `ENCRYPTION_KEY` env var; refactored `security.py` to delegate to the new helper.
-   - **Task 153.2 (JSONB Migration)**: Updated the `Integration` model's `settings` column to use PostgreSQL's `JSONB` for fast index search, and created/ran Alembic migration revision `5bd272677e6c` locally.
-   - **Task 153.3 (Abstract Messaging Layer)**: Designed `BaseMessagingEngine` abstract class and `TwilioSubaccountEngine` concrete implementation, and wired up `MessagingService` factory supporting fallback platform credentials.
-   - **Task 153.4 (Twilio Provisioning Service)**: Built `provision_whatsapp_sender` service with automatic Twilio subaccount generation, Mexican number purchase, webhook registration, and 3-attempt exponential backoff retry. Created API route `POST /api/v1/integrations/whatsapp/provision`.
-   - **Task 153.5 (Tenant Isolation Tests)**: Created a suite of tests checking tenant isolation, provisioning retries/failures, encryption edge cases, and API router.
-
-3. **Multi-Tenant WhatsApp Senders Phase 2 Complete (Epic 153)**:
-   - **Task 153.6 (Destination-Driven Routing)**: Refactored the unified Twilio webhook `/api/v1/whatsapp/webhook/twilio` in `api/whatsapp.py` to route inbound messages dynamically via JSONB phone number index matching. Removed the legacy shared sandbox proxy fallback block.
-   - **Task 153.7 (Per-Tenant Webhook Validation)**: Updated request validation in `api/whatsapp.py` to dynamically load and decrypt the matching subaccount's auth token for signature verification. Implemented clean `404` error handling for unmapped numbers.
-   - **Task 153.8 (LangGraph Context Binding)**: Refactored Celery outgoing message queues in `tasks/messages.py` and `tasks/ingestion.py` to decouple from hardcoded Twilio client libraries, routing all outgoing messages through `MessagingService` resolved by the matching business integration.
-   - **Task 153.9 (Routing Tests)**: Created test_inbound_routing.py asserting destination-driven routing, multi-tenant isolation, and clean `404` status outputs.
-
-4. **Multi-Tenant WhatsApp Senders Phase 3 Complete (Epic 153)**:
-   - **Task 153.10 (Redis Usage Counter)**: Extended `app/core/limiter.py` with atomic monthly usage counters in Redis, implementing automatic end-of-month key TTLs. Tracked all inbound and outbound WhatsApp communications.
-   - **Task 153.11 (Pre-LangGraph Usage Gate)**: Implemented usage gating within all Celery processing task routes, blocking outbound execution and storing the raw inbound user message in the DB (conversations UI) when over limit.
-   - **Task 153.12 (Purchased Credits Model)**: Added `purchased_credits` field to `BusinessProfile` database model and generated/ran Alembic migration revision `7d558932e49c` locally.
-   - **Task 153.13 (Usage Alerts)**: Added dynamic 80% (warning notification + in-app flag) and 100% (hard cap block alert + superadmin notification log entry) triggers with monthly deduplication flags in Redis.
-   - **Task 153.14 (Admin Credit Endpoint)**: Exposed `PATCH /api/v1/admin/businesses/{id}/credits` for manual credit upgrades and `GET /api/v1/integrations/whatsapp/usage/{id}` returning consumption profiles.
-   - **Task 153.15 (Capping Tests)**: Created test_capping.py covering atomic increments, alert thresholds, gating, and usage/admin API endpoints.
-
-5. **Multi-Tenant WhatsApp Senders Phase 4 Complete (Epic 153)**:
-   - **Task 153.16 (WhatsApp Setup Wizard Redesign)**: Redesigned the setup wizard modal `WhatsAppModal.tsx` as a multi-step Spanish provisioning flow (Intro -> Lada / Friendly name preferences -> Provisioning spinner with `POST /api/v1/integrations/whatsapp/provision` -> Success showing dedicated number).
-   - **Task 153.17 (Connection Status & Usage Display)**: Updated `IntegrationsPanel.tsx` to retrieve consumption and credit usage profiles dynamically from `GET /api/v1/integrations/whatsapp/usage/{business_id}` and render progress bars with corresponding warning alerts for thresholds >= 80% and >= 100%.
-   - **Task 153.18 (Disconnect & Release Handler)**: Added twilio resource releasing helper `release_whatsapp_sender` to disconnect routes and cleaned up database mappings.
-   - **Task 153.19 (Admin Credit Dashboard)**: Extended `/admin` view with a Credit allocation input column and Save action trigger matching schema updates synced using `npm run gen:api`.
-   - **Task 153.20 (Onboarding Clean Up)**: Removed the placeholder step from the first-time onboarding wizard, moving it fully post-onboarding inside settings integrations.
-
-6. **RAG Delivery Coverage Fix (Epic 113)**:
-   - **Task 113.1 (Delivery Coverage RAG Sync)**: Resolved the bug where store delivery ZIP codes were invisible to the AI agent. Included delivery ZIP codes in `Store.get_semantic_summary()` (triggering automatic hash-invalidation & Celery re-embedding), added them to `Store.get_knowledge_metadata()`, and propagated them to `GraphRAGService.get_store_context()` context outputs.
-   - **Task 113.1 (Robust Retail ZIP Code Validation)**: Refactored step 2.5 (retail referral block) in `prospect_qualifier.py` to validate ZIP codes using store `delivery_zip_codes` and `zip_code` fields before querying `PostalCode` table, preventing validation failures on unseeded database tables.
-   - **Task 113.1 (LangGraph Checkpointer Greeting Reset)**: Modified the reset logic in `prospect_qualifier.py` to trigger a database checkpoint wipe when a greeting is received and `has_existing_state` is active. This allows sandbox users to start a fresh simulation session naturally using "Hola" without getting stuck in stale terminal states.
-   - **Test Coverage**: Added three new unit tests in `test_delivery_zones_rag.py` covering model summaries, metadata, and service contexts. Ran the 5-scenario integration simulation suite `test_simulated_session_3.py` with 100% success.
-
-7. **Cascading Geography Loaders & SEPOMEX Sync (Scale & Performance Fixes)**:
-   - **Scale Fix (Fast API Cascading endpoints)**: Optimized `/postal-codes` by adding `/postal-codes/states`, `/postal-codes/municipalities`, and `/postal-codes/zip-codes` endpoints. Limited the legacy monolithic `/postal-codes` endpoint to 100 results. This completely resolves container OOM crashes and browser network timeouts caused by transmitting all 157,000+ records at once.
-   - **UI Gating & Routing Fix**: Adjusted trade router dependencies to allow B2C/BASIC users to access `/postal-codes` address endpoints, while preserving specific feature constraints for B2B product/category catalogs.
-   - **Cascading UI (`AccountDrawer.tsx`)**: Replaced client-side in-memory array filtering with dynamic, step-by-step React query loaders, resulting in immediate dropdown loads for Mexico's states, municipalities, and ZIP codes.
-   - **Staging Database Populated**: Dumped the fully populated local database tables using PostgreSQL `COPY` format and imported all 157,525 Mexican geography records into the remote Railway Postgres database in under 2 seconds.
+3. **Epic 157 - Webhook Routing Gating & Custom Administrative Message (Completed & Verified)**:
+   - Configured campaign webhook fallback to allow prospects to interact with campaign bots even if custom trade CRM routing is inactive.
+   - Implemented a custom bot block message in Spanish for registered team members when the bot is active for external prospects.
+   - Configured the Telegram onboarding check to only prompt unknown contacts if `campaign_flow` is active.
 
 ## Active Backlog State
-- **Epic 157 (Webhook Routing Gating & Custom Administrative Message)**: COMPLETE (`[x] 157.1 - 157.3`).
-- **Epic 156 (Automated Order Generation & Segmented Prospecting Orders UI)**: COMPLETE (`[x] 156.1 - 156.5`).
-- **Epic 155 (Hybrid Sidebar Modularity & Lower-Tier Orders Integration)**: NOT STARTED (`[ ] 155.1 - 155.4`).
-- **Epic 154 (Telegram Multi-Tenant Data Isolation Fix)**: Complete (`[x] 154.1 - 154.3`).
-- **Epic 154 (Admin Binding & CRM Routing)**: Backend implementation and Frontend modal QR integration complete (`[x] 154.1 - 154.7`).
-- **Epic 153 (Multi-Tenant WhatsApp)**: All Phases complete (`[x] 153.1 - 153.20`).
-- **Epic 125, Tasks 125.4 & 125.5**: NOT STARTED (Admin console for objectives, strategy library dropdown integration).
-- **Epic 108, Tasks 108.4–108.6**: Pending (Dashboard API, Opportunity Inbox, Anniversary Trigger).
-- **Epic 113**: Task 113.1 complete, remaining Tasks 113.2-113.6 pending (Relational Graph-Enriched RAG).
-
-## Blockers & Risks
-- None.
+- **Lead Qualification Optimizations**: COMPLETE.
+- **Epic 157 (Webhook Routing Gating)**: COMPLETE.
+- **Epic 156 (Automated Order Ingestion)**: COMPLETE.
+- **Epic 155 (Hybrid Sidebar Modularity & Lower-Tier Orders Integration)**: IN PROGRESS (Obsolete trade orders link removed).
+- **Epic 154 (Telegram Multi-Tenant Data Isolation Fix)**: COMPLETE.
+- **Epic 153 (Multi-Tenant WhatsApp)**: COMPLETE.
 
 ## Next Steps
-- Implement Epic 155 to decouple the sidebar navigation structure and enable orders access for lower-tier profiles.
-- Verify the fixes on the staging environment once merged.
-- Execute SQL purge on production checkpoints (see diagnosis report in `/temp/diagnosis_cross_tenant_data_leak.md`) to clear out-of-coverage/cross-tenant leaked states.
-
-
+1. Commit the changes and push the branch.
+2. Ask for user confirmation and permission to merge `feature/frontend/epic-155-sidebar-modularity` into `staging`.
