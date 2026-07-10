@@ -69,6 +69,7 @@
    - **Staging Database Populated**: Dumped the fully populated local database tables using PostgreSQL `COPY` format and imported all 157,525 Mexican geography records into the remote Railway Postgres database in under 2 seconds.
 
 ## Active Backlog State
+- **Epic 155 (Hybrid Sidebar Modularity & Lower-Tier Orders Integration)**: NOT STARTED (`[ ] 155.1 - 155.4`).
 - **Epic 154 (Telegram Multi-Tenant Data Isolation Fix)**: Complete (`[x] 154.1 - 154.3`).
 - **Epic 154 (Admin Binding & CRM Routing)**: Backend implementation and Frontend modal QR integration complete (`[x] 154.1 - 154.7`).
 - **Epic 153 (Multi-Tenant WhatsApp)**: All Phases complete (`[x] 153.1 - 153.20`).
@@ -80,6 +81,7 @@
 - None.
 
 ## Next Steps
+- Implement Epic 155 to decouple the sidebar navigation structure and enable orders access for lower-tier profiles.
 - Verify the fixes on the staging environment once merged.
 - Execute SQL purge on production checkpoints (see diagnosis report in `/temp/diagnosis_cross_tenant_data_leak.md`) to clear out-of-coverage/cross-tenant leaked states.
 
