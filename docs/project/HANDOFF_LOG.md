@@ -538,5 +538,10 @@
 - **Task 156.4 Completed**: Created the high-fidelity Next.js page at [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/orders/page.tsx) to query and render segmented prospect orders, supporting quick-verification updates.
 - **Task 156.5 Completed**: Wrote and integrated explicit database assertions verifying automated `Order` and `OrderItem` generation inside the test suite [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py). Verified that all 5 simulation scenarios pass correctly.
 
+## [2026-07-09] - Epic 157 Creation: Webhook Routing Gating & Custom Administrative Message
+- **Backlog Entry (Epic 157)**: Defined and added Epic 157 to [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) to update webhook routing gating (allowing campaigns fallback) and implement friendly, informative admin/sales rep bot responses.
+- **Workflow Scoping**: Scoped requirements for [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py).
+- **State Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to log Epic 157 as the next active backlog item.
+
 
 
