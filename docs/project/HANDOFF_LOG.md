@@ -533,6 +533,7 @@
 
 - **Task 156.1 Completed**: Integrated `Order` and `OrderItem` generation inside the `qualify_lead` state graph node of [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py).
 - **Test Integrity Cleanup**: Updated [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py) to resolve foreign key constraints on mock deletion, verifying all 5 test scenarios pass cleanly.
+- **Task 156.2 Completed**: Implemented the segmented orders API endpoint `GET /api/v1/trade/prospects/orders` in [trade.py](file:///Users/bernardo/projects/sherpa/backend/app/api/trade.py#L558-L578) with dynamic segment filter joins. Regenerated `openapi.json` and ran `npm run gen:api` to sync TypeScript definitions with the frontend.
 
 
 
