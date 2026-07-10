@@ -116,7 +116,7 @@ function SidebarContent() {
           )}
         </div>
         
-        {showCRM && (
+        {showCRM && !showCampaignFlow && (
           <div className="space-y-1 pt-2 border-t border-gray-100">
             {/* CRM Operations Group */}
             <div className="space-y-1">
