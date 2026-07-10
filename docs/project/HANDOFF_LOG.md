@@ -538,10 +538,10 @@
 - **Task 156.4 Completed**: Created the high-fidelity Next.js page at [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/orders/page.tsx) to query and render segmented prospect orders, supporting quick-verification updates.
 - **Task 156.5 Completed**: Wrote and integrated explicit database assertions verifying automated `Order` and `OrderItem` generation inside the test suite [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py). Verified that all 5 simulation scenarios pass correctly.
 
-## [2026-07-09] - Epic 157 Creation: Webhook Routing Gating & Custom Administrative Message
-- **Backlog Entry (Epic 157)**: Defined and added Epic 157 to [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) to update webhook routing gating (allowing campaigns fallback) and implement friendly, informative admin/sales rep bot responses.
-- **Workflow Scoping**: Scoped requirements for [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py).
-- **State Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to log Epic 157 as the next active backlog item.
+## [2026-07-09] - Epic 157: Webhook Routing Gating & Custom Administrative Message
+- **Task 157.1 Completed**: Updated webhook routes in [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py#L467) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py#L272) to allow campaign flow fallback gating, bypassing custom routing checks when campaigns are enabled.
+- **Task 157.2 Completed**: Configured custom, user-friendly administrative response messages in [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py#L475) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py#L282) for internal sales reps/collaborators when `sales_intelligence` is disabled, explaining the active public campaigns state.
+- **Task 157.3 Completed**: Extended the test suite in [test_sandbox_gates.py](file:///Users/bernardo/projects/sherpa/backend/test_sandbox_gates.py) to assert routing falls back successfully for prospects and that sales reps receive the custom message across sandbox, Telegram, and WhatsApp routes. Verified all integration tests pass successfully.
 
 
 

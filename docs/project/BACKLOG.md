@@ -125,9 +125,9 @@
 ## Epic 157: Webhook Routing Gating & Custom Administrative Message
 **Objective**: Fix the Telegram/WhatsApp webhook routing gating for users with `campaign_flow` active but custom routing configurations disabled, and implement a friendly informative reply for internal team members when `sales_intelligence` is disabled.
 
-- [ ] Task 157.1: **Campaign Flow Fallback**: Update the webhook routes in `telegram.py` and `whatsapp.py` to bypass the `prospective_clients` routing check if the `campaign_flow` feature is enabled.
-- [ ] Task 157.2: **Friendly Admin Notification**: Add a custom response in the webhook routes for team members (`sales_rep`) who write to a bot where `sales_intelligence` is disabled, explaining the active campaign status.
-- [ ] Task 157.3: **Routing Integration Tests**: Extend the test suite in `test_webhook_routing.py` and `test_sandbox_gates.py` to assert correct routing behavior for both prospects and team members under this configuration.
+- [x] Task 157.1: **Campaign Flow Fallback**: Update the webhook routes in `telegram.py` and `whatsapp.py` to bypass the `prospective_clients` routing check if the `campaign_flow` feature is enabled.
+- [x] Task 157.2: **Friendly Admin Notification**: Add a custom response in the webhook routes for team members (`sales_rep`) who write to a bot where `sales_intelligence` is disabled, explaining the active campaign status.
+- [x] Task 157.3: **Routing Integration Tests**: Extend the test suite in `test_webhook_routing.py` and `test_sandbox_gates.py` to assert correct routing behavior for both prospects and team members under this configuration.
 
 
 
