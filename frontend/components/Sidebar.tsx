@@ -282,12 +282,6 @@ function SidebarContent() {
                   name="Point of Sale" 
                   active={pathname.startsWith('/trade/stores')} 
                 />
-                <SidebarLink 
-                  href="/trade/orders" 
-                  icon={Package} 
-                  name="Orders" 
-                  active={pathname.startsWith('/trade/orders')} 
-                />
               </div>
             )}
           </div>
