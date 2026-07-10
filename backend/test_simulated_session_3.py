@@ -43,9 +43,14 @@ async def cleanup_database_records(db, biz_id, phone_numbers):
                 await db.execute(text("DELETE FROM messages WHERE conversation_id = :cid"), {"cid": c.id})
                 await db.delete(c)
                 
+            # Delete orders and items linked to client
+            await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE client_id = :cid)"), {"cid": client.id})
+            await db.execute(text("DELETE FROM orders WHERE client_id = :cid"), {"cid": client.id})
             await db.delete(client)
             
     # Delete stores created for test cases
+    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%'))"))
+    await db.execute(text("DELETE FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
     await db.execute(text("DELETE FROM store_clients WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
     await db.execute(text("DELETE FROM store_actions WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
     await db.execute(text("DELETE FROM stores WHERE is_prospect = true AND name LIKE '%Obra%'"))
