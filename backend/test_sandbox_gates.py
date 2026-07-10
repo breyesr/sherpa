@@ -1,7 +1,7 @@
 import asyncio
 import os
 import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 # Ensure backend folder is in path
 sys.path.append(os.getcwd())
@@ -93,13 +93,14 @@ async def run_tests():
     # Scenarios for Sandbox tests
     sandbox_scenarios = [
         {"name": "Prospect: Feature DISABLED, Routing ENABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": True}}, "simulate_role": "prospective_client", "expected_blocked": True},
-        {"name": "Prospect: Feature ENABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": True}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": True},
+        {"name": "Prospect: Feature ENABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": True}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": False},
         {"name": "Prospect: Feature DISABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"campaign_flow": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "prospective_client", "expected_blocked": True},
         {"name": "Distributor: Feature DISABLED, Routing ENABLED", "vertical_type": "TRADE", "features_config": {"b2b_solutions": {"enabled": False}}, "routing_config": {"distributors_retailers": {"enabled": True}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
         {"name": "Distributor: Feature ENABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"b2b_solutions": {"enabled": True}}, "routing_config": {"distributors_retailers": {"enabled": False}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
         {"name": "Distributor: Feature DISABLED, Routing DISABLED", "vertical_type": "TRADE", "features_config": {"b2b_solutions": {"enabled": False}}, "routing_config": {"distributors_retailers": {"enabled": False}}, "simulate_role": "distributor_retailer", "expected_blocked": True},
         {"name": "B2C Customer: Scheduling DISABLED", "vertical_type": "BASIC", "features_config": {"scheduling": {"enabled": False}}, "routing_config": {"prospective_clients": {"enabled": True}}, "simulate_role": "customer", "expected_blocked": True},
         {"name": "B2C Customer: Routing DISABLED", "vertical_type": "BASIC", "features_config": {"scheduling": {"enabled": True}}, "routing_config": {"prospective_clients": {"enabled": False}}, "simulate_role": "customer", "expected_blocked": True},
+        {"name": "Sales Rep: Sales Intel DISABLED", "vertical_type": "TRADE", "features_config": {"sales_intelligence": {"enabled": False}}, "routing_config": {"sales_reps": {"enabled": True}}, "simulate_role": "sales_rep", "expected_blocked": True, "expected_admin_msg": True},
     ]
 
     print("\n[SANDBOX /test-chat TESTS]")
@@ -110,7 +111,18 @@ async def run_tests():
             routing_config=scenario["routing_config"]
         )
         
-        with patch("app.api.business.get_full_business", new_callable=AsyncMock) as mock_get_biz:
+        with patch("app.api.business.get_full_business", new_callable=AsyncMock) as mock_get_biz, \
+             patch("app.api.business.AIService", new_callable=Mock) as mock_ai_service_class, \
+             patch("app.services.prospect_qualifier.ProspectQualifier", new_callable=Mock) as mock_qualifier_class:
+            
+            mock_ai_instance = AsyncMock()
+            mock_ai_instance.get_response.return_value = "Mocked AI Response"
+            mock_ai_service_class.return_value = mock_ai_instance
+            
+            mock_qualifier_instance = AsyncMock()
+            mock_qualifier_instance.get_response.return_value = ("Mocked Qualifier Response", False)
+            mock_qualifier_class.return_value = mock_qualifier_instance
+            
             mock_get_biz.return_value = mock_biz
             
             response = client.post(
@@ -123,20 +135,30 @@ async def run_tests():
             
             assert response.status_code == 200, f"Expected 200, got {response.status_code}"
             res_data = response.json()
-            assert res_data["response"] == "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."
-            print(f"✅ PASS: {scenario['name']} correctly BLOCKED in sandbox.")
+            
+            if scenario.get("expected_blocked", True):
+                if scenario.get("expected_admin_msg", False):
+                    assert "administrador/colaborador" in res_data["response"]
+                    print(f"✅ PASS: {scenario['name']} correctly BLOCKED with custom admin message.")
+                else:
+                    assert res_data["response"] == "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."
+                    print(f"✅ PASS: {scenario['name']} correctly BLOCKED in sandbox.")
+            else:
+                assert res_data["response"] in ("Mocked AI Response", "Mocked Qualifier Response")
+                print(f"✅ PASS: {scenario['name']} correctly ALLOWED (routing fallback) in sandbox.")
 
     # 2. Telegram Webhook tests
     print("\n[TELEGRAM WEBHOOK TESTS]")
     tg_scenarios = [
         {"name": "Telegram: Prospect Feature DISABLED", "features_config": {"campaign_flow": {"enabled": False}}, "simulate_role": "prospective_client"},
         {"name": "Telegram: Distributor Feature DISABLED", "features_config": {"b2b_solutions": {"enabled": False}}, "simulate_role": "distributor_retailer"},
+        {"name": "Telegram: Sales Rep Feature DISABLED", "features_config": {"sales_intelligence": {"enabled": False}}, "simulate_role": "sales_rep", "expected_admin_msg": True},
     ]
     
     for scenario in tg_scenarios:
         mock_biz = MockBusinessProfile(
             features_config=scenario["features_config"],
-            routing_config={"prospective_clients": {"enabled": True}, "distributors_retailers": {"enabled": True}}
+            routing_config={"prospective_clients": {"enabled": True}, "distributors_retailers": {"enabled": True}, "sales_reps": {"enabled": True}}
         )
         
         async def override_get_db_tg():
@@ -166,25 +188,30 @@ async def run_tests():
             assert response.status_code == 200, f"Expected 200 status, got {response.status_code}"
             assert response.json() == {"status": "ok"}
             
-            # Verify send_message was called with the blocked notification message
-            mock_send.assert_called_once_with(
-                "dummy_token", 
-                12345, 
-                "Este servicio no está habilitado actualmente para este número."
-            )
-            print(f"✅ PASS: {scenario['name']} correctly BLOCKED and sent Telegram message.")
+            # Verify send_message was called with correct message
+            if scenario.get("expected_admin_msg", False):
+                assert "administrador/colaborador" in mock_send.call_args[0][2]
+                print(f"✅ PASS: {scenario['name']} correctly BLOCKED with custom admin message.")
+            else:
+                mock_send.assert_called_once_with(
+                    "dummy_token", 
+                    12345, 
+                    "Este servicio no está habilitado actualmente para este número."
+                )
+                print(f"✅ PASS: {scenario['name']} correctly BLOCKED and sent Telegram message.")
 
     # 3. WhatsApp Webhook tests
     print("\n[WHATSAPP WEBHOOK TESTS]")
     wa_scenarios = [
         {"name": "WhatsApp: Prospect Feature DISABLED", "features_config": {"campaign_flow": {"enabled": False}}, "simulate_role": "prospective_client"},
         {"name": "WhatsApp: Distributor Feature DISABLED", "features_config": {"b2b_solutions": {"enabled": False}}, "simulate_role": "distributor_retailer"},
+        {"name": "WhatsApp: Sales Rep Feature DISABLED", "features_config": {"sales_intelligence": {"enabled": False}}, "simulate_role": "sales_rep", "expected_admin_msg": True},
     ]
     
     for scenario in wa_scenarios:
         mock_biz = MockBusinessProfile(
             features_config=scenario["features_config"],
-            routing_config={"prospective_clients": {"enabled": True}, "distributors_retailers": {"enabled": True}}
+            routing_config={"prospective_clients": {"enabled": True}, "distributors_retailers": {"enabled": True}, "sales_reps": {"enabled": True}}
         )
         
         async def override_get_db_wa():
@@ -208,8 +235,13 @@ async def run_tests():
             # Check TwiML body
             xml_content = response.text
             assert "<Response><Message>" in xml_content
-            assert "Este servicio no está habilitado actualmente para este número." in xml_content
-            print(f"✅ PASS: {scenario['name']} correctly BLOCKED and returned Twilio TwiML.")
+            
+            if scenario.get("expected_admin_msg", False):
+                assert "administrador/colaborador" in xml_content
+                print(f"✅ PASS: {scenario['name']} correctly BLOCKED with custom admin message.")
+            else:
+                assert "Este servicio no está habilitado actualmente para este número." in xml_content
+                print(f"✅ PASS: {scenario['name']} correctly BLOCKED and returned Twilio TwiML.")
 
     # 4. Admin promotion and initialization tests
     print("\n[ADMIN VERTICAL PROMOTION TESTS]")

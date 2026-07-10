@@ -403,8 +403,15 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         from app.services.identity_resolver import IdentityResolver
         sender_type, client_obj = await IdentityResolver.resolve_sender(db, business.id, chat_id_str, is_telegram=True)
         
+        from app.models.business import VerticalType
+        is_trade = business.vertical_type == VerticalType.TRADE
+        from app.api.business import get_default_features_config, get_default_routing_config
+        vertical = business.vertical_type.value if hasattr(business.vertical_type, "value") else (business.vertical_type or "BASIC")
+        feat_cfg = business.features_config or get_default_features_config(vertical)
+        cfg = business.routing_config or get_default_routing_config(vertical)
+
         # Fallback onboarding check for unknown Telegram users
-        if sender_type == "prospective_client" and client_obj is None:
+        if sender_type == "prospective_client" and client_obj is None and is_trade and feat_cfg.get("campaign_flow", {}).get("enabled", False):
             prompt_key = f"tg_contact_prompt:{chat_id_str}"
             already_prompted = False
             
@@ -447,24 +454,16 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                 )
                 return {"status": "ok"}
         
-        from app.models.business import VerticalType
-        is_trade = business.vertical_type == VerticalType.TRADE
-
         # Determine feature/flow entitlement
         feature_enabled = True
         flow_enabled = False
-        
-        from app.api.business import get_default_features_config, get_default_routing_config
-        vertical = business.vertical_type.value if hasattr(business.vertical_type, "value") else (business.vertical_type or "BASIC")
-        feat_cfg = business.features_config or get_default_features_config(vertical)
-        cfg = business.routing_config or get_default_routing_config(vertical)
 
         if sender_type == "customer":
             feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
             flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
         elif sender_type == "prospective_client":
             feature_enabled = is_trade and feat_cfg.get("campaign_flow", {}).get("enabled", False)
-            flow_enabled = is_trade and cfg.get("prospective_clients", {}).get("enabled", False)
+            flow_enabled = is_trade and (cfg.get("prospective_clients", {}).get("enabled", False) or feature_enabled)
         elif sender_type == "distributor_retailer":
             feature_enabled = is_trade and feat_cfg.get("b2b_solutions", {}).get("enabled", False)
             flow_enabled = is_trade and cfg.get("distributors_retailers", {}).get("enabled", False)
@@ -473,7 +472,14 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
             flow_enabled = is_trade and cfg.get("sales_reps", {}).get("enabled", True)
 
         if not feature_enabled or not flow_enabled:
-            response_text = "Este servicio no está habilitado actualmente para este número."
+            if sender_type == "sales_rep":
+                response_text = (
+                    "¡Hola! Tu número está registrado como administrador/colaborador en Sherpa. "
+                    "Las herramientas de consulta de Inteligencia de Ventas no están activadas actualmente para tu cuenta. "
+                    "Este bot está configurado y activo para calificar prospectos y capturar pedidos de clientes externos."
+                )
+            else:
+                response_text = "Este servicio no está habilitado actualmente para este número."
         else:
             if sender_type == "prospective_client":
                 from app.services.prospect_qualifier import ProspectQualifier
