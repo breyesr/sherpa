@@ -558,6 +558,26 @@ async def delete_product(
 
 # --- ORDERS ---
 
+@router.get("/prospects/orders", response_model=List[OrderResponse], dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+async def list_prospect_orders(
+    segment: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """List all prospecting/unverified orders for the business, partitioned by segment."""
+    business = await get_business(db, current_user.id)
+    query = (
+        select(Order)
+        .join(Store, Order.store_id == Store.id)
+        .where(Order.business_id == business.id, Store.is_prospect == True)
+        .options(selectinload(Order.items))
+    )
+    if segment:
+        query = query.where(Store.prospect_segment == segment)
+        
+    result = await db.execute(query)
+    return result.scalars().all()
+
 @router.get("/orders", response_model=List[OrderResponse], dependencies=[Depends(require_feature("b2b_solutions"))])
 async def list_orders(
     store_id: str = None,
