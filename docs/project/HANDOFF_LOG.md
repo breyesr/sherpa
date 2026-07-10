@@ -519,3 +519,9 @@
 - **Webhook Guide**: Drafted and validated URL routing for `https://<YOUR_PRODUCTION_BACKEND_API_URL>/api/v1/whatsapp/webhook/twilio` to accept Twilio incoming Webhook events.
 - **User Connection Setup**: Linked the first live customer WhatsApp phone number into a standard user's integration settings, completing the end-to-end integration step.
 
+
+## [2026-07-09] - Epic 155 Creation: Hybrid Sidebar Modularity & Lower-Tier Orders
+- **Backlog Entry (Epic 155)**: Defined and added Epic 155 to [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) to decouple Prospecting and Products Catalog groups from B2B Solutions.
+- **Lower-Tier Orders Integration**: Scoped the inclusion of direct wholesale Orders (`/trade/orders`) alongside Point of Sale (`/trade/stores`) as fallback links for lower-tier profiles without full B2B Solutions access.
+- **Documentation**: Generated and moved the complete design specs and code recommendations report to [sidebar_diagnostic_report.md](file:///Users/bernardo/projects/sherpa/temp/sidebar_diagnostic_report.md) under `/temp`.
+- **Handoff Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to slate Epic 155 as the next active task.

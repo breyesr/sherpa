@@ -105,4 +105,13 @@
 - [x] Task 154.2: **State Purge Scoping**: Ensure the reset/delete SQL queries in `prospect_qualifier.py` are scoped to the business-scoped thread ID.
 - [x] Task 154.3: **Webhook Query Optimization**: Optimize the webhook integration lookup in `telegram.py` to query directly by `webhook_id` using PostgreSQL JSONB operators instead of pulling all rows.
 
+## Epic 155: Hybrid Sidebar Modularity & Lower-Tier Orders Integration
+**Objective**: Decouple the nested sidebar categories so they adapt dynamically to any hybrid capability configuration. Specifically, ensure that users with Campaigns enabled but B2B Solutions disabled can access the Prospecting leads menu, the Point of Sale manager, and wholesale Orders, and satisfy WCAG 2.1 contrast rules.
+
+- [ ] Task 155.1: **Decouple Sidebar Groups**: Refactor `frontend/components/Sidebar.tsx` to separate CRM, B2B, Prospecting, and Catalog blocks into standalone conditional structures.
+- [ ] Task 155.2: **Integrate Lower-Tier Orders**: Expose the Orders link (`/trade/orders`) alongside Point of Sale (`/trade/stores`) in the fallback block when Campaigns are enabled but B2B Solutions is disabled.
+- [ ] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
+- [ ] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
+
+
 
