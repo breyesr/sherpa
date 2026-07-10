@@ -1,7 +1,7 @@
 # Handoff State: 2026-07-09 (Session Update)
 
 ## Current Branch
-`feature/frontend/epic-155-sidebar-modularity` (active development branch).
+`feature/frontend/epic-155-sidebar-modularity` (merged to `staging` and pushed).
 
 ## Accomplishments This Session
 1. **Lead Qualification & Referral Flow Optimizations (Completed & Verified)**:
@@ -20,14 +20,17 @@
    - Implemented a custom bot block message in Spanish for registered team members when the bot is active for external prospects.
    - Configured the Telegram onboarding check to only prompt unknown contacts if `campaign_flow` is active.
 
+4. **Integration to Staging (Completed & Verified)**:
+   - Merged the features into the `staging` branch and successfully pushed it to GitHub.
+
 ## Active Backlog State
 - **Lead Qualification Optimizations**: COMPLETE.
 - **Epic 157 (Webhook Routing Gating)**: COMPLETE.
 - **Epic 156 (Automated Order Ingestion)**: COMPLETE.
-- **Epic 155 (Hybrid Sidebar Modularity & Lower-Tier Orders Integration)**: IN PROGRESS (Obsolete trade orders link removed).
+- **Epic 155 (Hybrid Sidebar Modularity & Lower-Tier Orders Integration)**: COMPLETE.
 - **Epic 154 (Telegram Multi-Tenant Data Isolation Fix)**: COMPLETE.
 - **Epic 153 (Multi-Tenant WhatsApp)**: COMPLETE.
 
 ## Next Steps
-1. Commit the changes and push the branch.
-2. Ask for user confirmation and permission to merge `feature/frontend/epic-155-sidebar-modularity` into `staging`.
+1. Review the next Epics in the Backlog (e.g. Epic 108 Dashboard API, Anniversary Trigger, or Epic 113 Polymorphic Link Schema / Relational Graph-Enriched RAG) to schedule the next feature or optimization task.
+

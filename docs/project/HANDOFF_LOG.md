@@ -545,5 +545,19 @@
 - **Task 157.2 Completed**: Configured custom, user-friendly administrative response messages in [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py#L475) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py#L282) for internal sales reps/collaborators when `sales_intelligence` is disabled, explaining the active public campaigns state.
 - **Task 157.3 Completed**: Extended the test suite in [test_sandbox_gates.py](file:///Users/bernardo/projects/sherpa/backend/test_sandbox_gates.py) to assert routing falls back successfully for prospects and that sales reps receive the custom message across sandbox, Telegram, and WhatsApp routes. Verified all integration tests pass successfully.
 
+## [2026-07-09] - Lead Qualification & Referral Optimizations + Staging Integration
+- **Lead Qualification & Referral Flow Optimizations (Completed & Verified)**:
+  - **Product ID Protection**: Implemented dynamic resolution of human-readable product names inside the `call_model` node, substituting the raw database IDs/UUIDs across all system prompts. Added a strict negative constraint forbidding the assistant from leaking internal product database IDs to prospects.
+  - **Below-Wholesale Handshake**: Instructed the qualifier model in the `intent` phase to accept below-threshold quantities immediately without pressing the user to buy the wholesale minimum.
+  - **Single-Turn Retail Detail Collection**: Merged the split address and contact detail collection phases into a unified `collecting_retail_details` phase, requesting the prospect's delivery address, ZIP code, name, and email in a single turn. Added instructions to explicitly skip phone number collection (as we already communicate with their active number).
+  - **Fuzzy/Prefix Product Matcher**: Enhanced the `_get_product_by_id_or_name` database helper to perform prefix and suffix-resilient matching (e.g., stripping trailing brackets/spaces). This resolves issues where the model generates duplicate or truncated product names in parallel tool calls (like missing the closing parenthesis).
+  - **High-Fidelity Store Referrals**: Enriched the final retail confirmation message with the matched physical store's name, address, and telephone number, thanking the prospect for their preference.
+  - **Test Verification**: Confirmed that the 5-scenario integration simulation test suite in `test_simulated_session_3.py` passes successfully with 100% correct assertions.
+- **Obsolete orders link cleanup (Completed & Verified)**:
+  - Removed the obsolete `/trade/orders` fallback link in `Sidebar.tsx` and successfully validated the Next.js compilation.
+- **Staging Merge & Push**:
+  - Merged the feature branch `feature/frontend/epic-155-sidebar-modularity` into `staging` and successfully pushed the `staging` branch to origin.
+
+
 
 

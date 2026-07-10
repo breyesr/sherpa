@@ -108,10 +108,10 @@
 ## Epic 155: Hybrid Sidebar Modularity & Lower-Tier Orders Integration
 **Objective**: Decouple the nested sidebar categories so they adapt dynamically to any hybrid capability configuration. Specifically, ensure that users with Campaigns enabled but B2B Solutions disabled can access the Prospecting leads menu, the Point of Sale manager, and wholesale Orders, and satisfy WCAG 2.1 contrast rules.
 
-- [ ] Task 155.1: **Decouple Sidebar Groups**: Refactor `frontend/components/Sidebar.tsx` to separate CRM, B2B, Prospecting, and Catalog blocks into standalone conditional structures.
-- [ ] Task 155.2: **Integrate Lower-Tier Orders**: Expose the Orders link (`/trade/orders`) alongside Point of Sale (`/trade/stores`) in the fallback block when Campaigns are enabled but B2B Solutions is disabled.
-- [ ] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
-- [ ] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
+- [x] Task 155.1: **Decouple Sidebar Groups**: Refactor `frontend/components/Sidebar.tsx` to separate CRM, B2B, Prospecting, and Catalog blocks into standalone conditional structures.
+- [x] Task 155.2: **Integrate Lower-Tier Orders**: Expose the Orders link (`/trade/orders`) alongside Point of Sale (`/trade/stores`) in the fallback block when Campaigns are enabled but B2B Solutions is disabled.
+- [x] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
+- [x] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
 
 ## Epic 156: Automated Order Generation & Segmented Prospecting Orders UI
 **Objective**: Automatically generate a pending, unverified wholesale Order and OrderItem in the database during the final stage of inbound prospect qualification, and implement the frontend list views partitioned by pipeline segment (Wholesale vs. Retail) under the Prospecting sidebar menu.
