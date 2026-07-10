@@ -65,12 +65,26 @@ export interface paths {
      */
     post: operations["trigger_google_sync_api_v1_integrations_google_sync_post"];
   };
+  "/api/v1/integrations/whatsapp/provision": {
+    /**
+     * Provision Whatsapp
+     * @description Automate Twilio subaccount and MX number provisioning for this business.
+     */
+    post: operations["provision_whatsapp_api_v1_integrations_whatsapp_provision_post"];
+  };
   "/api/v1/integrations/{provider}": {
     /**
      * Disconnect Integration
      * @description Remove an integration and its associated local cache.
      */
     delete: operations["disconnect_integration_api_v1_integrations__provider__delete"];
+  };
+  "/api/v1/integrations/whatsapp/usage/{business_id}": {
+    /**
+     * Get Whatsapp Usage Endpoint
+     * @description Get monthly message usage statistics for WhatsApp integration.
+     */
+    get: operations["get_whatsapp_usage_endpoint_api_v1_integrations_whatsapp_usage__business_id__get"];
   };
   "/api/v1/crm/clients": {
     /** Get Clients */
@@ -141,12 +155,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -171,12 +185,33 @@ export interface paths {
      */
     get: operations["get_whatsapp_status_api_v1_whatsapp_status_get"];
   };
+  "/api/v1/telegram/debug/info": {
+    /**
+     * Telegram Debug Info
+     * @description Fetch debug information about all registered Telegram bots and their current webhooks.
+     */
+    get: operations["telegram_debug_info_api_v1_telegram_debug_info_get"];
+  };
   "/api/v1/telegram/webhook/{webhook_id}": {
     /**
      * Telegram Webhook
      * @description Receive messages from Telegram via a unique webhook ID.
      */
     post: operations["telegram_webhook_api_v1_telegram_webhook__webhook_id__post"];
+  };
+  "/api/v1/telegram/generate-bind-token": {
+    /**
+     * Generate Bind Token
+     * @description Generate a temporary, secure token to bind the admin's Telegram account.
+     */
+    post: operations["generate_bind_token_api_v1_telegram_generate_bind_token_post"];
+  };
+  "/api/v1/telegram/bind-status": {
+    /**
+     * Get Bind Status
+     * @description Check if the admin's Telegram account is linked to the current user's business.
+     */
+    get: operations["get_bind_status_api_v1_telegram_bind_status_get"];
   };
   "/api/v1/telegram/link": {
     /**
@@ -256,6 +291,13 @@ export interface paths {
      */
     post: operations["retry_dlq_entry_api_v1_admin_dlq__dlq_id__retry_post"];
   };
+  "/api/v1/admin/businesses/{business_id}/credits": {
+    /**
+     * Update Business Credits
+     * @description Update manual purchased credits for a business (Admin only).
+     */
+    patch: operations["update_business_credits_api_v1_admin_businesses__business_id__credits_patch"];
+  };
   "/api/v1/data-gateway/me/imports": {
     /**
      * Get My Imports
@@ -314,9 +356,30 @@ export interface paths {
   "/api/v1/trade/postal-codes": {
     /**
      * List Postal Codes
-     * @description Retrieve all preloaded Mexican postal codes.
+     * @description Retrieve preloaded Mexican postal codes (limited for performance).
      */
     get: operations["list_postal_codes_api_v1_trade_postal_codes_get"];
+  };
+  "/api/v1/trade/postal-codes/states": {
+    /**
+     * List States
+     * @description Retrieve all unique states.
+     */
+    get: operations["list_states_api_v1_trade_postal_codes_states_get"];
+  };
+  "/api/v1/trade/postal-codes/municipalities": {
+    /**
+     * List Municipalities
+     * @description Retrieve all unique municipalities for a given state.
+     */
+    get: operations["list_municipalities_api_v1_trade_postal_codes_municipalities_get"];
+  };
+  "/api/v1/trade/postal-codes/zip-codes": {
+    /**
+     * List Zip Codes
+     * @description Retrieve all zip codes and colonias for a given state and municipality.
+     */
+    get: operations["list_zip_codes_api_v1_trade_postal_codes_zip_codes_get"];
   };
   "/api/v1/trade/postal-codes/{zip_code}": {
     /**
@@ -365,6 +428,13 @@ export interface paths {
      * @description Update a product.
      */
     patch: operations["update_product_api_v1_trade_products__product_id__patch"];
+  };
+  "/api/v1/trade/prospects/orders": {
+    /**
+     * List Prospect Orders
+     * @description List all prospecting/unverified orders for the business, partitioned by segment.
+     */
+    get: operations["list_prospect_orders_api_v1_trade_prospects_orders_get"];
   };
   "/api/v1/trade/orders": {
     /**
@@ -526,8 +596,14 @@ export interface components {
       category: components["schemas"]["ActionCategory"];
       /** Default Unit */
       default_unit: string;
+      /** Objective */
+      objective?: string | null;
       /** Description */
       description?: string | null;
+      /** Details */
+      details?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ActionTemplateResponse */
     ActionTemplateResponse: {
@@ -536,8 +612,14 @@ export interface components {
       category: components["schemas"]["ActionCategory"];
       /** Default Unit */
       default_unit: string;
+      /** Objective */
+      objective?: string | null;
       /** Description */
       description?: string | null;
+      /** Details */
+      details?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -560,8 +642,14 @@ export interface components {
       category?: components["schemas"]["ActionCategory"] | null;
       /** Default Unit */
       default_unit?: string | null;
+      /** Objective */
+      objective?: string | null;
       /** Description */
       description?: string | null;
+      /** Details */
+      details?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** AgentResponse */
     AgentResponse: {
@@ -868,6 +956,11 @@ export interface components {
        * @default []
        */
       integrations?: components["schemas"]["IntegrationResponse"][];
+      /**
+       * Purchased Credits
+       * @default 0
+       */
+      purchased_credits?: number;
     };
     /** BusinessProfileUpdate */
     BusinessProfileUpdate: {
@@ -2488,6 +2581,33 @@ export interface operations {
     };
   };
   /**
+   * Provision Whatsapp
+   * @description Automate Twilio subaccount and MX number provisioning for this business.
+   */
+  provision_whatsapp_api_v1_integrations_whatsapp_provision_post: {
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * Disconnect Integration
    * @description Remove an integration and its associated local cache.
    */
@@ -2495,6 +2615,31 @@ export interface operations {
     parameters: {
       path: {
         provider: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Whatsapp Usage Endpoint
+   * @description Get monthly message usage statistics for WhatsApp integration.
+   */
+  get_whatsapp_usage_endpoint_api_v1_integrations_whatsapp_usage__business_id__get: {
+    parameters: {
+      path: {
+        business_id: string;
       };
     };
     responses: {
@@ -2923,7 +3068,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -2991,6 +3136,20 @@ export interface operations {
     };
   };
   /**
+   * Telegram Debug Info
+   * @description Fetch debug information about all registered Telegram bots and their current webhooks.
+   */
+  telegram_debug_info_api_v1_telegram_debug_info_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
    * Telegram Webhook
    * @description Receive messages from Telegram via a unique webhook ID.
    */
@@ -3011,6 +3170,34 @@ export interface operations {
       422: {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Generate Bind Token
+   * @description Generate a temporary, secure token to bind the admin's Telegram account.
+   */
+  generate_bind_token_api_v1_telegram_generate_bind_token_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Get Bind Status
+   * @description Check if the admin's Telegram account is linked to the current user's business.
+   */
+  get_bind_status_api_v1_telegram_bind_status_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
     };
@@ -3292,6 +3479,38 @@ export interface operations {
     };
   };
   /**
+   * Update Business Credits
+   * @description Update manual purchased credits for a business (Admin only).
+   */
+  update_business_credits_api_v1_admin_businesses__business_id__credits_patch: {
+    parameters: {
+      path: {
+        business_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * Get My Imports
    * @description List all data imports for the current business.
    */
@@ -3522,7 +3741,7 @@ export interface operations {
   };
   /**
    * List Postal Codes
-   * @description Retrieve all preloaded Mexican postal codes.
+   * @description Retrieve preloaded Mexican postal codes (limited for performance).
    */
   list_postal_codes_api_v1_trade_postal_codes_get: {
     responses: {
@@ -3530,6 +3749,71 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["PostalCodeResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * List States
+   * @description Retrieve all unique states.
+   */
+  list_states_api_v1_trade_postal_codes_states_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": string[];
+        };
+      };
+    };
+  };
+  /**
+   * List Municipalities
+   * @description Retrieve all unique municipalities for a given state.
+   */
+  list_municipalities_api_v1_trade_postal_codes_municipalities_get: {
+    parameters: {
+      query: {
+        state: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Zip Codes
+   * @description Retrieve all zip codes and colonias for a given state and municipality.
+   */
+  list_zip_codes_api_v1_trade_postal_codes_zip_codes_get: {
+    parameters: {
+      query: {
+        state: string;
+        municipality: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PostalCodeResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -3707,6 +3991,31 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Prospect Orders
+   * @description List all prospecting/unverified orders for the business, partitioned by segment.
+   */
+  list_prospect_orders_api_v1_trade_prospects_orders_get: {
+    parameters: {
+      query?: {
+        segment?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"][];
         };
       };
       /** @description Validation Error */

@@ -546,6 +546,55 @@
         ]
       }
     },
+    "/api/v1/integrations/whatsapp/provision": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Provision Whatsapp",
+        "description": "Automate Twilio subaccount and MX number provisioning for this business.",
+        "operationId": "provision_whatsapp_api_v1_integrations_whatsapp_provision_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Provision Whatsapp Api V1 Integrations Whatsapp Provision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/integrations/{provider}": {
       "delete": {
         "tags": [
@@ -577,6 +626,54 @@
               "application/json": {
                 "schema": {
                   "title": "Response Disconnect Integration Api V1 Integrations  Provider  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/whatsapp/usage/{business_id}": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Get Whatsapp Usage Endpoint",
+        "description": "Get monthly message usage statistics for WhatsApp integration.",
+        "operationId": "get_whatsapp_usage_endpoint_api_v1_integrations_whatsapp_usage__business_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Business Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Whatsapp Usage Endpoint Api V1 Integrations Whatsapp Usage  Business Id  Get"
                 }
               }
             }
@@ -1485,7 +1582,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1503,7 +1600,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1608,6 +1705,26 @@
         ]
       }
     },
+    "/api/v1/telegram/debug/info": {
+      "get": {
+        "tags": [
+          "telegram"
+        ],
+        "summary": "Telegram Debug Info",
+        "description": "Fetch debug information about all registered Telegram bots and their current webhooks.",
+        "operationId": "telegram_debug_info_api_v1_telegram_debug_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/telegram/webhook/{webhook_id}": {
       "post": {
         "tags": [
@@ -1647,6 +1764,56 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/telegram/generate-bind-token": {
+      "post": {
+        "tags": [
+          "telegram"
+        ],
+        "summary": "Generate Bind Token",
+        "description": "Generate a temporary, secure token to bind the admin's Telegram account.",
+        "operationId": "generate_bind_token_api_v1_telegram_generate_bind_token_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/telegram/bind-status": {
+      "get": {
+        "tags": [
+          "telegram"
+        ],
+        "summary": "Get Bind Status",
+        "description": "Check if the admin's Telegram account is linked to the current user's business.",
+        "operationId": "get_bind_status_api_v1_telegram_bind_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/telegram/link": {
@@ -2221,6 +2388,68 @@
         }
       }
     },
+    "/api/v1/admin/businesses/{business_id}/credits": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Business Credits",
+        "description": "Update manual purchased credits for a business (Admin only).",
+        "operationId": "update_business_credits_api_v1_admin_businesses__business_id__credits_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Business Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Update Business Credits Api V1 Admin Businesses  Business Id  Credits Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/data-gateway/me/imports": {
       "get": {
         "tags": [
@@ -2696,7 +2925,7 @@
           "trade"
         ],
         "summary": "List Postal Codes",
-        "description": "Retrieve all preloaded Mexican postal codes.",
+        "description": "Retrieve preloaded Mexican postal codes (limited for performance).",
         "operationId": "list_postal_codes_api_v1_trade_postal_codes_get",
         "responses": {
           "200": {
@@ -2719,6 +2948,150 @@
             "OAuth2PasswordBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/trade/postal-codes/states": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List States",
+        "description": "Retrieve all unique states.",
+        "operationId": "list_states_api_v1_trade_postal_codes_states_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response List States Api V1 Trade Postal Codes States Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trade/postal-codes/municipalities": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List Municipalities",
+        "description": "Retrieve all unique municipalities for a given state.",
+        "operationId": "list_municipalities_api_v1_trade_postal_codes_municipalities_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response List Municipalities Api V1 Trade Postal Codes Municipalities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/postal-codes/zip-codes": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List Zip Codes",
+        "description": "Retrieve all zip codes and colonias for a given state and municipality.",
+        "operationId": "list_zip_codes_api_v1_trade_postal_codes_zip_codes_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "municipality",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Municipality"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PostalCodeResponse"
+                  },
+                  "title": "Response List Zip Codes Api V1 Trade Postal Codes Zip Codes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/trade/postal-codes/{zip_code}": {
@@ -3058,6 +3431,65 @@
               "application/json": {
                 "schema": {
                   "title": "Response Delete Product Api V1 Trade Products  Product Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/prospects/orders": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List Prospect Orders",
+        "description": "List all prospecting/unverified orders for the business, partitioned by segment.",
+        "operationId": "list_prospect_orders_api_v1_trade_prospects_orders_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "segment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Segment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  },
+                  "title": "Response List Prospect Orders Api V1 Trade Prospects Orders Get"
                 }
               }
             }
@@ -4209,6 +4641,17 @@
             "type": "string",
             "title": "Default Unit"
           },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
           "description": {
             "anyOf": [
               {
@@ -4219,6 +4662,18 @@
               }
             ],
             "title": "Description"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           }
         },
         "type": "object",
@@ -4242,6 +4697,17 @@
             "type": "string",
             "title": "Default Unit"
           },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
           "description": {
             "anyOf": [
               {
@@ -4252,6 +4718,18 @@
               }
             ],
             "title": "Description"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           },
           "id": {
             "type": "string",
@@ -4318,6 +4796,17 @@
             ],
             "title": "Default Unit"
           },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
           "description": {
             "anyOf": [
               {
@@ -4328,6 +4817,18 @@
               }
             ],
             "title": "Description"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           }
         },
         "type": "object",
@@ -5193,6 +5694,11 @@
             "type": "array",
             "title": "Integrations",
             "default": []
+          },
+          "purchased_credits": {
+            "type": "integer",
+            "title": "Purchased Credits",
+            "default": 0
           }
         },
         "type": "object",

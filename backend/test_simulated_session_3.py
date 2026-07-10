@@ -43,9 +43,14 @@ async def cleanup_database_records(db, biz_id, phone_numbers):
                 await db.execute(text("DELETE FROM messages WHERE conversation_id = :cid"), {"cid": c.id})
                 await db.delete(c)
                 
+            # Delete orders and items linked to client
+            await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE client_id = :cid)"), {"cid": client.id})
+            await db.execute(text("DELETE FROM orders WHERE client_id = :cid"), {"cid": client.id})
             await db.delete(client)
             
     # Delete stores created for test cases
+    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%'))"))
+    await db.execute(text("DELETE FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
     await db.execute(text("DELETE FROM store_clients WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
     await db.execute(text("DELETE FROM store_actions WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
     await db.execute(text("DELETE FROM stores WHERE is_prospect = true AND name LIKE '%Obra%'"))
@@ -219,6 +224,25 @@ async def main():
         assert action.category == ActionCategory.COMMERCIAL, "StoreAction category should be COMMERCIAL"
         assert action.status == ActionStatus.PROPOSED, "StoreAction status should be PROPOSED"
         assert action.details["requested_quantity"] == 120, "StoreAction quantity should match"
+
+        # Verify Order creation
+        from app.models.trade import Order, OrderItem, OrderStatus, DataSourceType
+        res_order = await db.execute(select(Order).where(Order.business_id == biz.id, Order.store_id == store.id))
+        order = res_order.scalars().first()
+        assert order is not None, "A prospect Order should have been created"
+        assert order.client_id == client.id, "Order should be linked to the qualified client"
+        assert order.status == OrderStatus.PENDING, "Order status should be PENDING"
+        assert order.source_type == DataSourceType.INTEGRATION, "Order source should be INTEGRATION"
+        assert order.is_verified is False, "Prospect order should be unverified"
+        assert order.total_amount == 120 * prod.price, f"Order total amount should match: {120 * prod.price}"
+
+        # Verify OrderItem creation
+        res_item = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
+        order_item = res_item.scalars().first()
+        assert order_item is not None, "An OrderItem should have been created for the order"
+        assert order_item.product_id == prod.id, "OrderItem should point to the correct product"
+        assert order_item.quantity == 120, "OrderItem quantity should match 120"
+        assert order_item.unit_price == prod.price, "OrderItem unit price should match product price"
         
         # Verify internal notification logs
         log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "notifications.log")

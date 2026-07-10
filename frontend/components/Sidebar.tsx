@@ -225,6 +225,12 @@ function SidebarContent() {
                         >
                           Lead Contacts
                         </Link>
+                        <Link 
+                          href="/trade/prospects/orders?segment=wholesale"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/orders' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          Orders
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -255,6 +261,12 @@ function SidebarContent() {
                         >
                           Referral Contacts
                         </Link>
+                        <Link 
+                          href="/trade/prospects/orders?segment=retail"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/orders' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          Orders
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -269,12 +281,6 @@ function SidebarContent() {
                   icon={MapPin} 
                   name="Point of Sale" 
                   active={pathname.startsWith('/trade/stores')} 
-                />
-                <SidebarLink 
-                  href="/trade/orders" 
-                  icon={Package} 
-                  name="Orders" 
-                  active={pathname.startsWith('/trade/orders')} 
                 />
               </div>
             )}

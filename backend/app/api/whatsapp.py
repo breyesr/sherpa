@@ -269,7 +269,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
             flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
         elif sender_type == "prospective_client":
             feature_enabled = is_trade and feat_cfg.get("campaign_flow", {}).get("enabled", False)
-            flow_enabled = is_trade and cfg.get("prospective_clients", {}).get("enabled", False)
+            flow_enabled = is_trade and (cfg.get("prospective_clients", {}).get("enabled", False) or feature_enabled)
         elif sender_type == "distributor_retailer":
             feature_enabled = is_trade and feat_cfg.get("b2b_solutions", {}).get("enabled", False)
             flow_enabled = is_trade and cfg.get("distributors_retailers", {}).get("enabled", False)
@@ -280,7 +280,15 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         if not feature_enabled or not flow_enabled:
             from twilio.twiml.messaging_response import MessagingResponse
             twiml = MessagingResponse()
-            twiml.message("Este servicio no está habilitado actualmente para este número.")
+            if sender_type == "sales_rep":
+                msg_text = (
+                    "¡Hola! Tu número está registrado como administrador/colaborador en Sherpa. "
+                    "Las herramientas de consulta de Inteligencia de Ventas no están activadas actualmente para tu cuenta. "
+                    "Este bot está configurado y activo para calificar prospectos y capturar pedidos de clientes externos."
+                )
+            else:
+                msg_text = "Este servicio no está habilitado actualmente para este número."
+            twiml.message(msg_text)
             return Response(content=str(twiml), media_type="text/xml")
 
         # 5. Dispatch to Celery queues

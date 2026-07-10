@@ -113,5 +113,24 @@
 - [ ] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
 - [ ] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
 
+## Epic 156: Automated Order Generation & Segmented Prospecting Orders UI
+**Objective**: Automatically generate a pending, unverified wholesale Order and OrderItem in the database during the final stage of inbound prospect qualification, and implement the frontend list views partitioned by pipeline segment (Wholesale vs. Retail) under the Prospecting sidebar menu.
+
+- [x] Task 156.1: **Order Integration in Qualifier**: Update the `qualify_lead` node in `prospect_qualifier.py` to instantiate and add `Order` and `OrderItem` records upon successful qualification, setting `source_type` to `INTEGRATION` and `is_verified` to `False`.
+- [x] Task 156.2: **Segmented Orders API**: Implement `GET /api/v1/trade/prospects/orders` supporting a `segment` filter (`wholesale` or `retail`) to return orders linked to prospect stores matching the segment.
+- [x] Task 156.3: **Prospecting Orders Sidebar Links**: Update `frontend/components/Sidebar.tsx` to render "Orders" under both the Wholesale and Retail Prospecting submenus, linking to `/trade/prospects/orders?segment=wholesale` and `/trade/prospects/orders?segment=retail` respectively.
+- [x] Task 156.4: **Segmented Orders Dashboard View**: Create the frontend view for `/trade/prospects/orders` that renders a list of pending orders filtered by the segment query parameter.
+- [x] Task 156.5: **Ingestion & UI Integration Tests**: Add integration tests verifying that qualifying a lead over WhatsApp correctly creates a pending Order, and that the segmented API returns correct results.
+
+## Epic 157: Webhook Routing Gating & Custom Administrative Message
+**Objective**: Fix the Telegram/WhatsApp webhook routing gating for users with `campaign_flow` active but custom routing configurations disabled, and implement a friendly informative reply for internal team members when `sales_intelligence` is disabled.
+
+- [x] Task 157.1: **Campaign Flow Fallback**: Update the webhook routes in `telegram.py` and `whatsapp.py` to bypass the `prospective_clients` routing check if the `campaign_flow` feature is enabled.
+- [x] Task 157.2: **Friendly Admin Notification**: Add a custom response in the webhook routes for team members (`sales_rep`) who write to a bot where `sales_intelligence` is disabled, explaining the active campaign status.
+- [x] Task 157.3: **Routing Integration Tests**: Extend the test suite in `test_webhook_routing.py` and `test_sandbox_gates.py` to assert correct routing behavior for both prospects and team members under this configuration.
+
+
+
+
 
 

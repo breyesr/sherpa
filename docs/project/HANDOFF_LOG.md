@@ -525,3 +525,23 @@
 - **Lower-Tier Orders Integration**: Scoped the inclusion of direct wholesale Orders (`/trade/orders`) alongside Point of Sale (`/trade/stores`) as fallback links for lower-tier profiles without full B2B Solutions access.
 - **Documentation**: Generated and moved the complete design specs and code recommendations report to [sidebar_diagnostic_report.md](file:///Users/bernardo/projects/sherpa/temp/sidebar_diagnostic_report.md) under `/temp`.
 - **Handoff Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to slate Epic 155 as the next active task.
+
+## [2026-07-09] - Epic 156 Creation: Automated Order Generation & Segmented Prospecting Orders UI
+- **Backlog Entry (Epic 156)**: Expanded Epic 156 in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) to cover automated order creation during qualification and segmented frontend Prospecting Orders views/routes (Wholesale vs. Retail).
+- **Workflow Scoping**: Defined database model usage and frontend query parameter mapping (`?segment=wholesale` and `?segment=retail`) to partition orders.
+- **State Tracking**: Updated [HANDOFF_STATE.md](file:///Users/bernardo/projects/sherpa/docs/project/HANDOFF_STATE.md) to log the expanded Epic 156.
+
+- **Task 156.1 Completed**: Integrated `Order` and `OrderItem` generation inside the `qualify_lead` state graph node of [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py).
+- **Test Integrity Cleanup**: Updated [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py) to resolve foreign key constraints on mock deletion, verifying all 5 test scenarios pass cleanly.
+- **Task 156.2 Completed**: Implemented the segmented orders API endpoint `GET /api/v1/trade/prospects/orders` in [trade.py](file:///Users/bernardo/projects/sherpa/backend/app/api/trade.py#L558-L578) with dynamic segment filter joins. Regenerated `openapi.json` and ran `npm run gen:api` to sync TypeScript definitions with the frontend.
+- **Task 156.3 Completed**: Added segment-filtered Orders submenu links (`/trade/prospects/orders?segment=wholesale` and `/trade/prospects/orders?segment=retail`) in [Sidebar.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/Sidebar.tsx).
+- **Task 156.4 Completed**: Created the high-fidelity Next.js page at [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/orders/page.tsx) to query and render segmented prospect orders, supporting quick-verification updates.
+- **Task 156.5 Completed**: Wrote and integrated explicit database assertions verifying automated `Order` and `OrderItem` generation inside the test suite [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py). Verified that all 5 simulation scenarios pass correctly.
+
+## [2026-07-09] - Epic 157: Webhook Routing Gating & Custom Administrative Message
+- **Task 157.1 Completed**: Updated webhook routes in [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py#L467) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py#L272) to allow campaign flow fallback gating, bypassing custom routing checks when campaigns are enabled.
+- **Task 157.2 Completed**: Configured custom, user-friendly administrative response messages in [telegram.py](file:///Users/bernardo/projects/sherpa/backend/app/api/telegram.py#L475) and [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py#L282) for internal sales reps/collaborators when `sales_intelligence` is disabled, explaining the active public campaigns state.
+- **Task 157.3 Completed**: Extended the test suite in [test_sandbox_gates.py](file:///Users/bernardo/projects/sherpa/backend/test_sandbox_gates.py) to assert routing falls back successfully for prospects and that sales reps receive the custom message across sandbox, Telegram, and WhatsApp routes. Verified all integration tests pass successfully.
+
+
+

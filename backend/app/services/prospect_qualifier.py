@@ -19,7 +19,7 @@ from langgraph.graph.message import add_messages
 from app.core.system_config import ConfigService
 from app.core.config import settings
 from app.models.business import BusinessProfile
-from app.models.trade import Store, Product, Category, StoreAction, ActionCategory, ActionStatus, store_clients, PostalCode
+from app.models.trade import Store, Product, Category, StoreAction, ActionCategory, ActionStatus, store_clients, PostalCode, Order, OrderItem, OrderStatus, DataSourceType
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
 from datetime import datetime
@@ -635,7 +635,36 @@ Estado actual de los datos recopilados:
             await self.db.execute(
                 store_clients.insert().values(store_id=store.id, client_id=client.id)
             )
-            
+
+            # 2.5. Create unverified Order & OrderItem matching request
+            if product:
+                try:
+                    order = Order(
+                        business_id=biz_id,
+                        store_id=store.id,
+                        client_id=client.id,
+                        status=OrderStatus.PENDING,
+                        total_amount=potential_val or 0.0,
+                        notes=f"Pedido prospectado automáticamente vía {channel_name} por el asistente.",
+                        source_type=DataSourceType.INTEGRATION,
+                        is_verified=False,
+                        shipping_address=loc
+                    )
+                    self.db.add(order)
+                    await self.db.flush()
+
+                    order_item = OrderItem(
+                        order_id=order.id,
+                        product_id=product.id,
+                        quantity=int(qty) if qty is not None else 1,
+                        unit_price=product.price
+                    )
+                    self.db.add(order_item)
+                    logger.info(f"Auto-generated unverified B2B Order {order.id} for prospect client {client.id} (Store: {store.id})")
+                except Exception as ord_err:
+                    logger.error(f"Failed to auto-generate unverified order: {ord_err}")
+                    # Non-blocking, qualify should proceed even if order creation fails
+
             # 3. Create StoreAction (Proposed Commercial)
             channel_name = "Telegram" if is_telegram else "WhatsApp"
             action = StoreAction(

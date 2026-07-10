@@ -224,20 +224,28 @@ async def test_chat(
     elif simulate_role == "distributor_retailer":
         feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
     elif simulate_role == "sales_rep":
-        feature_enabled = feat_cfg.get("crm_suite", {}).get("enabled", True)
+        feature_enabled = feat_cfg.get("sales_intelligence", {}).get("enabled", False)
 
     cfg = business.routing_config or {}
     flow_enabled = False
     if simulate_role == "customer":
         flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
     elif simulate_role == "prospective_client":
-        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False)
+        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False) or feature_enabled
     elif simulate_role == "distributor_retailer":
         flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
     elif simulate_role == "sales_rep":
         flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
         
     if not feature_enabled or not flow_enabled:
+        if simulate_role == "sales_rep":
+            return {
+                "response": (
+                    "¡Hola! Tu número está registrado como administrador/colaborador en Sherpa. "
+                    "Las herramientas de consulta de Inteligencia de Ventas no están activadas actualmente para tu cuenta. "
+                    "Este bot está configurado y activo para calificar prospectos y capturar pedidos de clientes externos."
+                )
+            }
         return {"response": "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."}
 
     # 2. Dispatch to the correct underlying message pipeline
