@@ -648,7 +648,7 @@ async def create_order(
     )
     return res_final.scalars().first()
 
-@router.get("/orders/{order_id}", response_model=OrderResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+@router.get("/orders/{order_id}", response_model=OrderResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def get_order(
     order_id: str,
     db: AsyncSession = Depends(get_db),
@@ -666,7 +666,7 @@ async def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
-@router.patch("/orders/{order_id}", response_model=OrderResponse, dependencies=[Depends(require_feature("b2b_solutions"))])
+@router.patch("/orders/{order_id}", response_model=OrderResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
 async def update_order(
     order_id: str,
     order_in: OrderUpdate,

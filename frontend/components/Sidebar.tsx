@@ -225,6 +225,12 @@ function SidebarContent() {
                         >
                           Lead Contacts
                         </Link>
+                        <Link 
+                          href="/trade/prospects/orders?segment=wholesale"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/orders' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          Orders
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -254,6 +260,12 @@ function SidebarContent() {
                           className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                           Referral Contacts
+                        </Link>
+                        <Link 
+                          href="/trade/prospects/orders?segment=retail"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/orders' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          Orders
                         </Link>
                       </div>
                     )}
