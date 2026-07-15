@@ -108,10 +108,10 @@
 ## Epic 155: Hybrid Sidebar Modularity & Lower-Tier Orders Integration
 **Objective**: Decouple the nested sidebar categories so they adapt dynamically to any hybrid capability configuration. Specifically, ensure that users with Campaigns enabled but B2B Solutions disabled can access the Prospecting leads menu, the Point of Sale manager, and wholesale Orders, and satisfy WCAG 2.1 contrast rules.
 
-- [ ] Task 155.1: **Decouple Sidebar Groups**: Refactor `frontend/components/Sidebar.tsx` to separate CRM, B2B, Prospecting, and Catalog blocks into standalone conditional structures.
-- [ ] Task 155.2: **Integrate Lower-Tier Orders**: Expose the Orders link (`/trade/orders`) alongside Point of Sale (`/trade/stores`) in the fallback block when Campaigns are enabled but B2B Solutions is disabled.
-- [ ] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
-- [ ] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
+- [x] Task 155.1: **Decouple Sidebar Groups**: Refactor `frontend/components/Sidebar.tsx` to separate CRM, B2B, Prospecting, and Catalog blocks into standalone conditional structures.
+- [x] Task 155.2: **Integrate Lower-Tier Orders**: Expose the Orders link (`/trade/orders`) alongside Point of Sale (`/trade/stores`) in the fallback block when Campaigns are enabled but B2B Solutions is disabled.
+- [x] Task 155.3: **WCAG Contrast Compliance**: Darken the uppercase category headers in `Sidebar.tsx` from `text-slate-400` to `text-slate-500` for accessibility.
+- [x] Task 155.4: **UI & Layout Verification**: Verify correct sidebar rendering across all key user tier configurations.
 
 ## Epic 156: Automated Order Generation & Segmented Prospecting Orders UI
 **Objective**: Automatically generate a pending, unverified wholesale Order and OrderItem in the database during the final stage of inbound prospect qualification, and implement the frontend list views partitioned by pipeline segment (Wholesale vs. Retail) under the Prospecting sidebar menu.
@@ -129,8 +129,21 @@
 - [x] Task 157.2: **Friendly Admin Notification**: Add a custom response in the webhook routes for team members (`sales_rep`) who write to a bot where `sales_intelligence` is disabled, explaining the active campaign status.
 - [x] Task 157.3: **Routing Integration Tests**: Extend the test suite in `test_webhook_routing.py` and `test_sandbox_gates.py` to assert correct routing behavior for both prospects and team members under this configuration.
 
+## Epic 158: Identity Resolution & Operator Context Safety
+**Objective**: Fix two critical routing bugs: (1) saved prospects being locked out by B2B feature gates after their first qualification session, and (2) internal sales reps having their CRM operations applied to their own profile instead of the target customer account. No database migrations required.
 
+**Dependencies**: Epic 153 (Multi-Tenant WhatsApp — completed), Epic 154 (Telegram Data Isolation — completed).
+**Reference**: [Case Analysis](file:///Users/bernardo/projects/sherpa/temp/case_analysis_prospect_lockout_and_rep_decoupling.md)
 
+### Case 1: Prospect Flow Continuity
+- [ ] Task 158.1: **Prospect Flag Guard in IdentityResolver**: Add an `is_prospect` check in `identity_resolver.py` `resolve_sender()` before the `client.stores` association check. If `client.is_prospect == True`, return `"prospective_client"` regardless of store links, preventing misclassification as `distributor_retailer`.
 
+### Case 2: Sales Rep Target Decoupling
+- [ ] Task 158.2: **Sales Rep State Decoupling**: In `agentic_orchestrator.py`, nullify `active_store_id` for senders with `sales_rep` / `representative` / `agent` roles before graph initialization, forcing `discovery_scope = "GLOBAL"` and requiring explicit entity resolution per session.
+- [ ] Task 158.3: **Prompt Reinforcement for Internal Operators**: Add an OPERATIONAL PROTOCOL directive block to `b2b_sales_brain.j2` inside the `sales_rep` branch, instructing the LLM to call `resolve_entities` before any operational tool and to never apply CRM updates to the rep's own profile.
+- [ ] Task 158.4: **CRM Dashboard Role Filtering**: Exclude `sales_rep` / `representative` / `agent` roles from the `GET /clients` endpoint in `crm.py` to prevent internal staff from polluting CRM dashboard views.
+
+### Verification
+- [ ] Task 158.5: **Integration Tests**: Validate the full prospect re-engagement flow (Turn 1 → qualification → Turn 2 still routes to ProspectQualifier) and the sales rep isolation flow (rep message → `store_id=None` → must resolve entity first). Assert CRM endpoint excludes staff records.
 
 
