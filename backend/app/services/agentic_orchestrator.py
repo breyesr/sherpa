@@ -246,6 +246,15 @@ class AgenticOrchestrator:
             session_meta = await self.memory.get_metadata(chat_id)
             active_store_id = session_meta.get("active_store_id")
             
+            # Fetch client to check role and prevent context bleed
+            from app.models.crm import Client
+            res_c = await self.db.execute(
+                select(Client).where(Client.id == client_id)
+            )
+            client_obj = res_c.scalars().first()
+            if client_obj and client_obj.role in ("representative", "sales_rep", "agent"):
+                active_store_id = None
+
             uri = self._get_pool_uri()
             async with AsyncConnectionPool(uri, kwargs={"autocommit": True}) as pool:
                 checkpointer = AsyncPostgresSaver(pool)

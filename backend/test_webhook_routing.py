@@ -19,7 +19,8 @@ from sqlalchemy.orm import selectinload
 @patch("app.tasks.messages.process_distributor_message")
 @patch("app.tasks.messages.process_prospect_message")
 async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_task):
-    client = TestClient(app)
+    from httpx import AsyncClient, ASGITransport
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
     
     # 1. Fetch our target business profile and clean up any role settings
     async with SessionLocal() as db:
@@ -84,6 +85,11 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
     test_cases = [
         {
             "name": "Scenario A: All flows ENABLED",
+            "features_config": {
+                "campaign_flow": {"enabled": True},
+                "b2b_solutions": {"enabled": True},
+                "sales_intelligence": {"enabled": True}
+            },
             "routing_config": {
                 "prospective_clients": {"enabled": True},
                 "distributors_retailers": {"enabled": True},
@@ -118,6 +124,11 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
         },
         {
             "name": "Scenario B: Only Sales Reps and Prospects ENABLED, Distributors DISABLED",
+            "features_config": {
+                "campaign_flow": {"enabled": True},
+                "b2b_solutions": {"enabled": True},
+                "sales_intelligence": {"enabled": True}
+            },
             "routing_config": {
                 "prospective_clients": {"enabled": True},
                 "distributors_retailers": {"enabled": False},
@@ -152,6 +163,11 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
         },
         {
             "name": "Scenario C: All flows DISABLED",
+            "features_config": {
+                "campaign_flow": {"enabled": False},
+                "b2b_solutions": {"enabled": False},
+                "sales_intelligence": {"enabled": False}
+            },
             "routing_config": {
                 "prospective_clients": {"enabled": False},
                 "distributors_retailers": {"enabled": False},
@@ -194,6 +210,8 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
         async with SessionLocal() as db:
             biz = await db.get(BusinessProfile, biz_id)
             biz.routing_config = case["routing_config"]
+            if "features_config" in case:
+                biz.features_config = case["features_config"]
             await db.commit()
             
         for step in case["steps"]:
@@ -212,7 +230,7 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
             print(f"\n--- {step['label']} ---")
             print(f"Request From: {step['from']} | Body: '{step['body']}'")
             
-            response = client.post(webhook_url, data=form_payload)
+            response = await client.post(webhook_url, data=form_payload)
             
             print(f"Response status: {response.status_code}")
             print(f"TwiML Output: {response.text}")
@@ -220,7 +238,7 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
             assert response.status_code == step["expected_status"], f"Expected {step['expected_status']}, got {response.status_code}"
             
             if step["expect_rejected"]:
-                assert "no está habilitado" in response.text or "not enabled" in response.text or "no habilitado" in response.text or "Este servicio no está habilitado actualmente" in response.text
+                assert "no está habilitado" in response.text or "not enabled" in response.text or "no habilitado" in response.text or "Este servicio no está habilitado actualmente" in response.text or "no están activadas" in response.text
                 assert mock_prospect_task.apply_async.call_count == 0
                 assert mock_distributor_task.apply_async.call_count == 0
                 assert mock_sales_rep_task.call_count == 0
@@ -262,7 +280,7 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
     
     # Check prospect simulation
     print("\n--- Sandbox: Simulating prospective_client role ---")
-    res = client.post(sandbox_url, json={"message": "Hola, quiero 100 cajas", "simulate_role": "prospective_client"})
+    res = await client.post(sandbox_url, json={"message": "Hola, quiero 100 cajas", "simulate_role": "prospective_client"})
     print(f"Status: {res.status_code} | Body: {res.json()}")
     assert res.status_code == 200
     assert "response" in res.json()
@@ -279,15 +297,34 @@ async def run_tests(mock_prospect_task, mock_distributor_task, mock_sales_rep_ta
         await db.commit()
         
     print("\n--- Sandbox: Simulating prospective_client role (DISABLED) ---")
-    res = client.post(sandbox_url, json={"message": "Hola, quiero 100 cajas", "simulate_role": "prospective_client"})
+    res = await client.post(sandbox_url, json={"message": "Hola, quiero 100 cajas", "simulate_role": "prospective_client"})
     print(f"Status: {res.status_code} | Body: {res.json()}")
     assert res.status_code == 200
     assert "no está habilitado" in res.json()["response"]
     print("✅ Sandbox prospect simulation disabled check works")
-    
+
     # Clear dependency overrides
     app.dependency_overrides.clear()
-                 
+
+    # Restore defaults in DB to avoid side effects
+    async with SessionLocal() as db:
+        biz = await db.get(BusinessProfile, biz_id)
+        biz.routing_config = {
+            "prospective_clients": {"enabled": True},
+            "distributors_retailers": {"enabled": True},
+            "sales_reps": {"enabled": True}
+        }
+        biz.features_config = {
+            "scheduling": {"enabled": True},
+            "business_identity": {"enabled": True},
+            "crm_suite": {"enabled": True},
+            "sales_intelligence": {"enabled": True},
+            "campaign_flow": {"enabled": True},
+            "b2b_solutions": {"enabled": True}
+        }
+        await db.commit()
+
+    await client.aclose()
     print("\n🎉 ALL TEST SCENARIOS PASSED SUCCESSFULLY!")
 
 if __name__ == "__main__":

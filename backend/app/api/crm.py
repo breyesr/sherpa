@@ -41,6 +41,7 @@ def normalize_to_utc_naive(dt: datetime) -> datetime:
 async def get_clients(
     is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
     prospect_segment: Optional[str] = Query(default=None, description="Filter by prospect segment."),
+    include_staff: bool = Query(default=False, description="Include internal staff roles (representative, sales_rep, agent)."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
@@ -50,6 +51,8 @@ async def get_clients(
         query = query.where(Client.is_prospect == is_prospect)
     if prospect_segment is not None:
         query = query.where(Client.prospect_segment == prospect_segment)
+    if not include_staff:
+        query = query.where((Client.role.notin_(["representative", "sales_rep", "agent"])) | (Client.role == None))
         
     result = await db.execute(query)
     return result.scalars().all()

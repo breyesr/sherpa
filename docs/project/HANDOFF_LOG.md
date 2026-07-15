@@ -557,7 +557,9 @@
   - Removed the obsolete `/trade/orders` fallback link in `Sidebar.tsx` and successfully validated the Next.js compilation.
 - **Staging Merge & Push**:
   - Merged the feature branch `feature/frontend/epic-155-sidebar-modularity` into `staging` and successfully pushed the `staging` branch to origin.
-
-
-
-
+## [2026-07-14] - Epic 158: Identity Resolution & Operator Context Safety
+- **Task 158.1 Completed**: Added a prospect guard check in `IdentityResolver.resolve_sender` before store evaluation, resolving the prospect lockout issue.
+- **Task 158.2 Completed**: Nullified `active_store_id` for sales_rep roles in `agentic_orchestrator.py` before LangGraph initialization to isolate rep sessions.
+- **Task 158.3 Completed**: Added an OPERATIONAL PROTOCOL section to `b2b_sales_brain.j2` for sales reps, enforcing proactive entity resolution.
+- **Task 158.4 Completed**: Added the `include_staff` parameter to `GET /clients` in `crm.py` to filter out reps, agents, and representatives from B2B dashboards by default.
+- **Task 158.5 Completed**: Created `app/tests/test_identity_safety.py` to assert correct behavior. Updated `test_webhook_routing.py` to use `AsyncClient` to resolve loop mismatches. Verified all test suites pass successfully.

@@ -136,14 +136,14 @@
 **Reference**: [Case Analysis](file:///Users/bernardo/projects/sherpa/temp/case_analysis_prospect_lockout_and_rep_decoupling.md)
 
 ### Case 1: Prospect Flow Continuity
-- [ ] Task 158.1: **Prospect Flag Guard in IdentityResolver**: Add an `is_prospect` check in `identity_resolver.py` `resolve_sender()` before the `client.stores` association check. If `client.is_prospect == True`, return `"prospective_client"` regardless of store links, preventing misclassification as `distributor_retailer`.
+- [x] Task 158.1: **Prospect Flag Guard in IdentityResolver**: Add an `is_prospect` check in `identity_resolver.py` `resolve_sender()` before the `client.stores` association check. If `client.is_prospect == True`, return `"prospective_client"` regardless of store links, preventing misclassification as `distributor_retailer`.
 
 ### Case 2: Sales Rep Target Decoupling
-- [ ] Task 158.2: **Sales Rep State Decoupling**: In `agentic_orchestrator.py`, nullify `active_store_id` for senders with `sales_rep` / `representative` / `agent` roles before graph initialization, forcing `discovery_scope = "GLOBAL"` and requiring explicit entity resolution per session.
-- [ ] Task 158.3: **Prompt Reinforcement for Internal Operators**: Add an OPERATIONAL PROTOCOL directive block to `b2b_sales_brain.j2` inside the `sales_rep` branch, instructing the LLM to call `resolve_entities` before any operational tool and to never apply CRM updates to the rep's own profile.
-- [ ] Task 158.4: **CRM Dashboard Role Filtering**: Exclude `sales_rep` / `representative` / `agent` roles from the `GET /clients` endpoint in `crm.py` to prevent internal staff from polluting CRM dashboard views.
+- [x] Task 158.2: **Sales Rep State Decoupling**: In `agentic_orchestrator.py`, nullify `active_store_id` for senders with `sales_rep` / `representative` / `agent` roles before graph initialization, forcing `discovery_scope = "GLOBAL"` and requiring explicit entity resolution per session.
+- [x] Task 158.3: **Prompt Reinforcement for Internal Operators**: Add an OPERATIONAL PROTOCOL directive block to `b2b_sales_brain.j2` inside the `sales_rep` branch, instructing the LLM to call `resolve_entities` before any operational tool and to never apply CRM updates to the rep's own profile.
+- [x] Task 158.4: **CRM Dashboard Role Filtering**: Exclude `sales_rep` / `representative` / `agent` roles from the `GET /clients` endpoint in `crm.py` to prevent internal staff from polluting CRM dashboard views.
 
 ### Verification
-- [ ] Task 158.5: **Integration Tests**: Validate the full prospect re-engagement flow (Turn 1 → qualification → Turn 2 still routes to ProspectQualifier) and the sales rep isolation flow (rep message → `store_id=None` → must resolve entity first). Assert CRM endpoint excludes staff records.
+- [x] Task 158.5: **Integration Tests**: Validate the full prospect re-engagement flow (Turn 1 → qualification → Turn 2 still routes to ProspectQualifier) and the sales rep isolation flow (rep message → `store_id=None` → must resolve entity first). Assert CRM endpoint excludes staff records.
 
 

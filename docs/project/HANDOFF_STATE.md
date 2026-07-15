@@ -1,29 +1,18 @@
-# Handoff State: 2026-07-09 (Session Update)
+# Handoff State: 2026-07-14 (Session Update)
 
 ## Current Branch
-`feature/frontend/epic-155-sidebar-modularity` (merged to `staging` and pushed).
+`feature/backend/epic-158-identity-safety` (all changes verified and tested).
 
 ## Accomplishments This Session
-1. **Lead Qualification & Referral Flow Optimizations (Completed & Verified)**:
-   - **Product ID Protection**: Implemented dynamic resolution of human-readable product names inside the `call_model` node, substituting the raw database IDs/UUIDs across all system prompts. Added a strict negative constraint forbidding the assistant from leaking internal product database IDs to prospects.
-   - **Below-Wholesale Handshake**: Instructed the qualifier model in the `intent` phase to accept below-threshold quantities immediately without pressing the user to buy the wholesale minimum.
-   - **Single-Turn Retail Detail Collection**: Merged the split address and contact detail collection phases into a unified `collecting_retail_details` phase, requesting the prospect's delivery address, ZIP code, name, and email in a single turn. Added instructions to explicitly skip phone number collection (as we already communicate with their active number).
-   - **Fuzzy/Prefix Product Matcher**: Enhanced the `_get_product_by_id_or_name` database helper to perform prefix and suffix-resilient matching (e.g., stripping trailing brackets/spaces). This resolves issues where the model generates duplicate or truncated product names in parallel tool calls (like missing the closing parenthesis).
-   - **High-Fidelity Store Referrals**: Enriched the final retail confirmation message with the matched physical store's name, address, and telephone number, thanking the prospect for their preference.
-   - **Test Verification**: Confirmed that the 5-scenario integration simulation test suite in `test_simulated_session_3.py` passes successfully with 100% correct assertions.
-
-2. **Obsolete orders link cleanup (Completed & Verified)**:
-   - Removed the obsolete `/trade/orders` fallback link in `Sidebar.tsx` and successfully validated the Next.js compilation.
-
-3. **Epic 157 - Webhook Routing Gating & Custom Administrative Message (Completed & Verified)**:
-   - Configured campaign webhook fallback to allow prospects to interact with campaign bots even if custom trade CRM routing is inactive.
-   - Implemented a custom bot block message in Spanish for registered team members when the bot is active for external prospects.
-   - Configured the Telegram onboarding check to only prompt unknown contacts if `campaign_flow` is active.
-
-4. **Integration to Staging (Completed & Verified)**:
-   - Merged the features into the `staging` branch and successfully pushed it to GitHub.
+1. **Epic 158: Identity Resolution & Operator Context Safety (Completed & Verified)**:
+   - **Case 1: Prospect Flag Guard**: Added an `is_prospect` check in `IdentityResolver.resolve_sender` before the `client.stores` check. This prevents returning prospects (who have prospect stores created during qualification) from being misclassified as B2B `"distributor_retailer"` and blocked by feature gates.
+   - **Case 2: Sales Rep State Decoupling**: Implemented state nullification in `agentic_orchestrator.py` `get_response()`. If the sender is an internal representative, `active_store_id` is forced to `None` for the LangGraph initialization, preventing context bleed from previous or personal sessions.
+   - **Case 2: Prompt Reinforcement**: Added an `OPERATIONAL PROTOCOL FOR INTERNAL OPERATORS` directive block to `b2b_sales_brain.j2` inside the `sales_rep` block, telling the LLM to proactively call `resolve_entities` first and never apply CRM updates to the rep's own profile.
+   - **Case 2: CRM List Filtering**: Excluded internal staff roles (`"representative"`, `"sales_rep"`, `"agent"`) from the `GET /clients` endpoint by default, with an optional `include_staff=true` query parameter to override this behavior.
+   - **Test Verification**: Created `app/tests/test_identity_safety.py` asserting all fixes (guard, decoupling, filtering). Re-verified existing `test_simulated_session_3.py`, `test_sandbox_gates.py`, and `test_webhook_routing.py` (which was updated to use `httpx.AsyncClient` to resolve a different event loop bug). All passed successfully.
 
 ## Active Backlog State
+- **Epic 158 (Identity Resolution & Operator Context Safety)**: COMPLETE.
 - **Lead Qualification Optimizations**: COMPLETE.
 - **Epic 157 (Webhook Routing Gating)**: COMPLETE.
 - **Epic 156 (Automated Order Ingestion)**: COMPLETE.
@@ -32,5 +21,6 @@
 - **Epic 153 (Multi-Tenant WhatsApp)**: COMPLETE.
 
 ## Next Steps
-1. Review the next Epics in the Backlog (e.g. Epic 108 Dashboard API, Anniversary Trigger, or Epic 113 Polymorphic Link Schema / Relational Graph-Enriched RAG) to schedule the next feature or optimization task.
+1. Request human approval to merge `feature/backend/epic-158-identity-safety` to `staging` and push.
+2. Review remaining items in the backlog (PM).
 

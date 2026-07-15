@@ -119,6 +119,10 @@ class IdentityResolver:
         if (client.role in ("representative", "sales_rep", "agent")) or (biz_phone and client.phone == biz_phone):
             return "sales_rep", client
 
+        # 2.5. Check prospect override to avoid feature gate blocks for saved prospects
+        if client.is_prospect:
+            return "prospective_client", client
+
         # 3. Check physical store mappings
         if client.stores:
             return "distributor_retailer", client
