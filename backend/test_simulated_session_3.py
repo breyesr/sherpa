@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.database import SessionLocal
 from app.models.business import BusinessProfile
-from app.models.trade import Category, Product, Store, StoreAction, ActionCategory, ActionStatus
+from app.models.trade import Category, Product, Store, StoreAction, ActionCategory, ActionStatus, store_clients
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
 from app.services.prospect_qualifier import ProspectQualifier
@@ -19,24 +19,32 @@ from app.services.prospect_qualifier import ProspectQualifier
 async def cleanup_database_records(db, biz_id, phone_numbers):
     """Clean up the checkpoints and crm records for the given phone numbers."""
     print("Cleaning database checkpoints and crm records...")
+    from app.models.trade import store_clients
     for phone in phone_numbers:
         # Delete checkpointer entries
-        thread_id = f"prospect_{phone}"
+        thread_id = f"prospect_{biz_id}_{phone}"
         await db.execute(text("DELETE FROM checkpoints WHERE thread_id = :tid"), {"tid": thread_id})
         await db.execute(text("DELETE FROM checkpoint_writes WHERE thread_id = :tid"), {"tid": thread_id})
         
+        await db.execute(text("DELETE FROM checkpoints WHERE thread_id = :tid"), {"tid": f"prospect_{phone}"})
+        await db.execute(text("DELETE FROM checkpoint_writes WHERE thread_id = :tid"), {"tid": f"prospect_{phone}"})
+
         # Delete client, store, and actions
         client_id_hash = Client.hash_id(phone)
         res_cli = await db.execute(select(Client).where(Client.business_id == biz_id, Client.whatsapp_id_hash == client_id_hash))
         client = res_cli.scalars().first()
         if client:
-            # Delete actions assigned to or created for client
+            # Find linked stores
+            res_sc = await db.execute(select(store_clients.c.store_id).where(store_clients.c.client_id == client.id))
+            linked_store_ids = res_sc.scalars().all()
+
+            # Delete store actions assigned to or created for client
             await db.execute(text("DELETE FROM store_actions WHERE assigned_to_id = :cid"), {"cid": client.id})
             
             # Delete clients store associations
             await db.execute(text("DELETE FROM store_clients WHERE client_id = :cid"), {"cid": client.id})
             
-            # Find and delete associated prospect stores
+            # Find and delete associated conversations/messages
             res_conv = await db.execute(select(Conversation).where(Conversation.client_id == client.id))
             convs = res_conv.scalars().all()
             for c in convs:
@@ -46,14 +54,23 @@ async def cleanup_database_records(db, biz_id, phone_numbers):
             # Delete orders and items linked to client
             await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE client_id = :cid)"), {"cid": client.id})
             await db.execute(text("DELETE FROM orders WHERE client_id = :cid"), {"cid": client.id})
+
+            if linked_store_ids:
+                for sid in linked_store_ids:
+                    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id = :sid)"), {"sid": sid})
+                    await db.execute(text("DELETE FROM orders WHERE store_id = :sid"), {"sid": sid})
+                    await db.execute(text("DELETE FROM store_clients WHERE store_id = :sid"), {"sid": sid})
+                    await db.execute(text("DELETE FROM store_actions WHERE store_id = :sid"), {"sid": sid})
+                    await db.execute(text("DELETE FROM stores WHERE id = :sid"), {"sid": sid})
+
             await db.delete(client)
             
     # Delete stores created for test cases
-    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%'))"))
-    await db.execute(text("DELETE FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
-    await db.execute(text("DELETE FROM store_clients WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
-    await db.execute(text("DELETE FROM store_actions WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND name LIKE '%Obra%')"))
-    await db.execute(text("DELETE FROM stores WHERE is_prospect = true AND name LIKE '%Obra%'"))
+    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND (name LIKE '%Obra%' OR name LIKE '%Referencia%')))"))
+    await db.execute(text("DELETE FROM orders WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND (name LIKE '%Obra%' OR name LIKE '%Referencia%'))"))
+    await db.execute(text("DELETE FROM store_clients WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND (name LIKE '%Obra%' OR name LIKE '%Referencia%'))"))
+    await db.execute(text("DELETE FROM store_actions WHERE store_id IN (SELECT id FROM stores WHERE is_prospect = true AND (name LIKE '%Obra%' OR name LIKE '%Referencia%'))"))
+    await db.execute(text("DELETE FROM stores WHERE is_prospect = true AND (name LIKE '%Obra%' OR name LIKE '%Referencia%')"))
     
     await db.commit()
     print("Cleanup done.")
@@ -133,8 +150,45 @@ async def main():
         await db.commit()
         print(f"Using product for test: {prod.name} (Wholesale threshold: {prod.wholesale_threshold})")
         
-        test_phones = ["sandbox_test_qty_fail", "sandbox_test_zip_fail", "sandbox_test_success", "sandbox_test_multi_turn_waitlist"]
+        test_phones = ["sandbox_test_qty_fail", "sandbox_test_zip_fail", "sandbox_test_success", "sandbox_test_multi_turn_waitlist", "sandbox_test_returning_client"]
         await cleanup_database_records(db, biz.id, test_phones)
+        
+        # Setup returning client in the database
+        returning_phone = "sandbox_test_returning_client"
+        client_hash_rc = Client.hash_id(returning_phone)
+        client_rc = Client(
+            business_id=biz.id,
+            name="Pedro Returning",
+            phone=returning_phone,
+            email="pedro_returning@test.com",
+            whatsapp_id_hash=client_hash_rc,
+            custom_fields={"company": "Pedro Returning SA", "zip_code": "01210"},
+            is_prospect=True
+        )
+        db.add(client_rc)
+        await db.flush()
+
+        # Link returning client to a Store with address and zip code
+        store_rc = Store(
+            business_id=biz.id,
+            name="Pedro Returning SA (Obra WhatsApp)",
+            street_address="Av. Constituyentes 456",
+            city="Ciudad de México",
+            state="Ciudad de México",
+            zip_code="01210",
+            country="México",
+            is_prospect=True,
+            prospect_segment="retail"
+        )
+        db.add(store_rc)
+        await db.flush()
+
+        # Ensure they are linked in store_clients
+        from app.models.trade import store_clients
+        await db.execute(
+            store_clients.insert().values(store_id=store_rc.id, client_id=client_rc.id)
+        )
+        await db.commit()
         
         qualifier = ProspectQualifier(db)
         
@@ -161,7 +215,16 @@ async def main():
         assert client_1.name == "Juan Perez", "Client name should match"
         
         # Verify retail Store in DB
-        res_store_1 = await db.execute(select(Store).where(Store.business_id == biz.id, Store.is_prospect == True, Store.prospect_segment == "retail"))
+        res_store_1 = await db.execute(
+            select(Store)
+            .join(store_clients)
+            .where(
+                Store.business_id == biz.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == "retail",
+                store_clients.c.client_id == client_1.id
+            )
+        )
         store_1 = res_store_1.scalars().first()
         assert store_1 is not None, "A retail prospect Store should have been created"
         assert store_1.prospect_segment == "retail", "Store segment should be retail"
@@ -288,6 +351,28 @@ async def main():
         assert client_5.phone == "5599887766", "Client phone should match Juan Perez's phone"
         assert client_5.custom_fields.get("status") == "waitlist", "Client status should be waitlist"
         print("✅ SCENARIO 5 (Multi-Turn Waitlist Flow) PASSED!")
+
+        # Scenario 6: Returning Client Retail Referral (Immediate Qualification)
+        # Expected: Since client already has complete profile (name, email, company, address/zip code),
+        # as soon as quantity is provided (Turn 2), the flow should immediately qualify and complete.
+        print("\n--- RUNNING SCENARIO 6: Returning Client Immediate Qualification ---")
+        response, is_comp = await run_scenario(
+            qualifier, biz.id, "sandbox_test_returning_client",
+            [
+                "Hola, me interesa comprar cemento",
+                f"Quiero 10 bultos de {prod.name}"
+            ]
+        )
+        assert is_comp is True, "Scenario 6 should mark is_completed=True immediately after quantity is provided"
+        assert "referencia" in response.lower() or "sucursal" in response.lower() or "registrado" in response.lower(), "Scenario 6 should refer user to physical store"
+        
+        # Verify that the store is updated (or reused) and linked
+        res_store_rc = await db.execute(select(Store).where(Store.business_id == biz.id, Store.name == "Pedro Returning SA (Obra WhatsApp)"))
+        store_rc = res_store_rc.scalars().first()
+        assert store_rc is not None, "Linked store should exist"
+        assert store_rc.requested_quantity == 10, "Store requested quantity should be updated to 10"
+        
+        print("✅ SCENARIO 6 (Returning Client Immediate Qualification) PASSED!")
 
         # Clean up database records after tests run successfully
         await cleanup_database_records(db, biz.id, test_phones)

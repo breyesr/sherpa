@@ -644,35 +644,60 @@ Estado actual de los datos recopilados:
                     matched_store_address = matched_store_obj.address or matched_store_obj.street_address
                     matched_store_phone = matched_store_obj.phone
 
-            # 2. Create Store (as prospect)
-            channel_name = "Telegram" if is_telegram else "WhatsApp"
-            store = Store(
-                business_id=biz_id,
-                name=f"{comp} (Referencia Minorista)" if is_retail else (f"{comp} (Obra {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})"),
-                street_address=loc,
-                colonia=pc_colonia,
-                municipality=pc_municipality,
-                city=pc_city,
-                state=pc_state,
-                zip_code=zip_val,
-                country="México",
-                phone=phone_num,
-                email=email_addr,
-                is_prospect=True,
-                prospect_segment="retail" if is_retail else "wholesale",
-                assigned_store_id=state.get("matched_store_id"),
-                requested_product_id=product.id if product else None,
-                requested_quantity=qty,
-                potential_value=potential_val,
-                referred_at=datetime.utcnow()
-            )
-            self.db.add(store)
-            await self.db.flush()
+            # Check if the client already has an associated store
+            stmt_store = select(Store).join(store_clients).where(store_clients.c.client_id == client.id).limit(1)
+            res_store = await self.db.execute(stmt_store)
+            existing_store = res_store.scalars().first()
             
-            # Link Client to Store
-            await self.db.execute(
-                store_clients.insert().values(store_id=store.id, client_id=client.id)
-            )
+            channel_name = "Telegram" if is_telegram else "WhatsApp"
+            
+            if existing_store:
+                existing_store.street_address = loc
+                existing_store.colonia = pc_colonia
+                existing_store.municipality = pc_municipality
+                existing_store.city = pc_city
+                existing_store.state = pc_state
+                existing_store.zip_code = zip_val
+                existing_store.phone = phone_num
+                existing_store.email = email_addr
+                existing_store.assigned_store_id = state.get("matched_store_id")
+                existing_store.requested_product_id = product.id if product else None
+                existing_store.requested_quantity = qty
+                existing_store.potential_value = potential_val
+                existing_store.referred_at = datetime.utcnow()
+                self.db.add(existing_store)
+                await self.db.flush()
+                store = existing_store
+            else:
+                # 2. Create Store (as prospect)
+                store = Store(
+                    business_id=biz_id,
+                    name=f"{comp} (Referencia Minorista)" if is_retail else (f"{comp} (Obra {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})"),
+                    street_address=loc,
+                    colonia=pc_colonia,
+                    municipality=pc_municipality,
+                    city=pc_city,
+                    state=pc_state,
+                    zip_code=zip_val,
+                    country="México",
+                    phone=phone_num,
+                    email=email_addr,
+                    is_prospect=True,
+                    prospect_segment="retail" if is_retail else "wholesale",
+                    assigned_store_id=state.get("matched_store_id"),
+                    requested_product_id=product.id if product else None,
+                    requested_quantity=qty,
+                    potential_value=potential_val,
+                    referred_at=datetime.utcnow()
+                )
+                self.db.add(store)
+                await self.db.flush()
+            
+            # Link Client to Store (only if not already linked/existing)
+            if not existing_store:
+                await self.db.execute(
+                    store_clients.insert().values(store_id=store.id, client_id=client.id)
+                )
 
             # 2.5. Create unverified Order & OrderItem matching request
             if product:
@@ -919,15 +944,36 @@ Estado actual de los datos recopilados:
                     response_content = state.values.get("final_response") or "Tu solicitud ya ha sido registrada y procesada. Un representante se pondrá en contacto contigo pronto."
                     is_completed = True
                 else:
+                    prepopulated = {}
+                    if client and client.name and not client.name.startswith("Prospect "):
+                        prepopulated["name"] = client.name
+                        prepopulated["email"] = client.email
+                        prepopulated["phone"] = client.phone or sender_phone
+                        if client.custom_fields:
+                            prepopulated["company"] = client.custom_fields.get("company")
+                            prepopulated["zip_code"] = client.custom_fields.get("zip_code")
+                        
+                        # Fetch first store associated with the client
+                        from app.models.trade import store_clients, Store
+                        stmt_store = select(Store).join(store_clients).where(store_clients.c.client_id == client.id).limit(1)
+                        res_store = await self.db.execute(stmt_store)
+                        first_store = res_store.scalars().first()
+                        if first_store:
+                            prepopulated["location"] = first_store.street_address or first_store.address
+                            if not prepopulated.get("zip_code"):
+                                prepopulated["zip_code"] = first_store.zip_code
+
+                    input_state = {
+                        "messages": [HumanMessage(content=user_message)],
+                        "business_id": business_id,
+                        "sender_phone": sender_phone,
+                        "platform": platform,
+                        "is_completed": False,
+                        "final_response": ""
+                    }
+                    input_state.update(prepopulated)
                     final_state = await app.ainvoke(
-                        {
-                            "messages": [HumanMessage(content=user_message)],
-                            "business_id": business_id,
-                            "sender_phone": sender_phone,
-                            "platform": platform,
-                            "is_completed": False,
-                            "final_response": ""
-                        },
+                        input_state,
                         config=config
                     )
                     

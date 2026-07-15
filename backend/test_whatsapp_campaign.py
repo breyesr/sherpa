@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.database import SessionLocal
 from app.models.business import BusinessProfile
-from app.models.trade import Category, Product, Store, StoreAction, ActionCategory, ActionStatus
+from app.models.trade import Category, Product, Store, StoreAction, ActionCategory, ActionStatus, Order, OrderItem
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
 from app.services.prospect_qualifier import ProspectQualifier
@@ -200,9 +200,18 @@ async def main():
                 # Delete from store_clients link table
                 await db.execute(store_clients.delete().where(store_clients.c.client_id.in_(client_ids)))
                 
+                # Delete order items and orders linked to clients or linked stores
+                await db.execute(delete(OrderItem).where(OrderItem.order_id.in_(select(Order.id).where(Order.client_id.in_(client_ids)))))
+                await db.execute(delete(Order).where(Order.client_id.in_(client_ids)))
+
                 if linked_store_ids:
                     # Delete store actions for these stores
                     await db.execute(delete(StoreAction).where(StoreAction.store_id.in_(linked_store_ids)))
+                    
+                    # Delete order items and orders linked to stores
+                    await db.execute(delete(OrderItem).where(OrderItem.order_id.in_(select(Order.id).where(Order.store_id.in_(linked_store_ids)))))
+                    await db.execute(delete(Order).where(Order.store_id.in_(linked_store_ids)))
+                    
                     # Delete the stores themselves
                     await db.execute(delete(Store).where(Store.id.in_(linked_store_ids)))
                     
