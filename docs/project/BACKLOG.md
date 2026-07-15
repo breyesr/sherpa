@@ -151,3 +151,13 @@
 
 - [x] Task 159.1: **Conversational Refactoring**: Refactor the `collecting_retail_details` phase in `prospect_qualifier.py` to prompt for address/ZIP first, followed by contact details, avoiding rejection text during collection.
 - [x] Task 159.2: **Dialogue Verification & Assertion Updates**: Update `test_whatsapp_campaign.py` and `test_simulated_session_3.py` to assert the non-rejecting step-by-step retail qualification dialogue.
+- [x] Task 159.3: **Returning Client Pre-Population & Deduplication**: Skip data collection for returning clients whose profile is already in the DB, and reuse existing Store records instead of creating duplicates during qualification.
+
+## Epic 160: Data-Driven Qualification Funnel Engine (FUTURE)
+**Objective**: Replace the hardcoded phase logic, system prompts, and field requirements in `prospect_qualifier.py` with a configurable, admin-managed qualification funnel. Steps, required fields, prompt templates, and transition conditions would be stored in the database and executed by a generic engine — enabling flow changes, A/B testing, and new funnels without code deploys.
+
+- [ ] Task 160.1: **Schema Design**: Create `QualificationStep` model with `step_order`, `phase_name`, `required_fields` (JSONB), `prompt_template`, `transition_condition`, and `funnel_id` FK.
+- [ ] Task 160.2: **Dynamic Prompt Engine**: Refactor the `call_model` node in `prospect_qualifier.py` to load the current step's `prompt_template` from the DB and render it with state variables instead of hardcoded f-strings.
+- [ ] Task 160.3: **Generic Transition Logic**: Replace the nested `if/elif` phase transitions in `run_tools_and_update_state` with a generic engine that advances to the next step when all `required_fields` are satisfied.
+- [ ] Task 160.4: **Admin CRUD UI**: Build an admin panel page to create, reorder, and edit qualification funnel steps.
+- [ ] Task 160.5: **Migration & Backfill**: Migrate the current hardcoded phases into seed `QualificationStep` rows to ensure backward compatibility.
