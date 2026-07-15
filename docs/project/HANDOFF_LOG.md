@@ -563,3 +563,12 @@
 - **Task 158.3 Completed**: Added an OPERATIONAL PROTOCOL section to `b2b_sales_brain.j2` for sales reps, enforcing proactive entity resolution.
 - **Task 158.4 Completed**: Added the `include_staff` parameter to `GET /clients` in `crm.py` to filter out reps, agents, and representatives from B2B dashboards by default.
 - **Task 158.5 Completed**: Created `app/tests/test_identity_safety.py` to assert correct behavior. Updated `test_webhook_routing.py` to use `AsyncClient` to resolve loop mismatches. Verified all test suites pass successfully.
+
+## [2026-07-14] - Conversational Retail Lead Qualification Optimization
+- **Goal**: Resolve the upfront rejection issue where retail prospects (order quantities below the wholesale threshold) are told they cannot buy wholesale on their very first interaction.
+- **Task**: Refactored the `collecting_retail_details` phase in [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) into a conversational, two-step data capture process matching the wholesale flow.
+- **Conversational Steps**:
+  - **Step 1 (ZIP Code missing)**: Bot asks for address and ZIP code to validate coverage.
+  - **Step 2 (ZIP Code present, contact info missing)**: Bot asks for remaining contact details (name, email, optional company).
+- **Referral at Qualification**: Bot only mentions the retail store assignment/referral at the final qualification message once all data is collected.
+- **Test Verification**: Updated [test_whatsapp_campaign.py](file:///Users/bernardo/projects/sherpa/backend/test_whatsapp_campaign.py) and [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py) to assert this new step-by-step flow. Verified all 58 backend tests pass successfully.

@@ -146,4 +146,8 @@
 ### Verification
 - [x] Task 158.5: **Integration Tests**: Validate the full prospect re-engagement flow (Turn 1 → qualification → Turn 2 still routes to ProspectQualifier) and the sales rep isolation flow (rep message → `store_id=None` → must resolve entity first). Assert CRM endpoint excludes staff records.
 
+## Epic 159: Conversational Retail Lead Qualification Optimization
+**Objective**: Optimize the inbound qualification flow for retail prospects (quantities below the wholesale threshold) by converting the abrupt upfront rejection message and 5-item bulk input collection into a conversational, step-by-step 2-phase process that mirrors the wholesale flow.
 
+- [x] Task 159.1: **Conversational Refactoring**: Refactor the `collecting_retail_details` phase in `prospect_qualifier.py` to prompt for address/ZIP first, followed by contact details, avoiding rejection text during collection.
+- [x] Task 159.2: **Dialogue Verification & Assertion Updates**: Update `test_whatsapp_campaign.py` and `test_simulated_session_3.py` to assert the non-rejecting step-by-step retail qualification dialogue.

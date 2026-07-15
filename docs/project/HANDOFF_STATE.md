@@ -1,26 +1,18 @@
-# Handoff State: 2026-07-14 (Session Update)
+# Handoff State: 2026-07-14 (Conversational Retail Qualification Optimization)
 
 ## Current Branch
-`feature/backend/epic-158-identity-safety` (all changes verified and tested).
+`feature/backend/retail-qualifier-optimization` (all changes implemented and verified).
 
 ## Accomplishments This Session
-1. **Epic 158: Identity Resolution & Operator Context Safety (Completed & Verified)**:
-   - **Case 1: Prospect Flag Guard**: Added an `is_prospect` check in `IdentityResolver.resolve_sender` before the `client.stores` check. This prevents returning prospects (who have prospect stores created during qualification) from being misclassified as B2B `"distributor_retailer"` and blocked by feature gates.
-   - **Case 2: Sales Rep State Decoupling**: Implemented state nullification in `agentic_orchestrator.py` `get_response()`. If the sender is an internal representative, `active_store_id` is forced to `None` for the LangGraph initialization, preventing context bleed from previous or personal sessions.
-   - **Case 2: Prompt Reinforcement**: Added an `OPERATIONAL PROTOCOL FOR INTERNAL OPERATORS` directive block to `b2b_sales_brain.j2` inside the `sales_rep` block, telling the LLM to proactively call `resolve_entities` first and never apply CRM updates to the rep's own profile.
-   - **Case 2: CRM List Filtering**: Excluded internal staff roles (`"representative"`, `"sales_rep"`, `"agent"`) from the `GET /clients` endpoint by default, with an optional `include_staff=true` query parameter to override this behavior.
-   - **Test Verification**: Created `app/tests/test_identity_safety.py` asserting all fixes (guard, decoupling, filtering). Re-verified existing `test_simulated_session_3.py`, `test_sandbox_gates.py`, and `test_webhook_routing.py` (which was updated to use `httpx.AsyncClient` to resolve a different event loop bug). All passed successfully.
-
-## Active Backlog State
-- **Epic 158 (Identity Resolution & Operator Context Safety)**: COMPLETE.
-- **Lead Qualification Optimizations**: COMPLETE.
-- **Epic 157 (Webhook Routing Gating)**: COMPLETE.
-- **Epic 156 (Automated Order Ingestion)**: COMPLETE.
-- **Epic 155 (Hybrid Sidebar Modularity & Lower-Tier Orders Integration)**: COMPLETE.
-- **Epic 154 (Telegram Multi-Tenant Data Isolation Fix)**: COMPLETE.
-- **Epic 153 (Multi-Tenant WhatsApp)**: COMPLETE.
+1. **Conversational Retail Lead Qualification (Completed & Verified)**:
+   - Refactored the `collecting_retail_details` phase in [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) into a conversational, two-step data capture process matching the wholesale flow.
+   - Removed the upfront rejection message so retail clients (order quantities below the wholesale threshold) are no longer told they are below wholesale on their very first interaction.
+   - **Step 1 (ZIP Code missing)**: Bot asks for address and ZIP code to validate coverage.
+   - **Step 2 (ZIP Code present, contact info missing)**: Bot asks for remaining contact details (name, email, optional company).
+   - **Qualify Lead Step**: Only once all details are successfully collected does the bot gracefully notify them of the retail store assignment/referral.
+   - Updated the simulation test suite in [test_whatsapp_campaign.py](file:///Users/bernardo/projects/sherpa/backend/test_whatsapp_campaign.py) and [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py) to assert this new step-by-step flow.
+   - Verified that all 58 backend tests pass successfully with zero regressions.
 
 ## Next Steps
-1. Request human approval to merge `feature/backend/epic-158-identity-safety` to `staging` and push.
-2. Review remaining items in the backlog (PM).
-
+1. Request human approval to merge `feature/backend/retail-qualifier-optimization` to `staging`.
+2. Push changes to remote repository.

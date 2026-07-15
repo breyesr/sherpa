@@ -132,16 +132,25 @@ async def test_below_threshold(business_id: str, product: Product):
         print("[PROSPECT]: Buenas tardes, venden Super Soda 3000?")
         response, is_comp = await qualifier.get_response(business_id, sender_phone, "Buenas tardes, venden Super Soda 3000?")
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
+        assert is_comp is False
         
         # Turn 2: Quantity
         print("[PROSPECT]: Quisiera comprar 10 unidades")
         response, is_comp = await qualifier.get_response(business_id, sender_phone, "Quisiera comprar 10 unidades")
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
+        assert is_comp is False
+        # Bot should ask for address/ZIP, and NOT reject/mention wholesale or store referral yet
+        assert not any(w in response.lower() for w in ["mayorista", "mayoreo", "sucursal", "tienda", "física", "canalizaremos", "referiremos", "minorista"])
+        assert any(w in response.lower() for w in ["dirección", "código postal", "cp", "donde", "ubicación"])
         
         # Turn 3: Location
         print("[PROSPECT]: Estoy en Monterrey, CP 64000")
         response, is_comp = await qualifier.get_response(business_id, sender_phone, "Estoy en Monterrey, CP 64000")
         print(f"[BOT]: {response} (Completed: {is_comp})\n")
+        assert is_comp is False
+        # Bot should ask for remaining contact details, and NOT reject/mention wholesale or store referral yet
+        assert not any(w in response.lower() for w in ["mayorista", "mayoreo", "sucursal", "tienda", "física", "canalizaremos", "referiremos", "minorista"])
+        assert any(w in response.lower() for w in ["nombre", "correo", "email", "contacto"])
         
         # Turn 4: Contact details
         contact_info = "Celular: +525599887766, correo: pedro@correo.com, empresa: La Tiendita de Pedro"
