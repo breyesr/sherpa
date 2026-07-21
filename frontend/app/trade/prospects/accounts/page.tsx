@@ -338,9 +338,10 @@ function ProspectStoresContent() {
                 </div>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
+      </div>
       )}
 
       <AccountDrawer 
