@@ -207,11 +207,22 @@ function ProspectStoresContent() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete prospect account ${store.name}?`)) {
                           try {
+                            const clientId = store.clients?.[0]?.id;
                             const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
                               method: 'DELETE',
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (res.ok) {
+                              if (clientId) {
+                                try {
+                                  await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                  });
+                                } catch (clientErr) {
+                                  console.error('Error deleting client contact:', clientErr);
+                                }
+                              }
                               queryClient.invalidateQueries({ queryKey: ['stores'] });
                             } else {
                               alert('Failed to delete store');
@@ -272,11 +283,22 @@ function ProspectStoresContent() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete store ${store.name}?`)) {
                           try {
+                            const clientId = store.clients?.[0]?.id;
                             const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
                               method: 'DELETE',
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (res.ok) {
+                              if (clientId) {
+                                try {
+                                  await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                  });
+                                } catch (clientErr) {
+                                  console.error('Error deleting client contact:', clientErr);
+                                }
+                              }
                               queryClient.invalidateQueries({ queryKey: ['stores'] });
                             } else {
                               alert('Failed to delete store');

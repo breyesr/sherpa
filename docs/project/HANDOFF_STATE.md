@@ -25,6 +25,10 @@
    - **Sequential API Execution & Invalidation**: Clicking the verify button sends a `PATCH` request to verify the prospect store and verifies any unverified orders in parallel, subsequently invalidating `['store', id]`, `['orders', store?.prospect_segment]`, `['prospect-orders']`, and `['stores']` query caches.
    - **Orders List Label**: Displayed a styled amber "Unverified Order" label next to the order metadata for any unverified order in the details page Orders tab.
    - **Compilation Check**: Verified clean build of the frontend Next.js project with `npm run build`.
+   - **Linked Contact Purge on Delete (Complete & Verified)**:
+     - Updated the Row Delete and Grid Card Delete handlers in `frontend/app/trade/prospects/accounts/page.tsx` (the list page) to check for a linked client contact. If present, it triggers a `DELETE` request to `/crm/clients/{clientId}` on successful store deletion, followed by invalidation of the `'stores'` query.
+     - Updated the Header Delete button handler in `frontend/app/trade/prospects/[id]/page.tsx` (the details page) to similarly fetch the linked client contact ID, send a `DELETE` request for the contact on successful store deletion, and redirect the user back to the prospects accounts list page.
+     - Verified that the Next.js application builds cleanly with zero errors.
 4. **Documentation Sync**:
    - Marked all Task 162.*, 163.*, and 164.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md).
 
