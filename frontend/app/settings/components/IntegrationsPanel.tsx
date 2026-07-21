@@ -144,6 +144,11 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
   const isWhatsAppConnected = !!whatsappIntegration;
   const whatsappProvider = (whatsappIntegration?.settings as any)?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
 
+  const features = business?.features_config || {};
+  const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+  const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
+  const showScheduling = showServices || showSalesIntel;
+
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">
       <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8">
@@ -156,49 +161,51 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
         
         <div className="space-y-6">
           {/* Google Calendar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50/50 rounded-2xl border border-gray-100 gap-4">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center">
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-7 h-7" />
+          {showScheduling && (
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50/50 rounded-2xl border border-gray-100 gap-4">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center">
+                  <img src="https://www.google.com/favicon.ico" alt="Google" className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg text-gray-900">Google Calendar</p>
+                  <p className="text-sm text-gray-500">Sync availability and appointments.</p>
+                </div>
               </div>
-              <div>
-                <p className="font-bold text-lg text-gray-900">Google Calendar</p>
-                <p className="text-sm text-gray-500">Sync availability and appointments.</p>
+              <div className="flex items-center gap-3">
+                {isGoogleConnected ? (
+                  <>
+                    <button 
+                      onClick={handleManualSync}
+                      disabled={isSyncing}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all disabled:opacity-50"
+                    >
+                      <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                      {isSyncing ? 'Syncing...' : 'Sync Now'}
+                    </button>
+                    <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
+                      <CheckCircle2 size={16} />
+                      Connected
+                    </span>
+                    <button 
+                      onClick={() => handleDisconnect('google')}
+                      disabled={isDisconnecting}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={handleGoogleConnect}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md"
+                  >
+                    Connect Account
+                  </button>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              {isGoogleConnected ? (
-                <>
-                  <button 
-                    onClick={handleManualSync}
-                    disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all disabled:opacity-50"
-                  >
-                    <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-                    {isSyncing ? 'Syncing...' : 'Sync Now'}
-                  </button>
-                  <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-xl border border-green-100">
-                    <CheckCircle2 size={16} />
-                    Connected
-                  </span>
-                  <button 
-                    onClick={() => handleDisconnect('google')}
-                    disabled={isDisconnecting}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </>
-              ) : (
-                <button 
-                  onClick={handleGoogleConnect}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md"
-                >
-                  Connect Account
-                </button>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Telegram Bot */}
           <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50/50 rounded-2xl border border-gray-100 gap-4">
