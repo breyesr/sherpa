@@ -153,7 +153,6 @@
 - [x] Task 159.2: **Dialogue Verification & Assertion Updates**: Update `test_whatsapp_campaign.py` and `test_simulated_session_3.py` to assert the non-rejecting step-by-step retail qualification dialogue.
 - [x] Task 159.3: **Returning Client Pre-Population & Deduplication**: Skip data collection for returning clients whose profile is already in the DB, and reuse existing Store records instead of creating duplicates during qualification.
 
-
 ## Epic 160: Data-Driven Qualification Funnel Engine (FUTURE)
 **Objective**: Replace the hardcoded phase logic, system prompts, and field requirements in `prospect_qualifier.py` with a configurable, admin-managed qualification funnel. Steps, required fields, prompt templates, and transition conditions would be stored in the database and executed by a generic engine — enabling flow changes, A/B testing, and new funnels without code deploys.
 
@@ -279,6 +278,5 @@
     - *When* clicking a store/account name link,
     - *Then* they are redirected to `/trade/prospects/[store_id]` instead of `/trade/stores/[store_id]`.
     - *Then* the store name displayed resolves to the contact name if the store name is system-generated (starts with 'Prospect').
-
 
 

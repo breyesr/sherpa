@@ -1,15 +1,24 @@
-# Handoff State: 2026-07-20 (Prospect Detail Page Query & Products Refactor COMPLETE)
+# Handoff State: 2026-07-20 (Epics 162 & 163 COMPLETE)
 
 ## Current Branch
 `feature/frontend/prospect-unification`
 
 ## Accomplishments This Session
-1. **Prospect Orders Query & Products Tab Refactoring (Complete)**:
-   - **Segment-Level Orders Fetching**: Switched `/trade/orders?store_id=${id}` endpoint (requires `b2b_solutions`) to `/trade/prospects/orders?segment=${store?.prospect_segment || ''}` and filtered client-side by store ID to resolve permission error for test users.
-   - **Bought Products Computation**: Reworked the Products tab to only show unique products bought across the client-filtered orders. Grouped purchased product quantities by `product_id` and matched against the global `products` catalog details.
-   - **UI Polish**: Added "Bought: X [unit]" label to product cards and formatted the empty state with a "No products purchased yet." message.
-   - **Compilation Hardening**: Fixed pre-existing TypeScript TS2305 import errors in `frontend/types/api.ts` by appending common schema exports, and resolved TS18048 undefined/optional checks in `page.tsx` (namely on `store.clients` and `order.items`). Verified clean compilation with `tsc --noEmit`.
+1. **Epic 162: Dynamic Module-Based UX/UI Personalization (Complete & Verified)**:
+   - Handled modular access permissions dynamically based on the active `features_config` from React Query cache key.
+   - Updated the headings, button texts, search placeholders, and columns on `/trade/stores` (List / Grid views).
+   - Dynamically filtered store details page `/trade/stores/[id]` tabs (Details, Products, Orders, Timeline, Referrals) and top sales KPI blocks.
+   - Implemented dynamic layout grid stretching: if `sales_intelligence` is disabled, the sidebar is hidden and the main panel spans the full width (`lg:col-span-12`).
+   - Resolved the missing products/orders tab fallback bug: aligned `showProducts` fallback logic to default to `(business?.vertical_type === 'TRADE')` if the `products` key is omitted in the DB.
+   - Hidden the competitive matrix from details tab and linked contacts select field from the account drawer if `sales_intelligence` is disabled.
+2. **Epic 163: Prospecting Flow Simplification & Lead Unification (Complete & Verified)**:
+   - **Sidebar Menu Collapse**: Updated [Sidebar.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/Sidebar.tsx) to merge "Lead Accounts" and "Lead Contacts" into a single "Prospects" route under Wholesale and Retail branches.
+   - **Unified prospects List View**: Renamed list page title to "Prospects" and displayed contact name and phone directly inline, hiding the contact badge if it matches the store name (starts with 'Prospect').
+   - **Dedicated prospects Details View**: Created the dedicated details page at [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/[id]/page.tsx) with orange badge "UNVERIFIED ACCOUNT", full-width layout, and contact details mapping.
+   - **Prospect Orders Query & Products Tab Refactoring**: Switched `/trade/orders` endpoint to `/trade/prospects/orders` and filtered client-side by store ID. Refactored the Products tab to only show unique products bought, with a dynamic "Bought: X [unit]" label and friendly empty states.
+   - **Types Export & Compilation Fixes**: Fixed TS2305 import errors in `frontend/types/api.ts` by appending common schema exports, and resolved TS18048 undefined/optional checks.
+3. **Documentation Sync**:
+   - Marked all Task 162.* and 163.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md).
 
 ## Next Steps
 1. Request human approval to merge `feature/frontend/prospect-unification` into `staging`.
-
