@@ -1,6 +1,10 @@
 # Handoff Log
 
+- **2026-07-20 (Epic 162 - Dynamic Module-Based UX/UI Personalization Backlog)**: Defined, scheduled, and updated Epic 162 in `docs/project/BACKLOG.md` and `docs/project/sprint_plan.md` to personalize the UX/UI of `/trade/stores` and `/trade/stores/[id]`. Configured dynamic OR-logic so that the Orders tab, Total Sales, and Avg. Ticket KPI cards render if EITHER Products Catalog or B2B Solutions is active. Outlined dynamic layouts, tabs, and drawer field restrictions.
+
+
 - **2026-07-09 (Lead Qualification & Referral Flow Optimizations)**: Implemented product ID protection by dynamically resolving product names in `call_model` via a new tenant-isolated helper `_get_product_by_id_or_name`, replacing database IDs/UUIDs in prompts, and adding negative constraints. Enabled immediate below-threshold handshake and unified retail detail collection in a single turn (skipping phone collection). Built prefix-resilient fuzzy product matching to handle truncated names from parallel tool calls, and enriched final retail messages with the matched store's address and phone number. Verified that all 5 simulation scenarios in `test_simulated_session_3.py` pass cleanly.
+
 
 - **2026-07-09 (Epic 154 - Telegram Multi-Tenant Data Isolation Fix)**: Started branch `feature/backend/telegram-data-isolation-fix` and logged the epic in `BACKLOG.md` to address the critical cross-tenant data leak. Copied the detailed diagnosis report `diagnosis_cross_tenant_data_leak.md` to `temp/`.
 

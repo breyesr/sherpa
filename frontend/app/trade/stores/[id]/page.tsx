@@ -119,6 +119,26 @@ export default function StoreDetailPageV2() {
     enabled: !!token,
   });
 
+  // Fetch Business
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch(`${API_BASE_URL}/business/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) return res.json();
+      return { vertical_type: 'BASIC' };
+    },
+    enabled: !!token,
+  });
+
+  const features = business?.features_config || {};
+  const showCampaigns = features.campaign_flow?.enabled ?? false;
+  const showSalesIntelligence = features.sales_intelligence?.enabled ?? false;
+  const showB2B = features.b2b_solutions?.enabled ?? false;
+  const showProducts = features.products?.enabled ?? (business?.vertical_type === 'TRADE');
+
   if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400">Loading Account Intelligence...</div>;
   if (!store) return <div className="p-20 text-center font-bold text-red-500">Account not found or connection error.</div>;
 
@@ -127,10 +147,10 @@ export default function StoreDetailPageV2() {
 
   const tabs = [
     { id: 'details', label: 'Details', icon: FileText },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'orders', label: 'Orders', icon: ShoppingBag },
-    { id: 'notes', label: 'Timeline', icon: Activity },
-    { id: 'referrals', label: 'Referrals', icon: Users },
+    ...(showProducts ? [{ id: 'products', label: 'Products', icon: Package }] : []),
+    ...((showB2B || showProducts) ? [{ id: 'orders', label: 'Orders', icon: ShoppingBag }] : []),
+    ...(showSalesIntelligence ? [{ id: 'notes', label: 'Timeline', icon: Activity }] : []),
+    ...(showCampaigns ? [{ id: 'referrals', label: 'Referrals', icon: Users }] : []),
   ];
 
   const noteSubTabs = [
@@ -163,7 +183,7 @@ export default function StoreDetailPageV2() {
           className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-all group"
         >
           <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-all" />
-          {store?.is_prospect ? 'Back to Prospects' : 'Back to Accounts'}
+          {store?.is_prospect ? 'Back to Prospects' : (showSalesIntelligence ? 'Back to Accounts' : 'Back to Points of Sale')}
         </button>
         <button
           onClick={async () => {
@@ -231,29 +251,35 @@ export default function StoreDetailPageV2() {
 
           {/* Quick Actions / Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:flex gap-4 items-center flex-wrap">
-            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Total Sales</span>
-              <span className="text-2xl font-black text-gray-900">${totalOrderValue.toLocaleString()}</span>
-              <div className="flex items-center gap-1 text-green-600 text-[10px] font-bold mt-1">
-                <TrendingUp size={12} /> {orders.length} Orders
+            {(showB2B || showProducts) && (
+              <>
+                <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Total Sales</span>
+                  <span className="text-2xl font-black text-gray-900">${totalOrderValue.toLocaleString()}</span>
+                  <div className="flex items-center gap-1 text-green-600 text-[10px] font-bold mt-1">
+                    <TrendingUp size={12} /> {orders.length} Orders
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Avg. Ticket</span>
+                  <span className="text-2xl font-black text-gray-900">
+                    ${orders.length > 0 ? (totalOrderValue / orders.length).toFixed(0) : '0'}
+                  </span>
+                  <div className="flex items-center gap-1 text-blue-600 text-[10px] font-bold mt-1">
+                    <ShoppingBag size={12} /> Per Order
+                  </div>
+                </div>
+              </>
+            )}
+            {showCampaigns && (
+              <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Referrals Value</span>
+                <span className="text-2xl font-black text-gray-900">${totalReferralPipelineValue.toLocaleString()}</span>
+                <div className="flex items-center gap-1 text-purple-600 text-[10px] font-bold mt-1">
+                  <Users size={12} /> {referrals.length} Referrals
+                </div>
               </div>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Avg. Ticket</span>
-              <span className="text-2xl font-black text-gray-900">
-                ${orders.length > 0 ? (totalOrderValue / orders.length).toFixed(0) : '0'}
-              </span>
-              <div className="flex items-center gap-1 text-blue-600 text-[10px] font-bold mt-1">
-                <ShoppingBag size={12} /> Per Order
-              </div>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Referrals Value</span>
-              <span className="text-2xl font-black text-gray-900">${totalReferralPipelineValue.toLocaleString()}</span>
-              <div className="flex items-center gap-1 text-purple-600 text-[10px] font-bold mt-1">
-                <Users size={12} /> {referrals.length} Referrals
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -261,7 +287,7 @@ export default function StoreDetailPageV2() {
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Tabs and Content */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className={`space-y-6 ${showSalesIntelligence ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
           <div className="bg-white p-2 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-1 overflow-x-auto no-scrollbar">
             {tabs.map((tab) => (
               <button
@@ -316,78 +342,80 @@ export default function StoreDetailPageV2() {
                   </div>
                 </section>
 
-                <section className="pt-8 border-t border-gray-50">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                      <TrendingUp size={20} className="text-red-500" />
-                      Competitive Matrix
-                    </h3>
-                    <button className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors">
-                      + Add Rival
-                    </button>
-                  </div>
-
-                  {competitors.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {competitors.map((rival) => (
-                        <div key={rival.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:border-red-100 transition-all">
-                          <div className="p-6 bg-gray-50/50 border-b border-gray-50 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-red-500">
-                                <Activity size={20} />
-                              </div>
-                              <div>
-                                <p className="font-black text-gray-900">{rival.name}</p>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Store Rival</p>
-                              </div>
-                            </div>
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                              rival.presence_level?.toLowerCase() === 'high' ? 'bg-red-100 text-red-700' :
-                              rival.presence_level?.toLowerCase() === 'medium' ? 'bg-orange-100 text-orange-700' :
-                              'bg-green-100 text-green-700'
-                            }`}>
-                              {rival.presence_level || 'Low'} Presence
-                            </div>
-                          </div>
-                          
-                          <div className="p-6 grid grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                              <span className="text-[10px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1.5">
-                                <ArrowUpRight size={12} /> Strengths
-                              </span>
-                              <p className="text-xs font-medium text-gray-600 leading-relaxed italic">
-                                {rival.strengths || 'No specific strengths recorded.'}
-                              </p>
-                            </div>
-                            <div className="space-y-3">
-                              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-1.5">
-                                <AlertCircle size={12} /> Weaknesses
-                              </span>
-                              <p className="text-xs font-medium text-gray-600 leading-relaxed italic">
-                                {rival.weaknesses || 'No identified weaknesses.'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="px-6 pb-6 mt-auto">
-                            <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-gray-400">Last updated: {new Date(rival.updated_at).toLocaleDateString()}</span>
-                              <button className="text-xs font-black text-gray-900 group-hover:text-red-600 transition-colors">Details</button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 py-12 text-center">
-                      <TrendingUp className="mx-auto text-gray-300 mb-4" size={32} />
-                      <p className="text-sm font-bold text-gray-500">No competitors mapped for this account.</p>
-                      <button className="mt-4 bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-gray-100 transition-all">
-                        Map First Rival
+                {showSalesIntelligence && (
+                  <section className="pt-8 border-t border-gray-50">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-red-500" />
+                        Competitive Matrix
+                      </h3>
+                      <button className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors">
+                        + Add Rival
                       </button>
                     </div>
-                  )}
-                </section>
+
+                    {competitors.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {competitors.map((rival) => (
+                          <div key={rival.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:border-red-100 transition-all">
+                            <div className="p-6 bg-gray-50/50 border-b border-gray-50 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-red-500">
+                                  <Activity size={20} />
+                                </div>
+                                <div>
+                                  <p className="font-black text-gray-900">{rival.name}</p>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Store Rival</p>
+                                </div>
+                              </div>
+                              <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                                rival.presence_level?.toLowerCase() === 'high' ? 'bg-red-100 text-red-700' :
+                                rival.presence_level?.toLowerCase() === 'medium' ? 'bg-orange-100 text-orange-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {rival.presence_level || 'Low'} Presence
+                              </div>
+                            </div>
+                            
+                            <div className="p-6 grid grid-cols-2 gap-6">
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1.5">
+                                  <ArrowUpRight size={12} /> Strengths
+                                </span>
+                                <p className="text-xs font-medium text-gray-600 leading-relaxed italic">
+                                  {rival.strengths || 'No specific strengths recorded.'}
+                                </p>
+                              </div>
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+                                  <AlertCircle size={12} /> Weaknesses
+                                </span>
+                                <p className="text-xs font-medium text-gray-600 leading-relaxed italic">
+                                  {rival.weaknesses || 'No identified weaknesses.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="px-6 pb-6 mt-auto">
+                              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-gray-400">Last updated: {new Date(rival.updated_at).toLocaleDateString()}</span>
+                                <button className="text-xs font-black text-gray-900 group-hover:text-red-600 transition-colors">Details</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 py-12 text-center">
+                        <TrendingUp className="mx-auto text-gray-300 mb-4" size={32} />
+                        <p className="text-sm font-bold text-gray-500">No competitors mapped for this account.</p>
+                        <button className="mt-4 bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-gray-100 transition-all">
+                          Map First Rival
+                        </button>
+                      </div>
+                    )}
+                  </section>
+                )}
               </div>
             )}
 
@@ -633,6 +661,7 @@ export default function StoreDetailPageV2() {
         </div>
 
         {/* Sidebar Intelligence */}
+        {showSalesIntelligence && (
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-gray-900 text-white rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -690,6 +719,7 @@ export default function StoreDetailPageV2() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Drawers */}

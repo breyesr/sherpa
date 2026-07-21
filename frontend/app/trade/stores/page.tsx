@@ -30,6 +30,25 @@ export default function StoresPageV2() {
     storeId: null
   });
 
+  // Fetch Business
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch(`${API_BASE_URL}/business/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) return res.json();
+      return { vertical_type: 'BASIC' };
+    },
+    enabled: !!token,
+  });
+
+  const features = business?.features_config || {};
+  const showCampaigns = features.campaign_flow?.enabled ?? false;
+  const showSalesIntelligence = features.sales_intelligence?.enabled ?? false;
+  const showB2B = features.b2b_solutions?.enabled ?? false;
+
   // Fetch Stores
   const { data: stores = [], isLoading } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
@@ -59,10 +78,10 @@ export default function StoresPageV2() {
             </span>
           </div>
           <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-            Accounts
+            {!showSalesIntelligence && showCampaigns ? 'Points of Sale' : 'Accounts'}
           </h1>
           <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
-            Modernized view for managing your physical locations and sales intelligence.
+            {!showSalesIntelligence && showCampaigns ? 'Manage physical retail locations for routing campaign leads.' : 'Modernized view for managing your physical locations and sales intelligence.'}
           </p>
         </div>
         <button 
@@ -70,7 +89,7 @@ export default function StoresPageV2() {
           className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
         >
           <Plus size={18} />
-          Create Account
+          {!showSalesIntelligence && showCampaigns ? 'Register Point of Sale' : 'Create Account'}
         </button>
       </div>
 
@@ -80,7 +99,7 @@ export default function StoresPageV2() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text"
-            placeholder="Search accounts..."
+            placeholder={!showSalesIntelligence && showCampaigns ? "Search points of sale..." : "Search accounts..."}
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-900"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -155,10 +174,12 @@ export default function StoresPageV2() {
                 </div>
                 
                 <div className="relative z-10 flex items-center gap-12 mt-6 md:mt-0">
-                  <div className="hidden lg:flex flex-col items-end pointer-events-none">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Activity</span>
-                    <span className="font-bold text-gray-700">Today, 2:45 PM</span>
-                  </div>
+                  {(showSalesIntelligence || showB2B) && (
+                    <div className="hidden lg:flex flex-col items-end pointer-events-none">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Activity</span>
+                      <span className="font-bold text-gray-700">Today, 2:45 PM</span>
+                    </div>
+                  )}
                   <div className="flex flex-col items-end pointer-events-none">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Segment</span>
                     <span className="bg-gray-50 border border-gray-100 px-3 py-1 rounded-lg text-xs font-bold text-gray-600">
@@ -279,13 +300,15 @@ export default function StoresPageV2() {
                 </div>
               </div>
               
-              <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Performance</span>
-                  <span className="text-green-600 font-bold text-sm">Strong Growth</span>
+              {(showSalesIntelligence || showB2B) && (
+                <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Performance</span>
+                    <span className="text-green-600 font-bold text-sm">Strong Growth</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
                 </div>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
-              </div>
+              )}
             </div>
           ))}
         </div>

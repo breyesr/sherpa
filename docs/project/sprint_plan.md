@@ -51,5 +51,14 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [ ] **Task 121.4 (FE):** Build Strategy Desk & Outcome Resolution UI.
 - [ ] **Task 135.1 (FE):** Information Architecture & Navigation Realignment (Segment B2B Hub, Prospects, and Products).
 
+## Sprint 6: Dynamic UI Personalization (NEXT)
+**Goal:** Tailor page modules, metrics, tabs, and headings to the business features config on `/trade/stores` and `/trade/stores/[id]`.
+
+- [x] **Task 162.1 (FE):** Dynamic Headings & Columns on `/trade/stores` (Accounts list).
+- [x] **Task 162.2 (FE):** Conditionally render detail page tabs & KPI panels on `/trade/stores/[id]`.
+- [x] **Task 162.3 (FE):** Update back-navigation breadcrumbs and breadcrumb routing sync.
+
+
+
 
 

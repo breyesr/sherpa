@@ -430,6 +430,23 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     enabled: isOpen,
   });
 
+  // Fetch Business Config
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch(`${API_BASE_URL}/business/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) return res.json();
+      return { vertical_type: 'BASIC' };
+    },
+    enabled: isOpen && !!token,
+  });
+
+  const features = business?.features_config || {};
+  const showSalesIntelligence = features.sales_intelligence?.enabled ?? false;
+
   // Warn before closing drawer if dirty
   const handleClose = () => {
     if (isDirty) {
@@ -1011,6 +1028,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         </div>
 
         {/* Contacts Section */}
+        {showSalesIntelligence && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2 px-1">
             <Users size={16} className="text-gray-900" />
@@ -1046,6 +1064,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
             ))}
           </div>
         </div>
+        )}
 
         {/* Integration Section */}
         <div className="pt-4 border-t border-gray-100">
