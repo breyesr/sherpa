@@ -44,17 +44,19 @@ export default function ProspectDetailPage() {
   });
 
   // Fetch Store Orders
-  const { data: orders = [] } = useQuery<OrderResponse[]>({
-    queryKey: ['orders', id],
+  const { data: allOrders = [] } = useQuery<OrderResponse[]>({
+    queryKey: ['orders', store?.prospect_segment],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/orders?store_id=${id}`, {
+      const res = await fetch(`${API_BASE_URL}/trade/prospects/orders?segment=${store?.prospect_segment || ''}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: !!token && !!id,
+    enabled: !!token && !!store?.prospect_segment,
   });
+
+  const orders = allOrders.filter((o) => o.store_id === id);
 
   // Fetch Products (Global catalog)
   const { data: products = [] } = useQuery<ProductResponse[]>({
@@ -73,10 +75,35 @@ export default function ProspectDetailPage() {
   if (!store) return <div className="p-20 text-center font-bold text-red-500">Prospect not found or connection error.</div>;
 
   const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
-  const hasClientName = store.clients && store.clients[0]?.name;
-  const displayTitle = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+  const clientName = store.clients?.[0]?.name;
+  const displayTitle = isSystemGenerated && clientName ? clientName : store.name;
 
   const totalOrderValue = orders.reduce((sum, order) => sum + order.total_amount, 0);
+
+  // Group products bought by product_id
+  const boughtProductsMap = new Map<string, number>();
+  for (const order of orders) {
+    if (order.items) {
+      for (const item of order.items) {
+        if (item.product_id) {
+          const currentQty = boughtProductsMap.get(item.product_id) || 0;
+          boughtProductsMap.set(item.product_id, currentQty + (item.quantity || 0));
+        }
+      }
+    }
+  }
+
+  const boughtProducts = Array.from(boughtProductsMap.entries()).map(([productId, quantity]) => {
+    const catalogProduct = products.find((p) => p.id === productId);
+    return {
+      id: productId,
+      quantity,
+      name: catalogProduct?.name || 'Unknown Product',
+      sku: catalogProduct?.sku || 'No SKU',
+      price: catalogProduct?.price ?? 0,
+      unit_of_measure: catalogProduct?.unit_of_measure || 'unit'
+    };
+  });
 
   const tabs = [
     { id: 'details', label: 'Details', icon: FileText },
@@ -240,9 +267,9 @@ export default function ProspectDetailPage() {
           {activeTab === 'products' && (
             <div className="space-y-6">
               <h3 className="text-xl font-black text-gray-900 mb-4">Product Portfolio</h3>
-              {products.length > 0 ? (
+              {boughtProducts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {products.map((product) => (
+                  {boughtProducts.map((product) => (
                     <div key={product.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between group">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-gray-400 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
@@ -251,10 +278,13 @@ export default function ProspectDetailPage() {
                         <div>
                           <p className="font-bold text-gray-900">{product.name}</p>
                           <p className="text-xs text-gray-400 font-bold uppercase">{product.sku || 'No SKU'}</p>
+                          <p className="text-sm text-blue-600 font-bold mt-1">
+                            Bought: {product.quantity} {product.unit_of_measure}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-gray-900">${product.price.toFixed(2)}</p>
+                        <p className="font-black text-gray-900">${(product.price).toFixed(2)}</p>
                         <p className="text-[10px] text-gray-400 font-bold uppercase">{product.unit_of_measure || 'unit'}</p>
                       </div>
                     </div>
@@ -263,7 +293,7 @@ export default function ProspectDetailPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <Package className="text-gray-300 mb-4" size={32} />
-                  <p className="text-gray-500 font-bold">No products in catalog.</p>
+                  <p className="text-gray-500 font-bold">No products purchased yet.</p>
                 </div>
               )}
             </div>
@@ -289,7 +319,7 @@ export default function ProspectDetailPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-black text-gray-900 text-lg">${order.total_amount.toLocaleString()}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">{order.items.length} items</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">{(order.items || []).length} items</p>
                       </div>
                     </div>
                   ))}

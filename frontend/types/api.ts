@@ -4572,3 +4572,17 @@ export interface operations {
     };
   };
 }
+
+export type StoreResponse = components['schemas']['StoreResponse'];
+export type OrderResponse = components['schemas']['OrderResponse'];
+export type ProductResponse = components['schemas']['ProductResponse'];
+export type ClientResponse = components['schemas']['ClientResponse'];
+export type StoreNoteResponse = components['schemas']['StoreNoteResponse'];
+export type CompetitorResponse = components['schemas']['CompetitorResponse'];
+export type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+export type ConversationResponse = components['schemas']['ConversationResponse'];
+export type MessageResponse = components['schemas']['MessageResponse'];
+export type StoreActionResponse = components['schemas']['StoreActionResponse'];
+export type ActionTemplateResponse = components['schemas']['ActionTemplateResponse'];
+export type CategoryResponse = components['schemas']['CategoryResponse'];
+

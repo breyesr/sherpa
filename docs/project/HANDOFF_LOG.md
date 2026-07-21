@@ -1,6 +1,9 @@
 # Handoff Log
 
+- **2026-07-20 (Prospect Detail Page Bug Fixes)**: Resolved the order data fetching issue for B2B TRADE users without `b2b_solutions` permission by fetching from `/trade/prospects/orders?segment=...` and filtering client-side. Refactored the Products tab to compute bought products by grouping orders items by `product_id` and matching against the global catalog. Added a dynamic label "Bought: X [unit]" and friendly empty state "No products purchased yet." Fixed pre-existing TypeScript compilation errors in `frontend/types/api.ts` (added common schema exports) and `frontend/app/trade/prospects/[id]/page.tsx` (fixed undefined/optional checking). Verified clean compilation.
+
 - **2026-07-20 (Epic 163 - Individual Prospect Title Resolution & Redundancy Cleanup)**: Implemented title substitution for system-generated prospects. In the prospects list, contact name now replaces system-generated store names as the primary card/row heading, and the redundant contact badge is hidden. In the prospect details page, the contact name replaces the system-generated store name in the header card. In the prospect orders page, the account link displays the contact name. All Epic 163 backlog tasks are fully complete.
+
 
 - **2026-07-20 (Epic 163 - Prospecting Simplification & Unification)**: Simplified prospecting pipeline by collapsing separate "Lead Accounts" and "Lead Contacts" links in the sidebar into a single "Prospects" link. Built a unified listing displaying primary contact name and phone inline, and created a dedicated full-width details view `/trade/prospects/[id]` showing orange "UNVERIFIED ACCOUNT" badge and consolidated Account + Contact information side-by-side. Updated link targets on prospect orders ledger.
 
