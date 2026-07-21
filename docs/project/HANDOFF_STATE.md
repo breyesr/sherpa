@@ -29,8 +29,12 @@
      - Updated the Row Delete and Grid Card Delete handlers in `frontend/app/trade/prospects/accounts/page.tsx` (the list page) to check for a linked client contact. If present, it triggers a `DELETE` request to `/crm/clients/{clientId}` on successful store deletion, followed by invalidation of the `'stores'` query.
      - Updated the Header Delete button handler in `frontend/app/trade/prospects/[id]/page.tsx` (the details page) to similarly fetch the linked client contact ID, send a `DELETE` request for the contact on successful store deletion, and redirect the user back to the prospects accounts list page.
      - Verified that the Next.js application builds cleanly with zero errors.
-4. **Documentation Sync**:
-   - Marked all Task 162.*, 163.*, and 164.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md).
+ 4. **Conversational Qualification Fixes (Complete & Verified)**:
+    - **Reset Guard Bug Fix**: Patched `backend/app/services/prospect_qualifier.py` to prevent active conversation states from being prematurely reset by short messages (such as "no", "sí", or "no aplica"), limiting reset actions strictly to completed conversation states.
+ 5. **Documentation Sync**:
+    - Marked all Task 162.*, 163.*, and 164.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md).
 
 ## Next Steps
-1. Request human approval to merge `feature/frontend/prospect-unification` into `staging`.
+1. Monitor the staging deployment in Railway.
+2. Verify that the Alembic database migration run (`d95c008c9b8d_add_is_verified_to_stores`) succeeds in staging.
+3. Conduct end-to-end verification and deletion testing on the deployed staging environment.
