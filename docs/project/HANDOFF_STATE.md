@@ -29,10 +29,15 @@
      - Updated the Row Delete and Grid Card Delete handlers in `frontend/app/trade/prospects/accounts/page.tsx` (the list page) to check for a linked client contact. If present, it triggers a `DELETE` request to `/crm/clients/{clientId}` on successful store deletion, followed by invalidation of the `'stores'` query.
      - Updated the Header Delete button handler in `frontend/app/trade/prospects/[id]/page.tsx` (the details page) to similarly fetch the linked client contact ID, send a `DELETE` request for the contact on successful store deletion, and redirect the user back to the prospects accounts list page.
      - Verified that the Next.js application builds cleanly with zero errors.
- 4. **Conversational Qualification Fixes (Complete & Verified)**:
-    - **Reset Guard Bug Fix**: Patched `backend/app/services/prospect_qualifier.py` to prevent active conversation states from being prematurely reset by short messages (such as "no", "sí", or "no aplica"), limiting reset actions strictly to completed conversation states.
- 5. **Documentation Sync**:
-    - Marked all Task 162.*, 163.*, and 164.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md).
+  4. **Conversational Qualification Fixes (Complete & Verified)**:
+     - **Reset Guard Bug Fix**: Patched `backend/app/services/prospect_qualifier.py` to prevent active conversation states from being prematurely reset by short messages (such as "no", "sí", or "no aplica"), limiting reset actions strictly to completed conversation states.
+  5. **Modular UI & Integrations Tuning (Complete & Verified)**:
+     - **Calendar Modularity**: Restricted the sidebar calendar menu item to only display if `services` (B2C) or `sales_intelligence` (B2B) features are active.
+     - **Google Calendar Hiding**: Hid the Google Calendar sync integration card in **Settings > Integrations** if scheduling features are disabled for the account.
+     - **Calendar Route Protection**: Direct manual URL access to `/calendar` now redirects users back to the home page `/` if scheduling is inactive.
+     - **CRM Custom Fields Settings**: Configured the CRM Custom Fields editor in settings to only show for B2C (`services`) and operational B2B (`b2b_solutions` or `sales_intelligence`) accounts.
+  6. **Documentation Sync**:
+     - Marked all Task 162.*, 163.*, and 164.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md).
 
 ## Next Steps
 1. Monitor the staging deployment in Railway.
