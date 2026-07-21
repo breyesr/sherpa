@@ -928,7 +928,7 @@ Estado actual de los datos recopilados:
                 
                 greetings = ["hola", "buen", "dia", "hello", "hi", "iniciar", "start", "buenos", "buenas"]
                 is_greeting_reset = (
-                    (is_completed_state or has_existing_state)
+                    is_completed_state
                     and (any(g in normalized_msg for g in greetings) or len(normalized_msg) < 15)
                 )
                 
