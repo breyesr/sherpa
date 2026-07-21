@@ -83,6 +83,7 @@ class StoreBase(BaseModel):
     opening_date: Optional[date] = None
     external_id: Optional[str] = None
     is_prospect: bool = False
+    is_verified: bool = True
     prospect_segment: Optional[str] = "wholesale"
     delivery_zip_codes: Optional[List[str]] = []
 
@@ -120,6 +121,7 @@ class StoreUpdate(BaseModel):
     external_id: Optional[str] = None
     client_ids: Optional[List[str]] = None
     is_prospect: Optional[bool] = None
+    is_verified: Optional[bool] = None
     prospect_segment: Optional[str] = None
     delivery_zip_codes: Optional[List[str]] = None
 
@@ -239,6 +241,7 @@ class OrderUpdate(BaseModel):
     delivery_date: Optional[date] = None
     payment_method: Optional[str] = None
     shipping_address: Optional[str] = None
+    is_verified: Optional[bool] = None
 
 class OrderResponse(OrderBase):
     id: str

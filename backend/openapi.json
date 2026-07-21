@@ -740,6 +740,18 @@
               "title": "Prospect Segment"
             },
             "description": "Filter by prospect segment."
+          },
+          {
+            "name": "include_staff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include internal staff roles (representative, sales_rep, agent).",
+              "default": false,
+              "title": "Include Staff"
+            },
+            "description": "Include internal staff roles (representative, sales_rep, agent)."
           }
         ],
         "responses": {
@@ -1582,7 +1594,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1600,7 +1612,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -7442,6 +7454,17 @@
               }
             ],
             "title": "Shipping Address"
+          },
+          "is_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Verified"
           }
         },
         "type": "object",
@@ -8807,6 +8830,11 @@
             "title": "Is Prospect",
             "default": false
           },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": true
+          },
           "prospect_segment": {
             "anyOf": [
               {
@@ -9306,6 +9334,11 @@
             "title": "Is Prospect",
             "default": false
           },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": true
+          },
           "prospect_segment": {
             "anyOf": [
               {
@@ -9637,6 +9670,17 @@
               }
             ],
             "title": "Is Prospect"
+          },
+          "is_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Verified"
           },
           "prospect_segment": {
             "anyOf": [

@@ -290,5 +290,57 @@
     - *When* saving updates in edit mode,
     - *Then* the contact info is synchronized back to the primary Client (`PATCH /crm/clients/{client_id}`) in parallel with the Store update.
 
+---
+
+## Epic 164: Prospect & Order Verification Flow
+**Objective**: Enable verifying a prospect account and its AI-generated orders without moving them out of the prospects routing (they remain under `/trade/prospects` but display "Verified Prospect" status).
+
+- [x] Task 164.1: **Backend Store Model Verification Field**:
+  - **Description**: Add `is_verified` boolean column to the `Store` model, defaulting to `True` (for manually created stores). Set to `False` on conversational AI prospect creation.
+  - **Acceptance Criteria**:
+    - *Given* a new store being defined in the models,
+    - *When* `Store` is mapped,
+    - *Then* `is_verified` defaults to `True` and has a database index.
+    - *When* the campaign chatbot qualifies a prospect (`prospect_qualifier.py`),
+    - *Then* the created Store has `is_verified=False`.
+
+- [x] Task 164.2: **Alembic Database Migration**:
+  - **Description**: Autogenerate and run the Alembic migration script to add `is_verified` to the `stores` table.
+  - **Acceptance Criteria**:
+    - *Given* the updated `Store` model,
+    - *When* running `alembic revision --autogenerate`,
+    - *Then* the generated migration file accurately adds `is_verified` to the `stores` table.
+    - *When* running `alembic upgrade head`,
+    - *Then* the DB schema updates cleanly.
+
+- [x] Task 164.3: **Pydantic Schemas Update**:
+  - **Description**: Expose `is_verified` on `StoreResponse`, `StoreUpdate`, and `OrderUpdate` schemas.
+  - **Acceptance Criteria**:
+    - *Given* backend Pydantic models for trade objects,
+    - *When* serialized via `StoreResponse`,
+    - *Then* `is_verified` is returned.
+    - *When* updating a store (`StoreUpdate`) or an order (`OrderUpdate`),
+    - *Then* `is_verified` is a valid accepted optional boolean field.
+
+- [x] Task 164.4: **Frontend Status Badges**:
+  - **Description**: Render status badges on listing and details pages based on `is_verified` boolean value.
+  - **Acceptance Criteria**:
+    - *Given* the prospects list or details page,
+    - *When* `store.is_verified` is `false`,
+    - *Then* render `"Unverified"` / `"UNVERIFIED PROSPECT"` status badge.
+    - *When* `store.is_verified` is `true`,
+    - *Then* render `"Verified"` / `"VERIFIED PROSPECT"` status badge.
+    - *When* an order in details page has `is_verified` as `false`,
+    - *Then* display an `"Unverified"` label.
+
+- [x] Task 164.5: **Frontend Verification Action**:
+  - **Description**: Add a "Verify Prospect & Orders" action button in `/trade/prospects/[id]` details header that updates the store status and all unverified orders in parallel.
+  - **Acceptance Criteria**:
+    - *Given* a prospect details page with an unverified store,
+    - *When* the user clicks "Verify Prospect & Orders",
+    - *Then* a `PATCH` request is sent to set `store.is_verified = true`, and a `PATCH` request is sent to set `order.is_verified = true` for each of its unverified orders.
+    - *Then* the page query cache is invalidated, rendering the updated verified statuses instantly.
+
+
 
 

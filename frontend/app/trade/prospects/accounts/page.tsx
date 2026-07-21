@@ -177,13 +177,11 @@ function ProspectStoresContent() {
                   <div className="hidden lg:flex flex-col items-end pointer-events-none">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</span>
                     <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${
-                      typeof store.custom_fields === 'object' && store.custom_fields !== null && (store.custom_fields as any).status === 'waitlist'
-                        ? 'bg-amber-50 border border-amber-100 text-amber-700'
-                        : 'bg-green-50 border border-green-100 text-green-700'
+                      store.is_verified
+                        ? 'bg-green-50 border border-green-100 text-green-700'
+                        : 'bg-amber-50 border border-amber-100 text-amber-700'
                     }`}>
-                      {typeof store.custom_fields === 'object' && store.custom_fields !== null && (store.custom_fields as any).status === 'waitlist'
-                        ? 'Waitlist'
-                        : 'Prospect'}
+                      {store.is_verified ? 'Verified' : 'Unverified'}
                     </span>
                   </div>
                   <div className="flex flex-col items-end pointer-events-none">
@@ -333,8 +331,14 @@ function ProspectStoresContent() {
               
               <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sentiment</span>
-                  <span className="text-blue-600 font-bold text-sm">Campaign Active</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</span>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase w-fit ${
+                    store.is_verified
+                      ? 'bg-green-50 border border-green-100 text-green-700'
+                      : 'bg-amber-50 border border-amber-100 text-amber-700'
+                  }`}>
+                    {store.is_verified ? 'Verified' : 'Unverified'}
+                  </span>
                 </div>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
               </div>

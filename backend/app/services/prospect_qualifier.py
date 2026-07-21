@@ -683,6 +683,7 @@ Estado actual de los datos recopilados:
                     phone=phone_num,
                     email=email_addr,
                     is_prospect=True,
+                    is_verified=False,
                     prospect_segment="retail" if is_retail else "wholesale",
                     assigned_store_id=state.get("matched_store_id"),
                     requested_product_id=product.id if product else None,

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
 import { 
@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Target,
   Trash2,
-  Users
+  Users,
+  CheckCircle
 } from 'lucide-react';
 import { StoreResponse, OrderResponse, ProductResponse } from '@/types/api';
 
@@ -28,7 +29,9 @@ export default function ProspectDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('details');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Fetch Store Detail
   const { data: store, isLoading } = useQuery<StoreResponse>({
@@ -70,6 +73,54 @@ export default function ProspectDetailPage() {
     },
     enabled: !!token,
   });
+
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    try {
+      // 1. Verify store
+      const storeRes = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_verified: true })
+      });
+
+      if (!storeRes.ok) {
+        throw new Error('Failed to verify prospect store');
+      }
+
+      // 2. Verify all unverified orders in parallel
+      const unverifiedOrders = orders.filter(o => !o.is_verified);
+      await Promise.all(
+        unverifiedOrders.map(async (order) => {
+          const orderRes = await fetch(`${API_BASE_URL}/trade/orders/${order.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_verified: true })
+          });
+          if (!orderRes.ok) {
+            console.error(`Failed to verify order ${order.id}`);
+          }
+        })
+      );
+
+      // 3. Invalidate queries to refresh the UI
+      await queryClient.invalidateQueries({ queryKey: ['store', id] });
+      await queryClient.invalidateQueries({ queryKey: ['orders', store?.prospect_segment] });
+      await queryClient.invalidateQueries({ queryKey: ['prospect-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['stores'] });
+
+    } catch (err: any) {
+      alert(err.message || 'An error occurred while verifying');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400">Loading Prospect Intelligence...</div>;
   if (!store) return <div className="p-20 text-center font-bold text-red-500">Prospect not found or connection error.</div>;
@@ -122,29 +173,41 @@ export default function ProspectDetailPage() {
           <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-all" />
           Back to Prospects
         </Link>
-        <button
-          onClick={async () => {
-            if (confirm(`Are you sure you want to delete prospect account ${store.name}?`)) {
-              try {
-                const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
-                  method: 'DELETE',
-                  headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                  router.push(store.prospect_segment === 'retail' ? '/trade/prospects/accounts?segment=retail' : '/trade/prospects/accounts?segment=wholesale');
-                } else {
-                  alert('Failed to delete prospect account');
+        <div className="flex items-center gap-3">
+          {!store.is_verified && (
+            <button
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all px-4 py-2 rounded-xl text-sm shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircle size={16} />
+              {isVerifying ? 'Verifying...' : 'Verify Prospect & Orders'}
+            </button>
+          )}
+          <button
+            onClick={async () => {
+              if (confirm(`Are you sure you want to delete prospect account ${store.name}?`)) {
+                try {
+                  const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+                  if (res.ok) {
+                    router.push(store.prospect_segment === 'retail' ? '/trade/prospects/accounts?segment=retail' : '/trade/prospects/accounts?segment=wholesale');
+                  } else {
+                    alert('Failed to delete prospect account');
+                  }
+                } catch (err) {
+                  alert('Error deleting prospect account');
                 }
-              } catch (err) {
-                alert('Error deleting prospect account');
               }
-            }
-          }}
-          className="flex items-center gap-2 text-red-600 hover:text-red-800 font-bold transition-all bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl text-sm"
-        >
-          <Trash2 size={16} />
-          Delete Prospect Account
-        </button>
+            }}
+            className="flex items-center gap-2 text-red-600 hover:text-red-800 font-bold transition-all bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl text-sm"
+          >
+            <Trash2 size={16} />
+            Delete Prospect Account
+          </button>
+        </div>
       </div>
 
       {/* Header Card */}
@@ -159,8 +222,12 @@ export default function ProspectDetailPage() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-3 mb-3">
-                <span className="bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-amber-100">
-                  UNVERIFIED ACCOUNT
+                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                  store.is_verified
+                    ? 'bg-green-50 border-green-100 text-green-700'
+                    : 'bg-amber-50 border-amber-100 text-amber-700'
+                }`}>
+                  {store.is_verified ? 'VERIFIED PROSPECT' : 'UNVERIFIED PROSPECT'}
                 </span>
                 <span className="bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-gray-200">
                   {store.segment || 'General'}
@@ -312,9 +379,16 @@ export default function ProspectDetailPage() {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">Order #{order.id.slice(0, 8)}</p>
-                          <p className="text-xs text-gray-400 font-bold uppercase">
-                            {new Date(order.created_at).toLocaleDateString()} • {order.status}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            <p className="text-xs text-gray-400 font-bold uppercase">
+                              {new Date(order.created_at).toLocaleDateString()} • {order.status}
+                            </p>
+                            {!order.is_verified && (
+                              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wider">
+                                Unverified Order
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">

@@ -67,6 +67,17 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [x] **Task 163.4 (FE):** Update order page store details links to `/trade/prospects/[id]`.
 - [x] **Task 163.5 (FE):** Unified Prospect Edit Drawer (Inlined contact editing & fields cleanup).
 
+## Sprint 8: Prospect & Order Verification Flow (NEXT)
+**Goal:** Add backend schema support and frontend UI interactions to verify prospects and their orders directly from the detail views.
+
+- [x] **Task 164.1 (BE):** Add `is_verified` to `Store` model and campaign qualifying flow.
+- [x] **Task 164.2 (BE):** Generate and apply Alembic migration for the `stores` table.
+- [x] **Task 164.3 (BE):** Expose `is_verified` in Pydantic Schemas (`StoreResponse`, `StoreUpdate`, `OrderUpdate`).
+- [x] **Task 164.4 (FE):** Add "Verified/Unverified" status badges to listing and detail views.
+- [x] **Task 164.5 (FE):** Implement "Verify Prospect & Orders" button on details page.
+
+
+
 
 
 

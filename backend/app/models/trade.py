@@ -163,6 +163,7 @@ class Store(Base):
     requested_quantity = Column(Integer, nullable=True)
     potential_value = Column(Float, nullable=True)
     referred_at = Column(DateTime, nullable=True)
+    is_verified = Column(Boolean, default=True, index=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

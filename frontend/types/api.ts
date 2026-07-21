@@ -155,12 +155,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -1538,6 +1538,8 @@ export interface components {
       payment_method?: string | null;
       /** Shipping Address */
       shipping_address?: string | null;
+      /** Is Verified */
+      is_verified?: boolean | null;
     };
     /** PostalCodeResponse */
     PostalCodeResponse: {
@@ -1922,6 +1924,11 @@ export interface components {
        */
       is_prospect?: boolean;
       /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /**
        * Prospect Segment
        * @default wholesale
        */
@@ -2082,6 +2089,11 @@ export interface components {
        */
       is_prospect?: boolean;
       /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /**
        * Prospect Segment
        * @default wholesale
        */
@@ -2164,6 +2176,8 @@ export interface components {
       client_ids?: string[] | null;
       /** Is Prospect */
       is_prospect?: boolean | null;
+      /** Is Verified */
+      is_verified?: boolean | null;
       /** Prospect Segment */
       prospect_segment?: string | null;
       /** Delivery Zip Codes */
@@ -2665,6 +2679,8 @@ export interface operations {
         is_prospect?: boolean | null;
         /** @description Filter by prospect segment. */
         prospect_segment?: string | null;
+        /** @description Include internal staff roles (representative, sales_rep, agent). */
+        include_staff?: boolean;
       };
     };
     responses: {
@@ -3068,7 +3084,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
