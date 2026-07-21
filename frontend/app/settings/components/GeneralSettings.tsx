@@ -179,6 +179,12 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     }
   };
 
+  const features = business?.features_config || {};
+  const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+  const showB2BSolutions = features.b2b_solutions?.enabled ?? (business?.vertical_type === 'TRADE');
+  const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
+  const showCustomFields = showServices || showB2BSolutions || showSalesIntel;
+
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">
       {/* Business Section */}
@@ -260,7 +266,8 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       </section>
 
       {/* CRM Configuration Section */}
-      <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+      {showCustomFields && (
+        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
         <div className="flex items-center justify-between border-b border-gray-50 pb-6">
           <div className="flex items-center gap-3 text-xl font-bold text-gray-900">
             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
@@ -371,6 +378,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
           )}
         </div>
       </section>
+      )}
 
       {/* Account Section */}
       <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8">
