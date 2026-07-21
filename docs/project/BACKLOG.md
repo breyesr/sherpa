@@ -243,7 +243,7 @@
 ## Epic 163: Prospecting Flow Simplification & Lead Unification
 **Objective**: Simplify the prospecting pipeline navigation menu and unify the separate accounts and contacts views into a single, cohesive "Prospects" listing and details view.
 
-- [ ] Task 163.1: **Sidebar Navigation Simplification**:
+- [x] Task 163.1: **Sidebar Navigation Simplification**:
   - **Description**: Collapse separate "Lead Accounts" and "Lead Contacts" links under Wholesale and Retail segments into a single "Prospects" link.
   - **Acceptance Criteria**:
     - *Given* the sidebar navigation menu,
@@ -252,28 +252,33 @@
     - *When* rendering the "Retail" segment,
     - *Then* only "Prospects" and "Orders" links are visible.
 
-- [ ] Task 163.2: **Unified Prospects List Page (`/trade/prospects/accounts`)**:
-  - **Description**: Rename list page to "Prospects", add contact name/phone columns to list/grid rows, and route clicks to `/trade/prospects/[id]`.
+- [x] Task 163.2: **Unified Prospects List Page (`/trade/prospects/accounts`)**:
+  - **Description**: Rename list page to "Prospects", add contact name/phone columns to list/grid rows, format titles dynamically for individual prospects (no company), and route clicks to `/trade/prospects/[id]`.
   - **Acceptance Criteria**:
     - *Given* a user viewing the prospects list,
     - *When* loading the page,
     - *Then* the title reads "Prospects", and each list row/grid card displays the Primary Contact Name (`store.clients[0]?.name`) and Contact Phone (`store.clients[0]?.phone` or `store.phone`) alongside the store name.
+    - *Then* if the store name starts with 'Prospect', the main row title shows the contact's name, and the redundant contact name badge is hidden.
     - *When* a row or card is clicked,
     - *Then* the user is redirected to the new unified detail page `/trade/prospects/[id]`.
 
-- [ ] Task 163.3: **Dedicated Unified Details View (`/trade/prospects/[id]`)**:
-  - **Description**: Implement a dedicated full-width prospects details view with "UNVERIFIED ACCOUNT" badge and side-by-side account and contact fields.
+- [x] Task 163.3: **Dedicated Unified Details View (`/trade/prospects/[id]`)**:
+  - **Description**: Implement a dedicated full-width prospects details view with "UNVERIFIED ACCOUNT" badge and side-by-side account and contact fields, cleanly handling individual prospects.
   - **Acceptance Criteria**:
     - *Given* a prospect detail page load,
     - *When* navigating `/trade/prospects/[id]`,
     - *Then* the header card displays an orange "UNVERIFIED ACCOUNT" badge and the layout spans full width (`col-span-12`).
+    - *Then* if the store name starts with 'Prospect', the header page title displays the contact's name instead of the system store name.
     - *Then* the "General Information" block displays the primary contact's Name, Phone, and Email, while showing the store's physical address.
     - *Then* three tabs are visible: "Details", "Products", and "Orders".
 
-- [ ] Task 163.4: **Order Page Navigation Link Sync**:
-  - **Description**: Ensure prospect order row store links point to `/trade/prospects/[id]`.
+- [x] Task 163.4: **Order Page Navigation Link Sync**:
+  - **Description**: Ensure prospect order row store links point to `/trade/prospects/[id]` and use dynamic title resolution.
   - **Acceptance Criteria**:
     - *Given* a user viewing the prospect orders page,
     - *When* clicking a store/account name link,
     - *Then* they are redirected to `/trade/prospects/[store_id]` instead of `/trade/stores/[store_id]`.
+    - *Then* the store name displayed resolves to the contact name if the store name is system-generated (starts with 'Prospect').
+
+
 

@@ -1,5 +1,10 @@
 # Handoff Log
 
+- **2026-07-20 (Epic 163 - Individual Prospect Title Resolution & Redundancy Cleanup)**: Implemented title substitution for system-generated prospects. In the prospects list, contact name now replaces system-generated store names as the primary card/row heading, and the redundant contact badge is hidden. In the prospect details page, the contact name replaces the system-generated store name in the header card. In the prospect orders page, the account link displays the contact name. All Epic 163 backlog tasks are fully complete.
+
+- **2026-07-20 (Epic 163 - Prospecting Simplification & Unification)**: Simplified prospecting pipeline by collapsing separate "Lead Accounts" and "Lead Contacts" links in the sidebar into a single "Prospects" link. Built a unified listing displaying primary contact name and phone inline, and created a dedicated full-width details view `/trade/prospects/[id]` showing orange "UNVERIFIED ACCOUNT" badge and consolidated Account + Contact information side-by-side. Updated link targets on prospect orders ledger.
+
+
 - **2026-07-09 (Lead Qualification & Referral Flow Optimizations)**: Implemented product ID protection by dynamically resolving product names in `call_model` via a new tenant-isolated helper `_get_product_by_id_or_name`, replacing database IDs/UUIDs in prompts, and adding negative constraints. Enabled immediate below-threshold handshake and unified retail detail collection in a single turn (skipping phone collection). Built prefix-resilient fuzzy product matching to handle truncated names from parallel tool calls, and enriched final retail messages with the matched store's address and phone number. Verified that all 5 simulation scenarios in `test_simulated_session_3.py` pass cleanly.
 
 - **2026-07-09 (Epic 154 - Telegram Multi-Tenant Data Isolation Fix)**: Started branch `feature/backend/telegram-data-isolation-fix` and logged the epic in `BACKLOG.md` to address the critical cross-tenant data leak. Copied the detailed diagnosis report `diagnosis_cross_tenant_data_leak.md` to `temp/`.

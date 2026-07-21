@@ -62,7 +62,7 @@ function ProspectStoresContent() {
             </span>
           </div>
           <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-            Accounts
+            Prospects
           </h1>
           <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
             Inbound prospective distributor companies and store entities awaiting full validation.
@@ -129,25 +129,41 @@ function ProspectStoresContent() {
       ) : viewMode === 'list' ? (
         <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
           <div className="divide-y divide-gray-50">
-            {filteredStores.map((store) => (
-              <div key={store.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
-                <Link 
-                  href={`/trade/stores/${store.id}`}
-                  className="absolute inset-0 z-0"
-                />
-                <div className="relative z-10 flex items-center gap-6 pointer-events-none flex-1">
-                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                    <StoreIcon size={28} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {store.name}
-                    </h3>
-                    <div className="flex items-center gap-4 mt-1 text-gray-500 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin size={14} className="text-gray-400" />
-                        <span className="text-sm">{store.address || 'No address'}</span>
-                      </div>
+            {filteredStores.map((store) => {
+              const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
+              const hasClientName = store.clients && store.clients[0]?.name;
+              const displayHeading = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+              const hideContactBadge = isSystemGenerated && hasClientName;
+
+              return (
+                <div key={store.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
+                  <Link 
+                    href={`/trade/prospects/${store.id}`}
+                    className="absolute inset-0 z-0"
+                  />
+                  <div className="relative z-10 flex items-center gap-6 pointer-events-none flex-1">
+                    <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                      <StoreIcon size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {displayHeading}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-4 mt-1 text-gray-500 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin size={14} className="text-gray-400" />
+                          <span className="text-sm">{store.address || 'No address'}</span>
+                        </div>
+                        {store.clients && store.clients[0] && !hideContactBadge && (
+                          <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">
+                            Contact: {store.clients[0].name}
+                          </span>
+                        )}
+                      {(store.clients?.[0]?.phone || store.phone) && (
+                        <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">
+                          Phone: {store.clients?.[0]?.phone || store.phone}
+                        </span>
+                      )}
                       {store.region && (
                         <span className="text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">
                           {store.region}
@@ -215,20 +231,27 @@ function ProspectStoresContent() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStores.map((store) => (
-            <div 
-              key={store.id} 
-              className="group relative bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between cursor-pointer"
-            >
-              <Link 
-                href={`/trade/stores/${store.id}`}
-                className="absolute inset-0 z-0"
-              />
+          {filteredStores.map((store) => {
+            const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
+            const hasClientName = store.clients && store.clients[0]?.name;
+            const displayHeading = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+            const hideContactBadge = isSystemGenerated && hasClientName;
+
+            return (
+              <div 
+                key={store.id} 
+                className="group relative bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between cursor-pointer"
+              >
+                <Link 
+                  href={`/trade/prospects/${store.id}`}
+                  className="absolute inset-0 z-0"
+                />
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-6">
                   <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
@@ -272,11 +295,30 @@ function ProspectStoresContent() {
                   </div>
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                  {store.name}
+                  {displayHeading}
                 </h3>
                 <p className="text-gray-500 font-medium text-sm line-clamp-2 mb-4">
                   {store.address || 'No address registered for this account.'}
                 </p>
+
+                {/* Contact information */}
+                {(!hideContactBadge || (store.clients?.[0]?.phone || store.phone)) && (
+                  <div className="mb-4 space-y-1 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+                    {!hideContactBadge && (
+                      <div className="text-xs text-slate-600 flex justify-between">
+                        <span className="text-slate-400 font-medium">Contact:</span>
+                        <span className="font-bold">{store.clients?.[0]?.name || 'No Contact'}</span>
+                      </div>
+                    )}
+                    {(store.clients?.[0]?.phone || store.phone) && (
+                      <div className="text-xs text-slate-600 flex justify-between">
+                        <span className="text-slate-400 font-medium">Phone:</span>
+                        <span className="font-medium">{store.clients?.[0]?.phone || store.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2">
                   {store.region && (
                     <span className="text-[10px] font-black uppercase tracking-widest bg-gray-50 text-gray-500 px-2 py-0.5 rounded-md border border-gray-100">
@@ -296,8 +338,8 @@ function ProspectStoresContent() {
                 </div>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

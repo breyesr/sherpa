@@ -61,10 +61,12 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 ## Sprint 7: Prospecting Flow Simplification & Lead Unification (NEXT)
 **Goal:** Simplify prospecting sidebar links and unify the separate accounts and contacts views into a single "Prospects" listing and side-by-side details page.
 
-- [ ] **Task 163.1 (FE):** Sidebar Navigation Simplification (Collapse to Prospects & Orders).
-- [ ] **Task 163.2 (FE):** Unified Prospects List Page (Rename page & add Contact columns).
-- [ ] **Task 163.3 (FE):** Dedicated Unified Details View `/trade/prospects/[id]`.
-- [ ] **Task 163.4 (FE):** Update order page store details links to `/trade/prospects/[id]`.
+- [x] **Task 163.1 (FE):** Sidebar Navigation Simplification (Collapse to Prospects & Orders).
+- [x] **Task 163.2 (FE):** Unified Prospects List Page (Rename page & add Contact columns).
+- [x] **Task 163.3 (FE):** Dedicated Unified Details View `/trade/prospects/[id]`.
+- [x] **Task 163.4 (FE):** Update order page store details links to `/trade/prospects/[id]`.
+
+
 
 
 

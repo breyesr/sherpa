@@ -1,18 +1,15 @@
-# Handoff State: 2026-07-14 (Conversational Retail Qualification Optimization)
+# Handoff State: 2026-07-20 (Epic 163 Prospect Unification & Title Resolution COMPLETE)
 
 ## Current Branch
-`feature/backend/retail-qualifier-optimization` (all changes implemented and verified).
+`feature/frontend/prospect-unification`
 
 ## Accomplishments This Session
-1. **Conversational Retail Lead Qualification (Completed & Verified)**:
-   - Refactored the `collecting_retail_details` phase in [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) into a conversational, two-step data capture process matching the wholesale flow.
-   - Removed the upfront rejection message so retail clients (order quantities below the wholesale threshold) are no longer told they are below wholesale on their very first interaction.
-   - **Step 1 (ZIP Code missing)**: Bot asks for address and ZIP code to validate coverage.
-   - **Step 2 (ZIP Code present, contact info missing)**: Bot asks for remaining contact details (name, email, optional company).
-   - **Qualify Lead Step**: Only once all details are successfully collected does the bot gracefully notify them of the retail store assignment/referral.
-   - Updated the simulation test suite in [test_whatsapp_campaign.py](file:///Users/bernardo/projects/sherpa/backend/test_whatsapp_campaign.py) and [test_simulated_session_3.py](file:///Users/bernardo/projects/sherpa/backend/test_simulated_session_3.py) to assert this new step-by-step flow.
-   - Verified that all 58 backend tests pass successfully with zero regressions.
+1. **Prospect Title Resolution & Redundancy Cleanup (Complete)**:
+   - **List & Grid View Unification**: Updated [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/accounts/page.tsx) to identify system-generated names (`starts-with('prospect')`). For matching stores with clients, the contact name is displayed as the primary row/card heading and the redundant `Contact: [Name]` badge is hidden.
+   - **Unified Details Header Title**: Updated [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/[id]/page.tsx) to render the contact's name as the main page title in the header card instead of the system-generated store name.
+   - **Orders Link Formatting**: Updated [orders/page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/orders/page.tsx) to display `client.name` in the store link when the store name is system-generated and a client is present.
+2. **Backlog & Sprint Plan Synchronization**:
+   - Marked all Tasks in Epic 163 (163.2, 163.3, 163.4) as completed (`[x]`) in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md).
 
 ## Next Steps
-1. Request human approval to merge `feature/backend/retail-qualifier-optimization` to `staging`.
-2. Push changes to remote repository.
+1. Request human approval to merge `feature/frontend/prospect-unification` into `staging`.

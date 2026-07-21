@@ -290,6 +290,8 @@ function ProspectOrdersContent() {
                 {filteredOrders.map((order) => {
                   const store = storeMap[order.store_id];
                   const client = store?.clients && store.clients.length > 0 ? store.clients[0] : null;
+                  const isSystemGenerated = store ? store.name.toLowerCase().startsWith('prospect') : false;
+                  const displayStoreName = isSystemGenerated && client ? client.name : (store ? store.name : '');
 
                   return (
                     <tr key={order.id} className="hover:bg-gray-50/30 transition-colors">
@@ -299,11 +301,11 @@ function ProspectOrdersContent() {
                       <td className="py-5 px-6">
                         {store ? (
                           <Link 
-                            href={`/trade/stores/${store.id}`}
+                            href={`/trade/prospects/${store.id}`}
                             className="font-bold text-gray-900 hover:text-blue-600 transition-colors flex items-center gap-1.5"
                           >
                             <MapPin size={14} className="text-gray-400" />
-                            {store.name}
+                            {displayStoreName}
                           </Link>
                         ) : (
                           <span className="text-gray-400 italic font-medium">Unknown Account</span>

@@ -217,13 +217,7 @@ function SidebarContent() {
                           href="/trade/prospects/accounts?segment=wholesale"
                           className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
-                          Lead Accounts
-                        </Link>
-                        <Link 
-                          href="/trade/prospects/contacts?segment=wholesale"
-                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                          Lead Contacts
+                          Prospects
                         </Link>
                         <Link 
                           href="/trade/prospects/orders?segment=wholesale"
@@ -253,13 +247,7 @@ function SidebarContent() {
                           href="/trade/prospects/accounts?segment=retail"
                           className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
-                          Referral Stores
-                        </Link>
-                        <Link 
-                          href="/trade/prospects/contacts?segment=retail"
-                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/contacts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                          Referral Contacts
+                          Prospects
                         </Link>
                         <Link 
                           href="/trade/prospects/orders?segment=retail"
