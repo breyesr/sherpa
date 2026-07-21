@@ -151,3 +151,129 @@
 
 - [x] Task 159.1: **Conversational Refactoring**: Refactor the `collecting_retail_details` phase in `prospect_qualifier.py` to prompt for address/ZIP first, followed by contact details, avoiding rejection text during collection.
 - [x] Task 159.2: **Dialogue Verification & Assertion Updates**: Update `test_whatsapp_campaign.py` and `test_simulated_session_3.py` to assert the non-rejecting step-by-step retail qualification dialogue.
+- [x] Task 159.3: **Returning Client Pre-Population & Deduplication**: Skip data collection for returning clients whose profile is already in the DB, and reuse existing Store records instead of creating duplicates during qualification.
+
+
+## Epic 160: Data-Driven Qualification Funnel Engine (FUTURE)
+**Objective**: Replace the hardcoded phase logic, system prompts, and field requirements in `prospect_qualifier.py` with a configurable, admin-managed qualification funnel. Steps, required fields, prompt templates, and transition conditions would be stored in the database and executed by a generic engine — enabling flow changes, A/B testing, and new funnels without code deploys.
+
+- [ ] Task 160.1: **Schema Design**: Create `QualificationStep` model with `step_order`, `phase_name`, `required_fields` (JSONB), `prompt_template`, `transition_condition`, and `funnel_id` FK.
+- [ ] Task 160.2: **Dynamic Prompt Engine**: Refactor the `call_model` node in `prospect_qualifier.py` to load the current step's `prompt_template` from the DB and render it with state variables instead of hardcoded f-strings.
+- [ ] Task 160.3: **Generic Transition Logic**: Replace the nested `if/elif` phase transitions in `run_tools_and_update_state` with a generic engine that advances to the next step when all `required_fields` are satisfied.
+- [ ] Task 160.4: **Admin CRUD UI**: Build an admin panel page to create, reorder, and edit qualification funnel steps.
+- [ ] Task 160.5: **Migration & Backfill**: Migrate the current hardcoded phases into seed `QualificationStep` rows to ensure backward compatibility.
+
+---
+
+## Epic 161: WhatsApp Provisioning Hardening & Meta Embedded Signup
+**Objective**: Fix all critical defects in the WhatsApp provisioning pipeline identified in the [provisioning audit](file:///Users/bernardo/projects/sherpa/temp/whatsapp_provisioning_audit.md) before any live testing. The current provisioner spends real Twilio money but produces a number that cannot receive WhatsApp messages due to missing Meta Business Account linking, incorrect webhook registration, and no safety guards against duplicate billing.
+**Reference**: `temp/whatsapp_provisioning_audit.md`, `docs/research/whatsapp_embedded_signup.md`
+
+### Phase 1: Safety Guards (Pre-Test Blockers)
+- [ ] Task 161.1: **Connected Integration Guard**: Add early return in `provision_whatsapp_sender()` when an integration with `status: "connected"` already exists for the business. Prevents duplicate subaccount creation and number purchases. *(File: `backend/app/services/messaging/provisioner.py:89-104`)*
+- [ ] Task 161.2: **Admin Role Gate on Provision Endpoint**: Add admin/superadmin role check to `POST /whatsapp/provision`. A regular field rep must not be able to trigger Twilio billing. *(File: `backend/app/api/integrations.py:218`)*
+- [ ] Task 161.3: **Rate Limit on Provision Endpoint**: Add `@limiter.limit("3/hour")` (or similar) to the provision endpoint to prevent accidental or malicious spam. *(File: `backend/app/api/integrations.py:218`)*
+- [ ] Task 161.4: **DB Unique Constraint**: Add `UniqueConstraint("business_id", "provider")` to the `Integration` model to prevent duplicate records at the database level. Create Alembic migration. *(File: `backend/app/models/integration.py`)*
+
+### Phase 2: Retry & Cleanup Hardening
+- [ ] Task 161.5: **Idempotent Retry Logic**: Refactor `_provision_flow()` retry wrapper to persist the subaccount SID after Step A succeeds, so retries resume from Step B (number purchase) instead of creating a new subaccount each attempt. Clean up orphaned subaccounts on final failure. *(File: `backend/app/services/messaging/provisioner.py:106-138`)*
+- [ ] Task 161.6: **Atomic Disconnect Flow**: Reorder `release_whatsapp_sender()` to confirm Twilio number release AND subaccount suspension before deleting the Integration DB row. If Twilio cleanup fails, mark integration as `status: "release_failed"` instead of deleting. *(Files: `backend/app/api/integrations.py:274-295`, `backend/app/services/messaging/provisioner.py:185-218`)*
+- [ ] Task 161.7: **Decryption Failure Handling**: Change `release_whatsapp_sender()` to raise an exception (and alert superadmin) instead of silently returning on decryption failure. *(File: `backend/app/services/messaging/provisioner.py:192-193`)*
+- [ ] Task 161.8: **Webhook Failure Surfacing**: If `register_webhook()` fails after successful provisioning, mark integration as `status: "connected_no_webhook"` and surface the error to the user instead of silently swallowing it. *(File: `backend/app/services/messaging/provisioner.py:159-164`)*
+
+### Phase 3: Meta Embedded Signup Integration
+- [ ] Task 161.9: **Meta Tech Provider Registration**: Register Sherpa as a Meta Tech Provider (manual process via Meta Business Manager). Document the configuration ID, app ID, and required permissions. *(Owner: DevOps/Admin — manual task, no code)*
+- [ ] Task 161.10: **Facebook JS SDK Integration**: Add Facebook JS SDK to the Next.js frontend. Load it conditionally only on the WhatsApp setup flow. Configure with Sherpa's Meta App ID. *(File: `frontend/components/WhatsAppModal.tsx`)*
+- [ ] Task 161.11: **Embedded Signup UI Step**: Insert a new step in the WhatsApp modal (between current Step 2 and Step 3) that shows a "Continue with Facebook" button. On click, launch Facebook's Embedded Signup popup. Capture the returned WABA ID, phone number ID, and exchange token on completion. *(File: `frontend/components/WhatsAppModal.tsx`)*
+- [ ] Task 161.12: **Backend Token Exchange Endpoint**: Create `POST /api/v1/integrations/whatsapp/activate` that receives the WABA ID + exchange token from the frontend, exchanges it with Twilio's API to register the number as a WhatsApp Sender, and updates the Integration record with WhatsApp-specific metadata. *(File: `backend/app/api/integrations.py`)*
+- [ ] Task 161.13: **Fix Webhook Registration Target**: Update `TwilioSubaccountEngine.register_webhook()` to configure the webhook on the WhatsApp Sender (via Messaging Service SID), not on the phone number's `sms_url`. *(File: `backend/app/services/messaging/twilio_engine.py:66-68`)*
+- [ ] Task 161.14: **End-to-End Provisioning Flow Test**: Write integration test covering the full flow: provision subaccount → buy number → Meta signup mock → token exchange → webhook registration → inbound message receipt. *(File: `backend/app/tests/test_provisioner.py`)*
+
+### Phase 4: Observability & Documentation
+- [ ] Task 161.15: **Superadmin Alert Upgrade**: Replace file-based `alert_superadmin()` with a persistent notification mechanism (DB-backed or external webhook) that survives container restarts on Railway. *(File: `backend/app/services/messaging/provisioner.py:14-29`)*
+- [ ] Task 161.16: **Create `.env.example`**: Add `.env.example` to backend root documenting all required environment variables including `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`, `ENCRYPTION_KEY`, and `BASE_URL`. *(File: `backend/.env.example`)*
+- [ ] Task 161.17: **Update Deployment Guide**: Add WhatsApp/Twilio section to `docs/deployment_guide.md` covering Railway env var configuration, webhook URL setup, and Meta Tech Provider prerequisites. *(File: `docs/deployment_guide.md`)*
+- [ ] Task 161.18: **Input Validation Schema**: Replace raw `dict` parameter on the provision endpoint with a Pydantic model that validates `area_code` format and `friendly_name` length. Sanitize error responses to avoid leaking Twilio internals. *(File: `backend/app/api/integrations.py:220`)*
+
+---
+
+## Epic 162: Dynamic Module-Based UX/UI Personalization
+**Objective**: Personalize the UX/UI of `/trade/stores` (Accounts list) and `/trade/stores/[id]` (Account details) based on user modular access permissions defined in `features_config` (specifically `b2b_solutions`, `campaign_flow`, and `products`).
+
+- [x] Task 162.1: **Stores Page Dynamic Adaptation (`/trade/stores`)**:
+  - **Description**: Adjust page headings, subtitles, action button labels, and table columns depending on whether B2B Solutions (`b2b_solutions`) and Automated Campaigns (`campaign_flow`) are enabled.
+  - **Acceptance Criteria**:
+    - *Given* a business user with `b2b_solutions` enabled,
+    - *When* they navigate to `/trade/stores`,
+    - *Then* the header title displays "Accounts", the subtitle mentions managing locations and sales intelligence, the action button reads "Create Account", and the list/grid views display B2B-specific columns/metrics ("Performance" and "Last Activity").
+    - *Given* a business user with `b2b_solutions` disabled and `campaign_flow` enabled,
+    - *When* they navigate to `/trade/stores`,
+    - *Then* the header title displays "Points of Sale", the subtitle describes managing retail outlets for campaign lead routing, the action button reads "Register Point of Sale", and the list/grid views hide the "Performance" and "Last Activity" metrics, replacing them with dynamic indicators for "Active Referrals" and "Pipeline Value".
+
+- [x] Task 162.2: **Store Details Page Tab & KPI Modularity (`/trade/stores/[id]`)**:
+  - **Description**: Render tabs, actions, and KPI panels conditionally based on features configured in the business profile.
+  - **Acceptance Criteria**:
+    - *Given* a business profile with modular features,
+    - *When* loading `/trade/stores/[id]`,
+    - *Then* only features marked as enabled are displayed:
+      - The `products` tab is visible *only if* the `products` module is enabled.
+      - The `orders` tab is visible *if* EITHER the `b2b_solutions` OR `products` module is enabled.
+      - The `notes` (Timeline) tab is visible *only if* the `sales_intelligence` module is enabled.
+      - The `referrals` tab is visible *only if* the `campaign_flow` module is enabled.
+    - *Given* the KPI summary panel,
+    - *When* rendering the store details header,
+    - *Then* "Total Sales" and "Avg. Ticket" KPI cards are visible *if* EITHER `b2b_solutions` OR `products` is enabled, and the "Referral Value" KPI card is visible *only if* `campaign_flow` is enabled.
+    - *Given* the details tab,
+    - *When* rendering the company information view,
+    - *Then* the "Competitive Matrix" component is hidden *if* `sales_intelligence` is disabled.
+
+
+- [x] Task 162.3: **Navigation Alignment & Breadcrumb Routing Sync**:
+  - **Description**: Update the back-button navigation text and targets, and ensure the sidebar links align with the modular views.
+  - **Acceptance Criteria**:
+    - *Given* a user navigating `/trade/stores/[id]`,
+    - *When* `b2b_solutions` is disabled and `campaign_flow` is enabled,
+    - *Then* the back-navigation text displays "Back to Points of Sale" and redirects to `/trade/stores`.
+    - *Given* the same page,
+    - *When* `b2b_solutions` is enabled,
+    - *Then* the back-navigation text displays "Back to Accounts" and redirects to `/trade/stores`.
+
+---
+
+## Epic 163: Prospecting Flow Simplification & Lead Unification
+**Objective**: Simplify the prospecting pipeline navigation menu and unify the separate accounts and contacts views into a single, cohesive "Prospects" listing and details view.
+
+- [ ] Task 163.1: **Sidebar Navigation Simplification**:
+  - **Description**: Collapse separate "Lead Accounts" and "Lead Contacts" links under Wholesale and Retail segments into a single "Prospects" link.
+  - **Acceptance Criteria**:
+    - *Given* the sidebar navigation menu,
+    - *When* rendering the "Wholesale" segment,
+    - *Then* only "Prospects" and "Orders" links are visible.
+    - *When* rendering the "Retail" segment,
+    - *Then* only "Prospects" and "Orders" links are visible.
+
+- [ ] Task 163.2: **Unified Prospects List Page (`/trade/prospects/accounts`)**:
+  - **Description**: Rename list page to "Prospects", add contact name/phone columns to list/grid rows, and route clicks to `/trade/prospects/[id]`.
+  - **Acceptance Criteria**:
+    - *Given* a user viewing the prospects list,
+    - *When* loading the page,
+    - *Then* the title reads "Prospects", and each list row/grid card displays the Primary Contact Name (`store.clients[0]?.name`) and Contact Phone (`store.clients[0]?.phone` or `store.phone`) alongside the store name.
+    - *When* a row or card is clicked,
+    - *Then* the user is redirected to the new unified detail page `/trade/prospects/[id]`.
+
+- [ ] Task 163.3: **Dedicated Unified Details View (`/trade/prospects/[id]`)**:
+  - **Description**: Implement a dedicated full-width prospects details view with "UNVERIFIED ACCOUNT" badge and side-by-side account and contact fields.
+  - **Acceptance Criteria**:
+    - *Given* a prospect detail page load,
+    - *When* navigating `/trade/prospects/[id]`,
+    - *Then* the header card displays an orange "UNVERIFIED ACCOUNT" badge and the layout spans full width (`col-span-12`).
+    - *Then* the "General Information" block displays the primary contact's Name, Phone, and Email, while showing the store's physical address.
+    - *Then* three tabs are visible: "Details", "Products", and "Orders".
+
+- [ ] Task 163.4: **Order Page Navigation Link Sync**:
+  - **Description**: Ensure prospect order row store links point to `/trade/prospects/[id]`.
+  - **Acceptance Criteria**:
+    - *Given* a user viewing the prospect orders page,
+    - *When* clicking a store/account name link,
+    - *Then* they are redirected to `/trade/prospects/[store_id]` instead of `/trade/stores/[store_id]`.
+

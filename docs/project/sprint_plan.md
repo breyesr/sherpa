@@ -51,5 +51,20 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [ ] **Task 121.4 (FE):** Build Strategy Desk & Outcome Resolution UI.
 - [ ] **Task 135.1 (FE):** Information Architecture & Navigation Realignment (Segment B2B Hub, Prospects, and Products).
 
+## Sprint 6: Dynamic UI Personalization (NEXT)
+**Goal:** Tailor page modules, metrics, tabs, and headings to the business features config on `/trade/stores` and `/trade/stores/[id]`.
+
+- [x] **Task 162.1 (FE):** Dynamic Headings & Columns on `/trade/stores` (Accounts list).
+- [x] **Task 162.2 (FE):** Conditionally render detail page tabs & KPI panels on `/trade/stores/[id]`.
+- [x] **Task 162.3 (FE):** Update back-navigation breadcrumbs and breadcrumb routing sync.
+
+## Sprint 7: Prospecting Flow Simplification & Lead Unification (NEXT)
+**Goal:** Simplify prospecting sidebar links and unify the separate accounts and contacts views into a single "Prospects" listing and side-by-side details page.
+
+- [ ] **Task 163.1 (FE):** Sidebar Navigation Simplification (Collapse to Prospects & Orders).
+- [ ] **Task 163.2 (FE):** Unified Prospects List Page (Rename page & add Contact columns).
+- [ ] **Task 163.3 (FE):** Dedicated Unified Details View `/trade/prospects/[id]`.
+- [ ] **Task 163.4 (FE):** Update order page store details links to `/trade/prospects/[id]`.
+
 
 
