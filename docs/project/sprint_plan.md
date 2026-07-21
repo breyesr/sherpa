@@ -65,6 +65,8 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [x] **Task 163.2 (FE):** Unified Prospects List Page (Rename page & add Contact columns).
 - [x] **Task 163.3 (FE):** Dedicated Unified Details View `/trade/prospects/[id]`.
 - [x] **Task 163.4 (FE):** Update order page store details links to `/trade/prospects/[id]`.
+- [x] **Task 163.5 (FE):** Unified Prospect Edit Drawer (Inlined contact editing & fields cleanup).
+
 
 
 

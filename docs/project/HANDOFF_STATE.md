@@ -1,4 +1,4 @@
-# Handoff State: 2026-07-20 (Epics 162 & 163 COMPLETE)
+# Handoff State: 2026-07-21 (Epics 162 & 163 COMPLETE)
 
 ## Current Branch
 `feature/frontend/prospect-unification`
@@ -17,6 +17,7 @@
    - **Dedicated prospects Details View**: Created the dedicated details page at [page.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/trade/prospects/[id]/page.tsx) with orange badge "UNVERIFIED ACCOUNT", full-width layout, and contact details mapping.
    - **Prospect Orders Query & Products Tab Refactoring**: Switched `/trade/orders` endpoint to `/trade/prospects/orders` and filtered client-side by store ID. Refactored the Products tab to only show unique products bought, with a dynamic "Bought: X [unit]" label and friendly empty states.
    - **Types Export & Compilation Fixes**: Fixed TS2305 import errors in `frontend/types/api.ts` by appending common schema exports, and resolved TS18048 undefined/optional checks.
+   - **Task 163.5 (Unified Prospect Edit Drawer)**: Simplified `AccountDrawer.tsx` when `isProspect` is true. Rendered contact details (FullName, Phone, Email) as direct input fields, synchronized saving with client models on create (POST to `/crm/clients` and linked client ID to store) and update (PATCH to `/crm/clients/{clientId}` in parallel), and conditionally hid physical-store-only sections (delivery zones, linked contact list, and legacy external ID mappings). Checked for clean compilation.
 3. **Documentation Sync**:
    - Marked all Task 162.* and 163.* tasks as completed in [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md) and [sprint_plan.md](file:///Users/bernardo/projects/sherpa/docs/project/sprint_plan.md).
 

@@ -279,4 +279,16 @@
     - *Then* they are redirected to `/trade/prospects/[store_id]` instead of `/trade/stores/[store_id]`.
     - *Then* the store name displayed resolves to the contact name if the store name is system-generated (starts with 'Prospect').
 
+- [x] Task 163.5: **Unified Prospect Edit Drawer**:
+  - **Description**: Simplify `AccountDrawer.tsx` when `isProspect` is `true`. Hide delivery zones, linked contacts selection, and external ID. Expose Contact Name, Phone, and Email as direct input fields, synchronizing saves with both Store and Client models.
+  - **Acceptance Criteria**:
+    - *Given* the account drawer is opened in prospect mode,
+    - *When* `isProspect` is `true`,
+    - *Then* the UI only displays the fields visible on the details page (Company Name, Contact Name, Phone, Email, Physical Address, Market, Segment, and Region).
+    - *When* creating a new prospect,
+    - *Then* the contact info is first saved to a new Client (`POST /crm/clients`), and the returned Client ID is linked on store creation (`POST /trade/stores`).
+    - *When* saving updates in edit mode,
+    - *Then* the contact info is synchronized back to the primary Client (`PATCH /crm/clients/{client_id}`) in parallel with the Store update.
+
+
 

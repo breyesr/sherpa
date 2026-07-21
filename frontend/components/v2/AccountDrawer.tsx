@@ -7,11 +7,7 @@ import Drawer from './Drawer';
 import { 
   Store, 
   MapPin, 
-  Phone, 
-  Mail, 
-  Globe, 
   Layers, 
-  Tag, 
   Loader2, 
   AlertCircle,
   Users,
@@ -74,6 +70,10 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   // Form dirty checking state
   const [initialSnapshot, setInitialSnapshot] = useState<string>('');
 
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+
   // Initialize state when drawer opens
   useEffect(() => {
     if (isOpen) {
@@ -101,6 +101,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         setColonias([]);
         setInitialSnapshot(JSON.stringify(defaultData));
         setManualAddress(false);
+        setContactName('');
+        setContactPhone('');
+        setContactEmail('');
       } else if (initialData) {
         // Edit mode with initial data: populate instantly
         const eagerData = {
@@ -127,6 +130,11 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         }
         setInitialSnapshot(JSON.stringify(eagerData));
         setManualAddress(false);
+
+        const primaryClient = initialData.clients?.[0];
+        setContactName(primaryClient?.name || '');
+        setContactPhone(primaryClient?.phone || initialData.phone || '');
+        setContactEmail(primaryClient?.email || initialData.email || '');
       }
     }
   }, [isOpen, storeId, initialData]);
@@ -173,6 +181,11 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
               }
             }
             setInitialSnapshot(JSON.stringify(fullData));
+
+            const primaryClient = data.clients?.[0];
+            setContactName(primaryClient?.name || '');
+            setContactPhone(primaryClient?.phone || data.phone || '');
+            setContactEmail(primaryClient?.email || data.email || '');
           }
         } catch (err) {
           console.error('Failed to fetch store for background sync', err);
@@ -490,18 +503,105 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     };
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      if (isProspect) {
+        if (isEditing) {
+          // Send the standard store PATCH request to update the store address/metadata/name.
+          const res = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to save account');
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || 'Failed to save account');
+          }
+
+          // Check if there is an associated client ID (e.g. from formData.client_ids[0], initialData?.clients?.[0]?.id, or fetched client ID)
+          const clientId = formData.client_ids?.[0] || initialData?.clients?.[0]?.id;
+          if (clientId) {
+            const clientRes = await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                name: contactName,
+                phone: contactPhone,
+                email: contactEmail
+              })
+            });
+            if (!clientRes.ok) {
+              const clientErrData = await clientRes.json();
+              throw new Error(clientErrData.detail || 'Failed to update contact profile');
+            }
+          }
+        } else {
+          // Create mode:
+          // 1. Send POST request to /crm/clients
+          const segment = formData.segment || null;
+          const clientRes = await fetch(`${API_BASE_URL}/crm/clients`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: contactName,
+              phone: contactPhone,
+              email: contactEmail,
+              is_prospect: true,
+              prospect_segment: segment
+            })
+          });
+
+          if (!clientRes.ok) {
+            const clientErrData = await clientRes.json();
+            throw new Error(clientErrData.detail || 'Failed to create associated contact');
+          }
+
+          const clientData = await clientRes.json();
+          const createdClientId = clientData.id;
+
+          // 2. Send store POST request to /trade/stores adding client_ids: [client.id]
+          const storePayload = {
+            ...payload,
+            client_ids: [createdClientId]
+          };
+
+          const res = await fetch(`${API_BASE_URL}/trade/stores`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(storePayload)
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || 'Failed to create prospect store');
+          }
+        }
+      } else {
+        // Standard non-prospect flow
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || 'Failed to save account');
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ['stores'] });
@@ -589,6 +689,43 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
           </div>
+
+          {isProspect && (
+            <>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contact Full Name</label>
+                <input 
+                  type="text"
+                  placeholder="e.g. Juan Pérez"
+                  className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                  value={contactName}
+                  onChange={e => setContactName(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contact Phone</label>
+                  <input 
+                    type="tel"
+                    placeholder="e.g. +52 55 1234 5678"
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                    value={contactPhone}
+                    onChange={e => setContactPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contact Email</label>
+                  <input 
+                    type="email"
+                    placeholder="e.g. juan@distribuidoradelnorte.com"
+                    className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
+                    value={contactEmail}
+                    onChange={e => setContactEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {manualAddress ? (
             // Manual Address Entry Mode
@@ -765,208 +902,210 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
           </div>
         </div>
 
-        <div className="space-y-4 p-4 bg-white rounded-2xl border border-gray-100">
-          <div className="flex justify-between items-center px-1">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Delivery Zones / ZIP Codes</label>
-            <span className="text-[9px] text-gray-400 italic">Configure coverage</span>
-          </div>
+        {!isProspect && (
+          <div className="space-y-4 p-4 bg-white rounded-2xl border border-gray-100">
+            <div className="flex justify-between items-center px-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Delivery Zones / ZIP Codes</label>
+              <span className="text-[9px] text-gray-400 italic">Configure coverage</span>
+            </div>
 
-          {/* Display added ZIPs as tags */}
-          <div className="flex flex-wrap gap-2 min-h-[36px] p-3 bg-gray-50 rounded-xl border border-gray-50">
+            {/* Display added ZIPs as tags */}
+            <div className="flex flex-wrap gap-2 min-h-[36px] p-3 bg-gray-50 rounded-xl border border-gray-50">
+              {(() => {
+                const currentZipArray = formData.delivery_zip_codes
+                  ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+                  : [];
+                return (
+                  <>
+                    {currentZipArray.map((zip, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-lg border border-blue-100 transition-all hover:bg-blue-100"
+                      >
+                        <span>{zip}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const updated = currentZipArray.filter(z => z !== zip);
+                            setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                          }}
+                          className="text-blue-500 hover:text-red-600 transition-colors text-[10px] font-black focus:outline-none"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    {currentZipArray.length === 0 && (
+                      <span className="text-xs text-gray-400 italic py-0.5">No delivery zones configured yet.</span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Select helpers */}
             {(() => {
               const currentZipArray = formData.delivery_zip_codes
                 ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
                 : [];
+              
+              // Get unique states sorted
+              const uniqueStates = addressStates;
+
+              // Get unique municipalities filtered by state
+              const filteredMunicipalities = deliveryMunicipalities;
+              
+              // Get unique zip codes filtered by state and municipality
+              const filteredZipCodes = selectedZipCodesArray;
+
               return (
-                <>
-                  {currentZipArray.map((zip, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-lg border border-blue-100 transition-all hover:bg-blue-100"
-                    >
-                      <span>{zip}</span>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          const updated = currentZipArray.filter(z => z !== zip);
-                          setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* State */}
+                    <div className="space-y-1.5">
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider ml-1">State</span>
+                      <select
+                        className="w-full p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all appearance-none"
+                        value={selectedState}
+                        onChange={e => {
+                          setSelectedState(e.target.value);
+                          setSelectedMunicipality('');
+                          setSelectedZipCodesArray([]);
+                          setLastClickedIndex(null);
                         }}
-                        className="text-blue-500 hover:text-red-600 transition-colors text-[10px] font-black focus:outline-none"
                       >
-                        ✕
+                        <option value="">Select State...</option>
+                        {uniqueStates.map((st, idx) => (
+                          <option key={idx} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Municipality */}
+                    <div className="space-y-1.5">
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider ml-1">Municipality</span>
+                      <select
+                        className="w-full p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all appearance-none disabled:opacity-50"
+                        value={selectedMunicipality}
+                        onChange={e => {
+                          setSelectedMunicipality(e.target.value);
+                          setSelectedZipCodesArray([]);
+                          setLastClickedIndex(null);
+                        }}
+                        disabled={!selectedState}
+                      >
+                        <option value="">Select Municipality...</option>
+                        {filteredMunicipalities.map((mun, idx) => (
+                          <option key={idx} value={mun}>{mun}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex justify-between items-center px-1 mb-2">
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">ZIP Codes (Shift to select range)</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedZipCodesArray.length === filteredZipCodes.length) {
+                            setSelectedZipCodesArray([]);
+                          } else {
+                            setSelectedZipCodesArray(filteredZipCodes);
+                          }
+                        }}
+                        disabled={!selectedMunicipality || filteredZipCodes.length === 0}
+                        className="text-[9px] font-black text-blue-600 hover:text-blue-800 disabled:text-gray-300 transition-colors focus:outline-none uppercase tracking-wider"
+                      >
+                        {selectedZipCodesArray.length === filteredZipCodes.length ? "Deselect All" : "Select All"}
                       </button>
                     </div>
-                  ))}
-                  {currentZipArray.length === 0 && (
-                    <span className="text-xs text-gray-400 italic py-0.5">No delivery zones configured yet.</span>
-                  )}
-                </>
-              );
-            })()}
-          </div>
 
-          {/* Select helpers */}
-          {(() => {
-            const currentZipArray = formData.delivery_zip_codes
-              ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
-              : [];
-            
-            // Get unique states sorted
-            const uniqueStates = addressStates;
-
-            // Get unique municipalities filtered by state
-            const filteredMunicipalities = deliveryMunicipalities;
-            
-            // Get unique zip codes filtered by state and municipality
-            const filteredZipCodes = selectedZipCodesArray;
-
-            return (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* State */}
-                  <div className="space-y-1.5">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider ml-1">State</span>
                     <select
-                      className="w-full p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all appearance-none"
-                      value={selectedState}
-                      onChange={e => {
-                        setSelectedState(e.target.value);
-                        setSelectedMunicipality('');
-                        setSelectedZipCodesArray([]);
-                        setLastClickedIndex(null);
-                      }}
+                      multiple
+                      className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all disabled:opacity-50 min-h-[95px]"
+                      value={selectedZipCodesArray}
+                      onChange={() => {}}
+                      disabled={!selectedMunicipality || filteredZipCodes.length === 0}
                     >
-                      <option value="">Select State...</option>
-                      {uniqueStates.map((st, idx) => (
-                        <option key={idx} value={st}>{st}</option>
+                      {filteredZipCodes.map((zip, idx) => (
+                        <option 
+                          key={idx} 
+                          value={zip} 
+                          className="py-1 px-2 rounded hover:bg-gray-100 font-bold cursor-pointer"
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            const isShift = e.shiftKey;
+                            setSelectedZipCodesArray(prev => {
+                              if (isShift && lastClickedIndex !== null) {
+                                const start = Math.min(lastClickedIndex, idx);
+                                const end = Math.max(lastClickedIndex, idx);
+                                const rangeZips = filteredZipCodes.slice(start, end + 1);
+                                return Array.from(new Set([...prev, ...rangeZips]));
+                              } else {
+                                setLastClickedIndex(idx);
+                                if (prev.includes(zip)) {
+                                    return prev.filter(z => z !== zip);
+                                } else {
+                                    return [...prev, zip];
+                                }
+                              }
+                            });
+                          }}
+                        >
+                          {zip}
+                        </option>
                       ))}
+                      {selectedMunicipality && filteredZipCodes.length === 0 && (
+                        <option disabled className="text-gray-400 italic">No ZIP codes preloaded.</option>
+                      )}
+                      {!selectedMunicipality && (
+                        <option disabled className="text-gray-400 italic">Select State and Municipality first.</option>
+                      )}
                     </select>
-                  </div>
 
-                  {/* Municipality */}
-                  <div className="space-y-1.5">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider ml-1">Municipality</span>
-                    <select
-                      className="w-full p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all appearance-none disabled:opacity-50"
-                      value={selectedMunicipality}
-                      onChange={e => {
-                        setSelectedMunicipality(e.target.value);
-                        setSelectedZipCodesArray([]);
-                        setLastClickedIndex(null);
-                      }}
-                      disabled={!selectedState}
-                    >
-                      <option value="">Select Municipality...</option>
-                      {filteredMunicipalities.map((mun, idx) => (
-                        <option key={idx} value={mun}>{mun}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
-                  <div className="flex justify-between items-center px-1 mb-2">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">ZIP Codes (Shift to select range)</span>
                     <button
                       type="button"
                       onClick={() => {
-                        if (selectedZipCodesArray.length === filteredZipCodes.length) {
-                          setSelectedZipCodesArray([]);
-                        } else {
-                          setSelectedZipCodesArray(filteredZipCodes);
-                        }
+                        const updated = Array.from(new Set([...currentZipArray, ...selectedZipCodesArray]));
+                        setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                        setSelectedZipCodesArray([]);
                       }}
-                      disabled={!selectedMunicipality || filteredZipCodes.length === 0}
-                      className="text-[9px] font-black text-blue-600 hover:text-blue-800 disabled:text-gray-300 transition-colors focus:outline-none uppercase tracking-wider"
+                      disabled={selectedZipCodesArray.length === 0}
+                      className="w-full mt-3 p-3 bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     >
-                      {selectedZipCodesArray.length === filteredZipCodes.length ? "Deselect All" : "Select All"}
+                      Add Selected ZIP Codes ({selectedZipCodesArray.length})
                     </button>
                   </div>
 
-                  <select
-                    multiple
-                    className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition-all disabled:opacity-50 min-h-[95px]"
-                    value={selectedZipCodesArray}
-                    onChange={() => {}}
-                    disabled={!selectedMunicipality || filteredZipCodes.length === 0}
-                  >
-                    {filteredZipCodes.map((zip, idx) => (
-                      <option 
-                        key={idx} 
-                        value={zip} 
-                        className="py-1 px-2 rounded hover:bg-gray-100 font-bold cursor-pointer"
-                        onMouseDown={e => {
-                          e.preventDefault();
-                          const isShift = e.shiftKey;
-                          setSelectedZipCodesArray(prev => {
-                            if (isShift && lastClickedIndex !== null) {
-                              const start = Math.min(lastClickedIndex, idx);
-                              const end = Math.max(lastClickedIndex, idx);
-                              const rangeZips = filteredZipCodes.slice(start, end + 1);
-                              return Array.from(new Set([...prev, ...rangeZips]));
-                            } else {
-                              setLastClickedIndex(idx);
-                              if (prev.includes(zip)) {
-                                  return prev.filter(z => z !== zip);
-                              } else {
-                                  return [...prev, zip];
-                              }
-                            }
-                          });
-                        }}
-                      >
-                        {zip}
-                      </option>
-                    ))}
-                    {selectedMunicipality && filteredZipCodes.length === 0 && (
-                      <option disabled className="text-gray-400 italic">No ZIP codes preloaded.</option>
-                    )}
-                    {!selectedMunicipality && (
-                      <option disabled className="text-gray-400 italic">Select State and Municipality first.</option>
-                    )}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = Array.from(new Set([...currentZipArray, ...selectedZipCodesArray]));
-                      setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
-                      setSelectedZipCodesArray([]);
-                    }}
-                    disabled={selectedZipCodesArray.length === 0}
-                    className="w-full mt-3 p-3 bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-black rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-wider"
-                  >
-                    Add Selected ZIP Codes ({selectedZipCodesArray.length})
-                  </button>
+                  <div className="flex items-center gap-2 pt-3 border-t border-gray-100 mt-1">
+                    <input
+                      type="text"
+                      placeholder="Or type custom ZIP (5 digits)..."
+                      className="flex-1 p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all"
+                      value={customZipInput}
+                      onChange={e => setCustomZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (customZipInput.length === 5 && !currentZipArray.includes(customZipInput)) {
+                          const updated = [...currentZipArray, customZipInput];
+                          setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                          setCustomZipInput('');
+                        }
+                      }}
+                      disabled={customZipInput.length !== 5}
+                      className="px-4 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-400 whitespace-nowrap uppercase tracking-wider font-black"
+                    >
+                      Add Custom
+                    </button>
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-2 pt-3 border-t border-gray-100 mt-1">
-                  <input
-                    type="text"
-                    placeholder="Or type custom ZIP (5 digits)..."
-                    className="flex-1 p-3.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all"
-                    value={customZipInput}
-                    onChange={e => setCustomZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (customZipInput.length === 5 && !currentZipArray.includes(customZipInput)) {
-                        const updated = [...currentZipArray, customZipInput];
-                        setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
-                        setCustomZipInput('');
-                      }
-                    }}
-                    disabled={customZipInput.length !== 5}
-                    className="px-4 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-400 whitespace-nowrap uppercase tracking-wider font-black"
-                  >
-                    Add Custom
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Segmentation Section */}
         <div className="p-6 bg-gray-50 rounded-[2rem] space-y-6">
@@ -1028,7 +1167,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         </div>
 
         {/* Contacts Section */}
-        {showSalesIntelligence && (
+        {!isProspect && showSalesIntelligence && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2 px-1">
             <Users size={16} className="text-gray-900" />
@@ -1067,18 +1206,20 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         )}
 
         {/* Integration Section */}
-        <div className="pt-4 border-t border-gray-100">
-           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Internal External ID (Legacy Mapping)</label>
-            <input 
-              type="text"
-              placeholder="e.g. ERP-10293"
-              className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-gray-300 outline-none text-xs font-mono text-gray-500"
-              value={formData.external_id}
-              onChange={e => setFormData({...formData, external_id: e.target.value})}
-            />
+        {!isProspect && (
+          <div className="pt-4 border-t border-gray-100">
+             <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Internal External ID (Legacy Mapping)</label>
+              <input 
+                type="text"
+                placeholder="e.g. ERP-10293"
+                className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-gray-300 outline-none text-xs font-mono text-gray-500"
+                value={formData.external_id}
+                onChange={e => setFormData({...formData, external_id: e.target.value})}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Drawer>
   );
