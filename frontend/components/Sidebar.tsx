@@ -93,12 +93,13 @@ function SidebarContent() {
     products: { enabled: business?.vertical_type === 'TRADE' }
   };
 
-  const showScheduling = features.scheduling?.enabled ?? true;
   const showCRM = features.crm_suite?.enabled ?? false;
   const showCampaignFlow = features.campaign_flow?.enabled ?? false;
   const showB2BSolutions = features.b2b_solutions?.enabled ?? false;
   const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+  const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
   const showProducts = features.products?.enabled ?? (business?.vertical_type === 'TRADE');
+  const showScheduling = showServices || showSalesIntel;
 
   return (
     <div className="w-64 bg-white border-r min-h-screen flex flex-col shrink-0">
