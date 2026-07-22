@@ -293,6 +293,16 @@ async def update_store(
     for field, value in update_data.items():
         setattr(store, field, value)
         
+    # Automatically verify all unverified orders associated with this store when the store is verified
+    if store_in.is_verified is True:
+        from sqlalchemy import update as sql_update
+        from app.models.trade import Order
+        await db.execute(
+            sql_update(Order)
+            .where(Order.store_id == store.id, Order.is_verified == False)
+            .values(is_verified=True)
+        )
+        
     db.add(store)
     await db.commit()
     sync_vector_task.delay(str(store.id), "store", str(business.id))

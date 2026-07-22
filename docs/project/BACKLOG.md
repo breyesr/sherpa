@@ -341,6 +341,43 @@
     - *Then* a `PATCH` request is sent to set `store.is_verified = true`, and a `PATCH` request is sent to set `order.is_verified = true` for each of its unverified orders.
     - *Then* the page query cache is invalidated, rendering the updated verified statuses instantly.
 
+## Epic 165: Campaign-Flow Dashboard Personalization (MVP Personalization)
+Personalize the main Sherpa Dashboard for users who have the **Automated Intake & Campaigns** (`campaign_flow`) module active, transforming the view from a service booking agenda to a sales lead intake hub.
 
+- [x] Task 165.1: **Backend Stats Update**:
+  - **Description**: Modify `get_business_stats` in `backend/app/api/business.py` to retrieve and return campaign-specific metrics if the user's business has `campaign_flow` enabled.
+  - **Acceptance Criteria**:
+    - *When* `campaign_flow` is enabled in `features_config`, return:
+      - `campaign_orders_count`: total count of orders created in the last 30 days.
+      - `wholesale_leads_count`: count of stores/clients with `prospect_segment == 'wholesale'`.
+      - `retail_leads_count`: count of stores/clients with `prospect_segment == 'retail'`.
+      - `wholesale_pipeline_value`: sum of order amounts where store is unverified/prospect and `prospect_segment == 'wholesale'`.
+      - `retail_pipeline_value`: sum of order amounts where store is unverified/prospect and `prospect_segment == 'retail'`.
+      - `attention_leads`: list of unverified stores (`is_verified == False`) that have orders, containing store ID, store name, prospect segment, total order amount, and date, sorted by revenue descending.
 
+- [x] Task 165.2: **Update Schema & Types**:
+  - **Description**: Update the OpenAPI spec (`openapi.json`) and generate the typescript definitions using `npm run gen:api` in the frontend.
+  - **Acceptance Criteria**:
+    - Types in `@/frontend/types/api.ts` must successfully compile and reflect the optional new statistics fields in `/business/stats`.
 
+- [x] Task 165.3: **Frontend Dashboard Personalization**:
+  - **Description**: Update `frontend/app/DashboardHome.tsx` to check `features_config.campaign_flow?.enabled` and dynamically render the personalized dashboard for Automated Intake & Campaigns.
+  - **Acceptance Criteria**:
+    - Display three custom KPI cards:
+      1. **Total Intake (30d)**: showing the count of orders.
+      2. **Qualification Rate**: showing the counts of wholesale and retail leads.
+      3. **Pipeline Value**: showing the wholesale and retail values in MXN.
+    - Display **Intake Funnel Active Pipeline** widget (showing stats of verified vs unverified leads).
+    - Fully styled using the premium Tailwind theme (glassmorphic gradients, rounded corners, focus rings).
+
+- [x] Task 165.4: **Revenue-Prioritized Action List**:
+  - **Description**: Render the `attention_leads` from the backend stats in a card under "Intake Leads Requiring Immediate Attention".
+  - **Acceptance Criteria**:
+    - List leads sorted by revenue descending in the format: `Lead: "Name" - Order for $XXX,XXX MXN - Date: DD/MM/YY`.
+    - Provide a "Verify & Route" button that calls a PATCH handler to verify the store and its orders in parallel, followed by invalidation of stats and stores query caches.
+    - Display segment badges next to each lead (e.g. amber "Wholesale" or purple "Retail").
+
+- [x] Task 165.5: **Verification & End-to-End Build**:
+  - **Description**: Compile and build both backend and frontend to verify no regressions occur.
+  - **Acceptance Criteria**:
+    - Backend tests and frontend Next.js production build (`npm run build`) execute with zero errors.

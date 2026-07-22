@@ -174,13 +174,194 @@ async def get_business_stats(
     # 6. Serialize for response
     serialized_upcoming = [AppointmentResponse.from_orm(a) for a in upcoming]
     
+    # 7. Campaign-flow specific metrics if enabled
+    feat_cfg = business.features_config or {}
+    campaign_flow_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
+    
+    if campaign_flow_enabled:
+        from app.models.trade import Order, Store
+        from sqlalchemy import desc
+        
+        # A. Campaign orders count (past 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        orders_count_res = await db.execute(
+            select(func.count(Order.id))
+            .where(
+                Order.business_id == business.id,
+                Order.created_at >= thirty_days_ago
+            )
+        )
+        campaign_orders_count = orders_count_res.scalar() or 0
+        
+        # B. Wholesale vs Retail leads count (prospects)
+        wholesale_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'wholesale'
+            )
+        )
+        wholesale_leads_count = wholesale_leads_res.scalar() or 0
+        
+        retail_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'retail'
+            )
+        )
+        retail_leads_count = retail_leads_res.scalar() or 0
+        
+        # C. Wholesale vs Retail pipeline value
+        wholesale_val_res = await db.execute(
+            select(func.sum(Order.total_amount))
+            .join(Store, Order.store_id == Store.id)
+            .where(
+                Order.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'wholesale'
+            )
+        )
+        wholesale_pipeline_value = wholesale_val_res.scalar() or 0.0
+        
+        retail_val_res = await db.execute(
+            select(func.sum(Order.total_amount))
+            .join(Store, Order.store_id == Store.id)
+            .where(
+                Order.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'retail'
+            )
+        )
+        retail_pipeline_value = retail_val_res.scalar() or 0.0
+        
+        # D. Attention Leads (unverified prospects with orders, sorted by revenue)
+        attention_leads_res = await db.execute(
+            select(
+                Store.id,
+                Store.name,
+                Store.prospect_segment,
+                Store.created_at,
+                func.coalesce(func.sum(Order.total_amount), 0.0).label("total_revenue")
+            )
+            .outerjoin(Order, Order.store_id == Store.id)
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == False
+            )
+            .group_by(Store.id, Store.name, Store.prospect_segment, Store.created_at)
+            .order_by(desc("total_revenue"), desc(Store.created_at))
+            .limit(10)
+        )
+        attention_leads = []
+        for row in attention_leads_res.all():
+            attention_leads.append({
+                "id": row.id,
+                "name": row.name,
+                "prospect_segment": row.prospect_segment,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "total_revenue": float(row.total_revenue)
+            })
+            
+        # E. Verified vs Unverified leads count
+        verified_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == True
+            )
+        )
+        verified_leads_count = verified_leads_res.scalar() or 0
+        
+        unverified_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == False
+            )
+        )
+        unverified_leads_count = unverified_leads_res.scalar() or 0
+
+        # F. 30d Leads Intake count
+        leads_count_30d_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.created_at >= thirty_days_ago
+            )
+        )
+        leads_count_30d = leads_count_30d_res.scalar() or 0
+
+        # G. 30d Verified Orders count
+        verified_orders_count_30d_res = await db.execute(
+            select(func.count(Order.id))
+            .where(
+                Order.business_id == business.id,
+                Order.is_verified == True,
+                Order.created_at >= thirty_days_ago
+            )
+        )
+        verified_orders_count_30d = verified_orders_count_30d_res.scalar() or 0
+
+        # H. Verified wholesale vs retail leads count
+        verified_wholesale_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == True,
+                Store.prospect_segment == 'wholesale'
+            )
+        )
+        verified_wholesale_leads_count = verified_wholesale_leads_res.scalar() or 0
+
+        verified_retail_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == True,
+                Store.prospect_segment == 'retail'
+            )
+        )
+        verified_retail_leads_count = verified_retail_leads_res.scalar() or 0
+        
+        return {
+            "total_clients": total_clients,
+            "total_appointments": total_appointments,
+            "flagged_clients": flagged_clients,
+            "today_appointments": today_appointments,
+            "upcoming": serialized_upcoming,
+            "business_name": business.name,
+            "campaign_flow_enabled": True,
+            "campaign_orders_count": campaign_orders_count,
+            "wholesale_leads_count": wholesale_leads_count,
+            "retail_leads_count": retail_leads_count,
+            "wholesale_pipeline_value": wholesale_pipeline_value,
+            "retail_pipeline_value": retail_pipeline_value,
+            "attention_leads": attention_leads,
+            "verified_leads_count": verified_leads_count,
+            "unverified_leads_count": unverified_leads_count,
+            "leads_count_30d": leads_count_30d,
+            "verified_orders_count_30d": verified_orders_count_30d,
+            "verified_wholesale_leads_count": verified_wholesale_leads_count,
+            "verified_retail_leads_count": verified_retail_leads_count
+        }
+
     return {
         "total_clients": total_clients,
         "total_appointments": total_appointments,
         "flagged_clients": flagged_clients,
         "today_appointments": today_appointments,
         "upcoming": serialized_upcoming,
-        "business_name": business.name
+        "business_name": business.name,
+        "campaign_flow_enabled": False
     }
 
 @router.post("/test-chat")
