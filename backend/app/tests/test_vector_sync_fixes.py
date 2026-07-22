@@ -26,11 +26,11 @@ async def test_delete_store_vector_cascades_mock(mock_get_business, mock_delete_
     mock_execute_res = MagicMock()
     mock_execute_res.scalars.return_value.first.return_value = mock_store
     
-    # Associated StoreNote and Competitor IDs
     mock_execute_res.scalars.return_value.all.side_effect = [
         [],             # For Order.id query
         ["note_abc"],   # For StoreNote.id query
-        ["comp_xyz"]    # For Competitor.id query
+        ["comp_xyz"],   # For Competitor.id query
+        []              # For Client query
     ]
     mock_db.execute.return_value = mock_execute_res
     

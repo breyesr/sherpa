@@ -43,15 +43,19 @@ export default function OrdersPage() {
     enabled: !!token,
   });
 
-  // Fetch Stores for mapping account names
+  // Fetch Stores and Prospects for mapping account names
   const { data: stores = [] } = useQuery<StoreResponse[]>({
-    queryKey: ['stores'],
+    queryKey: ['all-stores-for-orders'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      const [storesRes, prospectsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/trade/stores`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/trade/stores?is_prospect=true`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      
+      const storesList = storesRes.ok ? await storesRes.json() : [];
+      const prospectsList = prospectsRes.ok ? await prospectsRes.json() : [];
+      
+      return [...storesList, ...prospectsList];
     },
     enabled: !!token,
   });
@@ -250,7 +254,16 @@ export default function OrdersPage() {
                     </div>
                     <div className="min-w-0 pr-4">
                       <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors truncate">
-                        {store ? store.name : 'Unknown Account'}
+                        {store ? (
+                          (() => {
+                            const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
+                            const hasClientName = store.clients && store.clients[0]?.name;
+                            let resolved = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+                            resolved = resolved.replace(/^prospect\s+/i, '');
+                            resolved = resolved.replace(/\s*\([^)]*\)\s*$/, '');
+                            return resolved.trim();
+                          })()
+                        ) : 'Unknown Account'}
                       </h3>
                       <p className="text-xs font-mono text-gray-400 mt-1 max-w-sm truncate">
                         ID: {order.id}

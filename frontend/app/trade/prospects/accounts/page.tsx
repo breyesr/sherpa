@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
 import { 
@@ -44,6 +44,26 @@ function ProspectStoresContent() {
       return res.json();
     },
     enabled: !!token,
+  });
+
+  // Verify Store mutation
+  const verifyStoreMutation = useMutation({
+    mutationFn: async (storeId: string) => {
+      const res = await fetch(`${API_BASE_URL}/trade/stores/${storeId}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ is_verified: true })
+      });
+      if (!res.ok) throw new Error('Failed to verify account');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    }
   });
 
   const filteredStores = stores.filter((s) => 
@@ -132,8 +152,11 @@ function ProspectStoresContent() {
             {filteredStores.map((store) => {
               const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
               const hasClientName = store.clients && store.clients[0]?.name;
-              const displayHeading = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
-              const hideContactBadge = isSystemGenerated && hasClientName;
+              const displayHeading = (isSystemGenerated && hasClientName ? store.clients[0].name : store.name)
+                .replace(/^prospect\s+/i, '')
+                .replace(/\s*\([^)]*\)\s*$/, '')
+                .trim();
+              const hideContactBadge = true;
 
               return (
                 <div key={store.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
@@ -190,17 +213,30 @@ function ProspectStoresContent() {
                       {store.segment || 'General'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setAccountDrawer({ isOpen: true, storeId: store.id, initialData: store });
-                      }}
-                      className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative z-20"
-                    >
-                      <Edit2 size={18} />
-                    </button>
+                   <div className="flex items-center gap-2">
+                     {!store.is_verified && (
+                       <button
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           verifyStoreMutation.mutate(store.id);
+                         }}
+                         disabled={verifyStoreMutation.isPending}
+                         className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm relative z-20 font-sans"
+                       >
+                         Verify
+                       </button>
+                     )}
+                     <button 
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         setAccountDrawer({ isOpen: true, storeId: store.id, initialData: store });
+                       }}
+                       className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative z-20"
+                     >
+                       <Edit2 size={18} />
+                     </button>
                     <button 
                       onClick={async (e) => {
                         e.preventDefault();
@@ -249,8 +285,11 @@ function ProspectStoresContent() {
           {filteredStores.map((store) => {
             const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
             const hasClientName = store.clients && store.clients[0]?.name;
-            const displayHeading = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
-            const hideContactBadge = isSystemGenerated && hasClientName;
+            const displayHeading = (isSystemGenerated && hasClientName ? store.clients[0].name : store.name)
+              .replace(/^prospect\s+/i, '')
+              .replace(/\s*\([^)]*\)\s*$/, '')
+              .trim();
+            const hideContactBadge = true;
 
             return (
               <div 
@@ -362,6 +401,19 @@ function ProspectStoresContent() {
                     {store.is_verified ? 'Verified' : 'Unverified'}
                   </span>
                 </div>
+                {!store.is_verified && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      verifyStoreMutation.mutate(store.id);
+                    }}
+                    disabled={verifyStoreMutation.isPending}
+                    className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm relative z-20 font-sans"
+                  >
+                    Verify
+                  </button>
+                )}
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all" />
               </div>
             </div>

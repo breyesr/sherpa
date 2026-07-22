@@ -323,7 +323,7 @@ async def delete_store(
 ) -> Any:
     """Delete a store."""
     from sqlalchemy import delete as sqldelete
-    from app.models.trade import StoreNote, Order, OrderItem, Competitor, StoreAction, AccountIntelligence, store_clients
+    from app.models.trade import StoreNote, Order, OrderItem, Competitor, StoreAction, AccountIntelligence, store_clients, CustomerNote
     
     business = await get_business(db, current_user.id)
     result = await db.execute(
@@ -354,7 +354,36 @@ async def delete_store(
     await db.execute(sqldelete(StoreAction).where(StoreAction.store_id == store_id))
     await db.execute(sqldelete(AccountIntelligence).where(AccountIntelligence.store_id == store_id))
     
-    # 4. Clean link tables
+    # 4. Clean up prospect clients linked to this store (prevent leakage in chatbot sandbox)
+    from app.models.crm import Client
+    res_clients = await db.execute(
+        select(Client)
+        .join(store_clients, store_clients.c.client_id == Client.id)
+        .where(store_clients.c.store_id == store_id)
+    )
+    linked_clients = res_clients.scalars().all()
+    for client in linked_clients:
+        if client.is_prospect:
+            # Verify if this client is linked to any other store
+            res_other = await db.execute(
+                select(store_clients.c.store_id)
+                .where(store_clients.c.client_id == client.id, store_clients.c.store_id != store_id)
+            )
+            other_stores = res_other.scalars().all()
+            if not other_stores:
+                # Clean customer notes vectors
+                res_cn = await db.execute(
+                    select(CustomerNote.id).where(CustomerNote.client_id == client.id)
+                )
+                cn_ids = res_cn.scalars().all()
+                for cn_id in cn_ids:
+                    delete_vector_task.delay(str(cn_id), "customer_note", str(business.id))
+                
+                # Delete client vector
+                delete_vector_task.delay(str(client.id), "client", str(business.id))
+                await db.delete(client)
+
+    # 4.5. Clean link tables
     await db.execute(store_clients.delete().where(store_clients.c.store_id == store_id))
     
     # 5. Finally delete the store

@@ -186,15 +186,17 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                 {stats.campaign_orders_count || 0} ORDERS
               </span>
             </div>
-            <div className="space-y-1 mb-2">
-              <div className="text-gray-950 font-black text-3xl tracking-tight leading-tight">
-                {stats.leads_count_30d || 0} leads
+            <div className="space-y-3 mb-2 mt-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-blue-600 tracking-tight">{stats.leads_count_30d || 0}</span>
+                <span className="text-sm font-semibold text-slate-500">leads</span>
               </div>
-              <div className="text-gray-950 font-black text-3xl tracking-tight leading-tight">
-                {stats.verified_orders_count_30d || 0} verified orders
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-blue-600 tracking-tight">{stats.verified_orders_count_30d || 0}</span>
+                <span className="text-sm font-semibold text-slate-500">verified orders</span>
               </div>
             </div>
-            <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-6">
+            <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-6">
               TOTAL INTAKE (30D)
             </div>
           </div>
@@ -210,15 +212,17 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                 {stats.verified_wholesale_leads_count || 0} WS / {stats.verified_retail_leads_count || 0} RT
               </span>
             </div>
-            <div className="space-y-1 mb-2">
-              <div className="text-gray-950 font-black text-3xl tracking-tight leading-tight">
-                {stats.wholesale_leads_count || 0} Wholesale Leads
+            <div className="space-y-3 mb-2 mt-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-emerald-600 tracking-tight">{stats.wholesale_leads_count || 0}</span>
+                <span className="text-sm font-semibold text-slate-500">Wholesale Leads</span>
               </div>
-              <div className="text-gray-950 font-black text-3xl tracking-tight leading-tight">
-                {stats.retail_leads_count || 0} Retail Leads
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-emerald-600 tracking-tight">{stats.retail_leads_count || 0}</span>
+                <span className="text-sm font-semibold text-slate-500">Retail Leads</span>
               </div>
             </div>
-            <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-6">
+            <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-6">
               LEAD COMPOSITION
             </div>
           </div>
@@ -234,14 +238,16 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                 WHOLESALE: ${wholesalePipeline.toLocaleString()} | RETAIL: ${retailPipeline.toLocaleString()}
               </span>
             </div>
-            <div className="mb-2">
-              <div className="flex items-baseline gap-2 text-gray-950 font-black text-4xl tracking-tight leading-tight">
+            <div className="mb-2 mt-4">
+              <div className="flex items-baseline gap-1.5 text-purple-600 font-extrabold text-4xl tracking-tight leading-tight">
                 <span>${totalPipeline.toLocaleString()}</span>
-                <span className="text-base font-extrabold text-gray-400">MXN</span>
+                <span className="text-base font-semibold text-slate-400">MXN</span>
               </div>
-              <div className="h-[36px]" /> {/* Spacer to align vertical height with double-line cards */}
+              <div className="mt-2 text-xs font-semibold text-purple-600 h-[20px]">
+                Wholesale: ${wholesalePipeline.toLocaleString()} • Retail: ${retailPipeline.toLocaleString()}
+              </div>
             </div>
-            <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-6">
+            <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-6">
               PIPELINE VALUE
             </div>
           </div>
@@ -457,39 +463,39 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <CalendarIcon size={28} />
           </div>
           <div className="space-y-1">
-            <p className="text-4xl font-black text-gray-900">{stats.today_appointments}</p>
-            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Today&apos;s Agenda</p>
+            <p className="text-4xl font-extrabold text-blue-600 tracking-tight">{stats.today_appointments}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Today&apos;s Agenda</p>
           </div>
           <Link href="/calendar" className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all mt-6">
             Go to Calendar <ArrowUpRight size={16} />
           </Link>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
           <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <Users size={28} />
           </div>
           <div className="space-y-1">
-            <p className="text-4xl font-black text-gray-900">{stats.total_clients}</p>
-            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Client Base</p>
+            <p className="text-4xl font-extrabold text-emerald-600 tracking-tight">{stats.total_clients}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Client Base</p>
           </div>
           <Link href="/crm" className="text-emerald-600 text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all mt-6">
             Open CRM <ArrowUpRight size={16} />
           </Link>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
           <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <MessageSquare size={28} />
           </div>
           <div className="space-y-1">
-            <p className="text-4xl font-black text-gray-900">{stats.flagged_clients === 0 ? 'All Clear' : 'Active'}</p>
-            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">AI Status</p>
+            <p className="text-4xl font-extrabold text-indigo-600 tracking-tight">{stats.flagged_clients === 0 ? 'All Clear' : 'Active'}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">AI Status</p>
           </div>
           <Link href="/settings" className="text-indigo-600 text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all mt-6">
             Assistant Settings <ArrowUpRight size={16} />

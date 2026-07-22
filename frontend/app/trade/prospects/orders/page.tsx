@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/store/authStore';
@@ -24,6 +24,7 @@ function ProspectOrdersContent() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const segment = searchParams.get('segment') || 'wholesale';
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -291,10 +292,17 @@ function ProspectOrdersContent() {
                   const store = storeMap[order.store_id];
                   const client = store?.clients && store.clients.length > 0 ? store.clients[0] : null;
                   const isSystemGenerated = store ? store.name.toLowerCase().startsWith('prospect') : false;
-                  const displayStoreName = isSystemGenerated && client ? client.name : (store ? store.name : '');
+                  const displayStoreName = (isSystemGenerated && client ? client.name : (store ? store.name : ''))
+                    .replace(/^prospect\s+/i, '')
+                    .replace(/\s*\([^)]*\)\s*$/, '')
+                    .trim();
 
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50/30 transition-colors">
+                    <tr 
+                      key={order.id} 
+                      onClick={() => router.push(`/trade/orders/${order.id}`)}
+                      className="hover:bg-gray-50/30 transition-colors cursor-pointer"
+                    >
                       <td className="py-5 px-6 font-mono text-xs text-gray-400">
                         #{order.id.slice(0, 8)}
                       </td>
@@ -302,7 +310,8 @@ function ProspectOrdersContent() {
                         {store ? (
                           <Link 
                             href={`/trade/prospects/${store.id}`}
-                            className="font-bold text-gray-900 hover:text-blue-600 transition-colors flex items-center gap-1.5"
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-bold text-gray-900 hover:text-blue-600 transition-colors flex items-center gap-1.5 relative z-10"
                           >
                             <MapPin size={14} className="text-gray-400" />
                             {displayStoreName}
@@ -312,13 +321,13 @@ function ProspectOrdersContent() {
                         )}
                       </td>
                       <td className="py-5 px-6">
-                        {client ? (
+                        {client && !isSystemGenerated ? (
                           <div className="flex items-center gap-1.5 font-semibold text-gray-700">
                             <UserIcon size={14} className="text-gray-400" />
                             {client.name}
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">No Contact</span>
+                          <span className="text-gray-400 font-medium">—</span>
                         )}
                       </td>
                       <td className="py-5 px-6 font-medium text-gray-600">
@@ -360,16 +369,20 @@ function ProspectOrdersContent() {
                         <div className="flex items-center justify-end gap-2">
                           {!order.is_verified && (
                             <button
-                              onClick={() => verifyMutation.mutate(order.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                verifyMutation.mutate(order.id);
+                              }}
                               disabled={verifyMutation.isPending}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm font-sans"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm font-sans relative z-10"
                             >
                               Verify
                             </button>
                           )}
                           <Link 
                             href={`/trade/orders/${order.id}`}
-                            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all relative z-10"
                           >
                             <ChevronRight size={18} />
                           </Link>

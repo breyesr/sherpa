@@ -240,10 +240,7 @@ async def get_business_stats(
         # D. Attention Leads (unverified prospects with orders, sorted by revenue)
         attention_leads_res = await db.execute(
             select(
-                Store.id,
-                Store.name,
-                Store.prospect_segment,
-                Store.created_at,
+                Store,
                 func.coalesce(func.sum(Order.total_amount), 0.0).label("total_revenue")
             )
             .outerjoin(Order, Order.store_id == Store.id)
@@ -252,18 +249,33 @@ async def get_business_stats(
                 Store.is_prospect == True,
                 Store.is_verified == False
             )
-            .group_by(Store.id, Store.name, Store.prospect_segment, Store.created_at)
+            .group_by(Store.id)
             .order_by(desc("total_revenue"), desc(Store.created_at))
+            .options(selectinload(Store.clients))
             .limit(10)
         )
         attention_leads = []
+        import re
         for row in attention_leads_res.all():
+            store_obj = row[0]
+            total_rev = float(row[1])
+            
+            # Resolve name: either company (store_obj.name) or client name
+            is_system_generated = store_obj.name.lower().startswith('prospect')
+            client_name = store_obj.clients[0].name if (store_obj.clients and store_obj.clients[0].name) else None
+            display_name = client_name if (is_system_generated and client_name) else store_obj.name
+            
+            # Clean displays: strip prospect prefix and trailing parentheses indicators
+            display_name = re.sub(r'(?i)^prospect\s+', '', display_name)
+            display_name = re.sub(r'\s*\([^)]*\)\s*$', '', display_name)
+            display_name = display_name.strip()
+            
             attention_leads.append({
-                "id": row.id,
-                "name": row.name,
-                "prospect_segment": row.prospect_segment,
-                "created_at": row.created_at.isoformat() if row.created_at else None,
-                "total_revenue": float(row.total_revenue)
+                "id": store_obj.id,
+                "name": display_name,
+                "prospect_segment": store_obj.prospect_segment,
+                "created_at": store_obj.created_at.isoformat() if store_obj.created_at else None,
+                "total_revenue": total_rev
             })
             
         # E. Verified vs Unverified leads count

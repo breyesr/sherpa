@@ -47,17 +47,17 @@ export default function OrderDetailPage() {
     enabled: !!token && !!id,
   });
 
-  // Fetch Stores for mapping account names
-  const { data: stores = [] } = useQuery<StoreResponse[]>({
-    queryKey: ['stores'],
+  // Fetch Store for mapping account name
+  const { data: store = null } = useQuery<StoreResponse | null>({
+    queryKey: ['store', order?.store_id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
+      const res = await fetch(`${API_BASE_URL}/trade/stores/${order?.store_id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) return [];
+      if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!token,
+    enabled: !!token && !!order?.store_id,
   });
 
   // Fetch Products for line items names/SKUs
@@ -73,11 +73,16 @@ export default function OrderDetailPage() {
     enabled: !!token,
   });
 
-  // Lookup Maps
-  const store = useMemo(() => {
-    if (!order) return null;
-    return stores.find(s => s.id === order.store_id) || null;
-  }, [order, stores]);
+  const displayStoreName = useMemo(() => {
+    if (!store) return 'Unknown Account';
+    const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
+    const hasClientName = store.clients && store.clients[0]?.name;
+    let resolvedName = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+    // Strip prospect prefix and trailing parentheses
+    resolvedName = resolvedName.replace(/^prospect\s+/i, '');
+    resolvedName = resolvedName.replace(/\s*\([^)]*\)\s*$/, '');
+    return resolvedName.trim();
+  }, [store]);
 
   const productMap = useMemo(() => {
     const map: Record<string, ProductResponse> = {};
@@ -183,7 +188,7 @@ export default function OrderDetailPage() {
             <span className="text-xs font-mono text-gray-400">Invoice ID: {order.id}</span>
           </div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-none">
-            Order for {store ? store.name : 'Unknown Account'}
+            Order for {displayStoreName}
           </h1>
           <p className="text-sm font-bold text-gray-400 flex items-center gap-2">
             <Calendar size={14} />
@@ -358,7 +363,7 @@ export default function OrderDetailPage() {
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Account Name</span>
                   {store ? (
                     <Link href={`/trade/stores/${store.id}`} className="font-bold text-gray-800 hover:text-blue-600 text-sm">
-                      {store.name}
+                      {displayStoreName}
                     </Link>
                   ) : (
                     <span className="font-bold text-gray-800 text-sm">Unknown Account</span>

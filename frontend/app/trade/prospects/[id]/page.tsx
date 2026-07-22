@@ -127,7 +127,10 @@ export default function ProspectDetailPage() {
 
   const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
   const clientName = store.clients?.[0]?.name;
-  const displayTitle = isSystemGenerated && clientName ? clientName : store.name;
+  const displayTitle = (isSystemGenerated && clientName ? clientName : store.name)
+    .replace(/^prospect\s+/i, '')
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .trim();
 
   const totalOrderValue = orders.reduce((sum, order) => sum + order.total_amount, 0);
 
