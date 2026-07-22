@@ -14,7 +14,7 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8 space-y-6">
+    <div className="space-y-6">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg border transition-all ${
           toast.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'

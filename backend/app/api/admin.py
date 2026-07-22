@@ -182,6 +182,34 @@ async def delete_user_admin(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Clean up associated B2B trade records to avoid ForeignKeyViolationError on delete
+    from app.models.business import BusinessProfile
+    biz_res = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == user_id))
+    business = biz_res.scalars().first()
+    if business:
+        biz_id = business.id
+        from app.models.trade import Order, OrderItem, StoreAction, Store, StoreActionObjective, ActionTemplate
+        from sqlalchemy import text, delete
+        
+        # 1. Delete order items and orders
+        res_orders = await db.execute(select(Order.id).where(Order.business_id == biz_id))
+        order_ids = res_orders.scalars().all()
+        if order_ids:
+            await db.execute(delete(OrderItem).where(OrderItem.order_id.in_(order_ids)))
+            await db.execute(delete(Order).where(Order.id.in_(order_ids)))
+            
+        # 2. Delete store actions, objectives, and templates
+        await db.execute(delete(StoreAction).where(StoreAction.business_id == biz_id))
+        await db.execute(delete(StoreActionObjective).where(StoreActionObjective.business_id == biz_id))
+        await db.execute(delete(ActionTemplate).where(ActionTemplate.business_id == biz_id))
+        
+        # 3. Clean up store_clients and store_actions in junction tables
+        res_stores = await db.execute(select(Store.id).where(Store.business_id == biz_id))
+        store_ids = res_stores.scalars().all()
+        if store_ids:
+            await db.execute(text("DELETE FROM store_clients WHERE store_id = ANY(:ids)"), {"ids": store_ids})
+            await db.execute(text("DELETE FROM store_actions WHERE store_id = ANY(:ids)"), {"ids": store_ids})
+            
     await db.delete(user)
     await db.commit()
     return {"status": "success"}
