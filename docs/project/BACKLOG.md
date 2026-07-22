@@ -381,3 +381,74 @@ Personalize the main Sherpa Dashboard for users who have the **Automated Intake 
   - **Description**: Compile and build both backend and frontend to verify no regressions occur.
   - **Acceptance Criteria**:
     - Backend tests and frontend Next.js production build (`npm run build`) execute with zero errors.
+
+## Epic 166: B2C CRM Drawer Migration & UX/UI Alignment
+Align the B2C Client Creation and Edit interface in `/crm` from a pop-up modal (`ClientModal.tsx`) to a side-sliding drawer (`ClientDrawer.tsx`), matching the drawer patterns used in the rest of the application.
+
+- [x] Task 166.1: **Create ClientDrawer Component**:
+  - **Description**: Implement a new `ClientDrawer.tsx` in `frontend/components/v2/` that wraps the form using the shared `Drawer` layout wrapper.
+  - **Acceptance Criteria**:
+    - Preserve all `ClientModal` features including name, phone, email inputs, B2B details, and dynamic custom CRM fields (`business.crm_config`).
+    - Integrate the fixed bottom drawer footer containing "Save Changes" and "Delete Client" buttons.
+    - Support standard width `500px` for B2C mode, and wide width `700px` when Trade Context is active for B2B modes.
+
+- [x] Task 166.2: **Integrate ClientDrawer in CRM**:
+  - **Description**: Replace the `<ClientModal>` usage inside `frontend/app/crm/ClientCRM.tsx` with the new `<ClientDrawer>`.
+  - **Acceptance Criteria**:
+    - The client list cards and "Create Client" button must successfully open the new drawer.
+    - Successfully save, edit, and delete clients and refresh the TanStack query cache.
+
+- [x] Task 166.3: **Validation & End-to-End Build**:
+  - **Description**: Run local validation and verify frontend compilation.
+  - **Acceptance Criteria**:
+    - Frontend Next.js production build (`npm run build`) compiles with zero TypeScript or build errors.
+
+- [x] Task 166.4: **Create ManageFieldsDrawer Component**:
+  - **Description**: Implement `ManageFieldsDrawer.tsx` to view, update (labels only), and delete custom fields configuration with safety warnings.
+  - **Acceptance Criteria**:
+    - List all existing custom fields with their labels and technical keys.
+    - Provide a label-only edit action to rename fields (keeping keys unchanged).
+    - Provide a delete action with a clear warning explaining that historical values will remain in the DB but be hidden.
+    - Submit changes by patching `business.crm_config` via `${API_BASE_URL}/business/me` and invalidating react-query cache.
+
+- [x] Task 166.5: **Integrate ManageFieldsDrawer in ClientDrawer**:
+  - **Description**: Mount and trigger `ManageFieldsDrawer` from the client profile drawer.
+  - **Acceptance Criteria**:
+    - Place a "Manage Fields" button at the bottom of the "Additional Information" section in `ClientDrawer.tsx`.
+    - Stack the new drawer on top of `ClientDrawer` when clicked.
+    - Updates in `ManageFieldsDrawer` must trigger re-rendering of fields in `ClientDrawer` instantly.
+
+- [x] Task 166.6: **Final Compilation & Verification**:
+  - **Description**: Compile and verify the stacked drawer logic.
+  - **Acceptance Criteria**:
+    - Full production build (`npm run build`) compiles with zero errors.
+
+## Epic 167: B2C Services Drawer Migration & Attributes Setup
+Align the services catalog creation/edit flow with drawer UI patterns, and implement dynamic custom service attributes.
+
+- [x] Task 167.1: **Create ServiceDrawer Component**:
+  - **Description**: Implement a new `ServiceDrawer.tsx` in `frontend/components/v2/` utilizing the shared `Drawer` layout wrapper.
+  - **Acceptance Criteria**:
+    - Build inputs for Name, Price, Duration (Min), and Description.
+    - Put action buttons (Save/Delete) in the fixed bottom drawer footer.
+    - Support rendering custom service attributes under "Additional Information".
+    - Set size to "standard" (`500px` width).
+
+- [x] Task 167.2: **Integrate ServiceDrawer in Services Page**:
+  - **Description**: Replace the inline form in `frontend/app/settings/components/ServiceCatalog.tsx` with `<ServiceDrawer>`.
+  - **Acceptance Criteria**:
+    - Clicking "Add Service" or a service card's Edit action slides open the drawer.
+    - Form submissions, edits, and deletions continue to work cleanly and invalidate the `['services']` query cache.
+
+- [x] Task 167.3: **Implement Service Custom Attributes Configuration**:
+  - **Description**: Support dynamically creating, renaming (label-only), and deleting custom service attributes.
+  - **Acceptance Criteria**:
+    - Allow users to add custom attributes (Date, Dropdown, Text Area, Checkbox, Text, Number) dynamically, matching the crm_config pattern.
+    - Save dynamic custom attribute configurations in `business.features_config.services.attributes` and update via `PATCH /business/me`.
+    - Provide a "Manage Attributes" button that opens a stacked `ManageAttributesDrawer` to CRUD custom attributes.
+
+- [x] Task 167.4: **Validation & Verification**:
+  - **Description**: Run local validation and verify frontend compilation.
+  - **Acceptance Criteria**:
+    - Frontend Next.js production build (`npm run build`) compiles with zero TypeScript or build errors.
+    - All backend pytest tests execute successfully.

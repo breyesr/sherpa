@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2, Loader2, AlertCircle, Filter, Settings } from 'lucide-react';
-import ClientModal from '@/components/ClientModal';
+import ClientDrawer from '@/components/v2/ClientDrawer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
@@ -222,7 +222,7 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
         </div>
       )}
 
-      <ClientModal 
+      <ClientDrawer 
         isOpen={isModalOpen} 
         onClose={() => {
           setIsModalOpen(false);
