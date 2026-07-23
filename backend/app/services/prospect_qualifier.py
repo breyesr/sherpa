@@ -1,3 +1,9 @@
+"""
+Inbound Prospect Lead Qualification Engine.
+Executes LangGraph state machine logic for collecting wholesale and retail lead intake over messaging channels.
+Dependencies: models/trade.py, models/crm.py, core/limiter.py
+"""
+
 import os
 import json
 import traceback

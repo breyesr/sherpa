@@ -1,3 +1,9 @@
+"""
+Business Profile & Operations Router module.
+Handles business profile setup, feature configuration, dashboard stats, and live test chat.
+Dependencies: models/business.py, schemas/business.py, services/ai_service.py
+"""
+
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession

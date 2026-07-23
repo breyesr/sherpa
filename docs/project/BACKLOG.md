@@ -119,12 +119,12 @@
 ## Epic 204: AI Dev Team Token Optimization (🔴 IMMEDIATE — After E200.1-200.3)
 **Objective**: Reduce token consumption per AI agent session by eliminating redundant context, providing pre-built navigation aids, and excluding noise from indexing. Every token saved compounds across all future sessions.
 
-- [ ] Task 204.1: **Consolidate Rule Files** — Deduplicate `GEMINI.md`, `.agents/AGENTS.md`, and root `agents.md`. Keep `GEMINI.md` as the single source of truth. Reduce the other two to one-liner pointers: `"See GEMINI.md for all project rules."` *(30 min, saves ~1,500 tokens/session)*
-- [ ] Task 204.2: **Create Architecture Map** — Write `docs/ARCHITECTURE.md` (~50 lines) with a tree diagram and one-line description per key module (api routes, services, models, core, tasks, frontend pages). Eliminates exploratory `list_dir`/`view_file` loops. *(1 hour, saves ~3,000-5,000 tokens/session)*
-- [ ] Task 204.3: **Optimize .geminiignore** — Ensure exclusions cover: `backend/migrations/versions/`, `backend/venv/`, `*.sql`, `repomix-output.xml` (2.7MB), `backend/openapi.json` (249KB), `frontend/.next/`, `frontend/node_modules/`, `tsconfig.tsbuildinfo`. *(15 min)*
-- [ ] Task 204.4: **Add Module-Level Docstrings** — Add 3-line docstrings (purpose, key endpoints/classes, dependencies) to the top of all files >200 lines in `backend/app/api/`, `backend/app/services/`, and `backend/app/core/`. Lets agents grep docstrings instead of reading full files. *(2 hours)*
-- [ ] Task 204.5: **Compress Completed Backlog Tasks** — Collapse completed tasks in active epics (108.1-108.3, 113.1, 114.1-114.3, 125.1-125.3) to one-liners without descriptions. Only open tasks need full detail. *(15 min)*
-- [ ] Task 204.6: **Generate Import Map** — Create a script at `backend/scripts/gen_import_map.py` that outputs `docs/IMPORT_MAP.md` showing which files import which. Eliminates repetitive `grep_search` for import chains. *(1 hour)*
+- [x] Task 204.1: **Consolidate Rule Files** — Deduplicate rule files. Keep `.agents/AGENTS.md` as single source of truth, reduced `GEMINI.md` to pointer, deleted root `AGENTS.md`. *(Saves ~1,500 tokens/session)*
+- [x] Task 204.2: **Create Architecture Map** — Created `docs/ARCHITECTURE.md` mapping routes, modules, models, and frontend pages. *(Saves ~3,000-5,000 tokens/session)*
+- [x] Task 204.3: **Optimize .geminiignore** — Excluded `migrations/`, `openapi.json`, `repomix-output.xml`, `*.sql`, `temp/`, etc.
+- [x] Task 204.4: **Add Module-Level Docstrings** — Added 3-line docstrings to primary backend files.
+- [x] Task 204.5: **Compress Completed Backlog Tasks** — Collapsed completed tasks in active epics to single line headers.
+- [x] Task 204.6: **Generate Import Map** — Created `backend/scripts/gen_import_map.py` and generated `docs/IMPORT_MAP.md`.
 
 ## Epic 201: Performance & Reliability (🟠 THIS SPRINT)
 **Objective**: Fix performance bottlenecks and reliability gaps identified in the code audit.

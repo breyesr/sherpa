@@ -1,17 +1,17 @@
 # Prioritized Task Execution Checklist
 
 ## 🔴 Phase 1: Critical Security (Before Next Deploy — ~30 min)
-- [ ] 200.1 — Remove default `SECRET_KEY` from `config.py` *(5 min)*
-- [ ] 200.2 — Add auth to `POST /sync` in `data_gateway.py` *(10 min)*
-- [ ] 200.3 — Replace wildcard CORS regex in `main.py` with explicit origins *(10 min)*
+- [x] 200.1 — Remove default `SECRET_KEY` from `config.py` *(5 min)*
+- [x] 200.2 — Add auth to `POST /sync` in `data_gateway.py` *(10 min)*
+- [x] 200.3 — Replace wildcard CORS regex in `main.py` with explicit origins *(10 min)*
 
 ## 🔴 Phase 2: Token Optimization (Immediately After — ~5 hrs)
-- [ ] 204.3 — Optimize `.geminiignore` exclusions *(15 min)*
-- [ ] 204.5 — Compress completed backlog tasks to one-liners *(15 min)*
-- [ ] 204.1 — Consolidate rule files (`GEMINI.md` as single source) *(30 min)*
-- [ ] 204.2 — Create `docs/ARCHITECTURE.md` project map *(1 hour)*
-- [ ] 204.6 — Generate `docs/IMPORT_MAP.md` via script *(1 hour)*
-- [ ] 204.4 — Add module-level docstrings to files >200 lines *(2 hours)*
+- [x] 204.3 — Optimize `.geminiignore` exclusions *(15 min)*
+- [x] 204.5 — Compress completed backlog tasks to one-liners *(15 min)*
+- [x] 204.1 — Consolidate rule files (`.agents/AGENTS.md` single source) *(30 min)*
+- [x] 204.2 — Create `docs/ARCHITECTURE.md` project map *(1 hour)*
+- [x] 204.6 — Generate `docs/IMPORT_MAP.md` via script *(1 hour)*
+- [x] 204.4 — Add module-level docstrings to files >200 lines *(2 hours)*
 
 ## 🟠 Phase 3: Remaining Security (This Sprint — ~4 hrs)
 - [ ] 200.7 — Replace `print()` with `logging` across backend *(1 hour)*
