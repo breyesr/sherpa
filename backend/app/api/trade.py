@@ -1,3 +1,9 @@
+"""
+Trade & Accounts Router module.
+Handles B2B Store, Order, Product, Competitor, & Action CRUD endpoints.
+Dependencies: models/trade.py, schemas/trade.py, services/graphrag.py
+"""
+
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func
