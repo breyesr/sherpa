@@ -196,7 +196,7 @@ class CalendarToolKit:
                     try:
                         await service.update_event(event_id=existing_apt.google_event_id, summary=f"Sherpa: {service_name}", start_time=start_utc, end_time=end_utc, description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI", location=location_str)
                     except Exception:
-                    pass
+                        pass
                 await self.db.commit()
                 return {"success": True, "action": "rescheduled", "new_time": dt.strftime('%Y-%m-%d %H:%M')}
             else:
@@ -207,7 +207,7 @@ class CalendarToolKit:
                         google_id = await service.create_event(summary=f"Sherpa: {service_name}", start_time=start_utc, end_time=end_utc, description=f"Reason: {notes}\nBooked via AI", location=location_str)
                         apt.google_event_id = google_id
                     except Exception:
-                    pass
+                        pass
                 await self.db.commit()
                 return {"success": True, "action": "booked", "time": dt.strftime('%Y-%m-%d %H:%M')}
         except Exception as e:
