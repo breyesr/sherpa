@@ -105,7 +105,7 @@ class AIService:
                 tools=tools,
                 tool_choice="auto",
                 api_key=api_key,
-                timeout=45.0
+                timeout=30.0
             )
 
             response_message = response.choices[0].message

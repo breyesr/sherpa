@@ -400,7 +400,8 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         try:
             bot_token = decrypt_token(integration.access_token)
             await TelegramService.send_typing(bot_token, chat_id)
-        except: pass
+        except Exception:
+            pass
 
         # 4. Resolve identity and check routing configuration
         from app.services.identity_resolver import IdentityResolver
@@ -727,7 +728,8 @@ async def disconnect_telegram(
             token = decrypt_token(integration.access_token)
             async with httpx.AsyncClient() as http_client:
                 await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook")
-        except: pass
+        except Exception:
+            pass
         await db.delete(integration)
         await db.commit()
     

@@ -79,7 +79,8 @@ class CalendarToolKit:
                     service = GoogleCalendarService(integration, self.db)
                     busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=duration)).astimezone(timezone.utc))
                     if busy: return {"available": False, "reason": "Conflict with Google Calendar"}
-                except: pass
+                except Exception:
+                    pass
             return {"available": True}
         except Exception as e:
             return {"error": str(e)}
@@ -94,7 +95,8 @@ class CalendarToolKit:
                 try: 
                     parsed_dt = datetime.fromisoformat(date)
                     start_dt = parsed_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=biz_tz)
-                except: start_dt = now_local
+                except Exception:
+                    start_dt = now_local
             else: start_dt = now_local
             
             if start_dt.date() == now_local.date() and start_dt.hour == now_local.hour:
@@ -116,7 +118,8 @@ class CalendarToolKit:
                         s_str = e.get('start', {}).get('dateTime') or e.get('start', {}).get('date')
                         e_str = e.get('end', {}).get('dateTime') or e.get('end', {}).get('date')
                         busy_ranges.append((datetime.fromisoformat(s_str.replace('Z', '+00:00')).astimezone(biz_tz), datetime.fromisoformat(e_str.replace('Z', '+00:00')).astimezone(biz_tz)))
-                except: pass
+                except Exception:
+                    pass
             
             working_hours = (self.assistant_config.working_hours if self.assistant_config else None) or {"mon": ["09:00", "18:00"], "tue": ["09:00", "18:00"], "wed": ["09:00", "18:00"], "thu": ["09:00", "18:00"], "fri": ["09:00", "18:00"], "sat": [], "sun": []}
             available_slots = []
@@ -150,11 +153,15 @@ class CalendarToolKit:
             duration = 60
             service_name = "General Visit"
             if service_id:
-                res_svc = await self.db.execute(select(Service).where(Service.id == service_id))
+                res_svc = await self.db.execute(select(Service).where(Service.id == service_id, Service.business_id == self.business.id))
                 svc = res_svc.scalars().first()
-                if svc:
-                    duration = svc.duration_minutes or 60
-                    service_name = svc.name
+                if not svc:
+                    return {
+                        "success": False,
+                        "error": f"The requested service_id '{service_id}' is not in the active business service catalog. Please select a valid service from the catalog."
+                    }
+                duration = svc.duration_minutes or 60
+                service_name = svc.name
 
             start_utc = dt.astimezone(timezone.utc).replace(tzinfo=None)
             end_utc = start_utc + timedelta(minutes=duration)
@@ -188,7 +195,8 @@ class CalendarToolKit:
                 if service and existing_apt.google_event_id:
                     try:
                         await service.update_event(event_id=existing_apt.google_event_id, summary=f"Sherpa: {service_name}", start_time=start_utc, end_time=end_utc, description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI", location=location_str)
-                    except: pass
+                    except Exception:
+                    pass
                 await self.db.commit()
                 return {"success": True, "action": "rescheduled", "new_time": dt.strftime('%Y-%m-%d %H:%M')}
             else:
@@ -198,7 +206,8 @@ class CalendarToolKit:
                     try:
                         google_id = await service.create_event(summary=f"Sherpa: {service_name}", start_time=start_utc, end_time=end_utc, description=f"Reason: {notes}\nBooked via AI", location=location_str)
                         apt.google_event_id = google_id
-                    except: pass
+                    except Exception:
+                    pass
                 await self.db.commit()
                 return {"success": True, "action": "booked", "time": dt.strftime('%Y-%m-%d %H:%M')}
         except Exception as e:
