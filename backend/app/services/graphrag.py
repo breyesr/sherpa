@@ -380,9 +380,11 @@ class GraphRAGService:
                 func.to_tsvector('spanish', KnowledgeCorpus.content).op('@@')(func.plainto_tsquery('spanish', query_text))
             ).limit(25)
 
-            # Execute sequentially (Stabilized for SQLAlchemy Async)
-            semantic_res = await self.db.execute(semantic_stmt)
-            keyword_res = await self.db.execute(keyword_stmt)
+            # Execute parallelized search via asyncio.gather (Task 201.1)
+            semantic_res, keyword_res = await asyncio.gather(
+                self.db.execute(semantic_stmt),
+                self.db.execute(keyword_stmt)
+            )
 
             semantic_hits = semantic_res.scalars().all()
             keyword_hits = keyword_res.scalars().all()
@@ -454,7 +456,7 @@ class GraphRAGService:
                 model=f"{provider}/{synthesis_model}" if "/" not in synthesis_model else synthesis_model,
                 messages=[{"role": "user", "content": synthesis_prompt}],
                 api_key=api_key,
-                timeout=45.0
+                timeout=30
             )
             dossier_text = synthesis_response.choices[0].message.content
             

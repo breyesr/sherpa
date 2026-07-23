@@ -20,14 +20,14 @@
 - [x] 200.4 — Move auth cookie to server-side `Set-Cookie` with `HttpOnly; Secure` *(2-3 hours)*
 
 ## 🟠 Phase 4: Performance & Reliability (This Sprint — ~7 hrs)
-- [ ] 201.1 — `asyncio.gather()` for GraphRAG hybrid search *(30 min)*
+- [x] 201.1 — `asyncio.gather()` for GraphRAG hybrid search *(30 min)*
+- [x] 201.2 — Add `timeout=30` to all LLM calls *(1 hour)*
 - [ ] 201.3 — Pin Python dependencies via `requirements.lock` *(15 min)*
-- [ ] 201.5 — Fix all 12 bare `except:` blocks *(1-2 hours)*
-- [ ] 201.2 — Add `timeout=30` to all LLM calls *(1 hour)*
+- [x] 201.5 — Fix all 12 bare `except:` blocks *(1-2 hours)*
 - [ ] 201.6 — Add Redis-backed idempotency to Celery tasks *(2 hours)*
 - [ ] 201.4 — Remove `ignoreBuildErrors` from Next.js config + fix type errors *(2-4 hours)*
 - [ ] 201.7 — Async context summarization with Redis cache *(2-3 hours)*
-- [ ] 201.8 — Strict catalog validation before appointment scheduling in B2C calendar tools *(1-2 hours)*
+- [x] 201.8 — Strict catalog validation before appointment scheduling in B2C calendar tools *(1-2 hours)*
 
 ## 🟡 Phase 5: Backend Architecture (Next Sprint)
 - [ ] 202.5 — Extract shared constants to `core/constants.py` *(1 hour)*
