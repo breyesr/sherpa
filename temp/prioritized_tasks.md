@@ -14,10 +14,10 @@
 - [x] 204.4 — Add module-level docstrings to files >200 lines *(2 hours)*
 
 ## 🟠 Phase 3: Remaining Security (This Sprint — ~4 hrs)
-- [ ] 200.7 — Replace `print()` with `logging` across backend *(1 hour)*
-- [ ] 200.5 — Protect Telegram `/debug/info` endpoint *(15 min)*
-- [ ] 200.6 — Whitelist file upload extensions *(15 min)*
-- [ ] 200.4 — Move auth cookie to server-side `Set-Cookie` with `HttpOnly; Secure` *(2-3 hours)*
+- [x] 200.7 — Replace `print()` with `logging` across backend *(1 hour)*
+- [x] 200.5 — Protect Telegram `/debug/info` endpoint *(15 min)*
+- [x] 200.6 — Whitelist file upload extensions *(15 min)*
+- [x] 200.4 — Move auth cookie to server-side `Set-Cookie` with `HttpOnly; Secure` *(2-3 hours)*
 
 ## 🟠 Phase 4: Performance & Reliability (This Sprint — ~7 hrs)
 - [ ] 201.1 — `asyncio.gather()` for GraphRAG hybrid search *(30 min)*

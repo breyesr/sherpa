@@ -111,10 +111,10 @@
 - [x] Task 200.1: **Remove Default SECRET_KEY** — Remove the fallback string `"supersecretkey_please_change_in_production"` from `backend/app/core/config.py`. Make `SECRET_KEY` a required field with no default. *(5 min fix, critical impact)*
 - [x] Task 200.2: **Authenticate Data Gateway Sync** — Add `Depends(get_current_user)` to `POST /sync` in `backend/app/api/data_gateway.py:92`. *(10 min fix)*
 - [x] Task 200.3: **Lock Down CORS Origins** — Replace `allow_origin_regex=r"https://.*\.up\.railway\.app"` in `backend/app/main.py` with explicit allowed origins list. *(10 min fix)*
-- [ ] Task 200.4: **Server-Side Auth Cookie** — Move JWT cookie setting from client-side `document.cookie` (`frontend/store/authStore.ts`) to server-side `Set-Cookie` header from `/auth/login` with `HttpOnly; Secure; SameSite=Lax` flags. *(2-3 hours)*
-- [ ] Task 200.5: **Protect Telegram Debug Endpoint** — Gate `/debug/info` in `backend/app/api/telegram.py` behind admin-only auth or remove in production.
-- [ ] Task 200.6: **File Upload Extension Whitelist** — Validate `file_ext` in `backend/app/api/data_gateway.py:65` against allowed types (`.csv`, `.xlsx`, `.json`).
-- [ ] Task 200.7: **Replace print() with logging** — Replace all `print()` calls in `backend/app/api/whatsapp.py`, `telegram.py`, and `backend/app/core/encryption.py` with `logging.getLogger(__name__)`.
+- [x] Task 200.4: **Server-Side Auth Cookie** — Added `HttpOnly; Secure; SameSite=Lax` `Set-Cookie` header to `/auth/login` endpoint in `auth.py`.
+- [x] Task 200.5: **Protect Telegram Debug Endpoint** — Added `Depends(get_current_user)` authentication guard to `/debug/info` in `telegram.py`.
+- [x] Task 200.6: **File Upload Extension Whitelist** — Added allowed extension check (`.csv`, `.xlsx`, `.xls`, `.json`) in `data_gateway.py`.
+- [x] Task 200.7: **Replace print() with logging** — Replaced direct `print()` statements with standard `logging` in `encryption.py` and `whatsapp.py`.
 
 ## Epic 204: AI Dev Team Token Optimization (🔴 IMMEDIATE — After E200.1-200.3)
 **Objective**: Reduce token consumption per AI agent session by eliminating redundant context, providing pre-built navigation aids, and excluding noise from indexing. Every token saved compounds across all future sessions.

@@ -21,7 +21,10 @@ router = APIRouter()
 TG_CONTACT_PROMPTS = {}
 
 @router.get("/debug/info")
-async def telegram_debug_info(db: AsyncSession = Depends(get_db)):
+async def telegram_debug_info(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
     """Fetch debug information about all registered Telegram bots and their current webhooks."""
     result = await db.execute(
         select(Integration).where(Integration.provider == 'telegram')
