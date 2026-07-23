@@ -16,7 +16,10 @@ from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.system_config import ConfigService
 
+import logging
+
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.get("/webhook")
 async def verify_whatsapp(
@@ -423,7 +426,7 @@ async def get_whatsapp_status(
             "checked_at": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        print(f"Twilio credential validation failed: {e}")
+        logger.error("Twilio credential validation failed: %s", e)
         return {
             "status": "error",
             "error_code": "twilio_auth_failed",

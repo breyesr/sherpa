@@ -62,7 +62,11 @@ async def create_data_import(
         raise HTTPException(status_code=400, detail="Invalid mapping JSON")
         
     # Save file locally
-    file_ext = os.path.splitext(file.filename)[1]
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    allowed_exts = {".csv", ".xlsx", ".xls", ".json"}
+    if file_ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail=f"Unsupported file extension '{file_ext}'. Allowed formats: .csv, .xlsx, .json")
+
     file_id = str(uuid.uuid4())
     file_path = os.path.join(UPLOAD_DIR, f"{file_id}{file_ext}")
     

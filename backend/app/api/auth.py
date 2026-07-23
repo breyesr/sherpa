@@ -150,10 +150,13 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     )
     return result.scalars().first()
 
+from fastapi.responses import Response
+
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")
 async def login(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db), 
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
@@ -163,7 +166,19 @@ async def login(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_str = create_access_token(user.id, expires_delta=access_token_expires)
+    
+    # Set server-side HttpOnly cookie for enhanced security
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {token_str}",
+        httponly=True,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+
     return {
-        "access_token": create_access_token(user.id, expires_delta=access_token_expires),
+        "access_token": token_str,
         "token_type": "bearer",
     }
