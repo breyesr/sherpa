@@ -93,7 +93,7 @@ async def create_data_import(
 async def sync_data(
     request: DataGatewaySyncRequest,
     db: AsyncSession = Depends(get_db),
-    # TODO: Add API Key or Internal Auth
+    current_user: User = Depends(get_current_user)
 ) -> Any:
     """Real-time data ingestion endpoint."""
     # This will be implemented to handle single-record updates from external systems

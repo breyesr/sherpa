@@ -422,7 +422,7 @@ async def test_chat(
     cfg = business.routing_config or {}
     flow_enabled = False
     if simulate_role == "customer":
-        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
+        flow_enabled = True
     elif simulate_role == "prospective_client":
         flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False) or feature_enabled
     elif simulate_role == "distributor_retailer":

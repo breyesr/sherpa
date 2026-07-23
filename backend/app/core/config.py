@@ -6,7 +6,18 @@ from pathlib import Path
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Sherpa MVP"
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "supersecretkey_please_change_in_production"
+    ENVIRONMENT: str = "development"
+    SECRET_KEY: str = "dev_secret_key_sherpa_local_32chars_len!"
+
+    @field_validator("SECRET_KEY", mode="before")
+    @classmethod
+    def validate_secret_key(cls, v: str | None, info) -> str:
+        import os
+        is_railway_or_prod = os.getenv("RAILWAY_ENVIRONMENT") or info.data.get("ENVIRONMENT") in ["production", "staging"]
+        if is_railway_or_prod and (not v or "dev_secret_key" in v or "supersecretkey" in v):
+            raise ValueError("CRITICAL SECURITY ERROR: You must set a strong, unique SECRET_KEY in environment variables when deploying to Railway/Production.")
+        return v or "dev_secret_key_sherpa_local_32chars_len!"
+
     ENCRYPTION_KEY: str | None = None
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     

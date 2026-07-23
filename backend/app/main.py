@@ -37,7 +37,6 @@ origins = list(set([o for o in origins if o]))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.up\.railway\.app", # This allows ALL railway subdomains
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

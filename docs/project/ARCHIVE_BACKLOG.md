@@ -718,3 +718,112 @@ Completed epics moved from `docs/project/BACKLOG.md` on 2026-07-03.
     - *And* reps can resolve it with numeric validation.
 
 
+---
+
+## Archived on 2026-07-22 (Code Audit Housekeeping)
+
+## Epic 153: Multi-Tenant Dedicated WhatsApp Senders & Usage Control
+**Objective**: Replace the shared Twilio Sandbox proxy with automated per-tenant dedicated WhatsApp numbers.
+
+### Phase 1: Foundation (DB + Encryption + Adapter Pattern)
+- [x] Task 153.1: **Encryption Utility**: Reusable `encrypt_value()`/`decrypt_value()` utility in `backend/app/core/encryption.py`.
+- [x] Task 153.2: **JSONB Migration**: Migrate Integration model's `settings` column from `JSON` to `JSONB`.
+- [x] Task 153.3: **Abstract Messaging Layer**: Create `BaseMessagingEngine`, `TwilioSubaccountEngine`, and `MessagingService` factory.
+- [x] Task 153.4: **Twilio Provisioning Service**: Automated provisioning with exponential backoff retry.
+- [x] Task 153.5: **Tenant Isolation Tests**: Zero data leakage across subaccounts.
+
+### Phase 2: Inbound Routing Overhaul
+- [x] Task 153.6: **Destination-Driven Routing**: Route inbound webhooks by `To` phone number via JSONB index.
+- [x] Task 153.7: **Per-Tenant Webhook Validation**: Twilio signature validation using each tenant's subaccount auth token.
+- [x] Task 153.8: **LangGraph Context Binding**: Pass resolved `business_id` into LangGraph state machine.
+- [x] Task 153.9: **Routing Tests**: Mock inbound webhooks from two tenant phone numbers.
+
+### Phase 3: Usage Control & Credit System
+- [x] Task 153.10: **Redis Usage Counter**: Atomic `INCR` on `usage:whatsapp:{biz_id}:YYYY-MM`.
+- [x] Task 153.11: **Pre-LangGraph Usage Gate**: Check limits BEFORE entering LangGraph loop.
+- [x] Task 153.12: **Purchased Credits Model**: Add `purchased_credits` to `BusinessProfile`.
+- [x] Task 153.13: **Usage Alerts**: 80% and 100% alert triggers.
+- [x] Task 153.14: **Admin Credit Endpoint**: `PATCH /admin/business/{id}/credits` and usage API.
+- [x] Task 153.15: **Capping Tests**: 200-message cap simulation.
+
+### Phase 4: Frontend Integration UI
+- [x] Task 153.16: **WhatsApp Setup Wizard Redesign**: Multi-step configuration flow.
+- [x] Task 153.17: **Connection Status & Usage Display**: Usage indicator and health display.
+- [x] Task 153.18: **Disconnect Flow**: Disconnect confirmation with Twilio number release.
+- [x] Task 153.19: **Admin Tenant Management**: Tenant WhatsApp overview table.
+- [x] Task 153.20: **Onboarding Cleanup**: Remove WhatsApp from onboarding Step 4.
+
+## Epic 154: Telegram Multi-Tenant Data Isolation Fix
+- [x] Task 154.1: **Thread ID Scoping**: Scope LangGraph `thread_id` with `business_id`.
+- [x] Task 154.2: **State Purge Scoping**: Scope reset/delete SQL queries.
+- [x] Task 154.3: **Webhook Query Optimization**: Direct query by `webhook_id` using JSONB operators.
+
+## Epic 155: Hybrid Sidebar Modularity & Lower-Tier Orders Integration
+- [x] Task 155.1: **Decouple Sidebar Groups**: Separate CRM, B2B, Prospecting, and Catalog blocks.
+- [x] Task 155.2: **Integrate Lower-Tier Orders**: Expose Orders link alongside Point of Sale.
+- [x] Task 155.3: **WCAG Contrast Compliance**: Darken category headers.
+- [x] Task 155.4: **UI & Layout Verification**: Verify sidebar rendering across tier configurations.
+
+## Epic 156: Automated Order Generation & Segmented Prospecting Orders UI
+- [x] Task 156.1: **Order Integration in Qualifier**: Instantiate Order/OrderItem on successful qualification.
+- [x] Task 156.2: **Segmented Orders API**: `GET /api/v1/trade/prospects/orders` with segment filter.
+- [x] Task 156.3: **Prospecting Orders Sidebar Links**: Render Orders under Wholesale/Retail submenus.
+- [x] Task 156.4: **Segmented Orders Dashboard View**: Frontend view with segment filtering.
+- [x] Task 156.5: **Ingestion & UI Integration Tests**.
+
+## Epic 157: Webhook Routing Gating & Custom Administrative Message
+- [x] Task 157.1: **Campaign Flow Fallback**: Bypass `prospective_clients` check if `campaign_flow` enabled.
+- [x] Task 157.2: **Friendly Admin Notification**: Custom response for team members.
+- [x] Task 157.3: **Routing Integration Tests**.
+
+## Epic 158: Identity Resolution & Operator Context Safety
+- [x] Task 158.1: **Prospect Flag Guard in IdentityResolver**.
+- [x] Task 158.2: **Sales Rep State Decoupling**.
+- [x] Task 158.3: **Prompt Reinforcement for Internal Operators**.
+- [x] Task 158.4: **CRM Dashboard Role Filtering**.
+- [x] Task 158.5: **Integration Tests**.
+
+## Epic 159: Conversational Retail Lead Qualification Optimization
+- [x] Task 159.1: **Conversational Refactoring**: Step-by-step retail qualification.
+- [x] Task 159.2: **Dialogue Verification & Assertion Updates**.
+- [x] Task 159.3: **Returning Client Pre-Population & Deduplication**.
+
+## Epic 162: Dynamic Module-Based UX/UI Personalization
+- [x] Task 162.1: **Stores Page Dynamic Adaptation**.
+- [x] Task 162.2: **Store Details Page Tab & KPI Modularity**.
+- [x] Task 162.3: **Navigation Alignment & Breadcrumb Routing Sync**.
+
+## Epic 163: Prospecting Flow Simplification & Lead Unification
+- [x] Task 163.1: **Sidebar Navigation Simplification**.
+- [x] Task 163.2: **Unified Prospects List Page**.
+- [x] Task 163.3: **Dedicated Unified Details View**.
+- [x] Task 163.4: **Order Page Navigation Link Sync**.
+- [x] Task 163.5: **Unified Prospect Edit Drawer**.
+
+## Epic 164: Prospect & Order Verification Flow
+- [x] Task 164.1: **Backend Store Model Verification Field**.
+- [x] Task 164.2: **Alembic Database Migration**.
+- [x] Task 164.3: **Pydantic Schemas Update**.
+- [x] Task 164.4: **Frontend Status Badges**.
+- [x] Task 164.5: **Frontend Verification Action**.
+
+## Epic 165: Campaign-Flow Dashboard Personalization
+- [x] Task 165.1: **Backend Stats Update**.
+- [x] Task 165.2: **Update Schema & Types**.
+- [x] Task 165.3: **Frontend Dashboard Personalization**.
+- [x] Task 165.4: **Revenue-Prioritized Action List**.
+- [x] Task 165.5: **Verification & End-to-End Build**.
+
+## Epic 166: B2C CRM Drawer Migration & UX/UI Alignment
+- [x] Task 166.1: **Create ClientDrawer Component**.
+- [x] Task 166.2: **Integrate ClientDrawer in CRM**.
+- [x] Task 166.3: **Validation & End-to-End Build**.
+- [x] Task 166.4: **Create ManageFieldsDrawer Component**.
+- [x] Task 166.5: **Integrate ManageFieldsDrawer in ClientDrawer**.
+- [x] Task 166.6: **Final Compilation & Verification**.
+
+## Epic 167: B2C Services Drawer Migration & Attributes Setup
+- [x] Task 167.1: **Create ServiceDrawer Component**.
+- [x] Task 167.2: **Integrate ServiceDrawer in Services Page**.
+- [x] Task 167.3: **Implement Service Custom Attributes Configuration**.
+- [x] Task 167.4: **Validation & Verification**.
