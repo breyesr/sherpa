@@ -1,5 +1,6 @@
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
+from app.core.idempotency import idempotent_task
 from app.models.data_gateway import DataImport, ImportStatus
 from app.models.crm import Client
 from sqlalchemy.future import select
@@ -9,6 +10,7 @@ import asyncio
 from typing import Dict, Any
 
 @celery_app.task(name="app.tasks.data_gateway.process_data_import")
+@idempotent_task(ttl=3600)
 def process_data_import(import_id: str):
     """Background task to process a CSV/XLSX data import."""
     # Run the async logic in a sync wrapper for Celery

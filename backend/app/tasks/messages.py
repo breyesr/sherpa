@@ -5,6 +5,7 @@ from twilio.rest import Client
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.config import settings
+from app.core.idempotency import idempotent_task
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.models.business import BusinessProfile
@@ -157,6 +158,7 @@ async def run_prospect_message(business_id: str, client_id: Optional[str], paylo
         await send_twilio_reply(db, to_phone, sender_phone, response_text)
 
 @celery_app.task(bind=True, name="process_sales_rep_message", max_retries=3, default_retry_delay=5)
+@idempotent_task(ttl=1800)
 def process_sales_rep_message(self, business_id: str, client_id: str, payload: dict):
     try:
         return asyncio.run(run_sales_rep_message(business_id, client_id, payload))
@@ -165,6 +167,7 @@ def process_sales_rep_message(self, business_id: str, client_id: str, payload: d
         raise self.retry(exc=exc)
 
 @celery_app.task(bind=True, name="process_distributor_message", max_retries=3, default_retry_delay=5)
+@idempotent_task(ttl=1800)
 def process_distributor_message(self, business_id: str, client_id: str, payload: dict):
     try:
         return asyncio.run(run_distributor_message(business_id, client_id, payload))
@@ -173,6 +176,7 @@ def process_distributor_message(self, business_id: str, client_id: str, payload:
         raise self.retry(exc=exc)
 
 @celery_app.task(bind=True, name="process_prospect_message", max_retries=3, default_retry_delay=5)
+@idempotent_task(ttl=1800)
 def process_prospect_message(self, business_id: str, client_id: Optional[str], payload: dict):
     try:
         return asyncio.run(run_prospect_message(business_id, client_id, payload))
@@ -221,6 +225,7 @@ async def run_customer_message(business_id: str, client_id: Optional[str], paylo
 
 
 @celery_app.task(bind=True, name="process_customer_message", max_retries=3, default_retry_delay=5)
+@idempotent_task(ttl=1800)
 def process_customer_message(self, business_id: str, client_id: Optional[str], payload: dict):
     try:
         return asyncio.run(run_customer_message(business_id, client_id, payload))

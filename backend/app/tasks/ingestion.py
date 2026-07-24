@@ -2,6 +2,7 @@ from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.services.ingestion import IngestionAgent
 from app.models.business import BusinessProfile
+from app.core.idempotency import idempotent_task
 from sqlalchemy.future import select
 import asyncio
 import re
@@ -16,6 +17,7 @@ async def run_ingestion(business_id: str, user_message: str):
         return result
 
 @celery_app.task(bind=True, name="process_b2b_ingestion", max_retries=3, default_retry_delay=5)
+@idempotent_task(ttl=1800)
 def process_b2b_ingestion(self, business_id: str, user_message: str):
     """Celery task to handle B2B intelligence ingestion."""
     try:
@@ -89,6 +91,7 @@ async def run_prospect_qualification(business_id: str, payload: dict):
 
 
 @celery_app.task(bind=True, name="process_whatsapp_prospect_message", max_retries=3, default_retry_delay=5)
+@idempotent_task(ttl=1800)
 def process_whatsapp_prospect_message(self, business_id: str, payload: dict):
     """Celery task to qualify whatsapp campaign prospects."""
     try:
