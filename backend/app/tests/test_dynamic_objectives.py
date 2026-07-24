@@ -59,7 +59,7 @@ async def test_dynamic_schema_compilation_with_db_values(mock_config_service, mo
     assert "CUSTOM_OBJ_2" in literal_vals
 
 @pytest.mark.anyio
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.actions.get_business")
 async def test_create_store_action_with_valid_objective(mock_get_business):
     mock_db = AsyncMock()
     
@@ -115,7 +115,7 @@ async def test_create_store_action_with_valid_objective(mock_get_business):
     assert res.store_name == "Store 456 Name"
 
 @pytest.mark.anyio
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.actions.get_business")
 async def test_create_store_action_with_invalid_objective_fails(mock_get_business):
     mock_db = AsyncMock()
     
@@ -155,7 +155,7 @@ async def test_create_store_action_with_invalid_objective_fails(mock_get_busines
     assert "Invalid objective" in exc_info.value.detail
 
 @pytest.mark.anyio
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.actions.get_business")
 async def test_list_and_manage_objectives(mock_get_business):
     mock_db = AsyncMock()
     
@@ -193,7 +193,7 @@ async def test_list_and_manage_objectives(mock_get_business):
 
 
 @pytest.mark.anyio
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.actions.get_business")
 async def test_create_store_action_validation_gates(mock_get_business):
     mock_db = AsyncMock()
     
@@ -259,7 +259,7 @@ async def test_create_store_action_validation_gates(mock_get_business):
 
 
 @pytest.mark.anyio
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.actions.get_business")
 async def test_create_store_action_from_template_resolution(mock_get_business):
     mock_db = AsyncMock()
     

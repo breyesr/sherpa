@@ -2,7 +2,16 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 import enum
-from app.models.trade import ActionCategory, ActionStatus
+class ActionCategory(str, enum.Enum):
+    MARKETING = "MARKETING"
+    COMMERCIAL = "COMMERCIAL"
+    OPERATIONAL = "OPERATIONAL"
+
+class ActionStatus(str, enum.Enum):
+    PROPOSED = "proposed"
+    PENDING = "pending"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
 
 class StoreNoteType(str, enum.Enum):
     RISK = "risk"

@@ -143,8 +143,8 @@
 **Objective**: Reduce technical debt and improve maintainability of the backend codebase.
 **Reference**: `temp/sherpa_code_audit.md` — ARCH-01, ARCH-03, ARCH-06 through ARCH-08.
 
-- [ ] Task 202.1: **Split trade.py API Router** — Break `backend/app/api/trade.py` (1,271 lines) into sub-routers: `api/trade/stores.py`, `api/trade/orders.py`, `api/trade/actions.py`, `api/trade/products.py`. Keep `api/trade/__init__.py` as the aggregator.
-- [ ] Task 202.2: **Split trade.py Models** — Break `backend/app/models/trade.py` (697 lines) into `models/store.py`, `models/order.py`, `models/product.py`, `models/action.py`. Keep `models/trade.py` as re-export hub for backward compatibility.
+- [x] Task 202.1: **Split trade.py API Router** — Split `backend/app/api/trade.py` (1,271 lines) into sub-routers in `api/trade_modules/` (`stores.py`, `orders.py`, `actions.py`, `products.py`) while preserving `api/trade.py` as backward-compatible aggregator.
+- [x] Task 202.2: **Split trade.py Models** — Split `backend/app/models/trade.py` (697 lines) into domain modules in `models/trade_modules/` (`store.py`, `order.py`, `product.py`, `action.py`) while preserving `models/trade.py` as backward-compatible re-export hub.
 - [x] Task 202.3: **Organize Backend Scripts** — Organized 34+ scripts into `backend/scripts/{diagnostics,migrations,repairs,seeders}/` and updated `pre_deploy.sh`.
 - [x] Task 202.4: **Create Test Fixtures** — Created `backend/app/tests/conftest.py` with shared async DB session, mock user, and mock business fixtures.
 - [x] Task 202.5: **Extract Shared Constants** — Created `app/core/constants.py` for `DEFAULT_FEATURES_CONFIG` & `DEFAULT_ROUTING_CONFIG`, eliminating circular import workarounds.

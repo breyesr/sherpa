@@ -7,8 +7,8 @@ from app.models.crm import Client
 from fastapi import HTTPException
 
 @pytest.mark.anyio
-@patch("app.api.trade.delete_vector_task")
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.stores.delete_vector_task")
+@patch("app.api.trade_modules.stores.get_business")
 async def test_delete_store_vector_cascades_mock(mock_get_business, mock_delete_task):
     mock_db = AsyncMock()
     
@@ -95,8 +95,8 @@ async def test_delete_client_vector_cascades_mock(mock_get_user_business, mock_d
     mock_delete_task.delay.assert_any_call("cust_note_999", "customer_note", "business_123")
 
 @pytest.mark.anyio
-@patch("app.api.trade.sync_vector_task")
-@patch("app.api.trade.get_business")
+@patch("app.api.trade_modules.actions.sync_vector_task")
+@patch("app.api.trade_modules.actions.get_business")
 async def test_create_competitor_vector_hook_mock(mock_get_business, mock_sync_task):
     mock_db = AsyncMock()
     

@@ -33,8 +33,8 @@
 - [x] 202.5 — Extract shared constants to `core/constants.py` *(1 hour)*
 - [x] 202.3 — Organize 34+ backend scripts into `scripts/` subdirs *(2 hours)*
 - [x] 202.4 — Create `conftest.py` with shared test fixtures *(3-4 hours)*
-- [ ] 202.1 — Split `api/trade.py` into sub-routers *(4-6 hours)*
-- [ ] 202.2 — Split `models/trade.py` into domain modules *(3-4 hours)*
+- [x] 202.1 — Split `api/trade.py` into sub-routers *(4-6 hours)*
+- [x] 202.2 — Split `models/trade.py` into domain modules *(3-4 hours)*
 
 ## 🟡 Phase 6: Frontend Architecture (Next Sprint)
 - [ ] 203.1 — Create centralized `apiClient.ts` *(4-6 hours)*
