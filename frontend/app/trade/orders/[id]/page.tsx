@@ -24,7 +24,11 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import { OrderResponse, StoreResponse, ProductResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type OrderResponse = components['schemas']['OrderResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
+type ProductResponse = components['schemas']['ProductResponse'];
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -77,7 +81,7 @@ export default function OrderDetailPage() {
     if (!store) return 'Unknown Account';
     const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
     const hasClientName = store.clients && store.clients[0]?.name;
-    let resolvedName = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+    let resolvedName = isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name;
     // Strip prospect prefix and trailing parentheses
     resolvedName = resolvedName.replace(/^prospect\s+/i, '');
     resolvedName = resolvedName.replace(/\s*\([^)]*\)\s*$/, '');
@@ -159,7 +163,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const currentStatusInfo = getStatusDetails(order.status);
+  const currentStatusInfo = getStatusDetails(order.status || 'pending');
   const StatusIcon = currentStatusInfo.icon;
   const currentStep = currentStatusInfo.step;
 
@@ -197,7 +201,7 @@ export default function OrderDetailPage() {
         </div>
         
         {/* Cancel Action if applicable */}
-        {order.status !== 'CANCELLED' && order.status !== 'DELIVERED' && (
+        {order.status !== 'cancelled' && order.status !== 'delivered' && (
           <button
             onClick={() => handleStatusChange('cancelled')}
             disabled={!!updatingStatus}
@@ -261,7 +265,7 @@ export default function OrderDetailPage() {
                           {item.quantity}
                         </td>
                         <td className="py-5 pl-4 text-right font-black text-gray-900 text-sm">
-                          ${(item.quantity * item.unit_price).toFixed(2)}
+                          ${((item.quantity || 0) * item.unit_price).toFixed(2)}
                         </td>
                       </tr>
                     );

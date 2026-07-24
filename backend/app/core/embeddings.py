@@ -17,7 +17,8 @@ class EmbeddingService:
             response = await litellm.aembedding(
                 model=model,
                 input=[text],
-                api_key=api_key
+                api_key=api_key,
+                timeout=30
             )
             return response.data[0]["embedding"]
         except Exception as e:

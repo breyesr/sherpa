@@ -302,7 +302,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
 
               {stats.attention_leads && stats.attention_leads.length > 0 ? (
                 <div className="divide-y divide-gray-50">
-                  {stats.attention_leads.map((lead) => {
+                  {stats.attention_leads.map((lead: any) => {
                     const isVerifyingLead = verifyingLeads[lead.id];
                     return (
                       <div key={lead.id} className="p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-gray-50/50 transition-all group">
@@ -563,7 +563,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                             />
                           </div>
                           <div className="mt-2 flex justify-end">
-                            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${statusColors[apt.status] || 'bg-gray-50 text-gray-500 border-gray-100'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${statusColors[apt.status || ''] || 'bg-gray-50 text-gray-500 border-gray-100'}`}>
                               {apt.status}
                             </span>
                           </div>

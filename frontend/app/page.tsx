@@ -37,6 +37,7 @@ export default async function Home() {
     total_clients: 0,
     total_appointments: 0,
     today_appointments: 0,
+    flagged_clients: 0,
     upcoming: []
   };
 

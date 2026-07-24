@@ -6,7 +6,10 @@ import { API_BASE_URL } from '@/config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import SafeDate from '../SafeDate';
-import { ClientResponse, BusinessProfileResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 import Drawer from './Drawer';
 import ManageFieldsDrawer from './ManageFieldsDrawer';
 
@@ -340,13 +343,13 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
         {/* Tab Content */}
         {activeTab === 'info' ? (
           <form id="client-form" onSubmit={handleSubmit} className="space-y-6">
-            {client?.custom_fields?.needs_review && (
+            {(client?.custom_fields as any)?.needs_review && (
               <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3">
                 <AlertCircle className="text-red-500 mt-0.5 shrink-0" size={18} />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-red-800">Review Requested by AI</p>
                   <p className="text-xs text-red-600 mt-1">
-                    Reason: {client.custom_fields.review_reason || 'Manual intervention needed'}
+                    Reason: {(client?.custom_fields as any)?.review_reason || 'Manual intervention needed'}
                   </p>
                   <button
                     type="button"

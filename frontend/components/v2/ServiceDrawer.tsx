@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Trash2, AlertCircle, CheckCircle, Plus, X, Settings, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
-import { BusinessProfileResponse, components } from '@/types/api';
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 import Drawer from './Drawer';
 import ManageAttributesDrawer from './ManageAttributesDrawer';
 

@@ -6,7 +6,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import SafeDate from '@/components/SafeDate';
 import { toast } from 'sonner';
-import { ConversationResponse, MessageResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ConversationResponse = components['schemas']['ConversationResponse'];
+type MessageResponse = components['schemas']['MessageResponse'];
 
 interface ConversationsContentProps {
   initialConversations: ConversationResponse[];
@@ -127,8 +130,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {conv.client?.name?.charAt(0) || '?'}
                       </div>
-                      {/* @ts-expect-error custom_fields is unknown */}
-                      {conv.client?.custom_fields?.needs_review && (
+                       {(conv.client?.custom_fields as any)?.needs_review && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-pulse" />
                       )}
                     </div>
@@ -200,8 +202,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
 
                   <div className="h-8 w-px bg-gray-200 mx-1" />
 
-                  {/* @ts-expect-error custom_fields is unknown */}
-                  {selectedConv.client?.custom_fields?.needs_review && (
+                  {(selectedConv.client?.custom_fields as any)?.needs_review && (
                     <span className="flex items-center gap-1.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-100">
                       <AlertCircle size={12} />
                       Action Required

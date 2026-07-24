@@ -18,7 +18,9 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { StoreResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type StoreResponse = components['schemas']['StoreResponse'];
 import AccountDrawer from '@/components/v2/AccountDrawer';
 
 function ProspectStoresContent() {
@@ -152,7 +154,7 @@ function ProspectStoresContent() {
             {filteredStores.map((store) => {
               const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
               const hasClientName = store.clients && store.clients[0]?.name;
-              const displayHeading = (isSystemGenerated && hasClientName ? store.clients[0].name : store.name)
+              const displayHeading = (isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name)
                 .replace(/^prospect\s+/i, '')
                 .replace(/\s*\([^)]*\)\s*$/, '')
                 .trim();
@@ -285,7 +287,7 @@ function ProspectStoresContent() {
           {filteredStores.map((store) => {
             const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
             const hasClientName = store.clients && store.clients[0]?.name;
-            const displayHeading = (isSystemGenerated && hasClientName ? store.clients[0].name : store.name)
+            const displayHeading = (isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name)
               .replace(/^prospect\s+/i, '')
               .replace(/\s*\([^)]*\)\s*$/, '')
               .trim();

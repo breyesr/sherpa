@@ -74,7 +74,7 @@ export default function StoreModal({ isOpen, onClose, onSuccess, token, store }:
         external_id: store.external_id || '',
         client_ids: (store.clients || []).map(c => c.id)
       });
-      setSelectedClients(store.clients || []);
+      setSelectedClients((store.clients || []) as ClientResponse[]);
     } else if (!isEditing && isOpen) {
       setFormData({ 
         name: '', 

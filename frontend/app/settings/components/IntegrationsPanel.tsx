@@ -144,7 +144,7 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
   const isWhatsAppConnected = !!whatsappIntegration;
   const whatsappProvider = (whatsappIntegration?.settings as any)?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
 
-  const features = business?.features_config || {};
+  const features = (business?.features_config || {}) as any;
   const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
   const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
   const showScheduling = showServices || showSalesIntel;

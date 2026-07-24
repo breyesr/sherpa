@@ -21,7 +21,10 @@ import {
   XCircle,
   Hourglass
 } from 'lucide-react';
-import { OrderResponse, StoreResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type OrderResponse = components['schemas']['OrderResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
 import OrderDrawer from '@/components/v2/OrderDrawer';
 
 export default function OrdersPage() {
@@ -92,9 +95,9 @@ export default function OrdersPage() {
 
   // Aggregated analytics
   const stats = useMemo(() => {
-    const activeOrders = orders.filter(o => o.status !== 'CANCELLED' && o.status !== 'DELIVERED');
+    const activeOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'delivered');
     const totalRevenue = orders
-      .filter(o => o.status !== 'CANCELLED')
+      .filter(o => o.status !== 'cancelled')
       .reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
     return {
@@ -237,8 +240,8 @@ export default function OrdersPage() {
             {/* Order Item list */}
             {filteredOrders.map((order) => {
               const store = storeMap[order.store_id];
-              const totalItems = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-              const statusStyle = getStatusStyle(order.status);
+              const totalItems = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+              const statusStyle = getStatusStyle(order.status || 'pending');
               const StatusIcon = statusStyle.icon;
               
               return (
@@ -258,7 +261,7 @@ export default function OrdersPage() {
                           (() => {
                             const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
                             const hasClientName = store.clients && store.clients[0]?.name;
-                            let resolved = isSystemGenerated && hasClientName ? store.clients[0].name : store.name;
+                            let resolved = isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name;
                             resolved = resolved.replace(/^prospect\s+/i, '');
                             resolved = resolved.replace(/\s*\([^)]*\)\s*$/, '');
                             return resolved.trim();

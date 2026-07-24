@@ -18,7 +18,11 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { OrderResponse, StoreResponse, ProductResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type OrderResponse = components['schemas']['OrderResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
+type ProductResponse = components['schemas']['ProductResponse'];
 
 function ProspectOrdersContent() {
   const token = useAuthStore((state) => state.token);
@@ -139,7 +143,7 @@ function ProspectOrdersContent() {
     let totalPotentialValue = 0;
 
     orders.forEach((order) => {
-      if (order.status === 'pending' || order.status === 'PENDING') {
+      if (order.status === 'pending') {
         pendingCount++;
       }
       if (!order.is_verified) {

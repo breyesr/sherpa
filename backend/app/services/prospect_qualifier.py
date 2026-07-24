@@ -184,7 +184,8 @@ class ProspectQualifier:
         llm = ChatOpenAI(
             model=model_name,
             api_key=api_key,
-            temperature=0
+            temperature=0,
+            request_timeout=30.0
         ).bind_tools(tools)
 
         async def call_model(state: ProspectQualifierState):

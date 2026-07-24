@@ -37,7 +37,8 @@ async def surgical_rebuild():
             await conn.execute(text("DROP TYPE IF EXISTS verticaltype CASCADE"))
             await conn.execute(text("DROP TYPE IF EXISTS orderstatus CASCADE"))
             await conn.execute(text("DROP TYPE IF EXISTS importstatus CASCADE"))
-        except: pass
+        except Exception as e:
+            print(f"  - Note: could not drop types: {e}")
 
         print("\nEnsuring pgvector extension is installed on remote database...")
         try:

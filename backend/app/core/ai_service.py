@@ -489,9 +489,12 @@ class AIService:
                     service = GoogleCalendarService(integration, self.db)
                     busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=duration)).astimezone(timezone.utc))
                     if busy: return False
-                except: pass
+                except Exception as e:
+                    logger.warning(f"Google Calendar availability check failed: {e}")
             return True
-        except: return False
+        except Exception as e:
+            logger.warning(f"Is slot available check failed: {e}")
+            return False
 
     async def _get_available_slots_tool(self, date_str: str = None, duration_minutes: int = None, days_ahead: int = 3) -> str:
         try:
@@ -505,7 +508,7 @@ class AIService:
                     # Parse date and set to start of day in business timezone
                     parsed_dt = datetime.fromisoformat(date_str)
                     start_dt = parsed_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=biz_tz)
-                except: 
+                except Exception: 
                     start_dt = now_local
             else: 
                 start_dt = now_local
@@ -553,7 +556,8 @@ class AIService:
                             datetime.fromisoformat(start_str.replace('Z', '+00:00')).astimezone(biz_tz), 
                             datetime.fromisoformat(end_str.replace('Z', '+00:00')).astimezone(biz_tz)
                         ))
-                except: pass
+                except Exception as e:
+                    logger.warning(f"Google Calendar event listing failed: {e}")
             
             working_hours = self.assistant_config.working_hours or {"mon": ["09:00", "18:00"], "tue": ["09:00", "18:00"], "wed": ["09:00", "18:00"], "thu": ["09:00", "18:00"], "fri": ["09:00", "18:00"], "sat": [], "sun": []}
             
@@ -721,7 +725,9 @@ class AIService:
             if phone: client_obj.phone = Client.normalize_id(phone)
             await self.db.commit()
             return f"SUCCESS: Identity updated and user registered as {name}."
-        except: return "Failed to update identity."
+        except Exception as e:
+            logger.error(f"Failed to update identity: {e}")
+            return "Failed to update identity."
 
     async def _get_client_appointments_tool(self, identifier: str) -> str:
         """Fetch and format all future scheduled appointments for this client."""

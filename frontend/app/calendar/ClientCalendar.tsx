@@ -174,7 +174,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
 
       // 2. Status filter
       const matchesStatus = statusFilter.length === 0 || 
-        (e.type === 'appointment' && statusFilter.includes(e.status)) ||
+        (e.type === 'appointment' && statusFilter.includes(e.status || '')) ||
         (e.type === 'google_busy' && statusFilter.includes('busy'));
 
       return matchesSearch && matchesStatus;
@@ -185,8 +185,8 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
       let valA, valB;
       
       if (sortConfig.key === 'time') {
-        valA = new Date(a.start_time || a.start).getTime();
-        valB = new Date(b.start_time || b.start).getTime();
+        valA = new Date(a.start_time || a.start || '').getTime();
+        valB = new Date(b.start_time || b.start || '').getTime();
       } else if (sortConfig.key === 'client') {
         valA = (a.client?.name || a.summary || '').toLowerCase();
         valB = (b.client?.name || b.summary || '').toLowerCase();
@@ -366,11 +366,11 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
             <tbody className="divide-y divide-gray-50">
               {displayedEvents.map((event, idx) => {
                 const isApt = event.type === 'appointment';
-                const start = new Date(event.start_time || event.start);
-                const end = new Date(event.end_time || event.end);
+                const start = event.start_time || event.start || '';
+                const end = event.end_time || event.end || '';
 
                 return (
-                  <tr key={idx} className={`hover:bg-blue-50/30 transition-colors group ${!isApt ? 'bg-gray-50/20' : ''} ${new Date(event.start_time || event.start) < new Date() ? 'opacity-50 grayscale-[0.3]' : ''}`}>
+                  <tr key={idx} className={`hover:bg-blue-50/30 transition-colors group ${!isApt ? 'bg-gray-50/20' : ''} ${new Date(event.start_time || event.start || '') < new Date() ? 'opacity-50 grayscale-[0.3]' : ''}`}>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -424,17 +424,17 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                           </span>
                         )}
                         
-                        {isApt && new Date(event.start_time) > new Date() ? (
+                        {isApt && new Date(event.start_time || '') > new Date() ? (
                           <div className="flex items-center gap-1">
                             <button 
-                              onClick={() => handleRescheduleClick(event)}
+                              onClick={() => handleRescheduleClick(event as AppointmentResponse)}
                               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all"
                               title="Reschedule"
                             >
                               <Edit2 size={18} />
                             </button>
                             <button 
-                              onClick={() => handleCancelAppointment(event.id)}
+                              onClick={() => handleCancelAppointment(event.id || '')}
                               className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all"
                               title="Cancel Appointment"
                             >

@@ -5,7 +5,8 @@ import { Plus, Trash2, Edit2, Loader2, Scissors, Clock, DollarSign } from 'lucid
 import { API_BASE_URL } from '@/config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { components, BusinessProfileResponse } from '@/types/api';
+import { components } from '@/types/api';
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 import ServiceDrawer from '@/components/v2/ServiceDrawer';
 
 type ServiceResponse = components['schemas']['ServiceResponse'];

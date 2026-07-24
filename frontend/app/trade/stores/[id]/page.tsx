@@ -26,7 +26,13 @@ import {
   Trash2,
   Users
 } from 'lucide-react';
-import { StoreResponse, StoreNoteResponse, OrderResponse, ProductResponse, CompetitorResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type StoreResponse = components['schemas']['StoreResponse'];
+type StoreNoteResponse = components['schemas']['StoreNoteResponse'];
+type OrderResponse = components['schemas']['OrderResponse'];
+type ProductResponse = components['schemas']['ProductResponse'];
+type CompetitorResponse = components['schemas']['CompetitorResponse'];
 import FieldNoteDrawer from '@/components/v2/FieldNoteDrawer';
 import OrderDrawer from '@/components/v2/OrderDrawer';
 
@@ -442,7 +448,7 @@ export default function StoreDetailPageV2() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-black text-gray-900">${product.price.toFixed(2)}</p>
+                          <p className="font-black text-gray-900">${(product.price || 0).toFixed(2)}</p>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">{product.unit_of_measure || 'unit'}</p>
                         </div>
                       </div>
@@ -486,7 +492,7 @@ export default function StoreDetailPageV2() {
                         </div>
                         <div className="text-right">
                           <p className="font-black text-gray-900 text-lg">${order.total_amount.toLocaleString()}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">{order.items.length} items</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">{(order.items || []).length} items</p>
                         </div>
                       </div>
                     ))}
@@ -733,7 +739,7 @@ export default function StoreDetailPageV2() {
       <OrderDrawer 
         isOpen={isOrderDrawerOpen}
         onClose={() => setIsOrderDrawerOpen(false)}
-        storeId={id as string}
+        preselectedStoreId={id as string}
         token={token}
       />
     </div>

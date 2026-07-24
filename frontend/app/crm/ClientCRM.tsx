@@ -6,7 +6,10 @@ import ClientDrawer from '@/components/v2/ClientDrawer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
-import { ClientResponse, BusinessProfileResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 
 interface ClientCRMProps {
   initialClients: ClientResponse[];
@@ -64,13 +67,11 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
   const filteredClients = clients.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (c.phone && c.phone.includes(searchTerm));
-    // @ts-expect-error custom_fields is unknown
-    const matchesFlag = showFlaggedOnly ? c.custom_fields?.needs_review === true : true;
+    const matchesFlag = showFlaggedOnly ? (c.custom_fields as any)?.needs_review === true : true;
     return matchesSearch && matchesFlag;
   });
 
-  // @ts-expect-error custom_fields is unknown
-  const flaggedCount = clients.filter((c) => c.custom_fields?.needs_review === true).length;
+  const flaggedCount = clients.filter((c) => (c.custom_fields as any)?.needs_review === true).length;
 
   const handleEditClient = (client: ClientResponse) => {
     setSelectedClient(client);
@@ -147,11 +148,9 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
             <div key={client.id} className={`bg-white p-6 rounded-2xl border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative ${
-              // @ts-expect-error custom_fields is unknown
-              client.custom_fields?.needs_review ? 'border-red-200 bg-red-50/10' : 'border-gray-100'
+              (client.custom_fields as any)?.needs_review ? 'border-red-200 bg-red-50/10' : 'border-gray-100'
             }`}>
-              {/* @ts-expect-error custom_fields is unknown */}
-              {client.custom_fields?.needs_review && (
+              {(client.custom_fields as any)?.needs_review && (
                 <div className="absolute -top-3 -right-2 bg-red-500 text-white p-1.5 rounded-lg shadow-lg z-10 animate-bounce">
                   <AlertCircle size={16} />
                 </div>
@@ -171,16 +170,14 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
                 )}
               </div>
               
-              {/* @ts-expect-error custom_fields is unknown */}
-              {client.custom_fields?.needs_review && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700 font-medium flex gap-2">
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span>
-                    {/* @ts-expect-error custom_fields is unknown */}
-                    <strong>Needs Attention:</strong> {client.custom_fields.review_reason || 'AI requested manual help'}
-                  </span>
-                </div>
-              )}
+               {(client.custom_fields as any)?.needs_review && (
+                 <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700 font-medium flex gap-2">
+                   <AlertCircle size={14} className="shrink-0" />
+                   <span>
+                     <strong>Needs Attention:</strong> {(client.custom_fields as any).review_reason || 'AI requested manual help'}
+                   </span>
+                 </div>
+               )}
 
               <div className="space-y-3 text-sm text-gray-600">
                 <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg">

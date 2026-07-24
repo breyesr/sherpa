@@ -17,7 +17,10 @@ import {
   Edit2, 
   LayoutGrid as CategoryIcon
 } from 'lucide-react';
-import { ProductResponse, CategoryResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ProductResponse = components['schemas']['ProductResponse'];
+type CategoryResponse = components['schemas']['CategoryResponse'];
 import CatalogDrawer from '@/components/v2/CatalogDrawer';
 
 function ProductsPageContent() {
@@ -387,7 +390,7 @@ function ProductsPageContent() {
                     </div>
                   </div>
                   <div className="w-64 text-sm font-bold text-gray-600 uppercase tracking-wider">
-                    {cat.category_type || 'General'}
+                    {(cat as any).category_type || 'General'}
                   </div>
                   <div className="w-64 text-sm font-medium text-gray-500">
                     {cat.description || 'No description provided.'}

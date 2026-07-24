@@ -179,7 +179,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     }
   };
 
-  const features = business?.features_config || {};
+  const features = (business?.features_config || {}) as any;
   const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
   const showB2BSolutions = features.b2b_solutions?.enabled ?? (business?.vertical_type === 'TRADE');
   const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');

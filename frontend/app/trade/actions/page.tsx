@@ -28,7 +28,12 @@ import {
   UserCheck,
   Award
 } from 'lucide-react';
-import { StoreActionResponse, ActionTemplateResponse, StoreResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type StoreActionResponse = components['schemas']['StoreActionResponse'];
+type ActionTemplateResponse = components['schemas']['ActionTemplateResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
+
 import Drawer from '@/components/v2/Drawer';
 
 export default function ActionsStrategyDesk() {
@@ -400,7 +405,9 @@ export default function ActionsStrategyDesk() {
         category: 'COMMERCIAL',
         objective: 'THREAT_RESPONSE',
         default_unit: '',
-        description: ''
+        description: '',
+        target_value: '',
+        impact_level: 'MEDIUM'
       });
     } catch (err: any) {
       setError(err.message);
@@ -430,8 +437,8 @@ export default function ActionsStrategyDesk() {
     setResolutionData({
       status: action.status === 'proposed' ? 'pending' : 'completed',
       resolution_notes: action.resolution_notes || '',
-      result_value: action.result_value !== null ? action.result_value.toString() : '',
-      revenue_impact: action.revenue_impact !== null ? action.revenue_impact.toString() : ''
+      result_value: (action.result_value !== undefined && action.result_value !== null) ? action.result_value.toString() : '',
+      revenue_impact: (action.revenue_impact !== undefined && action.revenue_impact !== null) ? action.revenue_impact.toString() : ''
     });
     setIsResolutionOpen(true);
   };
@@ -444,7 +451,9 @@ export default function ActionsStrategyDesk() {
       category: tpl.category,
       objective: tpl.objective || 'THREAT_RESPONSE',
       default_unit: tpl.default_unit,
-      description: tpl.description || ''
+      description: tpl.description || '',
+      target_value: (tpl as any).target_value || '',
+      impact_level: (tpl as any).impact_level || 'MEDIUM'
     });
     setIsTemplateFormOpen(true);
   };
@@ -637,9 +646,9 @@ export default function ActionsStrategyDesk() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredActions.map((action) => {
-                const badge = getStatusBadge(action.status);
+                const badge = getStatusBadge(action.status || 'pending');
                 const BadgeIcon = badge.icon;
-                const objectiveLabel = objectiveMap[action.objective] || action.objective;
+                const objectiveLabel = objectiveMap[action.objective || ''] || action.objective;
                 
                 return (
                   <div 
@@ -663,7 +672,7 @@ export default function ActionsStrategyDesk() {
                       {/* Action Title & Store */}
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Action Title</span>
                       <h3 className="text-lg font-black text-gray-900 mt-0.5 truncate group-hover:text-blue-600 transition-colors">
-                        {action.details?.title || action.template_name || 'Manual Audit'}
+                        {(action.details as any)?.title || action.template_name || 'Manual Audit'}
                       </h3>
 
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mt-3">Account</span>
@@ -1084,25 +1093,25 @@ export default function ActionsStrategyDesk() {
             </div>
 
             {/* Custom Action details */}
-            {(selectedAction.details?.title || selectedAction.details?.description || selectedAction.details?.target_value) && (
+            {((selectedAction.details as any)?.title || (selectedAction.details as any)?.description || (selectedAction.details as any)?.target_value) && (
               <div className="p-6 bg-blue-50/30 rounded-[2rem] space-y-4 border border-blue-50/50">
-                {selectedAction.details?.title && (
+                {(selectedAction.details as any)?.title && (
                   <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Main Action</span>
-                    <h4 className="text-base font-black text-gray-900 mt-0.5">{selectedAction.details.title}</h4>
+                    <h4 className="text-base font-black text-gray-900 mt-0.5">{(selectedAction.details as any).title}</h4>
                   </div>
                 )}
-                {selectedAction.details?.description && (
+                {(selectedAction.details as any)?.description && (
                   <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Description / Guidelines</span>
-                    <p className="text-sm font-semibold text-gray-700 mt-1 whitespace-pre-line">{selectedAction.details.description}</p>
+                    <p className="text-sm font-semibold text-gray-700 mt-1 whitespace-pre-line">{(selectedAction.details as any).description}</p>
                   </div>
                 )}
-                {selectedAction.details?.target_value && (
+                {(selectedAction.details as any)?.target_value && (
                   <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Goal</span>
                     <span className="text-sm font-black text-gray-900 mt-0.5">
-                      {selectedAction.details.target_value} <span className="text-2xs font-bold text-gray-400 uppercase">{selectedAction.result_unit || 'units'}</span>
+                      {(selectedAction.details as any).target_value} <span className="text-2xs font-bold text-gray-400 uppercase">{selectedAction.result_unit || 'units'}</span>
                     </span>
                   </div>
                 )}

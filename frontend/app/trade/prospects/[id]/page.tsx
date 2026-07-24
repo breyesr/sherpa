@@ -21,7 +21,11 @@ import {
   Users,
   CheckCircle
 } from 'lucide-react';
-import { StoreResponse, OrderResponse, ProductResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type StoreResponse = components['schemas']['StoreResponse'];
+type OrderResponse = components['schemas']['OrderResponse'];
+type ProductResponse = components['schemas']['ProductResponse'];
 
 type TabType = 'details' | 'products' | 'orders';
 

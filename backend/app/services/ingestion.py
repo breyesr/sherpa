@@ -103,7 +103,8 @@ class IngestionAgent:
                     {"role": "user", "content": user_message}
                 ],
                 response_model=DynamicExtractionResult,
-                api_key=api_key
+                api_key=api_key,
+                timeout=30
             )
             return result
         except Exception as e:

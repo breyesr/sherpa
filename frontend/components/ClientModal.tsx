@@ -6,7 +6,10 @@ import { API_BASE_URL } from '@/config';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import SafeDate from './SafeDate';
-import { ClientResponse, BusinessProfileResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -227,13 +230,13 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
                 </div>
               )}
 
-              {client?.custom_fields?.needs_review && (
+              {(client?.custom_fields as any)?.needs_review && (
                 <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3">
                   <AlertCircle className="text-red-500 mt-0.5 shrink-0" size={18} />
                   <div className="flex-1">
                     <p className="text-sm font-bold text-red-800">Review Requested by AI</p>
                     <p className="text-xs text-red-600 mt-1">
-                      Reason: {client.custom_fields.review_reason || 'Manual intervention needed'}
+                      Reason: {(client?.custom_fields as any)?.review_reason || 'Manual intervention needed'}
                     </p>
                     <button
                       type="button"
@@ -338,7 +341,7 @@ export default function ClientModal({ isOpen, onClose, onSuccess, token, client,
               </div>
 
               {/* Dynamic Custom Fields */}
-              {business?.crm_config?.length > 0 && (
+              {(business?.crm_config && (business.crm_config as any[]).length > 0) && (
                 <div className="pt-4 space-y-6 border-t border-gray-100">
                   <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest">Additional Information</h3>
                   <div className="grid grid-cols-1 gap-6">

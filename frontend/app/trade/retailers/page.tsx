@@ -19,7 +19,9 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { ClientResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
 import ContactDrawer from '@/components/v2/ContactDrawer';
 
 export default function RetailersPageV2() {

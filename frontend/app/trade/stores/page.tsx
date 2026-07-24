@@ -17,7 +17,9 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { StoreResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type StoreResponse = components['schemas']['StoreResponse'];
 import AccountDrawer from '@/components/v2/AccountDrawer';
 
 export default function StoresPageV2() {

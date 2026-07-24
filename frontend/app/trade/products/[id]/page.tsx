@@ -23,7 +23,12 @@ import {
   FileText,
   Boxes
 } from 'lucide-react';
-import { ProductResponse, StoreResponse, OrderResponse, CategoryResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ProductResponse = components['schemas']['ProductResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
+type OrderResponse = components['schemas']['OrderResponse'];
+type CategoryResponse = components['schemas']['CategoryResponse'];
 import CatalogDrawer from '@/components/v2/CatalogDrawer';
 
 export default function ProductDetailPage() {
@@ -108,14 +113,14 @@ export default function ProductDetailPage() {
     if (!id || orders.length === 0) return [];
     
     return orders
-      .filter(order => order.items.some(item => item.product_id === id))
+      .filter(order => (order.items || []).some(item => item.product_id === id))
       .map(order => {
-        const item = order.items.find(i => i.product_id === id)!;
+        const item = (order.items || []).find(i => i.product_id === id)!;
         return {
           ...order,
-          quantityOrdered: item.quantity,
-          unitPriceOrdered: item.unit_price,
-          itemTotal: item.quantity * item.unit_price,
+          quantityOrdered: item?.quantity || 0,
+          unitPriceOrdered: item?.unit_price || 0,
+          itemTotal: (item?.quantity || 0) * (item?.unit_price || 0),
           storeName: storeMap[order.store_id]?.name || 'Unknown Account'
         };
       })
@@ -447,8 +452,8 @@ export default function ProductDetailPage() {
                         {new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                       <span className={`text-2xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                        order.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                        order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                        order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {order.status}

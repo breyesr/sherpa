@@ -18,11 +18,11 @@ import {
 import StoreModal from '@/components/StoreModal';
 import CatalogDrawer from '@/components/v2/CatalogDrawer';
 import OrderDrawer from '@/components/v2/OrderDrawer';
-import { 
-  StoreResponse, 
-  CategoryResponse, 
-  ProductResponse 
-} from '@/types/api';
+import { components } from '@/types/api';
+
+type StoreResponse = components['schemas']['StoreResponse'];
+type CategoryResponse = components['schemas']['CategoryResponse'];
+type ProductResponse = components['schemas']['ProductResponse'];
 
 export default function TradeHubPage() {
   const token = useAuthStore((state) => state.token);

@@ -157,19 +157,20 @@ export default function AdminSettingsPage() {
       const url = editingUser ? `${API_BASE_URL}/admin/users/${editingUser.id}` : `${API_BASE_URL}/admin/users`;
       const method = editingUser ? 'PATCH' : 'POST';
       
+      const config = userForm.features_config as any;
       const finalForm = {
         ...userForm,
         features_config: {
-          ...userForm.features_config,
+          ...config,
           scheduling: { enabled: true },
           business_identity: { enabled: true },
           crm_suite: { enabled: true },
-          campaign_flow: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.campaign_flow?.enabled ?? true) : false },
-          b2b_solutions: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.b2b_solutions?.enabled ?? true) : false },
-          sales_intelligence: { enabled: userForm.vertical_type === 'TRADE' ? (userForm.features_config?.sales_intelligence?.enabled ?? true) : false },
-          services: { enabled: userForm.vertical_type === 'BASIC' ? (userForm.features_config?.services?.enabled ?? true) : false },
-          products: { enabled: userForm.features_config?.products?.enabled ?? (userForm.vertical_type === 'TRADE') },
-          live_sandbox: { enabled: userForm.features_config?.live_sandbox?.enabled ?? true }
+          campaign_flow: { enabled: userForm.vertical_type === 'TRADE' ? (config?.campaign_flow?.enabled ?? true) : false },
+          b2b_solutions: { enabled: userForm.vertical_type === 'TRADE' ? (config?.b2b_solutions?.enabled ?? true) : false },
+          sales_intelligence: { enabled: userForm.vertical_type === 'TRADE' ? (config?.sales_intelligence?.enabled ?? true) : false },
+          services: { enabled: userForm.vertical_type === 'BASIC' ? (config?.services?.enabled ?? true) : false },
+          products: { enabled: config?.products?.enabled ?? (userForm.vertical_type === 'TRADE') },
+          live_sandbox: { enabled: config?.live_sandbox?.enabled ?? true }
         }
       };
       
@@ -203,7 +204,8 @@ export default function AdminSettingsPage() {
             crm_suite: { enabled: true },
             campaign_flow: { enabled: false },
             b2b_solutions: { enabled: false },
-            sales_intelligence: { enabled: false }
+            sales_intelligence: { enabled: false },
+            live_sandbox: { enabled: true }
           }
         });
         setMessage({ type: 'success', text: `User ${editingUser ? 'updated' : 'created'} successfully!` });
@@ -520,14 +522,14 @@ export default function AdminSettingsPage() {
                             type="number"
                             min={0}
                             className="w-20 p-1.5 border border-gray-200 rounded-lg text-sm font-bold text-center bg-gray-50 focus:bg-white outline-none"
-                            value={creditEdits[user.business_profile.id] !== undefined ? creditEdits[user.business_profile.id] : (user.business_profile.purchased_credits || 0)}
+                            value={creditEdits[user.business_profile.id] !== undefined ? creditEdits[user.business_profile.id] : ((user.business_profile as any).purchased_credits || 0)}
                             onChange={(e) => {
                               const val = parseInt(e.target.value) || 0;
                               setCreditEdits(prev => ({ ...prev, [user.business_profile!.id]: val }));
                             }}
                           />
                           <button
-                            onClick={() => handleSaveCredits(user.business_profile!.id, creditEdits[user.business_profile!.id] ?? user.business_profile!.purchased_credits ?? 0)}
+                            onClick={() => handleSaveCredits(user.business_profile!.id, creditEdits[user.business_profile!.id] ?? (user.business_profile as any).purchased_credits ?? 0)}
                             className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                             title="Guardar créditos"
                           >
@@ -545,10 +547,10 @@ export default function AdminSettingsPage() {
                           setUserForm({ 
                             email: user.email, 
                             password: '', 
-                            role: user.role, 
-                            is_active: user.is_active,
+                            role: user.role || 'member', 
+                            is_active: user.is_active ?? true,
                             vertical_type: user.business_profile?.vertical_type || 'BASIC',
-                            features_config: user.business_profile?.features_config || {
+                            features_config: (user.business_profile?.features_config || {
                               scheduling: { enabled: true },
                               business_identity: { enabled: true },
                               crm_suite: { enabled: true },
@@ -556,7 +558,7 @@ export default function AdminSettingsPage() {
                               b2b_solutions: { enabled: false },
                               sales_intelligence: { enabled: false },
                               live_sandbox: { enabled: true }
-                            }
+                            }) as any
                           });
                           setShowUserModal(true);
                         }}
@@ -776,32 +778,34 @@ export default function AdminSettingsPage() {
                         </div>
                       </div>
 
-                      {/* Services Toggle */}
                       <div
-                        onClick={() => setUserForm({
-                          ...userForm,
-                          features_config: {
-                            ...userForm.features_config,
-                            services: { enabled: !(userForm.features_config?.services?.enabled ?? true) }
-                          }
-                        })}
+                        onClick={() => {
+                          const config = userForm.features_config as any;
+                          setUserForm({
+                            ...userForm,
+                            features_config: {
+                              ...config,
+                              services: { enabled: !(config?.services?.enabled ?? true) }
+                            }
+                          });
+                        }}
                         className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                          userForm.features_config?.services?.enabled ?? true
+                          (userForm.features_config as any)?.services?.enabled ?? true
                             ? 'border-blue-200 bg-blue-50/5 shadow-sm'
                             : 'border-slate-100 hover:border-slate-200'
                         }`}
                       >
-                        <div className={`p-2 rounded-lg ${userForm.features_config?.services?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <div className={`p-2 rounded-lg ${(userForm.features_config as any)?.services?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
                           <Scissors className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-bold text-slate-700">Services Catalog</span>
                             <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                              (userForm.features_config?.services?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                              ((userForm.features_config as any)?.services?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
                             }`}>
                               <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                                (userForm.features_config?.services?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                                ((userForm.features_config as any)?.services?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
                               }`} />
                             </div>
                           </div>
@@ -809,32 +813,34 @@ export default function AdminSettingsPage() {
                         </div>
                       </div>
 
-                      {/* Products Toggle (for B2C) */}
                       <div
-                        onClick={() => setUserForm({
-                          ...userForm,
-                          features_config: {
-                            ...userForm.features_config,
-                            products: { enabled: !(userForm.features_config?.products?.enabled ?? false) }
-                          }
-                        })}
+                        onClick={() => {
+                          const config = userForm.features_config as any;
+                          setUserForm({
+                            ...userForm,
+                            features_config: {
+                              ...config,
+                              products: { enabled: !(config?.products?.enabled ?? false) }
+                            }
+                          });
+                        }}
                         className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                          userForm.features_config?.products?.enabled ?? false
+                          (userForm.features_config as any)?.products?.enabled ?? false
                             ? 'border-blue-200 bg-blue-50/5 shadow-sm'
                             : 'border-slate-100 hover:border-slate-200'
                         }`}
                       >
-                        <div className={`p-2 rounded-lg ${userForm.features_config?.products?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <div className={`p-2 rounded-lg ${(userForm.features_config as any)?.products?.enabled ?? false ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
                           <Package className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-bold text-slate-700">Products & Categories</span>
                             <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                              (userForm.features_config?.products?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
+                              ((userForm.features_config as any)?.products?.enabled ?? false) ? 'bg-blue-600' : 'bg-slate-200'
                             }`}>
                               <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                                (userForm.features_config?.products?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
+                                ((userForm.features_config as any)?.products?.enabled ?? false) ? 'translate-x-4' : 'translate-x-0'
                               }`} />
                             </div>
                           </div>
@@ -842,32 +848,34 @@ export default function AdminSettingsPage() {
                         </div>
                       </div>
 
-                      {/* Live Test Sandbox Toggle */}
                       <div
-                        onClick={() => setUserForm({
-                          ...userForm,
-                          features_config: {
-                            ...userForm.features_config,
-                            live_sandbox: { enabled: !(userForm.features_config?.live_sandbox?.enabled ?? true) }
-                          }
-                        })}
+                        onClick={() => {
+                          const config = userForm.features_config as any;
+                          setUserForm({
+                            ...userForm,
+                            features_config: {
+                              ...config,
+                              live_sandbox: { enabled: !(config?.live_sandbox?.enabled ?? true) }
+                            }
+                          });
+                        }}
                         className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                          userForm.features_config?.live_sandbox?.enabled ?? true
+                          (userForm.features_config as any)?.live_sandbox?.enabled ?? true
                             ? 'border-blue-200 bg-blue-50/5 shadow-sm'
                             : 'border-slate-100 hover:border-slate-200'
                         }`}
                       >
-                        <div className={`p-2 rounded-lg ${userForm.features_config?.live_sandbox?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <div className={`p-2 rounded-lg ${(userForm.features_config as any)?.live_sandbox?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
                           <Play className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-bold text-slate-700">Live Test Sandbox</span>
                             <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                              (userForm.features_config?.live_sandbox?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                              ((userForm.features_config as any)?.live_sandbox?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
                             }`}>
                               <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                                (userForm.features_config?.live_sandbox?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                                ((userForm.features_config as any)?.live_sandbox?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
                               }`} />
                             </div>
                           </div>
@@ -981,32 +989,34 @@ export default function AdminSettingsPage() {
                         </div>
                       </div>
 
-                      {/* Products Toggle (for B2B) */}
                       <div
-                        onClick={() => setUserForm({
-                          ...userForm,
-                          features_config: {
-                            ...userForm.features_config,
-                            products: { enabled: !(userForm.features_config?.products?.enabled ?? true) }
-                          }
-                        })}
+                        onClick={() => {
+                          const config = userForm.features_config as any;
+                          setUserForm({
+                            ...userForm,
+                            features_config: {
+                              ...config,
+                              products: { enabled: !(config?.products?.enabled ?? true) }
+                            }
+                          });
+                        }}
                         className={`flex items-start gap-4 p-3 rounded-xl border text-left transition-all w-full cursor-pointer select-none bg-white ${
-                          userForm.features_config?.products?.enabled ?? true
+                          (userForm.features_config as any)?.products?.enabled ?? true
                             ? 'border-blue-200 bg-blue-50/5 shadow-sm'
                             : 'border-slate-100 hover:border-slate-200'
                         }`}
                       >
-                        <div className={`p-2 rounded-lg ${userForm.features_config?.products?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <div className={`p-2 rounded-lg ${(userForm.features_config as any)?.products?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
                           <Package className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-bold text-slate-700">Products & Categories Catalog</span>
                             <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                              (userForm.features_config?.products?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
+                              ((userForm.features_config as any)?.products?.enabled ?? true) ? 'bg-blue-600' : 'bg-slate-200'
                             }`}>
                               <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-205 ease-in-out ${
-                                (userForm.features_config?.products?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
+                                ((userForm.features_config as any)?.products?.enabled ?? true) ? 'translate-x-4' : 'translate-x-0'
                               }`} />
                             </div>
                           </div>

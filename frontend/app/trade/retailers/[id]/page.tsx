@@ -28,7 +28,11 @@ import {
   ExternalLink,
   Trash2
 } from 'lucide-react';
-import { ClientResponse, StoreResponse, OrderResponse } from '@/types/api';
+import { components } from '@/types/api';
+
+type ClientResponse = components['schemas']['ClientResponse'];
+type StoreResponse = components['schemas']['StoreResponse'];
+type OrderResponse = components['schemas']['OrderResponse'];
 
 type TabType = 'overview' | 'stores' | 'orders' | 'timeline';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
