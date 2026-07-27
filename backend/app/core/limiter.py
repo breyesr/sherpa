@@ -54,7 +54,8 @@ async def check_whatsapp_limit(db, business_id: str) -> bool:
     if not business:
         return False
         
-    allowed_limit = 200 + business.purchased_credits
+    from app.core.constants import DEFAULT_WHATSAPP_LIMIT
+    allowed_limit = DEFAULT_WHATSAPP_LIMIT + business.purchased_credits
     current_usage = await get_whatsapp_usage(business_id)
     return current_usage < allowed_limit
 
@@ -70,7 +71,7 @@ async def check_and_send_usage_alert(db, business, used: int, limit: int, thresh
         
     await redis_client.set(alert_sent_key, "true", ex=30 * 86400)
     
-    from app.api.business import DEFAULT_FEATURES_CONFIG
+    from app.core.constants import DEFAULT_FEATURES_CONFIG
     feat_cfg = (business.features_config or DEFAULT_FEATURES_CONFIG).copy()
     feat_cfg["whatsapp_usage_alert"] = {
         "threshold": threshold,

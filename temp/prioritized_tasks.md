@@ -32,9 +32,9 @@
 - [x] 201.8 — Strict catalog validation before appointment scheduling in B2C calendar tools *(1-2 hours)*
 
 ## 🟡 Phase 5: Backend Architecture (Next Sprint)
-- [ ] 202.5 — Extract shared constants to `core/constants.py` *(1 hour)*
-- [ ] 202.3 — Organize 34+ backend scripts into `scripts/` subdirs *(2 hours)*
-- [ ] 202.4 — Create `conftest.py` with shared test fixtures *(3-4 hours)*
+- [x] 202.5 — Extract shared constants to `core/constants.py` *(1 hour)* — Created constants.py and centralized DEFAULT_FEATURES_CONFIG, DEFAULT_STORE_ACTION_OBJECTIVES, ALLOWED_FILE_EXTENSIONS, DEFAULT_WHATSAPP_LIMIT, and UPLOAD_DIR
+- [x] 202.3 — Organize 34+ backend scripts into `scripts/` subdirs *(2 hours)* — Moved 34+ python root scripts into data_ops, diagnostics, dev_tools, and manual_tests subdirectories
+- [x] 202.4 — Create `conftest.py` with shared test fixtures *(3-4 hours)* — Implemented core shared fixtures in conftest.py (mock_db, mock_business, mock_client, mock_integration, mock_config_service, anyio_backend) and refactored test_provisioner.py
 - [ ] 202.1 — Split `api/trade.py` into sub-routers *(4-6 hours)* — Currently 1,278 lines
 - [ ] 202.2 — Split `models/trade.py` into domain modules *(3-4 hours)* — Currently 698 lines
 

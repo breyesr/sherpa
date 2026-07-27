@@ -63,8 +63,7 @@ def require_feature(feature_key: str):
         if not current_user.business_profile:
             raise HTTPException(status_code=404, detail="Business profile not found")
         
-        # Local import to prevent circular imports
-        from app.api.business import DEFAULT_FEATURES_CONFIG
+        from app.core.constants import DEFAULT_FEATURES_CONFIG
         cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
         
         if not cfg.get(feature_key, {}).get("enabled", False):
@@ -80,8 +79,7 @@ def require_any_feature(feature_keys: list):
         if not current_user.business_profile:
             raise HTTPException(status_code=404, detail="Business profile not found")
         
-        # Local import to prevent circular imports
-        from app.api.business import DEFAULT_FEATURES_CONFIG
+        from app.core.constants import DEFAULT_FEATURES_CONFIG
         cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
         
         has_any = any(cfg.get(key, {}).get("enabled", False) for key in feature_keys)

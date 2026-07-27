@@ -41,16 +41,8 @@ class IngestionAgent:
             )
             objective_names = res_objs.scalars().all()
             if not objective_names:
-                objective_names = [
-                    "THREAT_RESPONSE",
-                    "SHARE_OF_SHELF",
-                    "NEW_PRODUCT_INTRODUCTION",
-                    "INVENTORY_VELOCITY_OOS_PREVENTION",
-                    "PERFECT_STORE_ASSORTMENT_COMPLIANCE",
-                    "SEASONAL_EVENT_ACTIVATION",
-                    "TRADE_LOYALTY_VOLUME_PUSHING",
-                    "POSM_MAINTENANCE_ASSET_PURITY"
-                ]
+                from app.core.constants import DEFAULT_STORE_ACTION_OBJECTIVES
+                objective_names = DEFAULT_STORE_ACTION_OBJECTIVES
             
             # Create Literal type containing active objective names
             from typing import Literal
