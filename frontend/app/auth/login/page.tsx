@@ -22,7 +22,6 @@ export default function LoginPage() {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         body: formData,
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -30,7 +29,7 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      setToken(data.access_token);
+      await setToken(data.access_token);
       
       // Force a full page reload to the root to ensure the server component 
       // in app/page.tsx picks up the new 'sherpa_token' cookie immediately.

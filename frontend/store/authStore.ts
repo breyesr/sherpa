@@ -1,10 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { API_BASE_URL } from '@/config';
 
 interface AuthState {
   token: string | null;
-  setToken: (token: string) => void;
+  setToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -12,20 +11,32 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      setToken: (token) => {
+      setToken: async (token) => {
         set({ token });
-        // Client-side document.cookie setting is removed as the backend
-        // now sets a secure HttpOnly cookie automatically.
+        try {
+          await fetch('/api/auth', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token, action: 'set' }),
+          });
+        } catch (err) {
+          console.error('Failed to set auth cookie:', err);
+        }
       },
       logout: async () => {
         set({ token: null });
         try {
-          await fetch(`${API_BASE_URL}/auth/logout`, {
+          await fetch('/api/auth', {
             method: 'POST',
-            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'clear' }),
           });
         } catch (err) {
-          console.error("Failed to clear auth cookie on server:", err);
+          console.error("Failed to clear auth cookie:", err);
         }
       },
     }),
