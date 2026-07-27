@@ -22,7 +22,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
 import SafeDate from '@/components/SafeDate';
 import { components } from '@/types/api';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 type AppointmentResponse = components['schemas']['AppointmentResponse'];
@@ -90,6 +90,14 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
 
   const queryClient = useQueryClient();
   const [verifyingLeads, setVerifyingLeads] = useState<Record<string, boolean>>({});
+  const [greeting, setGreeting] = useState('Hello');
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 18) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
 
   const handleVerifyLead = async (leadId: string) => {
     setVerifyingLeads(prev => ({ ...prev, [leadId]: true }));
@@ -113,13 +121,6 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
     } finally {
       setVerifyingLeads(prev => ({ ...prev, [leadId]: false }));
     }
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
   };
 
   const features = business?.features_config || {
@@ -150,7 +151,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-              {getGreeting()}, {business?.name?.split(' ')[0] || 'there'}!
+              {greeting}, {business?.name?.split(' ')[0] || 'there'}!
               {isFetchingStats && <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />}
             </h1>
             <p className="text-gray-500 mt-2 font-medium text-lg">Here&apos;s your campaign intake pipeline status.</p>
@@ -417,7 +418,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-            {getGreeting()}, {business?.name?.split(' ')[0] || 'there'}!
+            {greeting}, {business?.name?.split(' ')[0] || 'there'}!
             {isFetchingStats && <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />}
           </h1>
           <p className="text-gray-500 mt-2 font-medium text-lg">Here&apos;s your business briefing for today.</p>

@@ -18,6 +18,32 @@ export default function DashboardLayout({
     setIsClient(true);
   }, []);
 
+  useEffect(() => {
+    if (isClient && !token) {
+      // Self-healing check for split-brain zombie states
+      const hasDashboard = document.body.innerText.includes("Register Point of Sale") || 
+                           document.body.innerText.includes("View Prospects") ||
+                           document.body.innerText.includes("Active Pipeline") ||
+                           document.body.innerText.includes("business briefing");
+      
+      const isProtectedRoute = !pathname.startsWith('/auth') && pathname !== '/';
+      
+      if (hasDashboard || isProtectedRoute) {
+        fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'clear' }),
+        }).then(() => {
+          if (isProtectedRoute) {
+            window.location.href = '/auth/login';
+          } else {
+            window.location.reload();
+          }
+        });
+      }
+    }
+  }, [isClient, token, pathname]);
+
   // Standard Public Routes
   if (pathname.startsWith('/auth') || pathname.startsWith('/onboarding')) {
     return <>{children}</>;
