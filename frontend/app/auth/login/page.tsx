@@ -22,6 +22,7 @@ export default function LoginPage() {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {

@@ -74,8 +74,8 @@ function SidebarContent() {
     enabled: !!token,
   });
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push('/auth/login');
   };
 

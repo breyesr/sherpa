@@ -170,8 +170,8 @@ async def login(
     
     # Set server-side HttpOnly cookie for enhanced security
     response.set_cookie(
-        key="access_token",
-        value=f"Bearer {token_str}",
+        key="sherpa_token",
+        value=token_str,
         httponly=True,
         secure=settings.ENVIRONMENT != "development",
         samesite="lax",
@@ -182,3 +182,14 @@ async def login(
         "access_token": token_str,
         "token_type": "bearer",
     }
+
+@router.post("/logout")
+async def logout(response: Response) -> Any:
+    """Clear the server-side HttpOnly sherpa_token cookie."""
+    response.delete_cookie(
+        key="sherpa_token",
+        httponly=True,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax"
+    )
+    return {"status": "success"}
