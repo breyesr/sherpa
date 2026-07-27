@@ -15,8 +15,8 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/tasks/knowledge`
 
 ### `backend/app/api/auth.py`
-- Imports `backend/app/api/business`
 - Imports `backend/app/core/config`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/core/database`
 - Imports `backend/app/core/limiter`
 - Imports `backend/app/models/user`
@@ -26,6 +26,7 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/api/auth`
 - Imports `backend/app/core/ai_service`
 - Imports `backend/app/core/config`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/core/database`
 - Imports `backend/app/core/limiter`
 - Imports `backend/app/models/business`
@@ -51,6 +52,7 @@ Auto-generated reference showing internal app dependencies across backend module
 
 ### `backend/app/api/data_gateway.py`
 - Imports `backend/app/api/auth`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/core/database`
 - Imports `backend/app/models/business`
 - Imports `backend/app/models/data_gateway`
@@ -119,8 +121,8 @@ Auto-generated reference showing internal app dependencies across backend module
 
 ### `backend/app/api/trade.py`
 - Imports `backend/app/api/auth`
-- Imports `backend/app/api/business`
 - Imports `backend/app/core/ai_service`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/core/database`
 - Imports `backend/app/models/business`
 - Imports `backend/app/models/crm`
@@ -185,13 +187,16 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/core/system_config`
 - Imports `backend/app/models/integration`
 
+### `backend/app/core/idempotency.py`
+- Imports `backend/app/core/config`
+
 ### `backend/app/core/integrity.py`
 - Imports `backend/app/core/database`
 - Imports `backend/app/models/crm`
 
 ### `backend/app/core/limiter.py`
-- Imports `backend/app/api/business`
 - Imports `backend/app/core/config`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/models/business`
 - Imports `backend/app/models/integration`
 - Imports `backend/app/models/messaging`
@@ -307,6 +312,7 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/models/integration`
 
 ### `backend/app/services/ingestion.py`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/core/system_config`
 - Imports `backend/app/models/trade`
 - Imports `backend/app/tasks/knowledge`
@@ -344,6 +350,7 @@ Auto-generated reference showing internal app dependencies across backend module
 ### `backend/app/tasks/data_gateway.py`
 - Imports `backend/app/core/celery_app`
 - Imports `backend/app/core/database`
+- Imports `backend/app/core/idempotency`
 - Imports `backend/app/models/crm`
 - Imports `backend/app/models/data_gateway`
 - Imports `backend/app/models/trade`
@@ -353,6 +360,7 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/core/celery_app`
 - Imports `backend/app/core/config`
 - Imports `backend/app/core/database`
+- Imports `backend/app/core/idempotency`
 - Imports `backend/app/core/limiter`
 - Imports `backend/app/models/business`
 - Imports `backend/app/models/integration`
@@ -375,6 +383,7 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/core/celery_app`
 - Imports `backend/app/core/config`
 - Imports `backend/app/core/database`
+- Imports `backend/app/core/idempotency`
 - Imports `backend/app/core/limiter`
 - Imports `backend/app/models/business`
 - Imports `backend/app/models/integration`
