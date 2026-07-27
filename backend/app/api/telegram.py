@@ -21,7 +21,10 @@ from app.core.telegram_service import TelegramService
 from app.core.config import settings
 from app.core.limiter import limiter
 
+import logging
+
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 TG_CONTACT_PROMPTS = {}
 
@@ -61,10 +64,10 @@ async def telegram_debug_info(
 @limiter.limit("60/minute")
 async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Receive messages from Telegram via a unique webhook ID."""
-    print(f"!!! TELEGRAM WEBHOOK PING RECEIVED for ID: {webhook_id} !!!")
+    logger.info(f"TELEGRAM WEBHOOK PING RECEIVED for ID: {webhook_id}")
     try:
         payload = await request.json()
-        print(f"DEBUG: Incoming Payload: {payload}")
+        logger.debug(f"Incoming Payload: {payload}")
         
         # 1. Find the integration
         result = await db.execute(
@@ -76,7 +79,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         integration = result.scalars().first()
         
         if not integration:
-            print(f"ERROR: Webhook ID {webhook_id} not found in database.")
+            logger.error(f"Webhook ID {webhook_id} not found in database.")
             return {"status": "ignored", "reason": "invalid webhook_id"}
 
         # 2. Fetch business profile
@@ -87,7 +90,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         )
         business = result.scalars().first()
         if not business:
-            print(f"ERROR: Business not found for integration {integration.id}")
+            logger.error(f"Business not found for integration {integration.id}")
             return {"status": "ignored", "reason": "business not found"}
 
         # 3. Extract Message
@@ -97,7 +100,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         contact = message.get("contact")
         
         if not chat_id:
-            print("DEBUG: Payload has no chat_id. Might be a status update or edited message.")
+            logger.debug("Payload has no chat_id. Might be a status update or edited message.")
             return {"status": "ignored"}
 
         chat_id_str = str(chat_id)
@@ -108,7 +111,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         # Intercept contact payload
         if contact:
             phone_number = contact.get("phone_number")
-            print(f"DEBUG: Received contact share from {chat_id_str}. Phone: {phone_number}")
+            logger.debug(f"Received contact share from {chat_id_str}. Phone: {phone_number}")
             if phone_number:
                 from app.services.identity_resolver import IdentityResolver
                 norm_phone = IdentityResolver.clean_identifier(phone_number)
@@ -174,7 +177,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
                         await redis_client.aclose()
                     except Exception as redis_err:
-                        print(f"DEBUG: Redis delete prompt failed, using memory fallback: {redis_err}")
+                        logger.debug(f"Redis delete prompt failed, using memory fallback: {redis_err}")
                         TG_CONTACT_PROMPTS.pop(chat_id_str, None)
                     
                     return {"status": "ok"}
@@ -217,7 +220,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
                         await redis_client.aclose()
                     except Exception as redis_err:
-                        print(f"DEBUG: Redis delete prompt failed, using memory fallback: {redis_err}")
+                        logger.debug(f"Redis delete prompt failed, using memory fallback: {redis_err}")
                         TG_CONTACT_PROMPTS.pop(chat_id_str, None)
                     
                     return {"status": "ok"}
@@ -254,7 +257,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         await redis_client.delete(f"tg_contact_prompt:{chat_id_str}")
                         await redis_client.aclose()
                     except Exception as redis_err:
-                        print(f"DEBUG: Redis delete prompt failed, using memory fallback: {redis_err}")
+                        logger.debug(f"Redis delete prompt failed, using memory fallback: {redis_err}")
                         TG_CONTACT_PROMPTS.pop(chat_id_str, None)
                     
                     text = "Hola"
@@ -262,10 +265,10 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                 return {"status": "ignored"}
 
         if not text:
-            print(f"DEBUG: Received non-text message from {chat_id}. Ignoring.")
+            logger.debug(f"Received non-text message from {chat_id}. Ignoring.")
             return {"status": "ignored"}
 
-        print(f"DEBUG: Processing message from {chat_id}: '{text[:30]}...'")
+        logger.debug(f"Processing message from {chat_id}: '{text[:30]}...'")
         chat_id_str = str(chat_id)
         
         # Check if the message is a start command with token or link command
@@ -289,7 +292,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         await redis_client.delete(key)
                     await redis_client.aclose()
                 except Exception as redis_err:
-                    print(f"DEBUG: Redis check failed, checking DB fallback: {redis_err}")
+                    logger.debug(f"Redis check failed, checking DB fallback: {redis_err}")
                 
                 # 2. Try checking DB fallback if Redis didn't yield anything
                 if not token_biz_id:
@@ -304,7 +307,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                             if datetime.datetime.utcnow() < expires_at:
                                 token_biz_id = business.id
                         except Exception as parse_err:
-                            print(f"ERROR parsing expiration timestamp: {parse_err}")
+                            logger.error(f"ERROR parsing expiration timestamp: {parse_err}")
                 
                 # 3. If verified, link admin
                 if token_biz_id == business.id:
@@ -434,7 +437,7 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                     await redis_client.set(prompt_key, "true", ex=3600)  # 1 hour TTL
                 await redis_client.aclose()
             except Exception as redis_err:
-                print(f"DEBUG: Redis unavailable for prompt check, using memory fallback: {redis_err}")
+                logger.debug(f"Redis unavailable for prompt check, using memory fallback: {redis_err}")
                 import datetime
                 now = datetime.datetime.utcnow()
                 expire_time = TG_CONTACT_PROMPTS.get(chat_id_str)
@@ -500,9 +503,9 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                         user_message=text,
                         platform="telegram"
                     )
-                    print(f"DEBUG: Prospect Qualifier Success for {chat_id_str}. Sending response...")
+                    logger.debug(f"Prospect Qualifier Success for {chat_id_str}. Sending response...")
                 except Exception as e:
-                    print(f"ERROR: ProspectQualifier failed for {chat_id_str}: {e}")
+                    logger.error(f"ProspectQualifier failed for {chat_id_str}: {e}")
                     traceback.print_exc()
                     response_text = "I'm having a bit of trouble thinking right now. Please try again in a moment."
             else:
@@ -522,9 +525,9 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
                 try:
                     # get_response now handles registration, normalization and healing
                     response_text = await ai.get_response(chat_id_str, text, meta)
-                    print(f"DEBUG: AI Success for {chat_id_str}. Sending response...")
+                    logger.debug(f"AI Success for {chat_id_str}. Sending response...")
                 except Exception as e:
-                    print(f"ERROR: AIService failed for {chat_id_str}: {e}")
+                    logger.error(f"AIService failed for {chat_id_str}: {e}")
                     traceback.print_exc()
                     response_text = "I'm having a bit of trouble thinking right now. Please try again in a moment."
         
@@ -532,14 +535,14 @@ async def telegram_webhook(webhook_id: str, request: Request, db: AsyncSession =
         try:
             bot_token = decrypt_token(integration.access_token)
             await TelegramService.send_message(bot_token, chat_id, response_text)
-            print(f"DEBUG: Successfully sent reply to {chat_id}")
+            logger.debug(f"Successfully sent reply to {chat_id}")
         except Exception as se:
-            print(f"CRITICAL ERROR: Failed to send Telegram message to {chat_id}: {se}")
+            logger.error(f"Failed to send Telegram message to {chat_id}: {se}")
             traceback.print_exc()
 
         return {"status": "ok"}
     except Exception as e:
-        print(f"CRITICAL: Telegram Webhook Entry Crash: {e}")
+        logger.critical(f"Telegram Webhook Entry Crash: {e}")
         traceback.print_exc()
         return {"status": "error"}
 
@@ -584,7 +587,7 @@ async def generate_bind_token(
             finally:
                 await redis_client.aclose()
         except Exception as redis_err:
-            print(f"DEBUG: Redis is unavailable for generate-bind-token, storing in DB: {redis_err}")
+            logger.debug(f"Redis is unavailable for generate-bind-token, storing in DB: {redis_err}")
             
         # 2. Store in DB as primary/fallback storage
         settings_dict = integration.settings if (integration.settings and isinstance(integration.settings, dict)) else {}
@@ -608,7 +611,7 @@ async def generate_bind_token(
             "deep_link_url": deep_link_url
         }
     except Exception as e:
-        print(f"ERROR in generate_bind_token: {e}")
+        logger.error(f"ERROR in generate_bind_token: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
@@ -683,7 +686,7 @@ async def link_telegram(
         "bot_name": bot_info.get("first_name"),
         "local_testing": webhook_res.get("local_skip", False)
     }
-    print(f"DEBUG: Saving integration to DB. settings={integration.settings}")
+    logger.debug(f"Saving integration to DB. settings={integration.settings}")
     
     await db.commit()
     return {"status": "success", "bot_username": bot_info.get("username")}

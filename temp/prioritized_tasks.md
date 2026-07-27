@@ -18,7 +18,7 @@
 ## 🟠 Phase 3: Remaining Security (This Sprint — ~4 hrs) ⚠️ 2/4 DONE
 - [x] 200.5 — Protect Telegram `/debug/info` endpoint *(15 min)* — Has `Depends(get_current_user)`
 - [x] 200.6 — Whitelist file upload extensions *(15 min)* — Validates against `.csv, .xlsx, .xls, .json`
-- [ ] 200.7 — Replace `print()` with `logging` across backend *(1 hour)* — 22 in whatsapp.py, 24 in telegram.py
+- [x] 200.7 — Replace `print()` with `logging` across backend *(1 hour)* — 22 in whatsapp.py, 24 in telegram.py replaced with logger calls
 - [ ] 200.4 — Move auth cookie to server-side `Set-Cookie` with `HttpOnly; Secure` *(2-3 hours)* — authStore.ts still uses document.cookie
 
 ## 🟠 Phase 4: Performance & Reliability (This Sprint — ~7 hrs) ✅ COMPLETE

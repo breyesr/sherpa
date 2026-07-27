@@ -35,26 +35,26 @@ async def verify_whatsapp(
     hub_challenge: str = Query(None, alias="hub.challenge")
 ):
     """WhatsApp Cloud API Webhook verification."""
-    print(f"!!! WA VERIFY ATTEMPT: mode={hub_mode}, token={hub_verify_token} !!!")
+    logger.info(f"WA VERIFY ATTEMPT: mode={hub_mode}, token={hub_verify_token}")
     
     # Get dynamic verify token from Admin Settings
     expected_token = await ConfigService.get(db, "WHATSAPP_VERIFY_TOKEN", "sherpa_v1")
     
     if hub_mode == "subscribe" and hub_verify_token == expected_token:
-        print("WA VERIFY SUCCESS")
+        logger.info("WA VERIFY SUCCESS")
         return Response(content=hub_challenge)
     
-    print("WA VERIFY FAILED")
+    logger.warning("WA VERIFY FAILED")
     return Response(content="Verification failed", status_code=403)
 
 @router.post("/webhook")
 @limiter.limit("60/minute")
 async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Receive messages from WhatsApp Cloud API."""
-    print("!!! WHATSAPP WEBHOOK PING RECEIVED !!!")
+    logger.info("WHATSAPP WEBHOOK PING RECEIVED")
     try:
         payload = await request.json()
-        print(f"DEBUG: Incoming WhatsApp Payload: {payload}")
+        logger.debug(f"Incoming WhatsApp Payload: {payload}")
         
         entries = payload.get("entry", [])
         for entry in entries:
@@ -82,7 +82,7 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     integration = next((i for i in all_wa if i.settings.get("phone_number_id") == phone_id), None)
                     
                     if not integration:
-                        print(f"ERROR: WhatsApp Integration for phone_id {phone_id} not found.")
+                        logger.error(f"WhatsApp Integration for phone_id {phone_id} not found.")
                         continue
 
                     # 2. Fetch business
@@ -93,7 +93,7 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     )
                     business = result.scalars().first()
                     if not business:
-                        print(f"ERROR: Business not found for WA integration {integration.id}")
+                        logger.error(f"Business not found for WA integration {integration.id}")
                         continue
 
                     # Try to get profile name from contacts
@@ -113,7 +113,7 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                             async with httpx.AsyncClient() as http_client:
                                 await http_client.post(read_url, json=read_payload, headers={"Authorization": f"Bearer {access_token}"})
                         except Exception as re:
-                            print(f"DEBUG: WhatsApp mark-as-read failed: {re}")
+                            logger.debug(f"WhatsApp mark-as-read failed: {re}")
 
                         from app.core.ai_service import AIService
                         ai = AIService(business, db)
@@ -125,9 +125,9 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                         
                         try:
                             response_text = await ai.get_response(sender_phone, text, meta)
-                            print(f"DEBUG: AI success for WA {sender_phone}. Sending...")
+                            logger.debug(f"AI success for WA {sender_phone}. Sending...")
                         except Exception as e:
-                            print(f"ERROR: WA AIService failed: {e}")
+                            logger.error(f"WA AIService failed: {e}")
                             traceback.print_exc()
                             response_text = "Lo siento, estoy teniendo problemas técnicos. Por favor, intenta de nuevo."
                         
@@ -149,20 +149,20 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                         async with httpx.AsyncClient() as http_client:
                             wa_res = await http_client.post(url, json=wa_payload, headers=headers)
                             if wa_res.status_code >= 400:
-                                print(f"ERROR: WhatsApp API returned {wa_res.status_code}: {wa_res.text}")
+                                logger.error(f"WhatsApp API returned {wa_res.status_code}: {wa_res.text}")
                             else:
-                                print(f"DEBUG: Successfully sent WA reply to {sender_phone}")
+                                logger.debug(f"Successfully sent WA reply to {sender_phone}")
 
         return {"status": "ok"}
     except Exception as e:
-        print(f"CRITICAL: WhatsApp Webhook Entry Crash: {e}")
+        logger.critical(f"WhatsApp Webhook Entry Crash: {e}")
         traceback.print_exc()
         return {"status": "error"}
 
 @router.api_route("/debug/twilio", methods=["GET", "POST"])
 async def debug_twilio(request: Request):
     """Simple endpoint to verify Twilio is actually reaching the server."""
-    print(f"!!! DEBUG TWILIO REACHED: Method={request.method} !!!")
+    logger.info(f"DEBUG TWILIO REACHED: Method={request.method}")
     return {"status": "ok", "message": "Twilio can reach Sherpa!"}
 
 @router.post("/webhook/twilio")
@@ -172,7 +172,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
     Unified Multi-tenant Twilio Webhook with Identity-based Routing.
     Returns 200 OK immediately and processes message asynchronously.
     """
-    print("!!! TWILIO UNIFIED WEBHOOK PING RECEIVED !!!")
+    logger.info("TWILIO UNIFIED WEBHOOK PING RECEIVED")
     try:
         form_data = await request.form()
         payload = dict(form_data)
@@ -187,7 +187,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         sender_phone = clean_num(raw_sender)
         to_phone = clean_num(raw_to)
 
-        print(f"DEBUG: Normalized To={to_phone}, From={sender_phone}, Text='{text}'")
+        logger.debug(f"Normalized To={to_phone}, From={sender_phone}, Text='{text}'")
 
         if not text:
             return Response(content="<Response></Response>", media_type="text/xml")
@@ -212,11 +212,11 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
             master_number_raw = await ConfigService.get(db, "TWILIO_WHATSAPP_NUMBER", settings.TWILIO_WHATSAPP_NUMBER)
             master_number = clean_num(master_number_raw or "")
             if to_phone == master_number and all_wa:
-                print("DEBUG: Using Sandbox fallback")
+                logger.debug("Using Sandbox fallback")
                 integration = all_wa[0]
 
         if not integration:
-            print(f"ERROR: Routing failed. Could not find business for number: {to_phone}")
+            logger.error(f"Routing failed. Could not find business for number: {to_phone}")
             return Response(content="Sender registration unmapped.", status_code=404)
 
         # 2. Resolve credentials & validate Twilio request signature
@@ -240,7 +240,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
             url = f"{proto}://{host}{request.url.path}"
             
             if not validator.validate(url, payload, signature):
-                print(f"WARNING: Invalid Twilio request signature validation failed! URL={url}")
+                logger.warning(f"Invalid Twilio request signature validation failed! URL={url}")
                 return Response(content="Forbidden: Invalid Signature", status_code=403)
 
         # 2. Fetch Business
@@ -251,10 +251,10 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         )
         business = result.scalars().first()
         if not business:
-            print(f"ERROR: Business record missing for ID {integration.business_id}")
+            logger.error(f"Business record missing for ID {integration.business_id}")
             return Response(content="<Response></Response>", media_type="text/xml")
 
-        print(f"DEBUG: Routing message to Business: '{business.name}'")
+        logger.debug(f"Routing message to Business: '{business.name}'")
 
         # 3. Match identity
         from app.services.identity_resolver import IdentityResolver
@@ -330,7 +330,7 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         return Response(content="<Response></Response>", media_type="text/xml")
 
     except Exception as e:
-        print(f"CRITICAL: Twilio Webhook Top-level Crash: {e}")
+        logger.critical(f"Twilio Webhook Top-level Crash: {e}")
         traceback.print_exc()
         return Response(content="<Response></Response>", media_type="text/xml")
 
