@@ -15,7 +15,7 @@ from app.schemas.data_gateway import DataImportResponse, DataGatewaySyncRequest
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads/imports"
+from app.core.constants import UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("/me/imports", response_model=List[DataImportResponse])
@@ -63,9 +63,10 @@ async def create_data_import(
         
     # Save file locally
     file_ext = os.path.splitext(file.filename)[1].lower()
-    allowed_exts = {".csv", ".xlsx", ".xls", ".json"}
-    if file_ext not in allowed_exts:
-        raise HTTPException(status_code=400, detail=f"Unsupported file extension '{file_ext}'. Allowed formats: .csv, .xlsx, .json")
+    from app.core.constants import ALLOWED_FILE_EXTENSIONS
+    if file_ext not in ALLOWED_FILE_EXTENSIONS:
+        allowed_str = ", ".join(ALLOWED_FILE_EXTENSIONS)
+        raise HTTPException(status_code=400, detail=f"Unsupported file extension '{file_ext}'. Allowed formats: {allowed_str}")
 
     file_id = str(uuid.uuid4())
     file_path = os.path.join(UPLOAD_DIR, f"{file_id}{file_ext}")

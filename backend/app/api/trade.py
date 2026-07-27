@@ -42,7 +42,7 @@ async def get_business(db: AsyncSession, user_id: str) -> BusinessProfile:
     return business
 
 async def get_b2b_business(db: AsyncSession, current_user: User) -> BusinessProfile:
-    from app.api.business import DEFAULT_FEATURES_CONFIG
+    from app.core.constants import DEFAULT_FEATURES_CONFIG
     cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
     if not cfg.get("b2b_solutions", {}).get("enabled", False):
         raise HTTPException(

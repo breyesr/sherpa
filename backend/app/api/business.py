@@ -27,16 +27,7 @@ from app.schemas.crm import AppointmentResponse
 from app.api.auth import get_current_user
 from app.core.limiter import limiter
 
-DEFAULT_FEATURES_CONFIG = {
-    "scheduling": {"enabled": True},
-    "business_identity": {"enabled": True},
-    "crm_suite": {"enabled": True},
-    "campaign_flow": {"enabled": False},
-    "b2b_solutions": {"enabled": False},
-    "sales_intelligence": {"enabled": False},
-    "services": {"enabled": True},
-    "products": {"enabled": False}
-}
+from app.core.constants import DEFAULT_FEATURES_CONFIG
 
 def get_default_routing_config(vertical_type: str) -> dict:
     if vertical_type == "TRADE":
