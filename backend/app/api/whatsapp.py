@@ -1,3 +1,8 @@
+"""
+WhatsApp Business webhook router.
+Processes inbound Twilio/WhatsApp webhooks, message delivery status callbacks, and multi-tenant webhook routing.
+"""
+
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import Response

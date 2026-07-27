@@ -1,3 +1,8 @@
+"""
+Admin Dashboard & Tenant Settings Router.
+Provides platform-level management endpoints for users, billing profiles, and global configs.
+"""
+
 from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession

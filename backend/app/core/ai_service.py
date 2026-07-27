@@ -1,3 +1,8 @@
+"""
+Core AI Agent Messaging and Tool Pipeline.
+Coordinates user dialog processing, template prompt formatting, calendar/CRM tool execution, and LLM completions.
+"""
+
 import json
 import traceback
 import asyncio

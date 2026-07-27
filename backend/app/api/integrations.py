@@ -1,3 +1,8 @@
+"""
+External Integrations & Auth Redirect Router.
+Manages Google Calendar OAuth flow, token refresh/revocation, Twilio settings, and other API integrations.
+"""
+
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse

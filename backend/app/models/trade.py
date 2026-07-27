@@ -1,3 +1,8 @@
+"""
+Trade Domain Relational Database Models.
+Defines SQL Alchemy models for stores, orders, items, products, categories, actions, and custom trade attributes.
+"""
+
 from typing import Optional, List, Dict, Any
 from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index, Boolean, Numeric
 import enum

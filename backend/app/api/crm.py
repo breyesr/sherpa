@@ -1,3 +1,8 @@
+"""
+CRM Client & Session Management Router.
+Provides CRUD endpoints for CRM clients, custom fields, and conversation histories.
+"""
+
 from typing import Any, List, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession

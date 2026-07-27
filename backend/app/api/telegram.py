@@ -1,3 +1,8 @@
+"""
+Telegram Webhook and Messaging API Router.
+Handles inbound webhooks from Telegram bot, command execution, and chat interaction routing.
+"""
+
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
