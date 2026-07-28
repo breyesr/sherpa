@@ -27,6 +27,32 @@ Finalize UX Hardening and establish a robust multi-tenant infrastructure for MVP
 - **Objective:** Finalize manual rescheduling UI parity with AI rescheduling logic.
 - **Task 6.4 (Frontend):** Ensure the "Reschedule" button in the dashboard updates the existing record instead of calling the standard creation endpoint.
 
+## Phase 5: Prospect-to-Store Redirection & Value Tracking (Epic 138)
+- **Task 138.1: Database Schema Migration & Audit Log.**
+  - **Acceptance Criteria:** Add `assigned_store_id` self-referential foreign key on `Store` (nullable, index, SET NULL) and create `ClientStoreHistory` log table. Add `requested_product_id`, `requested_quantity`, `potential_value`, and `referred_at` columns to `Store`.
+- **Task 138.2: Lead Qualification Value Ingestion.**
+  - **Acceptance Criteria:** Update `qualify_lead` in `prospect_qualifier.py` to write the resolved `matched_store_id`, `product_id`, `quantity`, `referred_at`, and calculated `potential_value` (`qty * product.price`) into the prospect's newly created `Store` record.
+- **Task 138.3: API Schema & Validation Setup.**
+  - **Acceptance Criteria:** Update Pydantic schemas in `schemas/trade.py` and endpoints in `api/trade.py` to accept, return, and update `assigned_store_id`, `requested_product_id`, `requested_quantity`, `potential_value`, and `referred_at`, enforcing multi-tenant verification and circular reference checks.
+- **Task 138.4: Dashboard Referral Logs & KPI Expose.**
+  - **Acceptance Criteria:** Add a "Referrals" dashboard tab inside the Store details page to render a list of assigned prospects (showing date, product, quantity, and lead value, with PII masking gates for distributors), along with a Total Referral Pipeline Value KPI metric.
+- **Task 138.5: API Type Regeneration & Compile Check.**
+  - **Acceptance Criteria:** Regenerate frontend types, and verify the production build succeeds.
+
+## Phase 6: Prospects Segmentation & Retail Referrals (Epic 139)
+- **Task 139.1: Database Schema & Segment Migration.**
+  - **Acceptance Criteria:** Add `prospect_segment` column (VARCHAR, default "wholesale", indexed) to `Client` and `Store` tables. Create Alembic migration script to default all existing rows to "wholesale".
+- **Task 139.2: API Filters & Pydantic Schema Integration.**
+  - **Acceptance Criteria:** Extend schemas and endpoints to accept and validate the `prospect_segment` query parameter.
+- **Task 139.3: Lead Qualification Flow Segmentation.**
+  - **Acceptance Criteria:** Modify `ProspectQualifier` to collect retail lead contacts and save them with `is_prospect=True` and `prospect_segment="retail"`, linked to the matching authorized store.
+- **Task 139.4: Sidebar Restructure & List Filtering.**
+  - **Acceptance Criteria:** Add "Wholesale" and "Retail Referrals" headings to `Sidebar.tsx`, mapping links to segment query parameters. Update React Query keys in contact/account pages to support query invalidation.
+- **Task 139.5: Test Suite Alignment.**
+  - **Acceptance Criteria:** Refactor `test_whatsapp_campaign.py` and `test_simulated_session_3.py` to assert retail lead CRM generation instead of early termination.
+- **Task 139.6: Type Regeneration & Build Verification.**
+  - **Acceptance Criteria:** Regenerate types and verify production build.
+
 ## Out of Scope for this Sprint
 - Form Builders.
 - Advanced Conversational AI.

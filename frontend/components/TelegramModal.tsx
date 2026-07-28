@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Send, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 
@@ -9,13 +9,88 @@ interface TelegramModalProps {
   onClose: () => void;
   onSuccess: () => void;
   token: string | null;
+  initialStep?: number;
 }
 
-export default function TelegramModal({ isOpen, onClose, onSuccess, token }: TelegramModalProps) {
-  const [step, setStep] = useState(1);
+export default function TelegramModal({ isOpen, onClose, onSuccess, token, initialStep = 1 }: TelegramModalProps) {
+  const [step, setStep] = useState(initialStep);
   const [botToken, setBotToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deepLinkUrl, setDeepLinkUrl] = useState('');
+  const [adminLinked, setAdminLinked] = useState(false);
+
+  const fetchBindToken = async () => {
+    setError('');
+    try {
+      const tokenRes = await fetch(`${API_BASE_URL}/telegram/generate-bind-token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        if (tokenData.deep_link_url) {
+          setDeepLinkUrl(tokenData.deep_link_url);
+        } else {
+          throw new Error('Telegram bot is linked, but has no username configured.');
+        }
+      } else {
+        const errorData = await tokenRes.json();
+        throw new Error(errorData.detail || 'Failed to generate admin binding token');
+      }
+    } catch (tokenErr: any) {
+      console.error('Failed to generate admin bind token:', tokenErr);
+      setError(tokenErr.message);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(initialStep);
+      setError('');
+      setBotToken('');
+      setDeepLinkUrl('');
+      setAdminLinked(false);
+      if (initialStep === 3) {
+        fetchBindToken();
+      }
+    }
+  }, [isOpen, initialStep]);
+
+  // Poll for admin binding status when on step 3
+  useEffect(() => {
+    let intervalId: any;
+    if (step === 3 && isOpen) {
+      setAdminLinked(false);
+      const checkStatus = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/telegram/bind-status`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.admin_linked) {
+              setAdminLinked(true);
+              clearInterval(intervalId);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to check bind status:', err);
+        }
+      };
+      
+      checkStatus();
+      intervalId = setInterval(checkStatus, 2000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [step, isOpen, token]);
 
   if (!isOpen) return null;
 
@@ -24,6 +99,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
     setError('');
 
     try {
+      // 1. Link Telegram Bot
       const res = await fetch(`${API_BASE_URL}/telegram/link`, {
         method: 'POST',
         headers: {
@@ -38,13 +114,11 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
         throw new Error(errorData.detail || 'Failed to save Telegram settings');
       }
 
-      setStep(4); // Success step
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-        setStep(1);
-        setBotToken('');
-      }, 2000);
+      // 2. Generate Admin Deep Link Token
+      await fetchBindToken();
+
+      setStep(3); // Go to Admin Deep Link/QR step
+      setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -81,7 +155,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
               onClick={() => setStep(2)}
               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
             >
-              I'm at @BotFather, next step
+              I&apos;m at @BotFather, next step
             </button>
           </div>
         );
@@ -93,7 +167,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
               <div>
                 <p className="font-bold text-blue-900">Get your API Token</p>
                 <p className="text-sm text-blue-700 mt-1">
-                  Once created, @BotFather will give you a "token" (it looks like <span className="font-mono">12345:ABC...</span>).
+                  Once created, @BotFather will give you a &quot;token&quot; (it looks like <span className="font-mono">12345:ABC...</span>).
                 </p>
               </div>
             </div>
@@ -124,6 +198,66 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token }: Tel
                 {loading ? 'Connecting...' : 'Connect my Bot'}
               </button>
             </div>
+          </div>
+        );
+      case 3:
+        return (
+          <div className="space-y-6 text-center">
+            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 flex flex-col items-center">
+              <p className="font-bold text-blue-900 text-lg">Vincular Administrador</p>
+              <p className="text-sm text-blue-700 mt-2">
+                Para que Sherpa te reconozca como Administrador/Vendedor y responda con los reportes de ventas, escanea el código QR con tu celular o haz clic en el botón de abajo para abrir Telegram y vincular tu cuenta:
+              </p>
+              
+              {adminLinked ? (
+                <div className="mt-6 space-y-4 w-full p-4 bg-white rounded-2xl border border-green-100 shadow-sm animate-in zoom-in duration-300">
+                  <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-green-500 border border-green-200 mx-auto">
+                    <CheckCircle2 size={36} />
+                  </div>
+                  <p className="font-bold text-green-900 text-lg">¡Administrador Vinculado!</p>
+                  <p className="text-sm text-green-600">Tu cuenta de Telegram ha sido correctamente asociada a tu perfil de Sherpa.</p>
+                </div>
+              ) : deepLinkUrl ? (
+                <div className="mt-5 space-y-5 w-full animate-in fade-in duration-300">
+                  <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-gray-100 mx-auto">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(deepLinkUrl)}`} 
+                      alt="Telegram Admin QR Link" 
+                      className="w-44 h-44 object-contain mx-auto"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-wider">Escanea con tu celular</p>
+                  </div>
+
+                  <a 
+                    href={deepLinkUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 w-full"
+                  >
+                    Vincular mi Telegram <ExternalLink size={18} />
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mt-4">Generando enlace de vinculación...</p>
+              )}
+            </div>
+            {error && <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl font-medium border border-red-100 mt-4">{error}</p>}
+            
+            <button 
+              onClick={() => {
+                setStep(4);
+                setTimeout(() => {
+                  onSuccess();
+                  onClose();
+                  setStep(1);
+                  setBotToken('');
+                  setDeepLinkUrl('');
+                }, 2000);
+              }}
+              className={`w-full py-4 rounded-2xl font-bold transition-all shadow-md ${adminLinked ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              {adminLinked ? 'Terminar Configuración' : 'Finalizar / Siguiente'}
+            </button>
           </div>
         );
       case 4:

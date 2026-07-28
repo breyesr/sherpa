@@ -65,12 +65,26 @@ export interface paths {
      */
     post: operations["trigger_google_sync_api_v1_integrations_google_sync_post"];
   };
+  "/api/v1/integrations/whatsapp/provision": {
+    /**
+     * Provision Whatsapp
+     * @description Automate Twilio subaccount and MX number provisioning for this business.
+     */
+    post: operations["provision_whatsapp_api_v1_integrations_whatsapp_provision_post"];
+  };
   "/api/v1/integrations/{provider}": {
     /**
      * Disconnect Integration
      * @description Remove an integration and its associated local cache.
      */
     delete: operations["disconnect_integration_api_v1_integrations__provider__delete"];
+  };
+  "/api/v1/integrations/whatsapp/usage/{business_id}": {
+    /**
+     * Get Whatsapp Usage Endpoint
+     * @description Get monthly message usage statistics for WhatsApp integration.
+     */
+    get: operations["get_whatsapp_usage_endpoint_api_v1_integrations_whatsapp_usage__business_id__get"];
   };
   "/api/v1/crm/clients": {
     /** Get Clients */
@@ -79,6 +93,8 @@ export interface paths {
     post: operations["create_client_api_v1_crm_clients_post"];
   };
   "/api/v1/crm/clients/{client_id}": {
+    /** Get Client Detail */
+    get: operations["get_client_detail_api_v1_crm_clients__client_id__get"];
     /** Delete Client */
     delete: operations["delete_client_api_v1_crm_clients__client_id__delete"];
     /** Update Client */
@@ -125,7 +141,7 @@ export interface paths {
   "/api/v1/whatsapp/webhook": {
     /**
      * Verify Whatsapp
-     * @description WhatsApp Webhook verification.
+     * @description WhatsApp Cloud API Webhook verification.
      */
     get: operations["verify_whatsapp_api_v1_whatsapp_webhook_get"];
     /**
@@ -134,12 +150,47 @@ export interface paths {
      */
     post: operations["whatsapp_webhook_api_v1_whatsapp_webhook_post"];
   };
+  "/api/v1/whatsapp/debug/twilio": {
+    /**
+     * Debug Twilio
+     * @description Simple endpoint to verify Twilio is actually reaching the server.
+     */
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    /**
+     * Debug Twilio
+     * @description Simple endpoint to verify Twilio is actually reaching the server.
+     */
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+  };
+  "/api/v1/whatsapp/webhook/twilio": {
+    /**
+     * Twilio Whatsapp Webhook
+     * @description Unified Multi-tenant Twilio Webhook with Identity-based Routing.
+     * Returns 200 OK immediately and processes message asynchronously.
+     */
+    post: operations["twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post"];
+  };
   "/api/v1/whatsapp/setup": {
     /**
      * Setup Whatsapp
-     * @description Save WhatsApp Cloud API credentials.
+     * @description Simplified Setup (Option B): Users only provide their number.
+     * The Platform's master keys are used automatically.
      */
     post: operations["setup_whatsapp_api_v1_whatsapp_setup_post"];
+  };
+  "/api/v1/whatsapp/status": {
+    /**
+     * Get Whatsapp Status
+     * @description Get dynamic status and diagnostics for the WhatsApp/Twilio integration.
+     */
+    get: operations["get_whatsapp_status_api_v1_whatsapp_status_get"];
+  };
+  "/api/v1/telegram/debug/info": {
+    /**
+     * Telegram Debug Info
+     * @description Fetch debug information about all registered Telegram bots and their current webhooks.
+     */
+    get: operations["telegram_debug_info_api_v1_telegram_debug_info_get"];
   };
   "/api/v1/telegram/webhook/{webhook_id}": {
     /**
@@ -147,6 +198,20 @@ export interface paths {
      * @description Receive messages from Telegram via a unique webhook ID.
      */
     post: operations["telegram_webhook_api_v1_telegram_webhook__webhook_id__post"];
+  };
+  "/api/v1/telegram/generate-bind-token": {
+    /**
+     * Generate Bind Token
+     * @description Generate a temporary, secure token to bind the admin's Telegram account.
+     */
+    post: operations["generate_bind_token_api_v1_telegram_generate_bind_token_post"];
+  };
+  "/api/v1/telegram/bind-status": {
+    /**
+     * Get Bind Status
+     * @description Check if the admin's Telegram account is linked to the current user's business.
+     */
+    get: operations["get_bind_status_api_v1_telegram_bind_status_get"];
   };
   "/api/v1/telegram/link": {
     /**
@@ -172,14 +237,21 @@ export interface paths {
   "/api/v1/admin/users": {
     /**
      * List Users
-     * @description List all users (Admin only).
+     * @description List all users with their business profiles (Admin only).
      */
     get: operations["list_users_api_v1_admin_users_get"];
     /**
      * Create User Admin
-     * @description Create a new user (Admin only).
+     * @description Create a new user and their associated business profile (Admin only).
      */
     post: operations["create_user_admin_api_v1_admin_users_post"];
+  };
+  "/api/v1/admin/businesses/{business_id}/vertical": {
+    /**
+     * Update Business Vertical
+     * @description Update a business vertical type (Admin only).
+     */
+    patch: operations["update_business_vertical_api_v1_admin_businesses__business_id__vertical_patch"];
   };
   "/api/v1/admin/users/{user_id}": {
     /**
@@ -189,7 +261,7 @@ export interface paths {
     delete: operations["delete_user_admin_api_v1_admin_users__user_id__delete"];
     /**
      * Update User Admin
-     * @description Update a user (Admin only).
+     * @description Update a user and their business vertical (Admin only).
      */
     patch: operations["update_user_admin_api_v1_admin_users__user_id__patch"];
   };
@@ -205,6 +277,298 @@ export interface paths {
      */
     post: operations["update_admin_settings_api_v1_admin_settings_post"];
   };
+  "/api/v1/admin/dlq": {
+    /**
+     * List Dlq
+     * @description List all dead-letter queue entries (Admin only).
+     */
+    get: operations["list_dlq_api_v1_admin_dlq_get"];
+  };
+  "/api/v1/admin/dlq/{dlq_id}/retry": {
+    /**
+     * Retry Dlq Entry
+     * @description Retry a failed task from DLQ and mark it as resolved (Admin only).
+     */
+    post: operations["retry_dlq_entry_api_v1_admin_dlq__dlq_id__retry_post"];
+  };
+  "/api/v1/admin/businesses/{business_id}/credits": {
+    /**
+     * Update Business Credits
+     * @description Update manual purchased credits for a business (Admin only).
+     */
+    patch: operations["update_business_credits_api_v1_admin_businesses__business_id__credits_patch"];
+  };
+  "/api/v1/data-gateway/me/imports": {
+    /**
+     * Get My Imports
+     * @description List all data imports for the current business.
+     */
+    get: operations["get_my_imports_api_v1_data_gateway_me_imports_get"];
+    /**
+     * Create Data Import
+     * @description Upload a file and initiate a background data import.
+     */
+    post: operations["create_data_import_api_v1_data_gateway_me_imports_post"];
+  };
+  "/api/v1/data-gateway/sync": {
+    /**
+     * Sync Data
+     * @description Real-time data ingestion endpoint.
+     */
+    post: operations["sync_data_api_v1_data_gateway_sync_post"];
+  };
+  "/api/v1/trade/stores": {
+    /**
+     * List Stores
+     * @description List all stores for the current business.
+     */
+    get: operations["list_stores_api_v1_trade_stores_get"];
+    /**
+     * Create Store
+     * @description Create a new store.
+     */
+    post: operations["create_store_api_v1_trade_stores_post"];
+  };
+  "/api/v1/trade/stores/{store_id}": {
+    /**
+     * Get Store
+     * @description Fetch a single store with its notes.
+     */
+    get: operations["get_store_api_v1_trade_stores__store_id__get"];
+    /**
+     * Delete Store
+     * @description Delete a store.
+     */
+    delete: operations["delete_store_api_v1_trade_stores__store_id__delete"];
+    /**
+     * Update Store
+     * @description Update a store.
+     */
+    patch: operations["update_store_api_v1_trade_stores__store_id__patch"];
+  };
+  "/api/v1/trade/stores/{store_id}/notes": {
+    /**
+     * Create Store Note
+     * @description Add a note (observation) to a store.
+     */
+    post: operations["create_store_note_api_v1_trade_stores__store_id__notes_post"];
+  };
+  "/api/v1/trade/postal-codes": {
+    /**
+     * List Postal Codes
+     * @description Retrieve preloaded Mexican postal codes (limited for performance).
+     */
+    get: operations["list_postal_codes_api_v1_trade_postal_codes_get"];
+  };
+  "/api/v1/trade/postal-codes/states": {
+    /**
+     * List States
+     * @description Retrieve all unique states.
+     */
+    get: operations["list_states_api_v1_trade_postal_codes_states_get"];
+  };
+  "/api/v1/trade/postal-codes/municipalities": {
+    /**
+     * List Municipalities
+     * @description Retrieve all unique municipalities for a given state.
+     */
+    get: operations["list_municipalities_api_v1_trade_postal_codes_municipalities_get"];
+  };
+  "/api/v1/trade/postal-codes/zip-codes": {
+    /**
+     * List Zip Codes
+     * @description Retrieve all zip codes and colonias for a given state and municipality.
+     */
+    get: operations["list_zip_codes_api_v1_trade_postal_codes_zip_codes_get"];
+  };
+  "/api/v1/trade/postal-codes/{zip_code}": {
+    /**
+     * Lookup Postal Code
+     * @description Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.
+     */
+    get: operations["lookup_postal_code_api_v1_trade_postal_codes__zip_code__get"];
+  };
+  "/api/v1/trade/categories": {
+    /**
+     * List Categories
+     * @description List all product categories.
+     */
+    get: operations["list_categories_api_v1_trade_categories_get"];
+    /**
+     * Create Category
+     * @description Create a new category.
+     */
+    post: operations["create_category_api_v1_trade_categories_post"];
+  };
+  "/api/v1/trade/products": {
+    /**
+     * List Products
+     * @description List all products in the catalog.
+     */
+    get: operations["list_products_api_v1_trade_products_get"];
+    /**
+     * Create Product
+     * @description Create a new product.
+     */
+    post: operations["create_product_api_v1_trade_products_post"];
+  };
+  "/api/v1/trade/products/{product_id}": {
+    /**
+     * Get Product
+     * @description Get a product by ID.
+     */
+    get: operations["get_product_api_v1_trade_products__product_id__get"];
+    /**
+     * Delete Product
+     * @description Delete a product.
+     */
+    delete: operations["delete_product_api_v1_trade_products__product_id__delete"];
+    /**
+     * Update Product
+     * @description Update a product.
+     */
+    patch: operations["update_product_api_v1_trade_products__product_id__patch"];
+  };
+  "/api/v1/trade/prospects/orders": {
+    /**
+     * List Prospect Orders
+     * @description List all prospecting/unverified orders for the business, partitioned by segment.
+     */
+    get: operations["list_prospect_orders_api_v1_trade_prospects_orders_get"];
+  };
+  "/api/v1/trade/orders": {
+    /**
+     * List Orders
+     * @description List all orders for the business, optionally filtered by store.
+     */
+    get: operations["list_orders_api_v1_trade_orders_get"];
+    /**
+     * Create Order
+     * @description Create a new order with items.
+     */
+    post: operations["create_order_api_v1_trade_orders_post"];
+  };
+  "/api/v1/trade/orders/{order_id}": {
+    /**
+     * Get Order
+     * @description Get detail of a single order by ID.
+     */
+    get: operations["get_order_api_v1_trade_orders__order_id__get"];
+    /**
+     * Update Order
+     * @description Update order metadata or status.
+     */
+    patch: operations["update_order_api_v1_trade_orders__order_id__patch"];
+  };
+  "/api/v1/trade/competitors": {
+    /**
+     * List Competitors
+     * @description List all competitors, optionally filtered by store.
+     */
+    get: operations["list_competitors_api_v1_trade_competitors_get"];
+    /**
+     * Create Competitor
+     * @description Record a new competitor entry.
+     */
+    post: operations["create_competitor_api_v1_trade_competitors_post"];
+  };
+  "/api/v1/trade/stores/{store_id}/brief": {
+    /**
+     * Get Strategic Brief
+     * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
+     */
+    get: operations["get_strategic_brief_api_v1_trade_stores__store_id__brief_get"];
+  };
+  "/api/v1/trade/clients/{client_id}/brief": {
+    /**
+     * Generate Visit Brief
+     * @description Generate a specialized AI brief for a store visit.
+     */
+    post: operations["generate_visit_brief_api_v1_trade_clients__client_id__brief_post"];
+  };
+  "/api/v1/trade/clients/{client_id}/qualify": {
+    /**
+     * Qualify Lead
+     * @description Generate a lead qualification report for a retailer.
+     */
+    post: operations["qualify_lead_api_v1_trade_clients__client_id__qualify_post"];
+  };
+  "/api/v1/trade/action-templates": {
+    /**
+     * List Action Templates
+     * @description List all action templates for the business.
+     */
+    get: operations["list_action_templates_api_v1_trade_action_templates_get"];
+    /**
+     * Create Action Template
+     * @description Create a new action template.
+     */
+    post: operations["create_action_template_api_v1_trade_action_templates_post"];
+  };
+  "/api/v1/trade/action-templates/{template_id}": {
+    /**
+     * Delete Action Template
+     * @description Delete an action template.
+     */
+    delete: operations["delete_action_template_api_v1_trade_action_templates__template_id__delete"];
+    /**
+     * Update Action Template
+     * @description Update an action template.
+     */
+    patch: operations["update_action_template_api_v1_trade_action_templates__template_id__patch"];
+  };
+  "/api/v1/trade/actions": {
+    /**
+     * List Store Actions
+     * @description List store actions for the current business with filters.
+     */
+    get: operations["list_store_actions_api_v1_trade_actions_get"];
+    /**
+     * Create Store Action
+     * @description Create a manual store action.
+     */
+    post: operations["create_store_action_api_v1_trade_actions_post"];
+  };
+  "/api/v1/trade/actions/{action_id}": {
+    /**
+     * Get Store Action
+     * @description Retrieve a single store action.
+     */
+    get: operations["get_store_action_api_v1_trade_actions__action_id__get"];
+    /**
+     * Delete Store Action
+     * @description Delete a store action.
+     */
+    delete: operations["delete_store_action_api_v1_trade_actions__action_id__delete"];
+    /**
+     * Update Store Action
+     * @description Update a store action, with strict validation on completion.
+     */
+    patch: operations["update_store_action_api_v1_trade_actions__action_id__patch"];
+  };
+  "/api/v1/trade/objectives": {
+    /**
+     * List Objectives
+     * @description List all dynamic action objectives for the business.
+     */
+    get: operations["list_objectives_api_v1_trade_objectives_get"];
+    /**
+     * Create Objective
+     * @description Create a new custom action objective.
+     */
+    post: operations["create_objective_api_v1_trade_objectives_post"];
+  };
+  "/api/v1/trade/objectives/{obj_id}": {
+    /**
+     * Delete Objective
+     * @description Delete a custom action objective.
+     */
+    delete: operations["delete_objective_api_v1_trade_objectives__obj_id__delete"];
+  };
+  "/": {
+    /** Root Redirect */
+    get: operations["root_redirect__get"];
+  };
   "/health": {
     /** Health Check */
     get: operations["health_check_health_get"];
@@ -215,6 +579,189 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    /**
+     * ActionCategory
+     * @enum {string}
+     */
+    ActionCategory: "MARKETING" | "COMMERCIAL";
+    /**
+     * ActionStatus
+     * @enum {string}
+     */
+    ActionStatus: "proposed" | "pending" | "completed" | "cancelled";
+    /** ActionTemplateCreate */
+    ActionTemplateCreate: {
+      /** Name */
+      name: string;
+      category: components["schemas"]["ActionCategory"];
+      /** Default Unit */
+      default_unit: string;
+      /** Objective */
+      objective?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Details */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** ActionTemplateResponse */
+    ActionTemplateResponse: {
+      /** Name */
+      name: string;
+      category: components["schemas"]["ActionCategory"];
+      /** Default Unit */
+      default_unit: string;
+      /** Objective */
+      objective?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Details */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** ActionTemplateUpdate */
+    ActionTemplateUpdate: {
+      /** Name */
+      name?: string | null;
+      category?: components["schemas"]["ActionCategory"] | null;
+      /** Default Unit */
+      default_unit?: string | null;
+      /** Objective */
+      objective?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Details */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** AgentResponse */
+    AgentResponse: {
+      /** Name */
+      name: string;
+      /**
+       * Role
+       * @default general
+       */
+      role?: string;
+      /**
+       * Is Active
+       * @default true
+       */
+      is_active?: boolean;
+      /** Tone */
+      tone: string;
+      /** Greeting */
+      greeting: string;
+      /**
+       * Personalized Greeting
+       * @default Hola {name}, ¿en qué puedo ayudarte hoy?
+       */
+      personalized_greeting?: string;
+      /**
+       * Logic Template
+       * @default standard
+       */
+      logic_template?: string;
+      /** Custom Steps */
+      custom_steps?: string | null;
+      /**
+       * Require Reason
+       * @default true
+       */
+      require_reason?: boolean | null;
+      /**
+       * Confirm Details
+       * @default true
+       */
+      confirm_details?: boolean | null;
+      /**
+       * Strict Guardrails
+       * @default true
+       */
+      strict_guardrails?: boolean | null;
+      /**
+       * Enable Honesty
+       * @default true
+       */
+      enable_honesty?: boolean;
+      /**
+       * Enable Internal Alert
+       * @default false
+       */
+      enable_internal_alert?: boolean;
+      /**
+       * Enable Lead Capture
+       * @default true
+       */
+      enable_lead_capture?: boolean;
+      /**
+       * Enable Emergency Phone
+       * @default false
+       */
+      enable_emergency_phone?: boolean;
+      /** Working Hours */
+      working_hours?: {
+        [key: string]: string[];
+      } | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+    };
+    /** AgentUpdate */
+    AgentUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Is Active */
+      is_active?: boolean | null;
+      /** Tone */
+      tone?: string | null;
+      /** Greeting */
+      greeting?: string | null;
+      /** Personalized Greeting */
+      personalized_greeting?: string | null;
+      /** Logic Template */
+      logic_template?: string | null;
+      /** Custom Steps */
+      custom_steps?: string | null;
+      /** Require Reason */
+      require_reason?: boolean | null;
+      /** Confirm Details */
+      confirm_details?: boolean | null;
+      /** Strict Guardrails */
+      strict_guardrails?: boolean | null;
+      /** Enable Honesty */
+      enable_honesty?: boolean | null;
+      /** Enable Internal Alert */
+      enable_internal_alert?: boolean | null;
+      /** Enable Lead Capture */
+      enable_lead_capture?: boolean | null;
+      /** Enable Emergency Phone */
+      enable_emergency_phone?: boolean | null;
+      /** Working Hours */
+      working_hours?: {
+        [key: string]: string[];
+      } | null;
+    };
     /** AppointmentCreate */
     AppointmentCreate: {
       /** Client Id */
@@ -284,102 +831,14 @@ export interface components {
       /** Notes */
       notes?: string | null;
     };
-    /** AssistantConfigResponse */
-    AssistantConfigResponse: {
-      /** Name */
-      name: string;
-      /** Tone */
-      tone: string;
-      /** Greeting */
-      greeting: string;
-      /**
-       * Personalized Greeting
-       * @default Hola {name}, ¿en qué puedo ayudarte hoy?
-       */
-      personalized_greeting?: string;
-      /**
-       * Logic Template
-       * @default standard
-       */
-      logic_template?: string;
-      /** Custom Steps */
-      custom_steps?: string | null;
-      /**
-       * Require Reason
-       * @default true
-       */
-      require_reason?: boolean | null;
-      /**
-       * Confirm Details
-       * @default true
-       */
-      confirm_details?: boolean | null;
-      /**
-       * Strict Guardrails
-       * @default true
-       */
-      strict_guardrails?: boolean | null;
-      /**
-       * Enable Honesty
-       * @default true
-       */
-      enable_honesty?: boolean;
-      /**
-       * Enable Internal Alert
-       * @default false
-       */
-      enable_internal_alert?: boolean;
-      /**
-       * Enable Lead Capture
-       * @default true
-       */
-      enable_lead_capture?: boolean;
-      /**
-       * Enable Emergency Phone
-       * @default false
-       */
-      enable_emergency_phone?: boolean;
-      /** Working Hours */
-      working_hours?: {
-        [key: string]: string[];
-      } | null;
-      /** Id */
-      id: string;
-      /** Business Id */
-      business_id: string;
-    };
-    /** AssistantConfigUpdate */
-    AssistantConfigUpdate: {
-      /** Name */
-      name?: string | null;
-      /** Tone */
-      tone?: string | null;
-      /** Greeting */
-      greeting?: string | null;
-      /** Personalized Greeting */
-      personalized_greeting?: string | null;
-      /** Logic Template */
-      logic_template?: string | null;
-      /** Custom Steps */
-      custom_steps?: string | null;
-      /** Require Reason */
-      require_reason?: boolean | null;
-      /** Confirm Details */
-      confirm_details?: boolean | null;
-      /** Strict Guardrails */
-      strict_guardrails?: boolean | null;
-      /** Enable Honesty */
-      enable_honesty?: boolean | null;
-      /** Enable Internal Alert */
-      enable_internal_alert?: boolean | null;
-      /** Enable Lead Capture */
-      enable_lead_capture?: boolean | null;
-      /** Enable Emergency Phone */
-      enable_emergency_phone?: boolean | null;
-      /** Working Hours */
-      working_hours?: {
-        [key: string]: string[];
-      } | null;
+    /** Body_create_data_import_api_v1_data_gateway_me_imports_post */
+    Body_create_data_import_api_v1_data_gateway_me_imports_post: {
+      /** Entity Type */
+      entity_type: string;
+      /** Mapping Json */
+      mapping_json: string;
+      /** File */
+      file: string;
     };
     /** Body_login_api_v1_auth_login_post */
     Body_login_api_v1_auth_login_post: {
@@ -387,7 +846,10 @@ export interface components {
       grant_type?: string | null;
       /** Username */
       username: string;
-      /** Password */
+      /**
+       * Password
+       * Format: password
+       */
       password: string;
       /**
        * Scope
@@ -396,7 +858,10 @@ export interface components {
       scope?: string;
       /** Client Id */
       client_id?: string | null;
-      /** Client Secret */
+      /**
+       * Client Secret
+       * Format: password
+       */
       client_secret?: string | null;
     };
     /** BusinessProfileCreate */
@@ -412,6 +877,8 @@ export interface components {
        * @default UTC
        */
       timezone?: string;
+      /** @default BASIC */
+      vertical_type?: components["schemas"]["VerticalType"];
       /**
        * Crm Config
        * @default []
@@ -419,6 +886,26 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
+      /** Routing Config */
+      routing_config?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** BusinessProfileMinimal */
+    BusinessProfileMinimal: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      vertical_type: components["schemas"]["VerticalType"];
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** BusinessProfileResponse */
     BusinessProfileResponse: {
@@ -433,6 +920,8 @@ export interface components {
        * @default UTC
        */
       timezone?: string;
+      /** @default BASIC */
+      vertical_type?: components["schemas"]["VerticalType"];
       /**
        * Crm Config
        * @default []
@@ -440,6 +929,14 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
+      /** Routing Config */
+      routing_config?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
       /** User Id */
@@ -448,12 +945,22 @@ export interface components {
       trial_expires_at?: string | null;
       /** Is Active */
       is_active: boolean;
-      assistant_config?: components["schemas"]["AssistantConfigResponse"] | null;
+      /**
+       * Agents
+       * @default []
+       */
+      agents?: components["schemas"]["AgentResponse"][];
+      assistant_config?: components["schemas"]["AgentResponse"] | null;
       /**
        * Integrations
        * @default []
        */
       integrations?: components["schemas"]["IntegrationResponse"][];
+      /**
+       * Purchased Credits
+       * @default 0
+       */
+      purchased_credits?: number;
     };
     /** BusinessProfileUpdate */
     BusinessProfileUpdate: {
@@ -465,10 +972,47 @@ export interface components {
       contact_phone?: string | null;
       /** Timezone */
       timezone?: string | null;
+      vertical_type?: components["schemas"]["VerticalType"] | null;
       /** Crm Config */
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
+      /** Routing Config */
+      routing_config?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** CategoryCreate */
+    CategoryCreate: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+    };
+    /** CategoryResponse */
+    CategoryResponse: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
     };
     /** ClientCreate */
     ClientCreate: {
@@ -478,6 +1022,12 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Birthday */
+      birthday?: string | null;
+      /** Gender */
+      gender?: string | null;
       /**
        * Custom Fields
        * @default {}
@@ -485,6 +1035,49 @@ export interface components {
       custom_fields?: {
         [key: string]: unknown;
       } | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
+      /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
+       * Whatsapp Opt In
+       * @default false
+       */
+      whatsapp_opt_in?: boolean;
+      /** Whatsapp Opt In At */
+      whatsapp_opt_in_at?: string | null;
+    };
+    /** ClientDetailResponse */
+    ClientDetailResponse: {
+      client: components["schemas"]["ClientResponse"];
+      /** Stores */
+      stores: components["schemas"]["StoreResponse"][];
+      /** Trade Notes */
+      trade_notes: components["schemas"]["CustomerNoteResponse"][];
+      /** Orders */
+      orders: components["schemas"]["OrderResponse"][];
+    };
+    /** ClientMinimal */
+    ClientMinimal: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
     };
     /** ClientResponse */
     ClientResponse: {
@@ -494,6 +1087,12 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Birthday */
+      birthday?: string | null;
+      /** Gender */
+      gender?: string | null;
       /**
        * Custom Fields
        * @default {}
@@ -501,6 +1100,23 @@ export interface components {
       custom_fields?: {
         [key: string]: unknown;
       } | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
+      /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
+       * Whatsapp Opt In
+       * @default false
+       */
+      whatsapp_opt_in?: boolean;
+      /** Whatsapp Opt In At */
+      whatsapp_opt_in_at?: string | null;
       /** Id */
       id: string;
       /** Business Id */
@@ -523,16 +1139,243 @@ export interface components {
       phone?: string | null;
       /** Email */
       email?: string | null;
+      /** Role */
+      role?: string | null;
+      /** Birthday */
+      birthday?: string | null;
+      /** Gender */
+      gender?: string | null;
       /** Custom Fields */
       custom_fields?: {
         [key: string]: unknown;
       } | null;
+      /** Is Prospect */
+      is_prospect?: boolean | null;
+      /** Prospect Segment */
+      prospect_segment?: string | null;
+      /** Whatsapp Opt In */
+      whatsapp_opt_in?: boolean | null;
+      /** Whatsapp Opt In At */
+      whatsapp_opt_in_at?: string | null;
     };
+    /** CompetitorCreate */
+    CompetitorCreate: {
+      /** Name */
+      name: string;
+      /** Store Id */
+      store_id: string;
+      /** Phone */
+      phone?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Presence Level */
+      presence_level?: string | null;
+      /** Notes */
+      notes?: string | null;
+      /** Strengths */
+      strengths?: string | null;
+      /** Weaknesses */
+      weaknesses?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+    };
+    /** CompetitorResponse */
+    CompetitorResponse: {
+      /** Name */
+      name: string;
+      /** Store Id */
+      store_id: string;
+      /** Phone */
+      phone?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Presence Level */
+      presence_level?: string | null;
+      /** Notes */
+      notes?: string | null;
+      /** Strengths */
+      strengths?: string | null;
+      /** Weaknesses */
+      weaknesses?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** ConversationResponse */
+    ConversationResponse: {
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /** Client Id */
+      client_id: string;
+      /** Platform */
+      platform: string;
+      /** Platform Chat Id */
+      platform_chat_id: string;
+      /** Last Message At */
+      last_message_at?: string | null;
+      /** Is Active */
+      is_active: boolean;
+      /** Ai Enabled */
+      ai_enabled: boolean;
+      /**
+       * Extra Data
+       * @default {}
+       */
+      extra_data?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      client?: components["schemas"]["ClientResponse"] | null;
+    };
+    /** CustomerNoteResponse */
+    CustomerNoteResponse: {
+      /** Client Id */
+      client_id: string;
+      /** Comm Style */
+      comm_style?: string | null;
+      /** Visit Frequency */
+      visit_frequency?: string | null;
+      /** Last Visit Date */
+      last_visit_date?: string | null;
+      /** Next Visit Date */
+      next_visit_date?: string | null;
+      /** Preferred Actions */
+      preferred_actions?: string | null;
+      /** General Notes */
+      general_notes?: string | null;
+      /**
+       * Note Type
+       * @default general
+       */
+      note_type?: string;
+      /** Risks */
+      risks?: string | null;
+      /** Opportunities */
+      opportunities?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** DataGatewaySyncRequest */
+    DataGatewaySyncRequest: {
+      /** Entity Type */
+      entity_type: string;
+      /** Data */
+      data: {
+        [key: string]: unknown;
+      };
+      /** Mapping */
+      mapping?: {
+        [key: string]: string;
+      } | null;
+    };
+    /** DataImportResponse */
+    DataImportResponse: {
+      /** File Name */
+      file_name: string;
+      /** Entity Type */
+      entity_type: string;
+      /** Mapping */
+      mapping: {
+        [key: string]: string;
+      };
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      status: components["schemas"]["ImportStatus"];
+      /** Results */
+      results?: {
+        [key: string]: unknown;
+      } | null;
+      /** Error Message */
+      error_message?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * DataSourceType
+     * @enum {string}
+     */
+    DataSourceType: "manual" | "ai_extracted" | "integration";
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
     };
+    /**
+     * ImportStatus
+     * @enum {string}
+     */
+    ImportStatus: "pending" | "processing" | "completed" | "failed";
     /** IntegrationResponse */
     IntegrationResponse: {
       /** Id */
@@ -548,6 +1391,257 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+    };
+    /** MessageResponse */
+    MessageResponse: {
+      /** Id */
+      id: string;
+      /** Conversation Id */
+      conversation_id: string;
+      /** Role */
+      role: string;
+      /** Content */
+      content: string;
+      /** Reasoning Trace */
+      reasoning_trace?: string | null;
+      /** Platform Message Id */
+      platform_message_id?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** OrderCreate */
+    OrderCreate: {
+      /** Store Id */
+      store_id: string;
+      /** Client Id */
+      client_id?: string | null;
+      /** @default pending */
+      status?: components["schemas"]["OrderStatus"];
+      /** Notes */
+      notes?: string | null;
+      /** Delivery Id */
+      delivery_id?: string | null;
+      /** Delivery Date */
+      delivery_date?: string | null;
+      /** Payment Method */
+      payment_method?: string | null;
+      /** Shipping Address */
+      shipping_address?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /** Items */
+      items: components["schemas"]["OrderItemBase"][];
+    };
+    /** OrderItemBase */
+    OrderItemBase: {
+      /** Product Id */
+      product_id: string;
+      /**
+       * Quantity
+       * @default 1
+       */
+      quantity?: number;
+      /** Unit Price */
+      unit_price: number;
+    };
+    /** OrderItemResponse */
+    OrderItemResponse: {
+      /** Product Id */
+      product_id: string;
+      /**
+       * Quantity
+       * @default 1
+       */
+      quantity?: number;
+      /** Unit Price */
+      unit_price: number;
+      /** Id */
+      id: string;
+      /** Order Id */
+      order_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** OrderResponse */
+    OrderResponse: {
+      /** Store Id */
+      store_id: string;
+      /** Client Id */
+      client_id?: string | null;
+      /** @default pending */
+      status?: components["schemas"]["OrderStatus"];
+      /** Notes */
+      notes?: string | null;
+      /** Delivery Id */
+      delivery_id?: string | null;
+      /** Delivery Date */
+      delivery_date?: string | null;
+      /** Payment Method */
+      payment_method?: string | null;
+      /** Shipping Address */
+      shipping_address?: string | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /** Total Amount */
+      total_amount: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Items
+       * @default []
+       */
+      items?: components["schemas"]["OrderItemResponse"][];
+    };
+    /**
+     * OrderStatus
+     * @enum {string}
+     */
+    OrderStatus: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+    /** OrderUpdate */
+    OrderUpdate: {
+      status?: components["schemas"]["OrderStatus"] | null;
+      /** Notes */
+      notes?: string | null;
+      /** Delivery Id */
+      delivery_id?: string | null;
+      /** Delivery Date */
+      delivery_date?: string | null;
+      /** Payment Method */
+      payment_method?: string | null;
+      /** Shipping Address */
+      shipping_address?: string | null;
+      /** Is Verified */
+      is_verified?: boolean | null;
+    };
+    /** PostalCodeResponse */
+    PostalCodeResponse: {
+      /** Id */
+      id: number;
+      /** Zip Code */
+      zip_code: string;
+      /** Colonia */
+      colonia: string;
+      /** Municipality */
+      municipality: string;
+      /** City */
+      city?: string | null;
+      /** State */
+      state: string;
+    };
+    /** ProductCreate */
+    ProductCreate: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Price
+       * @default 0
+       */
+      price?: number;
+      /** Sku */
+      sku?: string | null;
+      /** Product Type */
+      product_type?: string | null;
+      /** Brand */
+      brand?: string | null;
+      /** Unit Of Measure */
+      unit_of_measure?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /** Wholesale Threshold */
+      wholesale_threshold?: number | null;
+      /** Category Id */
+      category_id: string;
+    };
+    /** ProductResponse */
+    ProductResponse: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Price
+       * @default 0
+       */
+      price?: number;
+      /** Sku */
+      sku?: string | null;
+      /** Product Type */
+      product_type?: string | null;
+      /** Brand */
+      brand?: string | null;
+      /** Unit Of Measure */
+      unit_of_measure?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /** Wholesale Threshold */
+      wholesale_threshold?: number | null;
+      /** Id */
+      id: string;
+      /** Category Id */
+      category_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** ProductUpdate */
+    ProductUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Category Id */
+      category_id?: string | null;
+      /** Price */
+      price?: number | null;
+      /** Description */
+      description?: string | null;
+      /** Sku */
+      sku?: string | null;
+      /** Brand */
+      brand?: string | null;
+      /** Product Type */
+      product_type?: string | null;
+      /** Unit Of Measure */
+      unit_of_measure?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /** Wholesale Threshold */
+      wholesale_threshold?: number | null;
     };
     /** ServiceCreate */
     ServiceCreate: {
@@ -632,11 +1726,483 @@ export interface components {
       /** Is Active */
       is_active?: boolean | null;
     };
+    /** StoreActionCreate */
+    StoreActionCreate: {
+      /** Store Id */
+      store_id: string;
+      /** Template Id */
+      template_id?: string | null;
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
+      category: components["schemas"]["ActionCategory"];
+      /** Objective */
+      objective: string;
+      /** Impact Level */
+      impact_level?: string | null;
+      /** Note Source Id */
+      note_source_id?: string | null;
+      /**
+       * Details
+       * @default {}
+       */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+      /** @default proposed */
+      status?: components["schemas"]["ActionStatus"];
+      /** Due Date */
+      due_date?: string | null;
+      /** Resolution Notes */
+      resolution_notes?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /** Result Value */
+      result_value?: number | null;
+      /** Result Unit */
+      result_unit?: string | null;
+      /** Revenue Impact */
+      revenue_impact?: number | null;
+    };
+    /** StoreActionObjectiveCreate */
+    StoreActionObjectiveCreate: {
+      /** Name */
+      name: string;
+      /** Label */
+      label: string;
+      /** Description */
+      description?: string | null;
+      category: components["schemas"]["ActionCategory"];
+    };
+    /** StoreActionObjectiveResponse */
+    StoreActionObjectiveResponse: {
+      /** Name */
+      name: string;
+      /** Label */
+      label: string;
+      /** Description */
+      description?: string | null;
+      category: components["schemas"]["ActionCategory"];
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** StoreActionResponse */
+    StoreActionResponse: {
+      /** Store Id */
+      store_id: string;
+      /** Template Id */
+      template_id?: string | null;
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
+      category: components["schemas"]["ActionCategory"];
+      /** Objective */
+      objective: string;
+      /** Impact Level */
+      impact_level?: string | null;
+      /** Note Source Id */
+      note_source_id?: string | null;
+      /**
+       * Details
+       * @default {}
+       */
+      details?: {
+        [key: string]: unknown;
+      } | null;
+      /** @default proposed */
+      status?: components["schemas"]["ActionStatus"];
+      /** Due Date */
+      due_date?: string | null;
+      /** Resolution Notes */
+      resolution_notes?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /** Result Value */
+      result_value?: number | null;
+      /** Result Unit */
+      result_unit?: string | null;
+      /** Revenue Impact */
+      revenue_impact?: number | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /** Author Id */
+      author_id?: string | null;
+      /** Store Name */
+      store_name?: string | null;
+      /** Assigned To Name */
+      assigned_to_name?: string | null;
+      /** Template Name */
+      template_name?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** StoreActionUpdate */
+    StoreActionUpdate: {
+      /** Assigned To Id */
+      assigned_to_id?: string | null;
+      /** Template Id */
+      template_id?: string | null;
+      category?: components["schemas"]["ActionCategory"] | null;
+      /** Objective */
+      objective?: string | null;
+      /** Impact Level */
+      impact_level?: string | null;
+      status?: components["schemas"]["ActionStatus"] | null;
+      /** Due Date */
+      due_date?: string | null;
+      /** Resolution Notes */
+      resolution_notes?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /** Result Value */
+      result_value?: number | null;
+      /** Result Unit */
+      result_unit?: string | null;
+      /** Revenue Impact */
+      revenue_impact?: number | null;
+    };
+    /** StoreCreate */
+    StoreCreate: {
+      /** Name */
+      name: string;
+      /** Address */
+      address?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Street Address */
+      street_address?: string | null;
+      /** Colonia */
+      colonia?: string | null;
+      /** Municipality */
+      municipality?: string | null;
+      /** City */
+      city?: string | null;
+      /** State */
+      state?: string | null;
+      /** Zip Code */
+      zip_code?: string | null;
+      /**
+       * Country
+       * @default México
+       */
+      country?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Segment */
+      segment?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Opening Date */
+      opening_date?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
+       * Delivery Zip Codes
+       * @default []
+       */
+      delivery_zip_codes?: string[] | null;
+      /** Assigned Store Id */
+      assigned_store_id?: string | null;
+      /** Requested Product Id */
+      requested_product_id?: string | null;
+      /** Requested Quantity */
+      requested_quantity?: number | null;
+      /** Potential Value */
+      potential_value?: number | null;
+      /** Referred At */
+      referred_at?: string | null;
+      /**
+       * Client Ids
+       * @default []
+       */
+      client_ids?: string[] | null;
+    };
+    /** StoreNoteCreate */
+    StoreNoteCreate: {
+      /** Store Id */
+      store_id: string;
+      /** Note */
+      note: string;
+      /** Risks */
+      risks?: string | null;
+      /** Opportunities */
+      opportunities?: string | null;
+      /** Preferred Actions */
+      preferred_actions?: string | null;
+      /** Execution Level */
+      execution_level?: string | null;
+      /**
+       * Note Type
+       * @default general
+       */
+      note_type?: string;
+      /**
+       * Is Actionable
+       * @default false
+       */
+      is_actionable?: boolean;
+      /**
+       * Action Metadata
+       * @default {}
+       */
+      action_metadata?: {
+        [key: string]: unknown;
+      } | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+    };
+    /** StoreNoteResponse */
+    StoreNoteResponse: {
+      /** Store Id */
+      store_id: string;
+      /** Note */
+      note: string;
+      /** Risks */
+      risks?: string | null;
+      /** Opportunities */
+      opportunities?: string | null;
+      /** Preferred Actions */
+      preferred_actions?: string | null;
+      /** Execution Level */
+      execution_level?: string | null;
+      /**
+       * Note Type
+       * @default general
+       */
+      note_type?: string;
+      /**
+       * Is Actionable
+       * @default false
+       */
+      is_actionable?: boolean;
+      /**
+       * Action Metadata
+       * @default {}
+       */
+      action_metadata?: {
+        [key: string]: unknown;
+      } | null;
+      /** @default manual */
+      source_type?: components["schemas"]["DataSourceType"];
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /** Id */
+      id: string;
+      /** Author Id */
+      author_id?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** StoreResponse */
+    StoreResponse: {
+      /** Name */
+      name: string;
+      /** Address */
+      address?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Street Address */
+      street_address?: string | null;
+      /** Colonia */
+      colonia?: string | null;
+      /** Municipality */
+      municipality?: string | null;
+      /** City */
+      city?: string | null;
+      /** State */
+      state?: string | null;
+      /** Zip Code */
+      zip_code?: string | null;
+      /**
+       * Country
+       * @default México
+       */
+      country?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Segment */
+      segment?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Opening Date */
+      opening_date?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /**
+       * Is Prospect
+       * @default false
+       */
+      is_prospect?: boolean;
+      /**
+       * Is Verified
+       * @default true
+       */
+      is_verified?: boolean;
+      /**
+       * Prospect Segment
+       * @default wholesale
+       */
+      prospect_segment?: string | null;
+      /**
+       * Delivery Zip Codes
+       * @default []
+       */
+      delivery_zip_codes?: string[] | null;
+      /** Assigned Store Id */
+      assigned_store_id?: string | null;
+      /** Requested Product Id */
+      requested_product_id?: string | null;
+      /** Requested Quantity */
+      requested_quantity?: number | null;
+      /** Potential Value */
+      potential_value?: number | null;
+      /** Referred At */
+      referred_at?: string | null;
+      /** Id */
+      id: string;
+      /** Business Id */
+      business_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Notes
+       * @default []
+       */
+      notes?: components["schemas"]["StoreNoteResponse"][];
+      /**
+       * Clients
+       * @default []
+       */
+      clients?: components["schemas"]["ClientMinimal"][];
+    };
+    /** StoreUpdate */
+    StoreUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Street Address */
+      street_address?: string | null;
+      /** Colonia */
+      colonia?: string | null;
+      /** Municipality */
+      municipality?: string | null;
+      /** City */
+      city?: string | null;
+      /** State */
+      state?: string | null;
+      /** Zip Code */
+      zip_code?: string | null;
+      /** Country */
+      country?: string | null;
+      /** Market */
+      market?: string | null;
+      /** Segment */
+      segment?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Opening Date */
+      opening_date?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /** Client Ids */
+      client_ids?: string[] | null;
+      /** Is Prospect */
+      is_prospect?: boolean | null;
+      /** Is Verified */
+      is_verified?: boolean | null;
+      /** Prospect Segment */
+      prospect_segment?: string | null;
+      /** Delivery Zip Codes */
+      delivery_zip_codes?: string[] | null;
+      /** Assigned Store Id */
+      assigned_store_id?: string | null;
+      /** Requested Product Id */
+      requested_product_id?: string | null;
+      /** Requested Quantity */
+      requested_quantity?: number | null;
+      /** Potential Value */
+      potential_value?: number | null;
+      /** Referred At */
+      referred_at?: string | null;
+    };
     /** TestChatRequest */
     TestChatRequest: {
       /** Message */
       message: string;
-      assistant_config?: components["schemas"]["AssistantConfigUpdate"] | null;
+      assistant_config?: components["schemas"]["AgentUpdate"] | null;
+      /**
+       * Simulate Role
+       * @default sales_rep
+       */
+      simulate_role?: string | null;
     };
     /** Token */
     Token: {
@@ -679,6 +2245,19 @@ export interface components {
        * @default false
        */
       is_admin?: boolean;
+      /**
+       * Vertical Type
+       * @default BASIC
+       */
+      vertical_type?: string | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
+      /** Routing Config */
+      routing_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** UserResponse */
     UserResponse: {
@@ -704,6 +2283,7 @@ export interface components {
        * @default member
        */
       role?: string | null;
+      business_profile?: components["schemas"]["BusinessProfileMinimal"] | null;
     };
     /** UserUpdate */
     UserUpdate: {
@@ -715,6 +2295,12 @@ export interface components {
       role?: string | null;
       /** Is Active */
       is_active?: boolean | null;
+      /** Vertical Type */
+      vertical_type?: string | null;
+      /** Features Config */
+      features_config?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -724,7 +2310,16 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
     };
+    /**
+     * VerticalType
+     * @enum {string}
+     */
+    VerticalType: "BASIC" | "TRADE";
   };
   responses: never;
   parameters: never;
@@ -919,14 +2514,14 @@ export interface operations {
   update_assistant_me_api_v1_business_me_assistant_patch: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AssistantConfigUpdate"];
+        "application/json": components["schemas"]["AgentUpdate"];
       };
     };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": components["schemas"]["BusinessProfileResponse"];
+          "application/json": components["schemas"]["AgentResponse"];
         };
       };
       /** @description Validation Error */
@@ -1000,6 +2595,33 @@ export interface operations {
     };
   };
   /**
+   * Provision Whatsapp
+   * @description Automate Twilio subaccount and MX number provisioning for this business.
+   */
+  provision_whatsapp_api_v1_integrations_whatsapp_provision_post: {
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * Disconnect Integration
    * @description Remove an integration and its associated local cache.
    */
@@ -1024,13 +2646,54 @@ export interface operations {
       };
     };
   };
+  /**
+   * Get Whatsapp Usage Endpoint
+   * @description Get monthly message usage statistics for WhatsApp integration.
+   */
+  get_whatsapp_usage_endpoint_api_v1_integrations_whatsapp_usage__business_id__get: {
+    parameters: {
+      path: {
+        business_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Clients */
   get_clients_api_v1_crm_clients_get: {
+    parameters: {
+      query?: {
+        /** @description Filter by prospect status. If None, returns all. */
+        is_prospect?: boolean | null;
+        /** @description Filter by prospect segment. */
+        prospect_segment?: string | null;
+        /** @description Include internal staff roles (representative, sales_rep, agent). */
+        include_staff?: boolean;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
           "application/json": components["schemas"]["ClientResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -1047,6 +2710,28 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ClientResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Client Detail */
+  get_client_detail_api_v1_crm_clients__client_id__get: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ClientDetailResponse"];
         };
       };
       /** @description Validation Error */
@@ -1298,7 +2983,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["ConversationResponse"][];
         };
       };
     };
@@ -1314,7 +2999,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["MessageResponse"][];
         };
       };
       /** @description Validation Error */
@@ -1343,7 +3028,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": unknown;
+          "application/json": components["schemas"]["ConversationResponse"];
         };
       };
       /** @description Validation Error */
@@ -1356,7 +3041,7 @@ export interface operations {
   };
   /**
    * Verify Whatsapp
-   * @description WhatsApp Webhook verification.
+   * @description WhatsApp Cloud API Webhook verification.
    */
   verify_whatsapp_api_v1_whatsapp_webhook_get: {
     parameters: {
@@ -1396,8 +3081,38 @@ export interface operations {
     };
   };
   /**
+   * Debug Twilio
+   * @description Simple endpoint to verify Twilio is actually reaching the server.
+   */
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Twilio Whatsapp Webhook
+   * @description Unified Multi-tenant Twilio Webhook with Identity-based Routing.
+   * Returns 200 OK immediately and processes message asynchronously.
+   */
+  twilio_whatsapp_webhook_api_v1_whatsapp_webhook_twilio_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
    * Setup Whatsapp
-   * @description Save WhatsApp Cloud API credentials.
+   * @description Simplified Setup (Option B): Users only provide their number.
+   * The Platform's master keys are used automatically.
    */
   setup_whatsapp_api_v1_whatsapp_setup_post: {
     requestBody: {
@@ -1423,6 +3138,34 @@ export interface operations {
     };
   };
   /**
+   * Get Whatsapp Status
+   * @description Get dynamic status and diagnostics for the WhatsApp/Twilio integration.
+   */
+  get_whatsapp_status_api_v1_whatsapp_status_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Telegram Debug Info
+   * @description Fetch debug information about all registered Telegram bots and their current webhooks.
+   */
+  telegram_debug_info_api_v1_telegram_debug_info_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
    * Telegram Webhook
    * @description Receive messages from Telegram via a unique webhook ID.
    */
@@ -1443,6 +3186,34 @@ export interface operations {
       422: {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Generate Bind Token
+   * @description Generate a temporary, secure token to bind the admin's Telegram account.
+   */
+  generate_bind_token_api_v1_telegram_generate_bind_token_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Get Bind Status
+   * @description Check if the admin's Telegram account is linked to the current user's business.
+   */
+  get_bind_status_api_v1_telegram_bind_status_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
     };
@@ -1504,7 +3275,7 @@ export interface operations {
   };
   /**
    * List Users
-   * @description List all users (Admin only).
+   * @description List all users with their business profiles (Admin only).
    */
   list_users_api_v1_admin_users_get: {
     responses: {
@@ -1518,7 +3289,7 @@ export interface operations {
   };
   /**
    * Create User Admin
-   * @description Create a new user (Admin only).
+   * @description Create a new user and their associated business profile (Admin only).
    */
   create_user_admin_api_v1_admin_users_post: {
     requestBody: {
@@ -1531,6 +3302,36 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Business Vertical
+   * @description Update a business vertical type (Admin only).
+   */
+  update_business_vertical_api_v1_admin_businesses__business_id__vertical_patch: {
+    parameters: {
+      query: {
+        vertical_type: components["schemas"]["VerticalType"];
+      };
+      path: {
+        business_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
         };
       };
       /** @description Validation Error */
@@ -1568,7 +3369,7 @@ export interface operations {
   };
   /**
    * Update User Admin
-   * @description Update a user (Admin only).
+   * @description Update a user and their business vertical (Admin only).
    */
   update_user_admin_api_v1_admin_users__user_id__patch: {
     parameters: {
@@ -1635,6 +3436,1142 @@ export interface operations {
       422: {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Dlq
+   * @description List all dead-letter queue entries (Admin only).
+   */
+  list_dlq_api_v1_admin_dlq_get: {
+    parameters: {
+      query?: {
+        entity_type?: string | null;
+        status?: string | null;
+        business_id?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Retry Dlq Entry
+   * @description Retry a failed task from DLQ and mark it as resolved (Admin only).
+   */
+  retry_dlq_entry_api_v1_admin_dlq__dlq_id__retry_post: {
+    parameters: {
+      path: {
+        dlq_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Business Credits
+   * @description Update manual purchased credits for a business (Admin only).
+   */
+  update_business_credits_api_v1_admin_businesses__business_id__credits_patch: {
+    parameters: {
+      path: {
+        business_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get My Imports
+   * @description List all data imports for the current business.
+   */
+  get_my_imports_api_v1_data_gateway_me_imports_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DataImportResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Data Import
+   * @description Upload a file and initiate a background data import.
+   */
+  create_data_import_api_v1_data_gateway_me_imports_post: {
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_create_data_import_api_v1_data_gateway_me_imports_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DataImportResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Sync Data
+   * @description Real-time data ingestion endpoint.
+   */
+  sync_data_api_v1_data_gateway_sync_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DataGatewaySyncRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Stores
+   * @description List all stores for the current business.
+   */
+  list_stores_api_v1_trade_stores_get: {
+    parameters: {
+      query?: {
+        /** @description Filter by prospect status. If None, returns all. */
+        is_prospect?: boolean | null;
+        /** @description Filter by assigned store ID. */
+        assigned_store_id?: string | null;
+        /** @description Filter by prospect segment. */
+        prospect_segment?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Store
+   * @description Create a new store.
+   */
+  create_store_api_v1_trade_stores_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Store
+   * @description Fetch a single store with its notes.
+   */
+  get_store_api_v1_trade_stores__store_id__get: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Store
+   * @description Delete a store.
+   */
+  delete_store_api_v1_trade_stores__store_id__delete: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Store
+   * @description Update a store.
+   */
+  update_store_api_v1_trade_stores__store_id__patch: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Store Note
+   * @description Add a note (observation) to a store.
+   */
+  create_store_note_api_v1_trade_stores__store_id__notes_post: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreNoteCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreNoteResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Postal Codes
+   * @description Retrieve preloaded Mexican postal codes (limited for performance).
+   */
+  list_postal_codes_api_v1_trade_postal_codes_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PostalCodeResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * List States
+   * @description Retrieve all unique states.
+   */
+  list_states_api_v1_trade_postal_codes_states_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": string[];
+        };
+      };
+    };
+  };
+  /**
+   * List Municipalities
+   * @description Retrieve all unique municipalities for a given state.
+   */
+  list_municipalities_api_v1_trade_postal_codes_municipalities_get: {
+    parameters: {
+      query: {
+        state: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Zip Codes
+   * @description Retrieve all zip codes and colonias for a given state and municipality.
+   */
+  list_zip_codes_api_v1_trade_postal_codes_zip_codes_get: {
+    parameters: {
+      query: {
+        state: string;
+        municipality: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PostalCodeResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Lookup Postal Code
+   * @description Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.
+   */
+  lookup_postal_code_api_v1_trade_postal_codes__zip_code__get: {
+    parameters: {
+      path: {
+        zip_code: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PostalCodeResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Categories
+   * @description List all product categories.
+   */
+  list_categories_api_v1_trade_categories_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CategoryResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Category
+   * @description Create a new category.
+   */
+  create_category_api_v1_trade_categories_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CategoryCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CategoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Products
+   * @description List all products in the catalog.
+   */
+  list_products_api_v1_trade_products_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Product
+   * @description Create a new product.
+   */
+  create_product_api_v1_trade_products_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProductCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Product
+   * @description Get a product by ID.
+   */
+  get_product_api_v1_trade_products__product_id__get: {
+    parameters: {
+      path: {
+        product_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Product
+   * @description Delete a product.
+   */
+  delete_product_api_v1_trade_products__product_id__delete: {
+    parameters: {
+      path: {
+        product_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Product
+   * @description Update a product.
+   */
+  update_product_api_v1_trade_products__product_id__patch: {
+    parameters: {
+      path: {
+        product_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProductUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ProductResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Prospect Orders
+   * @description List all prospecting/unverified orders for the business, partitioned by segment.
+   */
+  list_prospect_orders_api_v1_trade_prospects_orders_get: {
+    parameters: {
+      query?: {
+        segment?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Orders
+   * @description List all orders for the business, optionally filtered by store.
+   */
+  list_orders_api_v1_trade_orders_get: {
+    parameters: {
+      query?: {
+        store_id?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Order
+   * @description Create a new order with items.
+   */
+  create_order_api_v1_trade_orders_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OrderCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Order
+   * @description Get detail of a single order by ID.
+   */
+  get_order_api_v1_trade_orders__order_id__get: {
+    parameters: {
+      path: {
+        order_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Order
+   * @description Update order metadata or status.
+   */
+  update_order_api_v1_trade_orders__order_id__patch: {
+    parameters: {
+      path: {
+        order_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OrderUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Competitors
+   * @description List all competitors, optionally filtered by store.
+   */
+  list_competitors_api_v1_trade_competitors_get: {
+    parameters: {
+      query?: {
+        store_id?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CompetitorResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Competitor
+   * @description Record a new competitor entry.
+   */
+  create_competitor_api_v1_trade_competitors_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompetitorCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CompetitorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Strategic Brief
+   * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
+   */
+  get_strategic_brief_api_v1_trade_stores__store_id__brief_get: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Generate Visit Brief
+   * @description Generate a specialized AI brief for a store visit.
+   */
+  generate_visit_brief_api_v1_trade_clients__client_id__brief_post: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Qualify Lead
+   * @description Generate a lead qualification report for a retailer.
+   */
+  qualify_lead_api_v1_trade_clients__client_id__qualify_post: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Action Templates
+   * @description List all action templates for the business.
+   */
+  list_action_templates_api_v1_trade_action_templates_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ActionTemplateResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Action Template
+   * @description Create a new action template.
+   */
+  create_action_template_api_v1_trade_action_templates_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActionTemplateCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ActionTemplateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Action Template
+   * @description Delete an action template.
+   */
+  delete_action_template_api_v1_trade_action_templates__template_id__delete: {
+    parameters: {
+      path: {
+        template_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Action Template
+   * @description Update an action template.
+   */
+  update_action_template_api_v1_trade_action_templates__template_id__patch: {
+    parameters: {
+      path: {
+        template_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActionTemplateUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ActionTemplateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Store Actions
+   * @description List store actions for the current business with filters.
+   */
+  list_store_actions_api_v1_trade_actions_get: {
+    parameters: {
+      query?: {
+        store_id?: string | null;
+        assigned_to_id?: string | null;
+        status?: string | null;
+        category?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Store Action
+   * @description Create a manual store action.
+   */
+  create_store_action_api_v1_trade_actions_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreActionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Store Action
+   * @description Retrieve a single store action.
+   */
+  get_store_action_api_v1_trade_actions__action_id__get: {
+    parameters: {
+      path: {
+        action_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Store Action
+   * @description Delete a store action.
+   */
+  delete_store_action_api_v1_trade_actions__action_id__delete: {
+    parameters: {
+      path: {
+        action_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Store Action
+   * @description Update a store action, with strict validation on completion.
+   */
+  update_store_action_api_v1_trade_actions__action_id__patch: {
+    parameters: {
+      path: {
+        action_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreActionUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Objectives
+   * @description List all dynamic action objectives for the business.
+   */
+  list_objectives_api_v1_trade_objectives_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionObjectiveResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Create Objective
+   * @description Create a new custom action objective.
+   */
+  create_objective_api_v1_trade_objectives_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StoreActionObjectiveCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StoreActionObjectiveResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Objective
+   * @description Delete a custom action objective.
+   */
+  delete_objective_api_v1_trade_objectives__obj_id__delete: {
+    parameters: {
+      path: {
+        obj_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Root Redirect */
+  root_redirect__get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
     };

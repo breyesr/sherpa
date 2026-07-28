@@ -9,6 +9,15 @@ This document tracks all reported bugs, their investigation status, and resoluti
 
 ## Resolved Bugs
 
+### [BUG-006] PATCH /api/v1/business/me/assistant 404 (Failed to update assistant configuration)
+- **Status:** Resolved
+- **Severity:** High
+- **Reproduction:** Go to assistant settings on staging and attempt to update the assistant behavior/configuration.
+- **Actual Behavior:** API returns 404 and console shows a failed PATCH request.
+- **Root Cause:** The endpoint raised a 404 if `business.assistant_config` was empty (no child `Agent` record). Staging accounts created under legacy flows were missing this row.
+- **Fix:** Added an auto-creation fallback in `update_assistant_me` to provision a default `Agent` on-demand if the database row doesn't exist.
+- **Resolution Date:** 2026-06-23
+
 ### [BUG-004] Sign-out doesn't redirect to landing/login
 - **Status:** Resolved
 - **Severity:** Medium

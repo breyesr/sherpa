@@ -35,6 +35,7 @@ class Message(Base):
     
     role = Column(String, nullable=False) # 'user', 'assistant', 'system'
     content = Column(Text, nullable=False)
+    reasoning_trace = Column(Text, nullable=True) # The "behind the scenes" logic
     
     # Optional: store external message IDs for reference or delivery receipts
     platform_message_id = Column(String, nullable=True)

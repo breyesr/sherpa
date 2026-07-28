@@ -1,3 +1,8 @@
+"""
+External Integrations & Auth Redirect Router.
+Manages Google Calendar OAuth flow, token refresh/revocation, Twilio settings, and other API integrations.
+"""
+
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -215,6 +220,40 @@ async def trigger_google_sync(
     
     return {"status": "sync_triggered"}
 
+@router.post("/whatsapp/provision")
+async def provision_whatsapp(
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Automate Twilio subaccount and MX number provisioning for this business."""
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.user_id == current_user.id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    area_code = data.get("area_code")
+    friendly_name = data.get("friendly_name") or f"{business.name} WhatsApp"
+    
+    from app.services.messaging.provisioner import provision_whatsapp_sender
+    try:
+        integration = await provision_whatsapp_sender(
+            db=db,
+            business_id=business.id,
+            friendly_name=friendly_name,
+            area_code=area_code
+        )
+        return {
+            "status": "success",
+            "phone_number": integration.settings.get("phone_number"),
+            "provider_type": "twilio_subaccount"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/{provider}")
 async def disconnect_integration(
     provider: str,
@@ -230,11 +269,35 @@ async def disconnect_integration(
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
     
-    # 1. Delete the integration record
-    await db.execute(
-        delete(Integration)
+    # 1. Fetch integration first to check settings
+    result = await db.execute(
+        select(Integration)
         .where(Integration.business_id == business.id, Integration.provider == provider)
     )
+    integration = result.scalars().first()
+    
+    if integration:
+        if provider == 'whatsapp':
+            from app.services.messaging.provisioner import release_whatsapp_sender
+            try:
+                await release_whatsapp_sender(integration.settings or {})
+            except Exception as release_err:
+                print(f"ERROR: Failed to release whatsapp integration: {release_err}")
+        elif provider == 'telegram':
+            try:
+                from app.core.security import decrypt_token
+                import httpx
+                token = decrypt_token(integration.access_token)
+                async with httpx.AsyncClient() as http_client:
+                    await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook", params={"drop_pending_updates": True})
+            except Exception as release_err:
+                print(f"ERROR: Failed to delete telegram webhook on disconnect: {release_err}")
+                
+        # Delete the integration record
+        await db.execute(
+            delete(Integration)
+            .where(Integration.id == integration.id)
+        )
     
     # 2. If it's Google, also clear the busy slots cache
     if provider == 'google':
@@ -245,3 +308,40 @@ async def disconnect_integration(
     
     await db.commit()
     return {"status": "disconnected"}
+
+
+@router.get("/whatsapp/usage/{business_id}")
+async def get_whatsapp_usage_endpoint(
+    business_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Get monthly message usage statistics for WhatsApp integration."""
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.id == business_id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+        
+    if business.user_id != current_user.id and current_user.role not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to access usage data for this business.")
+        
+    from app.core.limiter import get_whatsapp_usage
+    used = await get_whatsapp_usage(business_id)
+    free_limit = 200
+    purchased = business.purchased_credits
+    total_limit = free_limit + purchased
+    remaining = max(total_limit - used, 0)
+    percent_used = min(float(used) / float(total_limit) * 100.0 if total_limit > 0 else 0.0, 100.0)
+    
+    return {
+        "used": used,
+        "free_limit": free_limit,
+        "purchased": purchased,
+        "total_limit": total_limit,
+        "remaining": remaining,
+        "percent_used": round(percent_used, 1)
+    }
+

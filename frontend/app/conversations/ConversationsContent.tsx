@@ -1,24 +1,32 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Search, Filter, User, Send, Bot, AlertCircle, Loader2, Clock } from 'lucide-react';
+import { MessageSquare, Search, User, Bot, AlertCircle, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import SafeDate from '@/components/SafeDate';
 import { toast } from 'sonner';
+import { components } from '@/types/api';
+
+type ConversationResponse = components['schemas']['ConversationResponse'];
+type MessageResponse = components['schemas']['MessageResponse'];
 
 interface ConversationsContentProps {
-  initialConversations: any[];
+  initialConversations: ConversationResponse[];
   token: string | null;
 }
 
 export default function ConversationsContent({ initialConversations, token }: ConversationsContentProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [devMode, setDevMode] = useState(false);
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. Fetch Conversations
-  const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery({
+
+
+  // 1. Fetch Conversations (with audit log support)
+  const { data: conversations = initialConversations, isLoading: isLoadingConvs } = useQuery<ConversationResponse[]>({
     queryKey: ['conversations'],
     queryFn: async () => {
       console.log("DEBUG INBOX: Fetching conversations...");
@@ -34,7 +42,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
   });
 
   // 2. Fetch Messages for selected conversation
-  const { data: messages = [], isLoading: isLoadingMsgs } = useQuery({
+  const { data: messages = [], isLoading: isLoadingMsgs } = useQuery<MessageResponse[]>({
     queryKey: ['messages', selectedConvId],
     queryFn: async () => {
       if (!selectedConvId) return [];
@@ -73,12 +81,12 @@ export default function ConversationsContent({ initialConversations, token }: Co
     }
   }, [messages]);
 
-  const filteredConvs = conversations.filter((c: any) => 
+  const filteredConvs = conversations.filter((c) => 
     c.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.platform_chat_id?.includes(searchTerm)
   );
 
-  const selectedConv = conversations.find((c: any) => c.id === selectedConvId);
+  const selectedConv = conversations.find((c) => c.id === selectedConvId);
 
   return (
     <div className="h-[calc(100vh-10rem)] flex flex-col gap-6 animate-in fade-in duration-500">
@@ -108,7 +116,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             {filteredConvs.length > 0 ? (
               <div className="divide-y divide-gray-50">
-                {filteredConvs.map((conv: any) => (
+                {filteredConvs.map((conv) => (
                   <div 
                     key={conv.id} 
                     onClick={() => setSelectedConvId(conv.id)}
@@ -122,7 +130,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {conv.client?.name?.charAt(0) || '?'}
                       </div>
-                      {conv.client?.custom_fields?.needs_review && (
+                       {(conv.client?.custom_fields as any)?.needs_review && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-pulse" />
                       )}
                     </div>
@@ -137,7 +145,11 @@ export default function ConversationsContent({ initialConversations, token }: Co
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 truncate font-medium">
-                        {conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No messages'}
+                        {conv.last_message_at ? (
+                          <SafeDate date={conv.last_message_at} format="time" options={{ hour: '2-digit', minute: '2-digit' }} />
+                        ) : (
+                          'No messages'
+                        )}
                       </p>
                     </div>
                     
@@ -176,7 +188,21 @@ export default function ConversationsContent({ initialConversations, token }: Co
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  {selectedConv.client?.custom_fields?.needs_review && (
+                  <button 
+                    onClick={() => setDevMode(!devMode)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      devMode 
+                      ? 'bg-purple-50 text-purple-600 border border-purple-100' 
+                      : 'bg-gray-100 text-gray-500 border border-gray-200'
+                    }`}
+                  >
+                    <MessageSquare size={14} className={devMode ? 'animate-pulse' : ''} />
+                    {devMode ? 'Audit: ON' : 'Audit: OFF'}
+                  </button>
+
+                  <div className="h-8 w-px bg-gray-200 mx-1" />
+
+                  {(selectedConv.client?.custom_fields as any)?.needs_review && (
                     <span className="flex items-center gap-1.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-100">
                       <AlertCircle size={12} />
                       Action Required
@@ -202,7 +228,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
 
               {/* Messages Area */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-gray-50/20">
-                {messages.map((m: any) => (
+                {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                     <div className="max-w-[70%] space-y-1.5">
                       <div className={`px-5 py-3.5 rounded-[1.5rem] text-sm font-medium shadow-sm leading-relaxed ${
@@ -212,9 +238,20 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       }`}>
                         {m.content}
                       </div>
+
+                      {devMode && m.role === 'assistant' && m.reasoning_trace && (
+                        <div className="mt-2 p-3 bg-purple-50 border border-purple-100 rounded-xl text-[10px] font-mono text-purple-700 leading-tight">
+                          <div className="flex items-center gap-1 font-black mb-1 text-[9px] uppercase tracking-widest">
+                            <MessageSquare size={10} />
+                            Brain Logic
+                          </div>
+                          {m.reasoning_trace}
+                        </div>
+                      )}
+
                       <div className={`flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                         {m.role === 'user' ? <User size={10} /> : <Bot size={10} />}
-                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <SafeDate date={m.created_at} format="time" options={{ hour: '2-digit', minute: '2-digit' }} />
                       </div>
                     </div>
                   </div>

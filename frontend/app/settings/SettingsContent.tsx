@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2, Scissors, User } from 'lucide-react';
+import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -13,13 +13,18 @@ import AssistantSettings from './components/AssistantSettings';
 import ServiceCatalog from './components/ServiceCatalog';
 import IntegrationsPanel from './components/IntegrationsPanel';
 
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+type UserResponse = components['schemas']['UserResponse'];
+
 interface SettingsContentProps {
-  initialBusiness: any;
-  initialUser: any;
+  initialBusiness: BusinessProfileResponse;
+  initialUser: UserResponse;
   token: string | null;
 }
 
-type TabType = 'general' | 'assistant' | 'services' | 'integrations';
+type TabType = 'general' | 'assistant' | 'integrations';
 
 export default function SettingsContent({ initialBusiness, initialUser, token }: SettingsContentProps) {
   const searchParams = useSearchParams();
@@ -57,12 +62,10 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   };
 
   useEffect(() => {
-    if (tabParam && ['general', 'assistant', 'services', 'integrations'].includes(tabParam) && tabParam !== activeTab) {
+    if (tabParam && ['general', 'assistant', 'integrations'].includes(tabParam) && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
   }, [tabParam, activeTab]);
-  
-  const queryClient = useQueryClient();
   
   const { data: business = initialBusiness, isFetching: isFetchingBiz } = useQuery({
     queryKey: ['business'],
@@ -99,7 +102,6 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   const tabs = [
     { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'assistant', label: 'AI Assistant', icon: MessageSquare },
-    { id: 'services', label: 'Services', icon: Scissors },
     { id: 'integrations', label: 'Integrations', icon: Calendar },
   ];
 
@@ -147,18 +149,13 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
         {activeTab === 'assistant' && (
           <AssistantSettings 
             business={business} 
+            user={user}
             token={token} 
             onMessage={handleMessage} 
             onDirtyChange={setIsDirty}
           />
         )}
-        {activeTab === 'services' && (
-          <ServiceCatalog 
-            token={token} 
-            onMessage={handleMessage} 
-            onDirtyChange={setIsDirty}
-          />
-        )}
+
         {activeTab === 'integrations' && (
           <IntegrationsPanel business={business} token={token} onMessage={handleMessage} />
         )}

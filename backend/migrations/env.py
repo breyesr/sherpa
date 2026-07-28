@@ -7,19 +7,23 @@ from logging.config import fileConfig
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config import settings
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
 # Import models to register them with Base.metadata
 from app.models.user import User
-from app.models.business import BusinessProfile, AssistantConfig
+from app.models.business import BusinessProfile, Agent
 from app.models.integration import Integration
 from app.models.calendar import BusySlot
 from app.models.crm import Client, Appointment
 from app.models.system import SystemConfiguration
+from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, CustomerNote
+from app.models.dlq import VectorizationDLQ
+
 from app.core.database import Base
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -48,6 +52,8 @@ def do_run_migrations(connection):
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
+        # Ensure pgvector extension exists
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         context.run_migrations()
 
 async def run_migrations_online() -> None:

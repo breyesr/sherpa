@@ -1,13 +1,20 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from app.schemas.service import ServiceResponse
 
 class ClientBase(BaseModel):
     name: str
     phone: Optional[str] = None
     email: Optional[str] = None
+    role: Optional[str] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
     custom_fields: Optional[dict] = {}
+    is_prospect: bool = False
+    prospect_segment: Optional[str] = "wholesale"
+    whatsapp_opt_in: bool = False
+    whatsapp_opt_in_at: Optional[datetime] = None
 
 class ClientCreate(ClientBase):
     pass
@@ -16,7 +23,14 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    role: Optional[str] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
     custom_fields: Optional[dict] = None
+    is_prospect: Optional[bool] = None
+    prospect_segment: Optional[str] = None
+    whatsapp_opt_in: Optional[bool] = None
+    whatsapp_opt_in_at: Optional[datetime] = None
 
 class ClientResponse(ClientBase):
     id: str
@@ -59,6 +73,17 @@ class AppointmentResponse(AppointmentBase):
         if v.tzinfo is None:
             return v.replace(tzinfo=timezone.utc)
         return v.astimezone(timezone.utc)
+
+    class Config:
+        from_attributes = True
+
+from app.schemas.trade import StoreResponse, CustomerNoteResponse, OrderResponse
+
+class ClientDetailResponse(BaseModel):
+    client: ClientResponse
+    stores: List[StoreResponse]
+    trade_notes: List[CustomerNoteResponse]
+    orders: List[OrderResponse]
 
     class Config:
         from_attributes = True

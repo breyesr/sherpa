@@ -12,7 +12,7 @@ async def test_business_me():
         result = await db.execute(
             select(BusinessProfile)
             .options(
-                selectinload(BusinessProfile.assistant_config),
+                selectinload(BusinessProfile.agents),
                 selectinload(BusinessProfile.integrations)
             )
         )
@@ -23,14 +23,17 @@ async def test_business_me():
             return
 
         print(f"Business: {business.name} ({business.id})")
+        print(f"Vertical Type: {business.vertical_type}")
         print(f"Integrations Count: {len(business.integrations)}")
-        for i in business.integrations:
-            print(f"  - Provider: {i.provider}, ID: {i.id}")
-
+        
         # Test Schema Serialization
         response = BusinessProfileResponse.model_validate(business)
         print("\nSerialized Response:")
         print(json.dumps(response.model_dump(), indent=2, default=str))
+        
+        # Assertion
+        assert response.vertical_type in ["BASIC", "TRADE"], f"Expected BASIC or TRADE, got {response.vertical_type}"
+        print("\n✅ Verification Successful: vertical_type is correctly implemented and serialized.")
 
 if __name__ == "__main__":
     asyncio.run(test_business_me())

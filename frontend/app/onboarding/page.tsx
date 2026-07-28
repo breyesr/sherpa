@@ -37,10 +37,8 @@ export default function OnboardingPage() {
   const [phone, setPhone] = useState('');
   const [timezone, setTimezone] = useState('UTC');
   const [assistantName, setAssistantName] = useState('Sherpa Assistant');
-  const [assistantTone, setAssistantTone] = useState('Professional');
+  const [assistantTone] = useState('Professional');
   const [greeting, setGreeting] = useState('Hello! How can I help you today?');
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
-  const [busySlots, setBusySlots] = useState<any[]>([]);
 
   // Validation: Step 1 is mandatory
   const isStep1Complete = businessName.trim() !== '' && category.trim() !== '' && phone.trim() !== '';
@@ -52,27 +50,13 @@ export default function OnboardingPage() {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin === window.location.origin && event.data === 'google_connected') {
-        setIsGoogleConnected(true);
+        // Handle Google connection success if needed
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [token, router]);
-
-  const handleCheckAvailability = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/integrations/google/availability`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      setBusySlots(data.busy_slots || []);
-    } catch (err) {
-      setError('Failed to fetch availability');
-    }
-  };
 
   const handleGoogleConnect = async () => {
     try {
@@ -86,6 +70,7 @@ export default function OnboardingPage() {
         window.open(data.authorization_url, 'Connect Google Calendar', 'width=600,height=700');
       }
     } catch (err) {
+      console.error('Failed to initiate Google connection:', err);
       setError('Failed to initiate Google connection');
     }
   };
@@ -143,9 +128,10 @@ export default function OnboardingPage() {
       if (!trialRes.ok) throw new Error('Failed to activate trial');
 
       router.push('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Onboarding submission error:', err);
-      setError(err.message || 'An unexpected error occurred during onboarding');
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred during onboarding';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -157,7 +143,7 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-6">
             <div className="space-y-1">
-              <h2 className="text-2xl font-extrabold text-gray-900">Let's start with the basics</h2>
+              <h2 className="text-2xl font-extrabold text-gray-900">Let&apos;s start with the basics</h2>
               <p className="text-gray-500 text-sm font-medium">We need this to set up your business identity.</p>
             </div>
             <div className="space-y-4">
@@ -209,13 +195,12 @@ export default function OnboardingPage() {
         );
       case 2:
       case 3:
-      case 4:
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <h2 className="text-2xl font-extrabold text-gray-900">
-                  {step === 2 ? 'Customize your AI' : step === 3 ? 'Sync Calendar' : 'Connect WhatsApp'}
+                  {step === 2 ? 'Customize your AI' : 'Sync Calendar'}
                 </h2>
                 <p className="text-gray-500 text-sm font-medium">
                   {step === 2 ? 'Define how your assistant speaks to clients.' : 'Check availability automatically.'}
@@ -229,7 +214,7 @@ export default function OnboardingPage() {
               </button>
             </div>
             
-            {/* Step-specific content (Assistant, Google, WhatsApp) */}
+            {/* Step-specific content (Assistant, Google) */}
             <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 border-dashed">
               {step === 2 && (
                 <div className="space-y-4">
@@ -250,22 +235,17 @@ export default function OnboardingPage() {
                    </button>
                 </div>
               )}
-              {step === 4 && (
-                <div className="text-center py-4 text-gray-400 text-sm italic">
-                   Integration coming soon. You can skip this step.
-                </div>
-              )}
             </div>
 
             <div className="p-4 bg-blue-50 rounded-2xl flex gap-3 items-center">
               <Info size={18} className="text-blue-500 shrink-0" />
               <p className="text-[11px] text-blue-700 leading-tight">
-                Don't worry, you can always finish this later in <b>Settings {'>'} Integrations</b>.
+                Don&apos;t worry, you can always finish this later in <b>Settings &gt; Integrations</b>.
               </p>
             </div>
           </div>
         );
-      case 5:
+      case 4:
         return (
           <div className="space-y-6 text-center">
             <div className="space-y-2">
@@ -293,7 +273,7 @@ export default function OnboardingPage() {
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
           <div 
             className="h-full bg-blue-600 transition-all duration-500 ease-out"
-            style={{ width: `${(step / 5) * 100}%` }}
+            style={{ width: `${(step / 4) * 100}%` }}
           />
         </div>
 
@@ -316,7 +296,7 @@ export default function OnboardingPage() {
             Go Back
           </button>
           
-          {step < 5 ? (
+          {step < 4 ? (
             <button
               onClick={handleNext}
               disabled={step === 1 && !isStep1Complete}

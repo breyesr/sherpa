@@ -1,3 +1,9 @@
+"""
+Business Profile & Operations Router module.
+Handles business profile setup, feature configuration, dashboard stats, and live test chat.
+Dependencies: models/business.py, schemas/business.py, services/ai_service.py
+"""
+
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,14 +14,58 @@ from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
-from app.models.business import BusinessProfile, AssistantConfig
+from app.models.business import BusinessProfile, Agent, VerticalType
 from app.schemas.business import (
-    BusinessProfileCreate, BusinessProfileUpdate, BusinessProfileResponse,
-    AssistantConfigUpdate
+    BusinessProfileCreate,
+    BusinessProfileUpdate,
+    BusinessProfileResponse,
+    AgentUpdate,
+    AgentResponse
 )
+
 from app.schemas.crm import AppointmentResponse
 from app.api.auth import get_current_user
 from app.core.limiter import limiter
+
+from app.core.constants import DEFAULT_FEATURES_CONFIG
+
+def get_default_routing_config(vertical_type: str) -> dict:
+    if vertical_type == "TRADE":
+        return {
+            "prospective_clients": {"enabled": True},
+            "distributors_retailers": {"enabled": True},
+            "sales_reps": {"enabled": True}
+        }
+    else:
+        return {
+            "prospective_clients": {"enabled": False},
+            "distributors_retailers": {"enabled": False},
+            "sales_reps": {"enabled": True}
+        }
+
+def get_default_features_config(vertical_type: str) -> dict:
+    if vertical_type == "TRADE":
+        return {
+            "scheduling": {"enabled": True},
+            "business_identity": {"enabled": True},
+            "crm_suite": {"enabled": True},
+            "campaign_flow": {"enabled": True},
+            "b2b_solutions": {"enabled": True},
+            "sales_intelligence": {"enabled": True},
+            "services": {"enabled": False},
+            "products": {"enabled": True}
+        }
+    else:
+        return {
+            "scheduling": {"enabled": True},
+            "business_identity": {"enabled": True},
+            "crm_suite": {"enabled": True},
+            "campaign_flow": {"enabled": False},
+            "b2b_solutions": {"enabled": False},
+            "sales_intelligence": {"enabled": False},
+            "services": {"enabled": True},
+            "products": {"enabled": False}
+        }
 
 router = APIRouter()
 
@@ -25,9 +75,10 @@ async def get_full_business(db: AsyncSession, user_id: str) -> BusinessProfile:
         select(BusinessProfile)
         .where(BusinessProfile.user_id == user_id)
         .options(
-            selectinload(BusinessProfile.assistant_config),
+            selectinload(BusinessProfile.agents),
             selectinload(BusinessProfile.integrations)
         )
+
     )
     return result.scalars().first()
 
@@ -36,7 +87,8 @@ from app.core.ai_service import AIService
 
 class TestChatRequest(BaseModel):
     message: str
-    assistant_config: Optional[AssistantConfigUpdate] = None
+    assistant_config: Optional[AgentUpdate] = None
+    simulate_role: Optional[str] = "sales_rep"  # "prospective_client", "distributor_retailer", "sales_rep"
 
 from sqlalchemy import func
 from app.models.crm import Client, Appointment
@@ -119,13 +171,206 @@ async def get_business_stats(
     # 6. Serialize for response
     serialized_upcoming = [AppointmentResponse.from_orm(a) for a in upcoming]
     
+    # 7. Campaign-flow specific metrics if enabled
+    feat_cfg = business.features_config or {}
+    campaign_flow_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
+    
+    if campaign_flow_enabled:
+        from app.models.trade import Order, Store
+        from sqlalchemy import desc
+        
+        # A. Campaign orders count (past 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        orders_count_res = await db.execute(
+            select(func.count(Order.id))
+            .where(
+                Order.business_id == business.id,
+                Order.created_at >= thirty_days_ago
+            )
+        )
+        campaign_orders_count = orders_count_res.scalar() or 0
+        
+        # B. Wholesale vs Retail leads count (prospects)
+        wholesale_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'wholesale'
+            )
+        )
+        wholesale_leads_count = wholesale_leads_res.scalar() or 0
+        
+        retail_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'retail'
+            )
+        )
+        retail_leads_count = retail_leads_res.scalar() or 0
+        
+        # C. Wholesale vs Retail pipeline value
+        wholesale_val_res = await db.execute(
+            select(func.sum(Order.total_amount))
+            .join(Store, Order.store_id == Store.id)
+            .where(
+                Order.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'wholesale'
+            )
+        )
+        wholesale_pipeline_value = wholesale_val_res.scalar() or 0.0
+        
+        retail_val_res = await db.execute(
+            select(func.sum(Order.total_amount))
+            .join(Store, Order.store_id == Store.id)
+            .where(
+                Order.business_id == business.id,
+                Store.is_prospect == True,
+                Store.prospect_segment == 'retail'
+            )
+        )
+        retail_pipeline_value = retail_val_res.scalar() or 0.0
+        
+        # D. Attention Leads (unverified prospects with orders, sorted by revenue)
+        attention_leads_res = await db.execute(
+            select(
+                Store,
+                func.coalesce(func.sum(Order.total_amount), 0.0).label("total_revenue")
+            )
+            .outerjoin(Order, Order.store_id == Store.id)
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == False
+            )
+            .group_by(Store.id)
+            .order_by(desc("total_revenue"), desc(Store.created_at))
+            .options(selectinload(Store.clients))
+            .limit(10)
+        )
+        attention_leads = []
+        import re
+        for row in attention_leads_res.all():
+            store_obj = row[0]
+            total_rev = float(row[1])
+            
+            # Resolve name: either company (store_obj.name) or client name
+            is_system_generated = store_obj.name.lower().startswith('prospect')
+            client_name = store_obj.clients[0].name if (store_obj.clients and store_obj.clients[0].name) else None
+            display_name = client_name if (is_system_generated and client_name) else store_obj.name
+            
+            # Clean displays: strip prospect prefix and trailing parentheses indicators
+            display_name = re.sub(r'(?i)^prospect\s+', '', display_name)
+            display_name = re.sub(r'\s*\([^)]*\)\s*$', '', display_name)
+            display_name = display_name.strip()
+            
+            attention_leads.append({
+                "id": store_obj.id,
+                "name": display_name,
+                "prospect_segment": store_obj.prospect_segment,
+                "created_at": store_obj.created_at.isoformat() if store_obj.created_at else None,
+                "total_revenue": total_rev
+            })
+            
+        # E. Verified vs Unverified leads count
+        verified_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == True
+            )
+        )
+        verified_leads_count = verified_leads_res.scalar() or 0
+        
+        unverified_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == False
+            )
+        )
+        unverified_leads_count = unverified_leads_res.scalar() or 0
+
+        # F. 30d Leads Intake count
+        leads_count_30d_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.created_at >= thirty_days_ago
+            )
+        )
+        leads_count_30d = leads_count_30d_res.scalar() or 0
+
+        # G. 30d Verified Orders count
+        verified_orders_count_30d_res = await db.execute(
+            select(func.count(Order.id))
+            .where(
+                Order.business_id == business.id,
+                Order.is_verified == True,
+                Order.created_at >= thirty_days_ago
+            )
+        )
+        verified_orders_count_30d = verified_orders_count_30d_res.scalar() or 0
+
+        # H. Verified wholesale vs retail leads count
+        verified_wholesale_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == True,
+                Store.prospect_segment == 'wholesale'
+            )
+        )
+        verified_wholesale_leads_count = verified_wholesale_leads_res.scalar() or 0
+
+        verified_retail_leads_res = await db.execute(
+            select(func.count(Store.id))
+            .where(
+                Store.business_id == business.id,
+                Store.is_prospect == True,
+                Store.is_verified == True,
+                Store.prospect_segment == 'retail'
+            )
+        )
+        verified_retail_leads_count = verified_retail_leads_res.scalar() or 0
+        
+        return {
+            "total_clients": total_clients,
+            "total_appointments": total_appointments,
+            "flagged_clients": flagged_clients,
+            "today_appointments": today_appointments,
+            "upcoming": serialized_upcoming,
+            "business_name": business.name,
+            "campaign_flow_enabled": True,
+            "campaign_orders_count": campaign_orders_count,
+            "wholesale_leads_count": wholesale_leads_count,
+            "retail_leads_count": retail_leads_count,
+            "wholesale_pipeline_value": wholesale_pipeline_value,
+            "retail_pipeline_value": retail_pipeline_value,
+            "attention_leads": attention_leads,
+            "verified_leads_count": verified_leads_count,
+            "unverified_leads_count": unverified_leads_count,
+            "leads_count_30d": leads_count_30d,
+            "verified_orders_count_30d": verified_orders_count_30d,
+            "verified_wholesale_leads_count": verified_wholesale_leads_count,
+            "verified_retail_leads_count": verified_retail_leads_count
+        }
+
     return {
         "total_clients": total_clients,
         "total_appointments": total_appointments,
         "flagged_clients": flagged_clients,
         "today_appointments": today_appointments,
         "upcoming": serialized_upcoming,
-        "business_name": business.name
+        "business_name": business.name,
+        "campaign_flow_enabled": False
     }
 
 @router.post("/test-chat")
@@ -142,13 +387,115 @@ async def test_chat(
     
     # If the user is previewing new config, temporarily override it
     if payload.assistant_config:
+        if not business.assistant_config:
+            # Create a temporary agent if none exists
+            from app.models.business import Agent
+            temp_agent = Agent(business_id=business.id, role="general")
+            # We don't add it to DB, just use it for the session
+            business.agents.append(temp_agent)
+            
         for field, value in payload.assistant_config.dict(exclude_unset=True).items():
             setattr(business.assistant_config, field, value)
+            
+    # 1. Check if the simulated flow is enabled in company's features and routing configurations
+    simulate_role = payload.simulate_role or "sales_rep"
     
-    ai_service = AIService(business, db)
-    # Use a dummy identifier for testing
-    test_id = f"sandbox_{current_user.id}"
-    response = await ai_service.get_response(identifier=test_id, user_message=payload.message, metadata={"name": current_user.email, "platform": "sandbox"})
+    from app.models.business import VerticalType
+    if business.vertical_type == VerticalType.BASIC:
+        simulate_role = "customer"
+    
+    # Check feature flag entitlement first
+    feat_cfg = business.features_config or DEFAULT_FEATURES_CONFIG
+    feature_enabled = True
+    if simulate_role == "customer":
+        feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
+    elif simulate_role == "prospective_client":
+        feature_enabled = feat_cfg.get("campaign_flow", {}).get("enabled", False)
+    elif simulate_role == "distributor_retailer":
+        feature_enabled = feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+    elif simulate_role == "sales_rep":
+        feature_enabled = feat_cfg.get("sales_intelligence", {}).get("enabled", False)
+
+    cfg = business.routing_config or {}
+    flow_enabled = False
+    if simulate_role == "customer":
+        flow_enabled = True
+    elif simulate_role == "prospective_client":
+        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", False) or feature_enabled
+    elif simulate_role == "distributor_retailer":
+        flow_enabled = cfg.get("distributors_retailers", {}).get("enabled", False)
+    elif simulate_role == "sales_rep":
+        flow_enabled = cfg.get("sales_reps", {}).get("enabled", True)
+        
+    if not feature_enabled or not flow_enabled:
+        if simulate_role == "sales_rep":
+            return {
+                "response": (
+                    "¡Hola! Tu número está registrado como administrador/colaborador en Sherpa. "
+                    "Las herramientas de consulta de Inteligencia de Ventas no están activadas actualmente para tu cuenta. "
+                    "Este bot está configurado y activo para calificar prospectos y capturar pedidos de clientes externos."
+                )
+            }
+        return {"response": "Este servicio no está habilitado actualmente para este número en la configuración de la empresa."}
+
+    # 2. Dispatch to the correct underlying message pipeline
+    if simulate_role == "customer":
+        ai_service = AIService(business, db)
+        test_id = f"sandbox_cust_{current_user.id}"
+        response = await ai_service.get_response(
+            identifier=test_id,
+            user_message=payload.message,
+            metadata={
+                "name": "B2C Customer Test",
+                "platform": "sandbox",
+                "flow": "customer"
+            }
+        )
+    elif simulate_role == "prospective_client":
+        from app.services.prospect_qualifier import ProspectQualifier
+        qualifier = ProspectQualifier(db)
+        test_phone = f"sandbox_prosp_{current_user.id}"
+        response, _ = await qualifier.get_response(
+            business_id=business.id,
+            sender_phone=test_phone,
+            user_message=payload.message
+        )
+    elif simulate_role == "distributor_retailer":
+        from sqlalchemy.orm import selectinload
+        cli_res = await db.execute(
+            select(Client)
+            .where(Client.business_id == business.id)
+            .options(selectinload(Client.stores))
+        )
+        clients = cli_res.scalars().all()
+        # Find first client linked to physical stores
+        distributor = next((c for c in clients if c.stores), None)
+        client_id = distributor.id if distributor else None
+        
+        ai_service = AIService(business, db)
+        test_id = f"sandbox_dist_{current_user.id}"
+        response = await ai_service.get_response(
+            identifier=test_id,
+            user_message=payload.message,
+            metadata={
+                "name": distributor.name if distributor else "Distribuidor Test",
+                "platform": "sandbox",
+                "flow": "distributor",
+                "client_id": client_id
+            }
+        )
+    else: # sales_rep
+        ai_service = AIService(business, db)
+        test_id = f"sandbox_rep_{current_user.id}"
+        response = await ai_service.get_response(
+            identifier=test_id,
+            user_message=payload.message,
+            metadata={
+                "name": current_user.email,
+                "platform": "sandbox",
+                "flow": "sales_rep"
+            }
+        )
     
     return {"response": response}
 
@@ -176,18 +523,22 @@ async def create_business_me(
         business = result.scalars().first()
         
         if not business:
+            v_type = business_in.vertical_type or VerticalType.BASIC
             business = BusinessProfile(
                 user_id=current_user.id,
                 name=business_in.name,
                 category=business_in.category,
-                contact_phone=business_in.contact_phone
+                contact_phone=business_in.contact_phone,
+                vertical_type=v_type,
+                routing_config=business_in.routing_config or get_default_routing_config(v_type),
+                features_config=business_in.features_config or get_default_features_config(v_type)
             )
             db.add(business)
             await db.flush() # Get the ID without committing yet
             
-            # Auto-create default assistant config
-            assistant = AssistantConfig(business_id=business.id)
-            db.add(assistant)
+            # Auto-create default agent
+            agent = Agent(business_id=business.id)
+            db.add(agent)
         else:
             business.name = business_in.name
             business.category = business_in.category
@@ -232,20 +583,24 @@ async def update_business_me(
     if not business:
         # Auto-create if it doesn't exist (robust for admins/legacy)
         print(f"DEBUG: Business not found for user {current_user.id}, creating new profile.")
+        v_type = business_in.vertical_type or VerticalType.BASIC
         business = BusinessProfile(
             user_id=current_user.id,
             name=business_in.name or "My Business",
             category=business_in.category,
             contact_phone=business_in.contact_phone,
             timezone=business_in.timezone or "UTC",
-            crm_config=business_in.crm_config or []
+            crm_config=business_in.crm_config or [],
+            vertical_type=v_type,
+            routing_config=business_in.routing_config or get_default_routing_config(v_type),
+            features_config=business_in.features_config or get_default_features_config(v_type)
         )
         db.add(business)
         await db.flush()
         
-        # Also auto-create the assistant config
-        assistant = AssistantConfig(business_id=business.id)
-        db.add(assistant)
+        # Also auto-create the default agent
+        agent = Agent(business_id=business.id)
+        db.add(agent)
     else:
         # Standard update
         update_data = business_in.dict(exclude_unset=True)
@@ -261,26 +616,32 @@ async def update_business_me(
         
     return await get_full_business(db, current_user.id)
 
-@router.patch("/me/assistant", response_model=BusinessProfileResponse)
+@router.patch("/me/assistant", response_model=AgentResponse)
 async def update_assistant_me(
-    assistant_in: AssistantConfigUpdate,
+    agent_in: AgentUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    # Need to load assistant_config to update it
+    # Need to load agents to update the default one
     result = await db.execute(
         select(BusinessProfile)
         .where(BusinessProfile.user_id == current_user.id)
-        .options(selectinload(BusinessProfile.assistant_config))
+        .options(selectinload(BusinessProfile.agents))
     )
     business = result.scalars().first()
-    if not business or not business.assistant_config:
-        raise HTTPException(status_code=404, detail="Assistant config not found")
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
     
-    update_data = assistant_in.dict(exclude_unset=True)
+    if not business.assistant_config:
+        agent = Agent(business_id=business.id)
+        db.add(agent)
+        await db.flush()
+        await db.refresh(business, attribute_names=["agents"])
+    
+    update_data = agent_in.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(business.assistant_config, field, value)
     
     db.add(business.assistant_config)
     await db.commit()
-    return await get_full_business(db, current_user.id)
+    return business.assistant_config

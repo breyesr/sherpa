@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, HelpCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, AlertCircle, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '@/config';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -23,9 +23,14 @@ const TIMEZONES = [
   { value: 'Europe/Berlin', label: 'Berlin' },
 ];
 
+import { components } from '@/types/api';
+
+type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+type UserResponse = components['schemas']['UserResponse'];
+
 interface GeneralSettingsProps {
-  business: any;
-  user: any;
+  business: BusinessProfileResponse;
+  user: UserResponse;
   token: string | null;
   onMessage: (message: { type: string, text: string }) => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -41,7 +46,10 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     category: business?.category || '', 
     contact_phone: business?.contact_phone || '', 
     timezone: business?.timezone || 'UTC',
-    crm_config: business?.crm_config || []
+    vertical_type: business?.vertical_type || 'BASIC',
+    crm_config: (business?.crm_config as any[]) || [],
+    allowed_zip_codes: ((business as any)?.routing_config?.allowed_zip_codes || []).join(', '),
+    routing_config: (business as any)?.routing_config || {}
   };
 
   const initialUserData = { 
@@ -57,7 +65,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     const isBizDirty = JSON.stringify(editBusiness) !== JSON.stringify(initialBusinessData);
     const isUserDirty = JSON.stringify(editUser) !== JSON.stringify(initialUserData);
     onDirtyChange?.(isBizDirty || isUserDirty);
-  }, [editBusiness, editUser, business, user, onDirtyChange]);
+  }, [editBusiness, editUser, initialBusinessData, initialUserData, onDirtyChange]);
 
   const handleAddField = () => {
     setEditBusiness({
@@ -89,13 +97,25 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     // Filter out soft-deleted fields before saving
     const finalCrmConfig = (editBusiness.crm_config || []).filter((f: any) => !f.is_deleted);
     
+    // Parse allowed ZIP codes from comma-separated string
+    const cleanZips = editBusiness.allowed_zip_codes
+      ? editBusiness.allowed_zip_codes.split(',').map((z: string) => z.trim()).filter((z: string) => z.length > 0)
+      : [];
+      
+    const finalRoutingConfig = {
+      ...(editBusiness.routing_config || {}),
+      allowed_zip_codes: cleanZips
+    };
+    
     // Only send fields that are part of BusinessProfileUpdate schema
     const payload = { 
       name: editBusiness.name,
       category: editBusiness.category,
       contact_phone: editBusiness.contact_phone,
       timezone: editBusiness.timezone,
-      crm_config: finalCrmConfig 
+      vertical_type: editBusiness.vertical_type,
+      crm_config: finalCrmConfig,
+      routing_config: finalRoutingConfig
     };
 
     try {
@@ -110,7 +130,12 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       if (res.ok) {
         onMessage({ type: 'success', text: 'Business profile updated successfully!' });
         // Update local state to remove the deleted items from view
-        setEditBusiness(prev => ({ ...prev, crm_config: finalCrmConfig }));
+        setEditBusiness(prev => ({ 
+          ...prev, 
+          crm_config: finalCrmConfig,
+          routing_config: finalRoutingConfig,
+          allowed_zip_codes: cleanZips.join(', ')
+        }));
         queryClient.invalidateQueries({ queryKey: ['business'] });
       } else {
         const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
@@ -153,6 +178,12 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       setSavingUser(false);
     }
   };
+
+  const features = (business?.features_config || {}) as any;
+  const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+  const showB2BSolutions = features.b2b_solutions?.enabled ?? (business?.vertical_type === 'TRADE');
+  const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
+  const showCustomFields = showServices || showB2BSolutions || showSalesIntel;
 
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">
@@ -210,6 +241,17 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
               </select>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Allowed Delivery ZIP Codes (Comma separated)</label>
+            <textarea 
+              value={editBusiness.allowed_zip_codes}
+              onChange={e => setEditBusiness({...editBusiness, allowed_zip_codes: e.target.value})}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium h-24 text-sm resize-none"
+              placeholder="e.g. 03330, 04210, 04510"
+            />
+            <p className="text-[10px] text-gray-400 italic">Enter the 5-digit postal codes this business profile distributes to. Leave empty to allow CDMX locations by default.</p>
+          </div>
           <div className="flex justify-end pt-4">
             <button 
               type="submit"
@@ -224,7 +266,8 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       </section>
 
       {/* CRM Configuration Section */}
-      <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+      {showCustomFields && (
+        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
         <div className="flex items-center justify-between border-b border-gray-50 pb-6">
           <div className="flex items-center gap-3 text-xl font-bold text-gray-900">
             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
@@ -316,7 +359,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
             <div className="flex items-center gap-2 p-4 bg-red-50 rounded-2xl border border-red-100">
               <AlertCircle size={18} className="text-red-500 shrink-0" />
               <p className="text-xs text-red-800 font-medium">
-                Fields marked for deletion will be permanently removed after you click "Save". Historical data for these fields in existing clients will be preserved.
+                Fields marked for deletion will be permanently removed after you click &quot;Save&quot;. Historical data for these fields in existing clients will be preserved.
               </p>
             </div>
           )}
@@ -335,6 +378,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
           )}
         </div>
       </section>
+      )}
 
       {/* Account Section */}
       <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8">

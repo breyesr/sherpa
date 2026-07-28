@@ -12,7 +12,7 @@ export default async function Home() {
       <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
         <div className="max-w-2xl w-full text-center space-y-8 bg-white p-12 rounded-3xl shadow-sm border border-gray-100">
           <h1 className="text-6xl font-extrabold text-blue-600 tracking-tight">Sherpa</h1>
-          <p className="text-2xl text-gray-500 font-medium italic">"Scheduling made simple."</p>
+          <p className="text-2xl text-gray-500 font-medium italic">&quot;Scheduling made simple.&quot;</p>
           <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/auth/login" 
@@ -37,6 +37,7 @@ export default async function Home() {
     total_clients: 0,
     total_appointments: 0,
     today_appointments: 0,
+    flagged_clients: 0,
     upcoming: []
   };
 

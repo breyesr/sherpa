@@ -32,6 +32,8 @@ def create_access_token(subject: str, expires_delta: timedelta = None) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
+from sqlalchemy.orm import selectinload
+
 async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,11 +48,49 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
     except JWTError:
         raise credentials_exception
     
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.business_profile))
+    )
     user = result.scalars().first()
     if user is None:
         raise credentials_exception
     return user
+
+def require_feature(feature_key: str):
+    async def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if not current_user.business_profile:
+            raise HTTPException(status_code=404, detail="Business profile not found")
+        
+        from app.core.constants import DEFAULT_FEATURES_CONFIG
+        cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
+        
+        if not cfg.get(feature_key, {}).get("enabled", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail=f"El módulo '{feature_key}' no está habilitado para esta cuenta."
+            )
+        return current_user
+    return dependency
+
+def require_any_feature(feature_keys: list):
+    async def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if not current_user.business_profile:
+            raise HTTPException(status_code=404, detail="Business profile not found")
+        
+        from app.core.constants import DEFAULT_FEATURES_CONFIG
+        cfg = current_user.business_profile.features_config or DEFAULT_FEATURES_CONFIG
+        
+        has_any = any(cfg.get(key, {}).get("enabled", False) for key in feature_keys)
+        if not has_any:
+            features_label = " o ".join(f"'{k}'" for k in feature_keys)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail=f"Ninguno de los módulos requeridos ({features_label}) está habilitado para esta cuenta."
+            )
+        return current_user
+    return dependency
 
 @router.get("/me", response_model=UserResponse)
 async def get_user_me(current_user: User = Depends(get_current_user)) -> Any:
@@ -74,8 +114,13 @@ async def update_user_me(
     
     db.add(current_user)
     await db.commit()
-    await db.refresh(current_user)
-    return current_user
+    # Refresh with eager load
+    result = await db.execute(
+        select(User)
+        .where(User.id == current_user.id)
+        .options(selectinload(User.business_profile))
+    )
+    return result.scalars().first()
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> Any:
@@ -95,13 +140,21 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     )
     db.add(user)
     await db.commit()
-    await db.refresh(user)
-    return user
+    # Refresh with eager load
+    result = await db.execute(
+        select(User)
+        .where(User.id == user.id)
+        .options(selectinload(User.business_profile))
+    )
+    return result.scalars().first()
+
+from fastapi.responses import Response
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")
 async def login(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db), 
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
@@ -111,7 +164,30 @@ async def login(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_str = create_access_token(user.id, expires_delta=access_token_expires)
+    
+    # Set server-side HttpOnly cookie for enhanced security
+    response.set_cookie(
+        key="sherpa_token",
+        value=token_str,
+        httponly=True,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+
     return {
-        "access_token": create_access_token(user.id, expires_delta=access_token_expires),
+        "access_token": token_str,
         "token_type": "bearer",
     }
+
+@router.post("/logout")
+async def logout(response: Response) -> Any:
+    """Clear the server-side HttpOnly sherpa_token cookie."""
+    response.delete_cookie(
+        key="sherpa_token",
+        httponly=True,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax"
+    )
+    return {"status": "success"}

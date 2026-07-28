@@ -20,10 +20,22 @@ import RescheduleAppointmentModal from '@/components/RescheduleAppointmentModal'
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config';
+import SafeDate from '@/components/SafeDate';
+
+import { components } from '@/types/api';
+
+type AppointmentResponse = components['schemas']['AppointmentResponse'];
+
+interface BusySlot {
+  id: string;
+  start: string;
+  end: string;
+  summary?: string;
+}
 
 interface ClientCalendarProps {
-  initialAppointments: any[];
-  initialBusySlots: any[];
+  initialAppointments: AppointmentResponse[];
+  initialBusySlots: BusySlot[];
   token: string | null;
   timezone: string;
 }
@@ -31,7 +43,7 @@ interface ClientCalendarProps {
 export default function ClientCalendar({ initialAppointments, initialBusySlots, token, timezone }: ClientCalendarProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentResponse | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +52,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: appointments = [], isFetching: isFetchingApts } = useQuery({
+  const { data: appointments = [], isFetching: isFetchingApts } = useQuery<AppointmentResponse[]>({
     queryKey: ['appointments'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/crm/appointments`, {
@@ -53,7 +65,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     staleTime: 30 * 1000,
   });
 
-  const { data: busySlots = [], isFetching: isFetchingBusy } = useQuery({
+  const { data: busySlots = [], isFetching: isFetchingBusy } = useQuery<BusySlot[]>({
     queryKey: ['busy_slots'],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/integrations/google/availability`, {
@@ -105,18 +117,18 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     }
   };
 
-  const handleRescheduleClick = (apt: any) => {
+  const handleRescheduleClick = (apt: AppointmentResponse) => {
     setSelectedAppointment(apt);
     setIsRescheduleModalOpen(true);
   };
 
   // Aggressive Deduplicate
-  const googleEventIds = new Set(appointments.map((a: any) => a.google_event_id).filter(Boolean));
+  const googleEventIds = new Set(appointments.map((a) => a.google_event_id).filter(Boolean));
   
   // Track appointment times for fallback fuzzy matching (within 1 minute)
-  const appointmentTimestamps = appointments.map((a: any) => new Date(a.start_time).getTime());
+  const appointmentTimestamps = appointments.map((a) => new Date(a.start_time).getTime());
 
-  const filteredBusySlots = busySlots.filter((b: any) => {
+  const filteredBusySlots = busySlots.filter((b) => {
     // 1. Check by ID
     if (googleEventIds.has(b.id)) return false;
     
@@ -133,21 +145,25 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
 
   const now = new Date();
 
-  const allEvents = [
-    ...appointments.map((a: any) => ({ ...a, type: 'appointment' })),
-    ...filteredBusySlots.map((b: any) => ({ ...b, type: 'google_busy' }))
+  interface UnifiedEvent extends Partial<AppointmentResponse>, Partial<BusySlot> {
+    type: 'appointment' | 'google_busy';
+  }
+
+  const allEvents: UnifiedEvent[] = [
+    ...appointments.map((a) => ({ ...a, type: 'appointment' as const })),
+    ...filteredBusySlots.map((b) => ({ ...b, type: 'google_busy' as const }))
   ];
 
   const upcomingEvents = allEvents
-    .filter(e => new Date(e.start_time || e.start) >= now)
-    .sort((a, b) => new Date(a.start_time || a.start).getTime() - new Date(b.start_time || b.start).getTime());
+    .filter(e => new Date(e.start_time || e.start || '') >= now)
+    .sort((a, b) => new Date(a.start_time || a.start || '').getTime() - new Date(b.start_time || b.start || '').getTime());
 
   const pastEvents = allEvents
-    .filter(e => new Date(e.start_time || e.start) < now)
-    .sort((a, b) => new Date(b.start_time || b.start).getTime() - new Date(a.start_time || a.start).getTime());
+    .filter(e => new Date(e.start_time || e.start || '') < now)
+    .sort((a, b) => new Date(b.start_time || b.start || '').getTime() - new Date(a.start_time || a.start || '').getTime());
 
-  const applyFiltersAndSort = (events: any[]) => {
-    let filtered = events.filter(e => {
+  const applyFiltersAndSort = (events: UnifiedEvent[]) => {
+    const filtered = events.filter(e => {
       // 1. Search filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery || 
@@ -158,7 +174,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
 
       // 2. Status filter
       const matchesStatus = statusFilter.length === 0 || 
-        (e.type === 'appointment' && statusFilter.includes(e.status)) ||
+        (e.type === 'appointment' && statusFilter.includes(e.status || '')) ||
         (e.type === 'google_busy' && statusFilter.includes('busy'));
 
       return matchesSearch && matchesStatus;
@@ -169,14 +185,16 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
       let valA, valB;
       
       if (sortConfig.key === 'time') {
-        valA = new Date(a.start_time || a.start).getTime();
-        valB = new Date(b.start_time || b.start).getTime();
+        valA = new Date(a.start_time || a.start || '').getTime();
+        valB = new Date(b.start_time || b.start || '').getTime();
       } else if (sortConfig.key === 'client') {
         valA = (a.client?.name || a.summary || '').toLowerCase();
         valB = (b.client?.name || b.summary || '').toLowerCase();
       } else if (sortConfig.key === 'status') {
         valA = a.status || 'busy';
         valB = b.status || 'busy';
+      } else {
+        return 0;
       }
 
       if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -192,7 +210,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   // Auto-switch sort direction when changing tabs to maintain Agenda focus
   useEffect(() => {
     setSortConfig({ key: 'time', direction: activeTab === 'upcoming' ? 'asc' : 'desc' });
-  }, [activeTab, activeTab]); // Just to be safe with dependencies
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -348,11 +366,11 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
             <tbody className="divide-y divide-gray-50">
               {displayedEvents.map((event, idx) => {
                 const isApt = event.type === 'appointment';
-                const start = new Date(event.start_time || event.start);
-                const end = new Date(event.end_time || event.end);
+                const start = event.start_time || event.start || '';
+                const end = event.end_time || event.end || '';
 
                 return (
-                  <tr key={idx} className={`hover:bg-blue-50/30 transition-colors group ${!isApt ? 'bg-gray-50/20' : ''} ${new Date(event.start_time || event.start) < new Date() ? 'opacity-50 grayscale-[0.3]' : ''}`}>
+                  <tr key={idx} className={`hover:bg-blue-50/30 transition-colors group ${!isApt ? 'bg-gray-50/20' : ''} ${new Date(event.start_time || event.start || '') < new Date() ? 'opacity-50 grayscale-[0.3]' : ''}`}>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -372,11 +390,24 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-gray-900 font-medium">
                           <CalendarIcon size={14} className="text-blue-500" />
-                          {start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone })}
+                          <SafeDate 
+                            date={start} 
+                            options={{ weekday: 'short', month: 'short', day: 'numeric', timeZone: timezone }} 
+                          />
                         </div>
                         <div className="flex items-center gap-2 text-gray-500 text-sm">
                           <Clock size={14} />
-                          {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
+                          <SafeDate 
+                            date={start} 
+                            format="time" 
+                            options={{ hour: '2-digit', minute: '2-digit', timeZone: timezone }} 
+                          />
+                          <span> - </span>
+                          <SafeDate 
+                            date={end} 
+                            format="time" 
+                            options={{ hour: '2-digit', minute: '2-digit', timeZone: timezone }} 
+                          />
                         </div>
                       </div>
                     </td>
@@ -393,17 +424,17 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
                           </span>
                         )}
                         
-                        {isApt && new Date(event.start_time) > new Date() ? (
+                        {isApt && new Date(event.start_time || '') > new Date() ? (
                           <div className="flex items-center gap-1">
                             <button 
-                              onClick={() => handleRescheduleClick(event)}
+                              onClick={() => handleRescheduleClick(event as AppointmentResponse)}
                               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all"
                               title="Reschedule"
                             >
                               <Edit2 size={18} />
                             </button>
                             <button 
-                              onClick={() => handleCancelAppointment(event.id)}
+                              onClick={() => handleCancelAppointment(event.id || '')}
                               className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all"
                               title="Cancel Appointment"
                             >
@@ -451,14 +482,22 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
       <AddAppointmentModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
-        onSuccess={() => router.refresh()}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['appointments'] });
+          queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
+          router.refresh();
+        }}
         token={token || ''}
       />
 
       <RescheduleAppointmentModal 
         isOpen={isRescheduleModalOpen}
         onClose={() => setIsRescheduleModalOpen(false)}
-        onSuccess={() => router.refresh()}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['appointments'] });
+          queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
+          router.refresh();
+        }}
         token={token || ''}
         appointment={selectedAppointment}
       />

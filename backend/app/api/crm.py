@@ -1,5 +1,10 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+"""
+CRM Client & Session Management Router.
+Provides CRUD endpoints for CRM clients, custom fields, and conversation histories.
+"""
+
+from typing import Any, List, Dict, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -14,10 +19,13 @@ from app.models.calendar import BusySlot
 from app.models.integration import Integration
 from app.schemas.crm import (
     ClientCreate, ClientUpdate, ClientResponse, 
-    AppointmentCreate, AppointmentResponse, AppointmentUpdate
+    AppointmentCreate, AppointmentResponse, AppointmentUpdate,
+    ClientDetailResponse
 )
 from app.api.auth import get_current_user
 from app.core.google_calendar import GoogleCalendarService
+
+from app.tasks.knowledge import sync_vector_task, delete_vector_task
 
 router = APIRouter()
 
@@ -36,11 +44,22 @@ def normalize_to_utc_naive(dt: datetime) -> datetime:
 
 @router.get("/clients", response_model=List[ClientResponse])
 async def get_clients(
+    is_prospect: Optional[bool] = Query(default=False, description="Filter by prospect status. If None, returns all."),
+    prospect_segment: Optional[str] = Query(default=None, description="Filter by prospect segment."),
+    include_staff: bool = Query(default=False, description="Include internal staff roles (representative, sales_rep, agent)."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
     business = await get_user_business(db, current_user.id)
-    result = await db.execute(select(Client).where(Client.business_id == business.id))
+    query = select(Client).where(Client.business_id == business.id)
+    if is_prospect is not None:
+        query = query.where(Client.is_prospect == is_prospect)
+    if prospect_segment is not None:
+        query = query.where(Client.prospect_segment == prospect_segment)
+    if not include_staff:
+        query = query.where((Client.role.notin_(["representative", "sales_rep", "agent"])) | (Client.role == None))
+        
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.post("/clients", response_model=ClientResponse)
@@ -56,8 +75,56 @@ async def create_client(
     )
     db.add(client)
     await db.commit()
+    sync_vector_task.delay(str(client.id), "client", str(business.id))
     await db.refresh(client)
     return client
+
+@router.get("/clients/{client_id}", response_model=ClientDetailResponse)
+async def get_client_detail(
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    business = await get_user_business(db, current_user.id)
+    
+    # 1. Fetch Client
+    client_res = await db.execute(
+        select(Client).where(Client.id == client_id, Client.business_id == business.id)
+    )
+    client = client_res.scalars().first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # 2. Fetch Linked Stores
+    from app.models.trade import Store, store_clients
+    stores_res = await db.execute(
+        select(Store).join(store_clients).where(store_clients.c.client_id == client_id).options(
+            selectinload(Store.notes),
+            selectinload(Store.clients)
+        )
+    )
+    stores = stores_res.scalars().all()
+
+    # 3. Fetch Trade Notes
+    from app.models.trade import CustomerNote
+    notes_res = await db.execute(
+        select(CustomerNote).where(CustomerNote.client_id == client_id)
+    )
+    trade_notes = notes_res.scalars().all()
+
+    # 4. Fetch Recent Orders
+    from app.models.trade import Order
+    orders_res = await db.execute(
+        select(Order).where(Order.client_id == client_id).order_by(Order.created_at.desc()).limit(10).options(selectinload(Order.items))
+    )
+    orders = orders_res.scalars().all()
+
+    return {
+        "client": client,
+        "stores": stores,
+        "trade_notes": trade_notes,
+        "orders": orders
+    }
 
 @router.patch("/clients/{client_id}", response_model=ClientResponse)
 async def update_client(
@@ -81,6 +148,7 @@ async def update_client(
     
     db.add(client)
     await db.commit()
+    sync_vector_task.delay(str(client.id), "client", str(business.id))
     await db.refresh(client)
     return client
 
@@ -90,6 +158,7 @@ async def delete_client(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
+    from app.models.trade import CustomerNote
     business = await get_user_business(db, current_user.id)
     
     result = await db.execute(
@@ -99,8 +168,16 @@ async def delete_client(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
+    # Get customer note IDs before cascade deletion
+    res_notes = await db.execute(select(CustomerNote.id).where(CustomerNote.client_id == client_id))
+    note_ids = res_notes.scalars().all()
+
     await db.delete(client)
     await db.commit()
+    
+    delete_vector_task.delay(str(client_id), "client", str(business.id))
+    for note_id in note_ids:
+        delete_vector_task.delay(str(note_id), "customer_note", str(business.id))
     return {"status": "deleted"}
 
 @router.get("/appointments", response_model=List[AppointmentResponse])

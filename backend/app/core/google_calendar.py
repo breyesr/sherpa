@@ -18,14 +18,17 @@ class GoogleCalendarService:
         """Get a valid access token, refreshing if necessary."""
         # Check if current token is expired (with 1-minute buffer)
         if self.integration.token_expiry and datetime.utcnow() < (self.integration.token_expiry - timedelta(minutes=1)):
+            print(f"DEBUG GOOGLE: Using existing access token for business {self.integration.business_id}")
             return decrypt_token(self.integration.access_token)
 
         # Refresh token
+        print(f"DEBUG GOOGLE: Refreshing access token for business {self.integration.business_id}")
         client_id = await ConfigService.get(self.db, "GOOGLE_CLIENT_ID")
         client_secret = await ConfigService.get(self.db, "GOOGLE_CLIENT_SECRET")
         refresh_token = decrypt_token(self.integration.refresh_token)
 
         if not client_id or not client_secret:
+            print("ERROR GOOGLE: Credentials missing in database")
             raise Exception("Google credentials not configured in Admin Panel")
 
         async with httpx.AsyncClient() as client:
@@ -40,7 +43,7 @@ class GoogleCalendarService:
             )
             
             if resp.status_code != 200:
-                print(f"ERROR: Google Token Refresh Failed: {resp.text}")
+                print(f"ERROR GOOGLE: Token Refresh Failed: {resp.text}")
                 raise Exception(f"Failed to refresh Google token: {resp.text}")
 
             data = resp.json()
@@ -53,6 +56,7 @@ class GoogleCalendarService:
             self.db.add(self.integration)
             await self.db.commit()
             
+            print(f"DEBUG GOOGLE: Successfully refreshed token. New expiry: {self.integration.token_expiry}")
             return new_access_token
 
     async def get_availability(self, start_time: datetime, end_time: datetime) -> List[Dict[str, Any]]:
@@ -101,7 +105,7 @@ class GoogleCalendarService:
             
         return data.get('items', [])
 
-    async def create_event(self, summary: str, start_time: datetime, end_time: datetime, description: str = ""):
+    async def create_event(self, summary: str, start_time: datetime, end_time: datetime, description: str = "", location: str = ""):
         """Create an event in the primary Google calendar."""
         token = await self._get_access_token()
         
@@ -109,6 +113,7 @@ class GoogleCalendarService:
         body = {
             'summary': summary,
             'description': description,
+            'location': location,
             'start': {
                 'dateTime': start_time.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             },
@@ -117,18 +122,24 @@ class GoogleCalendarService:
             },
         }
         
+        print(f"DEBUG GOOGLE: Creating event '{summary}' for {start_time}")
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 url,
                 json=body,
                 headers={"Authorization": f"Bearer {token}"}
             )
-            resp.raise_for_status()
+            
+            if resp.status_code != 200:
+                print(f"ERROR GOOGLE: Create event failed ({resp.status_code}): {resp.text}")
+                resp.raise_for_status()
+                
             data = resp.json()
+            print(f"DEBUG GOOGLE: Event created successfully! ID: {data.get('id')}")
             
         return data.get('id')
 
-    async def update_event(self, event_id: str, summary: str, start_time: datetime, end_time: datetime, description: str = ""):
+    async def update_event(self, event_id: str, summary: str, start_time: datetime, end_time: datetime, description: str = "", location: str = ""):
         """Update an existing event in Google Calendar."""
         token = await self._get_access_token()
         
@@ -136,6 +147,7 @@ class GoogleCalendarService:
         body = {
             'summary': summary,
             'description': description,
+            'location': location,
             'start': {
                 'dateTime': start_time.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             },

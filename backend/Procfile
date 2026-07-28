@@ -1,3 +1,6 @@
 web: ./pre_deploy.sh && PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port $PORT
-worker: PYTHONPATH=. celery -A app.core.celery_app worker --loglevel=info
-beat: PYTHONPATH=. celery -A app.core.celery_app beat --loglevel=info
+worker: PYTHONPATH=. celery -A app.core.celery_app worker --loglevel=warning --concurrency=1 --max-tasks-per-child=50 --prefetch-multiplier=1
+worker_fast: PYTHONPATH=. celery -A app.core.celery_app worker -Q fast_queue --loglevel=warning --concurrency=4 --max-tasks-per-child=100
+worker_slow: PYTHONPATH=. celery -A app.core.celery_app worker -Q slow_queue --loglevel=warning --concurrency=1 --max-tasks-per-child=50
+beat: PYTHONPATH=. celery -A app.core.celery_app beat --loglevel=warning
+

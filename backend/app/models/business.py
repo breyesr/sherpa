@@ -1,8 +1,13 @@
-from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey
+import enum
+from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Enum, Integer
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
 from datetime import datetime
+
+class VerticalType(str, enum.Enum):
+    BASIC = "BASIC"
+    TRADE = "TRADE"
 
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
@@ -13,6 +18,7 @@ class BusinessProfile(Base):
     category = Column(String, nullable=True)
     contact_phone = Column(String, nullable=True)
     timezone = Column(String, nullable=False, default="UTC")
+    vertical_type = Column(Enum(VerticalType), nullable=False, default=VerticalType.BASIC, server_default=VerticalType.BASIC.value)
     trial_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
     
@@ -20,20 +26,45 @@ class BusinessProfile(Base):
     # Store field definitions: [{"key": "pet_name", "label": "Pet Name", "type": "text"}, ...]
     crm_config = Column(JSON, nullable=True, default=list)
 
+    # Modular Routing Configuration (Epic 14.1)
+    # e.g., {"prospects_enabled": true, "distributors_enabled": true, "sales_reps_enabled": true}
+    routing_config = Column(JSON, nullable=True, default=dict)
+
+    # Modular Features Configuration (Epic 128)
+    features_config = Column(JSON, nullable=True, default=dict)
+    
+    # Dedicated WhatsApp limits
+    purchased_credits = Column(Integer, default=0, nullable=False, server_default="0")
+
     user = relationship("User", back_populates="business_profile")
-    assistant_config = relationship("AssistantConfig", back_populates="business_profile", uselist=False, cascade="all, delete-orphan")
+    agents = relationship("Agent", back_populates="business_profile", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="business_profile", cascade="all, delete-orphan")
     clients = relationship("Client", back_populates="business_profile", cascade="all, delete-orphan")
+    stores = relationship("Store", back_populates="business_profile", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="business_profile", cascade="all, delete-orphan")
     appointments = relationship("Appointment", back_populates="business_profile", cascade="all, delete-orphan")
     services = relationship("Service", back_populates="business_profile", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business_profile", cascade="all, delete-orphan")
+    competitors = relationship("Competitor", back_populates="business_profile", cascade="all, delete-orphan")
+    customer_notes = relationship("CustomerNote", back_populates="business_profile", cascade="all, delete-orphan")
 
-class AssistantConfig(Base):
-    __tablename__ = "assistant_configs"
+    @property
+    def assistant_config(self):
+        """Backward compatibility for AIService and single-agent logic."""
+        if not self.agents:
+            return None
+        # Return the general agent if it exists, otherwise the first one
+        return next((a for a in self.agents if a.role == "general"), self.agents[0])
+
+class Agent(Base):
+    __tablename__ = "agents"
 
     id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), unique=True, nullable=False)
+    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
     name = Column(String, nullable=False, default="Sherpa Assistant")
+    role = Column(String, nullable=False, default="general") # general, briefer, qualifier
+    is_active = Column(Boolean, nullable=False, default=True)
+    
     tone = Column(String, nullable=False, default="Professional")
     greeting = Column(String, nullable=False, default="Hello! How can I help you today?")
     personalized_greeting = Column(String, nullable=False, default="Hola {name}, ¿en qué puedo ayudarte hoy?")
@@ -53,4 +84,4 @@ class AssistantConfig(Base):
     
     working_hours = Column(JSON, nullable=True) # e.g., {"mon": ["09:00", "18:00"], ...}
 
-    business_profile = relationship("BusinessProfile", back_populates="assistant_config")
+    business_profile = relationship("BusinessProfile", back_populates="agents")

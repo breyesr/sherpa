@@ -3,26 +3,40 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface AuthState {
   token: string | null;
-  setToken: (token: string) => void;
-  logout: () => void;
+  setToken: (token: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      setToken: (token) => {
+      setToken: async (token) => {
         set({ token });
-        // Sync with cookie for Middleware/Server Components
-        if (typeof document !== 'undefined') {
-          document.cookie = `sherpa_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        try {
+          await fetch('/api/auth', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token, action: 'set' }),
+          });
+        } catch (err) {
+          console.error('Failed to set auth cookie:', err);
         }
       },
-      logout: () => {
+      logout: async () => {
         set({ token: null });
-        // Clear cookie
-        if (typeof document !== 'undefined') {
-          document.cookie = "sherpa_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        try {
+          await fetch('/api/auth', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'clear' }),
+          });
+        } catch (err) {
+          console.error("Failed to clear auth cookie:", err);
         }
       },
     }),

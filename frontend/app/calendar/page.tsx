@@ -27,7 +27,17 @@ export default async function CalendarPage() {
       const data = await busyRes.json();
       busySlots = data.busy_slots || [];
     }
-    if (bizRes.ok) business = await bizRes.json();
+    if (bizRes.ok) {
+      business = await bizRes.json();
+      const features = business?.features_config || {};
+      const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+      const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
+      const showScheduling = showServices || showSalesIntel;
+
+      if (!showScheduling) {
+        redirect('/');
+      }
+    }
 
     if (aptRes.status === 401) {
       redirect('/auth/login');

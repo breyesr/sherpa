@@ -1,3 +1,8 @@
+"""
+Core AI Agent Messaging and Tool Pipeline.
+Coordinates user dialog processing, template prompt formatting, calendar/CRM tool execution, and LLM completions.
+"""
+
 import json
 import traceback
 import asyncio
@@ -15,9 +20,12 @@ from app.models.crm import Appointment, Client
 from app.models.service import Service
 from app.models.integration import Integration
 from app.models.messaging import Conversation, Message
+from app.models.business import VerticalType
 from app.core.system_config import ConfigService
 from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
+from app.core.context_assembler import ContextAssembler
+from app.services.agentic_orchestrator import AgenticOrchestrator
 
 # Setup prompt template environment
 try:
@@ -36,6 +44,8 @@ class AIService:
         self.db = db
         self.assistant_config = business_profile.assistant_config
         self.memory = ChatMemory()
+        self.assembler = ContextAssembler(db)
+        self.orchestrator = AgenticOrchestrator(db)
 
     async def get_active_provider(self) -> str:
         return await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
@@ -100,7 +110,7 @@ class AIService:
                 tools=tools,
                 tool_choice="auto",
                 api_key=api_key,
-                timeout=45.0
+                timeout=30.0
             )
 
             response_message = response.choices[0].message
@@ -163,6 +173,7 @@ class AIService:
         """Entry point for all messaging platforms."""
         try:
             # 1. Identity Stage
+            b2b_reasoning = None
             client_obj, is_new = await self._get_client(identifier, metadata)
             normalized_id = Client.normalize_id(identifier)
             platform = metadata.get("platform", "sandbox") if metadata else "sandbox"
@@ -177,20 +188,59 @@ class AIService:
             await self.db.commit()
 
             # 3. Memory Stage (Redis for quick LLM context)
-            history = await self.memory.get_history(normalized_id)
+            history = await self.memory.get_history(normalized_id, limit=20)
             
-            # 4. Prompt Construction Stage (Jinja2)
+            # 3.1 Token Optimization: Summarization & Intent Detection
+            optimized = await self.assembler.get_optimized_context(normalized_id, history, user_message)
+            history = optimized["history"]
+            summary = optimized["summary"]
+            intent = optimized["intent"]
+            
+            # 4. B2B Orchestration Stage (ONLY for TRADE vertical)
+            if self.business.vertical_type == VerticalType.TRADE:
+                b2b_response, b2b_reasoning = await self.orchestrator.get_response(
+                    self.business.id, client_obj.id, user_message, normalized_id
+                )
+
+                ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=b2b_response, reasoning_trace=b2b_reasoning)
+                self.db.add(ai_msg_obj)
+                conv.last_message_at = datetime.utcnow()
+                await self.db.commit()
+
+                await self.memory.add_message(normalized_id, "user", user_message)
+                await self.memory.add_message(normalized_id, "assistant", b2b_response)
+
+                return b2b_response
+            else:
+                # Basic flows don't use the complex B2B orchestrator
+                print(f"DEBUG AISERVICE: Basic vertical detected. Skipping B2B Orchestration.")
+
+            # 5. Prompt Construction Stage (Jinja2)
             try:
                 if not prompt_env:
                     raise Exception("Jinja2 environment not initialized")
                 
-                template = prompt_env.get_template("system_prompt.j2")
+                if not self.assistant_config:
+                    print(f"ERROR: No agent configured for business {self.business.id}. Falling back to default behavior.")
+                    from app.models.business import Agent
+                    self.assistant_config = Agent(
+                        name="Sherpa",
+                        greeting="Hello! I am your AI assistant. How can I help you?",
+                        tone="Professional"
+                    )
+
+                # CHOOSE TEMPLATE BASED ON VERTICAL
+                template_name = "b2b_sales_brain.j2" if self.business.vertical_type == VerticalType.TRADE else "b2c_scheduler.j2"
+                template = prompt_env.get_template(template_name)
                 
                 # Fetch Active Services for the business
                 res_services = await self.db.execute(
                     select(Service).where(Service.business_id == self.business.id, Service.is_active == True)
                 )
                 services = res_services.scalars().all()
+                
+                # Surgical Context Injection: Prune services to relevant ones
+                services = self.assembler.prune_services(services, user_message)
                 
                 # Prepare context for template
                 working_hours = self.assistant_config.working_hours or {}
@@ -258,7 +308,9 @@ class AIService:
                     identity_instruction=identity_instruction,
                     is_known=is_known,
                     missing_fields=missing_fields,
-                    current_time=local_now.strftime('%Y-%m-%d %H:%M')
+                    current_time=local_now.strftime('%Y-%m-%d %H:%M'),
+                    summary=summary,
+                    intent=intent
                 )
             except Exception as e:
                 print(f"CRITICAL: Prompt Construction Stage (Jinja2) Failed: {e}")
@@ -274,7 +326,7 @@ class AIService:
 
             # 5. Response Hand-off
             # Persist AI response to DB
-            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text)
+            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text, reasoning_trace=b2b_reasoning)
             self.db.add(ai_msg_obj)
             conv.last_message_at = datetime.utcnow()
             await self.db.commit()
@@ -290,35 +342,128 @@ class AIService:
             traceback.print_exc()
             return "I'm having unexpected trouble. Please try again later."
 
+    async def get_specialized_response(self, client_id: str, role: str) -> str:
+        """Generates a specialized AI report (Briefer or Qualifier)."""
+        try:
+            # 1. Fetch Client
+            res_client = await self.db.execute(
+                select(Client).where(Client.id == client_id, Client.business_id == self.business.id)
+            )
+            client_obj = res_client.scalars().first()
+            if not client_obj:
+                return "Client not found."
+
+            # 2. Fetch Trade Context (Stores, Notes, Orders)
+            from app.models.trade import Store, CustomerNote, Order
+            
+            res_stores = await self.db.execute(select(Store).where(Store.client_id == client_id))
+            stores = res_stores.scalars().all()
+
+            res_notes = await self.db.execute(select(CustomerNote).where(CustomerNote.client_id == client_id))
+            trade_notes = res_notes.scalars().all()
+
+            res_orders = await self.db.execute(
+                select(Order).where(Order.client_id == client_id).order_by(Order.created_at.desc()).limit(10)
+            )
+            orders = res_orders.scalars().all()
+
+            # 3. Prompt Construction
+            try:
+                template_name = "visit_briefer.j2" if role == "briefer" else "lead_qualifier.j2"
+                template = prompt_env.get_template(template_name)
+                
+                system_prompt = template.render(
+                    business=self.business,
+                    client=client_obj,
+                    stores=stores,
+                    trade_notes=trade_notes,
+                    orders=orders
+                )
+            except Exception as e:
+                print(f"ERROR: Template rendering failed for {role}: {e}")
+                return "Failed to generate specialized prompt."
+
+            # 4. Generation (Direct LLM call, no history or tools needed for reports)
+            provider = await ConfigService.get(self.db, "ACTIVE_AI_PROVIDER", "openai")
+            api_key = await ConfigService.get(self.db, f"{provider.upper()}_API_KEY")
+            model = await ConfigService.get(self.db, f"{provider.upper()}_MODEL", "gpt-4o-mini")
+
+            if not api_key:
+                return "API Key missing for specialized report."
+
+            response = await litellm.acompletion(
+                model=f"{provider}/{model}" if "/" not in model else model,
+                messages=[{"role": "user", "content": system_prompt}],
+                api_key=api_key,
+                timeout=30.0
+            )
+
+            return response.choices[0].message.content or "No response generated."
+
+        except Exception as e:
+            print(f"CRITICAL: Specialized Response Failed: {e}")
+            traceback.print_exc()
+            return "Internal error during report generation."
+
     def _get_tools_definition(self):
-        return [
+        from app.models.business import VerticalType
+        
+        # Base tools available to all verticals
+        tools = [
             {"type": "function", "function": {"name": "get_available_slots", "description": "Find free time slots.", "parameters": {"type": "object", "properties": {"date": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}, "days_ahead": {"type": "integer", "default": 3}}}}},
             {"type": "function", "function": {"name": "check_availability", "description": "Check if a specific time is free.", "parameters": {"type": "object", "properties": {"start_time": {"type": "string"}, "duration_minutes": {"type": "integer", "description": "Duration of the service"}}, "required": ["start_time"]}}},
-            {"type": "function", "function": {
-                "name": "create_appointment", 
-                "description": "FINAL STEP: Book the appointment in the system. PRE-CONDITION: You MUST have already asked for the 'reason' and received user 'confirmation' of their contact info as per system instructions. Do NOT call this early.", 
-                "parameters": {
-                    "type": "object", 
-                    "properties": {
-                        "start_time": {"type": "string", "description": "ISO format"}, 
-                        "service_id": {"type": "string", "description": "The ID of the service selected by the user"},
-                        "notes": {"type": "string", "description": "Reason for visit or additional details"}
-                    }, 
-                    "required": ["start_time", "notes"]
-                }
-            }},
-            {"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone to the system. This is mandatory for new or unknown users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}},
             {"type": "function", "function": {"name": "get_client_appointments", "description": "List all future scheduled appointments for the current user.", "parameters": {"type": "object", "properties": {}}}},
-            {"type": "function", "function": {"name": "update_client_metadata", "description": "SAVE CLIENT INFO: Store specific custom details about the client (e.g., Pet Name, Allergies, Preferences) as you discover them during chat.", "parameters": {"type": "object", "properties": {"metadata": {"type": "object", "description": "Key-value pairs of information to save"}}}}},
-            {"type": "function", "function": {"name": "flag_for_review", "description": "INTERNAL ALERT: Notify the manager that this client needs human assistance because you are stuck or don't have the info requested.", "parameters": {"type": "object", "properties": {"reason": {"type": "string", "description": "What the user asked that you didn't know"}}}}}
+            {"type": "function", "function": {"name": "flag_for_review", "description": "INTERNAL ALERT: Notify the manager that this client needs human assistance.", "parameters": {"type": "object", "properties": {"reason": {"type": "string", "description": "Reason for the alert"}}}}}
         ]
+
+        # Vertical-Specific Tool: Create Appointment
+        create_apt_params = {
+            "type": "object",
+            "properties": {
+                "start_time": {"type": "string", "description": "ISO format"},
+                "service_id": {"type": "string", "description": "The ID of the service selected"},
+                "notes": {"type": "string", "description": "Reason for visit or additional details"}
+            },
+            "required": ["start_time", "notes"]
+        }
+
+        # Add B2B specific fields to appointment tool if in TRADE vertical
+        if self.business.vertical_type == VerticalType.TRADE:
+            create_apt_params["properties"]["store_id"] = {"type": "string", "description": "The ID of the Store/Account to visit"}
+            create_apt_params["properties"]["customer_id"] = {"type": "string", "description": "The ID of the Customer/Contact at the store"}
+        
+        tools.append({
+            "type": "function", 
+            "function": {
+                "name": "create_appointment", 
+                "description": "Book the appointment/visit in the system.",
+                "parameters": create_apt_params
+            }
+        })
+
+        # B2C Specific Tools
+        if self.business.vertical_type == VerticalType.BASIC:
+            tools.append({"type": "function", "function": {"name": "update_client_identity", "description": "REGISTER USER: Save the client's name, email, and phone. Mandatory for new users.", "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}}, "required": ["name"]}}})
+        
+        # Common but useful tool for metadata
+        tools.append({"type": "function", "function": {"name": "update_client_metadata", "description": "SAVE INFO: Store specific custom details about the client/lead discovered during chat.", "parameters": {"type": "object", "properties": {"metadata": {"type": "object", "description": "Key-value pairs to save"}} or {"type": "object"}}}})
+
+        return tools
 
     async def _dispatch_tool(self, name: str, args: dict, identifier: str) -> str:
         if name == "get_available_slots": return await self._get_available_slots_tool(args.get('date'), args.get('duration_minutes'), args.get('days_ahead', 3))
         elif name == "check_availability":
             available = await self._check_availability_tool(args['start_time'], args.get('duration_minutes'))
             return "Available" if available else "Busy. Suggest another time."
-        elif name == "create_appointment": return await self._create_appointment_tool(identifier, args['start_time'], args.get('service_id'), args.get('notes'))
+        elif name == "create_appointment": 
+            return await self._create_appointment_tool(
+                identifier, 
+                args['start_time'], 
+                args.get('service_id'), 
+                args.get('notes'),
+                store_id=args.get('store_id'),
+                customer_id=args.get('customer_id')
+            )
         elif name == "update_client_identity": return await self._update_client_identity_tool(identifier, args['name'], args.get('email'), args.get('phone'))
         elif name == "get_client_appointments": return await self._get_client_appointments_tool(identifier)
         elif name == "update_client_metadata": return await self._update_client_metadata_tool(identifier, args.get('metadata'))
@@ -349,9 +494,12 @@ class AIService:
                     service = GoogleCalendarService(integration, self.db)
                     busy = await service.get_availability(dt.astimezone(timezone.utc), (dt + timedelta(minutes=duration)).astimezone(timezone.utc))
                     if busy: return False
-                except: pass
+                except Exception as e:
+                    logger.warning(f"Google Calendar availability check failed: {e}")
             return True
-        except: return False
+        except Exception as e:
+            logger.warning(f"Is slot available check failed: {e}")
+            return False
 
     async def _get_available_slots_tool(self, date_str: str = None, duration_minutes: int = None, days_ahead: int = 3) -> str:
         try:
@@ -365,7 +513,7 @@ class AIService:
                     # Parse date and set to start of day in business timezone
                     parsed_dt = datetime.fromisoformat(date_str)
                     start_dt = parsed_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=biz_tz)
-                except: 
+                except Exception: 
                     start_dt = now_local
             else: 
                 start_dt = now_local
@@ -413,7 +561,8 @@ class AIService:
                             datetime.fromisoformat(start_str.replace('Z', '+00:00')).astimezone(biz_tz), 
                             datetime.fromisoformat(end_str.replace('Z', '+00:00')).astimezone(biz_tz)
                         ))
-                except: pass
+                except Exception as e:
+                    logger.warning(f"Google Calendar event listing failed: {e}")
             
             working_hours = self.assistant_config.working_hours or {"mon": ["09:00", "18:00"], "tue": ["09:00", "18:00"], "wed": ["09:00", "18:00"], "thu": ["09:00", "18:00"], "fri": ["09:00", "18:00"], "sat": [], "sun": []}
             
@@ -454,7 +603,7 @@ class AIService:
         client, _ = await self._get_client(identifier)
         return client
 
-    async def _create_appointment_tool(self, identifier: str, start_iso: str, service_id: str = None, notes: str = None) -> str:
+    async def _create_appointment_tool(self, identifier: str, start_iso: str, service_id: str = None, notes: str = None, store_id: str = None, customer_id: str = None) -> str:
         try:
             biz_tz = ZoneInfo(self.business.timezone or "UTC")
             # Parse ISO string.
@@ -478,6 +627,16 @@ class AIService:
             end_utc = start_utc + timedelta(minutes=duration)
             
             client_obj = await self._check_client_direct(identifier)
+            
+            # Fetch Store/Customer names for Google Calendar if provided
+            location_str = ""
+            if store_id:
+                from app.models.store import Store
+                res_store = await self.db.execute(select(Store).where(Store.id == store_id))
+                store = res_store.scalars().first()
+                if store:
+                    service_name = f"Visit: {store.name}"
+                    location_str = store.address or ""
             
             # 1. Check for existing 'scheduled' appointment for this client
             res = await self.db.execute(
@@ -507,38 +666,57 @@ class AIService:
                 existing_apt.end_time = end_utc
                 if service_id: existing_apt.service_id = service_id
                 if notes: existing_apt.notes = notes
+                if store_id: existing_apt.store_id = store_id
+                if customer_id: existing_apt.customer_id = customer_id
                 
                 if service and existing_apt.google_event_id:
                     try:
                         await service.update_event(
                             event_id=existing_apt.google_event_id,
-                            summary=f"Sherpa: {client_obj.name} ({service_name})",
+                            summary=f"Sherpa: {service_name}",
                             start_time=start_utc,
                             end_time=end_utc,
-                            description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI"
+                            description=f"Reason: {notes or existing_apt.notes}\nRescheduled via AI",
+                            location=location_str
                         )
                     except Exception as e:
                         print(f"WARNING: Google Reschedule failed: {e}")
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
-                return f"SUCCESS: Your appointment for {service_name} has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                return f"SUCCESS: Your visit to {service_name} has been MOVED from {old_time_str} to {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
             
             else:
                 # NEW BOOKING MODE
-                apt = Appointment(business_id=self.business.id, client_id=client_obj.id, service_id=service_id, start_time=start_utc, end_time=end_utc, status="scheduled", notes=notes)
+                apt = Appointment(
+                    business_id=self.business.id, 
+                    client_id=client_obj.id, 
+                    service_id=service_id, 
+                    store_id=store_id,
+                    customer_id=customer_id,
+                    start_time=start_utc, 
+                    end_time=end_utc, 
+                    status="scheduled", 
+                    notes=notes
+                )
                 self.db.add(apt)
                 
                 if service:
                     try:
-                        google_id = await service.create_event(f"Sherpa: {client_obj.name} ({service_name})", start_utc, end_utc, f"Reason: {notes}\nBooked via AI")
+                        google_id = await service.create_event(
+                            summary=f"Sherpa: {service_name}", 
+                            start_time=start_utc, 
+                            end_time=end_utc, 
+                            description=f"Reason: {notes}\nBooked via AI",
+                            location=location_str
+                        )
                         apt.google_event_id = google_id
                     except Exception as e:
                         print(f"WARNING: Google Booking failed: {e}")
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
-                return f"SUCCESS: Booked {service_name} for {client_obj.name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
+                return f"SUCCESS: Visit scheduled for {service_name} at {local_start.strftime('%Y-%m-%d %H:%M')} ({self.business.timezone or 'UTC'})."
                 
         except Exception as e: 
             traceback.print_exc()
@@ -552,7 +730,9 @@ class AIService:
             if phone: client_obj.phone = Client.normalize_id(phone)
             await self.db.commit()
             return f"SUCCESS: Identity updated and user registered as {name}."
-        except: return "Failed to update identity."
+        except Exception as e:
+            logger.error(f"Failed to update identity: {e}")
+            return "Failed to update identity."
 
     async def _get_client_appointments_tool(self, identifier: str) -> str:
         """Fetch and format all future scheduled appointments for this client."""
