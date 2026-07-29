@@ -1,21 +1,21 @@
-# Handoff State: 2026-07-22 (B2C Services Drawer Migration & Attributes Setup COMPLETE)
+# Handoff State: 2026-07-29 (Production Release COMPLETE)
 
 ## Current Branch
-`feature/frontend/crm-drawer`
+`main` (Production Release)
 
 ## Accomplishments This Session
-1. **Service Drawer & Layout Integration (Epic 167)**:
-   - Created `ServiceDrawer.tsx` to handle adding and editing services.
-   - Built a custom attributes inline creator inside `ServiceDrawer` to append attributes to `business.features_config.services.attributes`.
-   - Adapted `ServiceCatalog.tsx` to replace inline form logic with the `ServiceDrawer`.
-   - Aligned `/services` layout with `/crm` by removing double-padding page wrappers, removing card constraints, and implementing a responsive cards grid view.
-2. **Service Attributes Management (Epic 167)**:
-   - Created `ManageAttributesDrawer.tsx` to view, rename (labels only), and delete custom service attributes.
-   - Wired `ManageAttributesDrawer` to pop over the `ServiceDrawer`.
-   - Used PATCH `/business/me` to persist configurations and invalidated React Query states.
-3. **Compilation & Testing**:
-   - Verified frontend compiles cleanly via `npm run build`.
+1. **Production Deployment & Release**:
+   - Fast-forward merged the `staging` branch into `main` and deployed to the Railway Production project.
+   - Replicated and optimized service container limits (512MB RAM for backend API/worker, 1024MB RAM for frontend).
+   - Wired the `BACKEND_CORS_ORIGINS` environment variable whitelisting domain origins.
+2. **Production Database Initialization**:
+   - Initialized a clean PostgreSQL database schema using `local_db_schema.sql`.
+   - Bypassed the broken migration history bug by manually inserting the head version `'d95c008c9b8d'` into the `alembic_version` table.
+   - Seeded all 157,525 Mexican postal code records using `local_postal_codes_fast.sql`.
+   - Provisioned the master admin user account (`create_admin.py`).
 
 ## Next Steps
-1. Test end-to-end B2C booking flows using the new dynamic attributes.
-2. Consider implementing similar dynamic field schemas for Products.
+1. **DNS & Custom Domains Setup (Phase 5)**:
+   - Configure CNAME and ALIAS DNS records at your registrar to point `domain.com` (prod) and `staging.domain.com` (staging) to Railway.
+   - Update `BACKEND_CORS_ORIGINS` in Railway to point strictly to the custom domains once live.
+   - (See the detailed checklist in [temp/deployment_plan.md](file:///Users/bernardo/projects/sherpa/temp/deployment_plan.md)).
