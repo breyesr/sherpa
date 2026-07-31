@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   ChevronLeft, 
@@ -44,11 +44,7 @@ export default function ProductDetailPage() {
   const { data: product, isLoading: loadingProduct, error: productError } = useQuery<ProductResponse>({
     queryKey: ['product', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Product not found');
-      return res.json();
+      return await apiClient.get<ProductResponse>(`/trade/products/${id}`);
     },
     enabled: !!token && !!id,
   });
@@ -57,11 +53,11 @@ export default function ProductDetailPage() {
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<StoreResponse[]>('/trade/stores');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -70,11 +66,11 @@ export default function ProductDetailPage() {
   const { data: categories = [] } = useQuery<CategoryResponse[]>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<CategoryResponse[]>('/trade/categories');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -83,11 +79,11 @@ export default function ProductDetailPage() {
   const { data: orders = [] } = useQuery<OrderResponse[]>({
     queryKey: ['orders'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/orders`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<OrderResponse[]>('/trade/orders');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -181,12 +177,7 @@ export default function ProductDetailPage() {
 
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/products/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (!res.ok) throw new Error('Failed to delete product');
+      await apiClient.delete<any>(`/trade/products/${id}`);
       
       queryClient.invalidateQueries({ queryKey: ['products'] });
       router.push('/trade/products');

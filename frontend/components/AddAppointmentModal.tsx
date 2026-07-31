@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 
 import { components } from '@/types/api';
 
@@ -30,12 +30,12 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
     async function fetchData() {
       if (!isOpen) return;
       try {
-        const [clientsRes, storesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/crm/clients`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${API_BASE_URL}/trade/stores`, { headers: { 'Authorization': `Bearer ${token}` } })
+        const [clientsData, storesData] = await Promise.all([
+          apiClient.get<ClientResponse[]>('/crm/clients'),
+          apiClient.get<any[]>('/trade/stores')
         ]);
-        if (clientsRes.ok) setClients(await clientsRes.json());
-        if (storesRes.ok) setStores(await storesRes.json());
+        setClients(clientsData);
+        setStores(storesData);
       } catch (err) {
         console.error(err);
       }
@@ -54,33 +54,14 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
     const end = new Date(start.getTime() + parseInt(duration) * 60000);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/crm/appointments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          client_id: clientId || null, 
-          store_id: storeId || null,
-          customer_id: customerId || null,
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
-          status: 'scheduled'
-        })
+      await apiClient.post('/crm/appointments', { 
+        client_id: clientId || null, 
+        store_id: storeId || null,
+        customer_id: customerId || null,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        status: 'scheduled'
       });
-
-      if (!res.ok) {
-        let errorMessage = 'Failed to create appointment';
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.detail || errorMessage;
-        } catch {
-          // If JSON parsing fails, use the status text
-          errorMessage = `${res.status}: ${res.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
 
       onSuccess();
       onClose();

@@ -19,7 +19,7 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import SafeDate from '@/components/SafeDate';
 import { components } from '@/types/api';
 import { useState, useEffect } from 'react';
@@ -65,11 +65,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
   const { data: business = initialBusiness } = useQuery({
     queryKey: ['business'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch business');
-      return res.json();
+      return apiClient.get<BusinessProfileResponse>('/business/me');
     },
     initialData: initialBusiness,
     staleTime: 60 * 1000,
@@ -78,11 +74,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
   const { data: stats = initialStats, isFetching: isFetchingStats } = useQuery({
     queryKey: ['stats'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/business/stats`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch stats');
-      return res.json();
+      return apiClient.get<DashboardStats>('/business/stats');
     },
     initialData: initialStats,
     staleTime: 30 * 1000,
@@ -102,17 +94,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
   const handleVerifyLead = async (leadId: string) => {
     setVerifyingLeads(prev => ({ ...prev, [leadId]: true }));
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/stores/${leadId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ is_verified: true })
-      });
-      if (!res.ok) {
-        throw new Error('Failed to verify lead');
-      }
+      await apiClient.patch(`/trade/stores/${leadId}`, { is_verified: true });
       // Invalidate queries to refresh the UI
       await queryClient.invalidateQueries({ queryKey: ['stats'] });
       await queryClient.invalidateQueries({ queryKey: ['stores'] });
@@ -123,7 +105,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
     }
   };
 
-  const features = business?.features_config || {
+  const features = (business?.features_config || {
     scheduling: { enabled: true },
     business_identity: { enabled: true },
     crm_suite: { enabled: business?.vertical_type === 'BASIC' },
@@ -132,9 +114,9 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
     sales_intelligence: { enabled: business?.vertical_type === 'TRADE' },
     services: { enabled: business?.vertical_type === 'BASIC' },
     products: { enabled: business?.vertical_type === 'TRADE' }
-  };
+  }) as Record<string, any>; // Cast as Record<string, any> or Record<string, { enabled: boolean }>
 
-  const isCampaignFlow = features.campaign_flow?.enabled ?? false;
+  const isCampaignFlow = (features.campaign_flow as { enabled?: boolean })?.enabled ?? false;
 
   if (isCampaignFlow) {
     const verified = stats.verified_leads_count || 0;

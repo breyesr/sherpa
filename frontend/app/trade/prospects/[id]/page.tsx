@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Store as StoreIcon, 
@@ -41,11 +41,7 @@ export default function ProspectDetailPage() {
   const { data: store, isLoading } = useQuery<StoreResponse>({
     queryKey: ['store', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Prospect not found');
-      return res.json();
+      return await apiClient.get<StoreResponse>(`/trade/stores/${id}`);
     },
     enabled: !!token && !!id,
   });
@@ -54,11 +50,11 @@ export default function ProspectDetailPage() {
   const { data: allOrders = [] } = useQuery<OrderResponse[]>({
     queryKey: ['orders', store?.prospect_segment],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/prospects/orders?segment=${store?.prospect_segment || ''}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<OrderResponse[]>(`/trade/prospects/orders?segment=${store?.prospect_segment || ''}`);
+      } catch {
+        return [];
+      }
     },
     enabled: !!token && !!store?.prospect_segment,
   });
@@ -69,11 +65,11 @@ export default function ProspectDetailPage() {
   const { data: products = [] } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<ProductResponse[]>('/trade/products');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -82,33 +78,16 @@ export default function ProspectDetailPage() {
     setIsVerifying(true);
     try {
       // 1. Verify store
-      const storeRes = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ is_verified: true })
-      });
-
-      if (!storeRes.ok) {
-        throw new Error('Failed to verify prospect store');
-      }
+      await apiClient.patch<any>(`/trade/stores/${id}`, { is_verified: true });
 
       // 2. Verify all unverified orders in parallel
       const unverifiedOrders = orders.filter(o => !o.is_verified);
       await Promise.all(
         unverifiedOrders.map(async (order) => {
-          const orderRes = await fetch(`${API_BASE_URL}/trade/orders/${order.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ is_verified: true })
-          });
-          if (!orderRes.ok) {
-            console.error(`Failed to verify order ${order.id}`);
+          try {
+            await apiClient.patch<any>(`/trade/orders/${order.id}`, { is_verified: true });
+          } catch (orderErr) {
+            console.error(`Failed to verify order ${order.id}`, orderErr);
           }
         })
       );
@@ -196,27 +175,17 @@ export default function ProspectDetailPage() {
               if (confirm(`Are you sure you want to delete prospect account ${store.name}?`)) {
                 try {
                   const clientId = store.clients?.[0]?.id;
-                  const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                  });
-                  if (res.ok) {
-                    if (clientId) {
-                      try {
-                        await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
-                          method: 'DELETE',
-                          headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                      } catch (clientErr) {
-                        console.error('Error deleting client contact:', clientErr);
-                      }
+                  await apiClient.delete<any>(`/trade/stores/${store.id}`);
+                  if (clientId) {
+                    try {
+                      await apiClient.delete<any>(`/crm/clients/${clientId}`);
+                    } catch (clientErr) {
+                      console.error('Error deleting client contact:', clientErr);
                     }
-                    router.push(store.prospect_segment === 'retail' ? '/trade/prospects/accounts?segment=retail' : '/trade/prospects/accounts?segment=wholesale');
-                  } else {
-                    alert('Failed to delete prospect account');
                   }
+                  router.push(store.prospect_segment === 'retail' ? '/trade/prospects/accounts?segment=retail' : '/trade/prospects/accounts?segment=wholesale');
                 } catch (err) {
-                  alert('Error deleting prospect account');
+                  alert('Failed to delete prospect account');
                 }
               }
             }}

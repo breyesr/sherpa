@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Loader2, Scissors, Clock, DollarSign } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { components } from '@/types/api';
@@ -30,11 +30,7 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
   const { data: business } = useQuery<BusinessProfileResponse>({
     queryKey: ['business'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch business');
-      return res.json();
+      return apiClient.get<BusinessProfileResponse>('/business/me');
     },
     enabled: !!token
   });
@@ -42,11 +38,7 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
   const { data: services = [], isLoading } = useQuery<ServiceResponse[]>({
     queryKey: ['services'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/services/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch services');
-      return res.json();
+      return apiClient.get<ServiceResponse[]>('/services/');
     },
     enabled: !!token
   });

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   ShoppingBag, 
@@ -37,11 +37,7 @@ export default function OrdersPage() {
   const { data: orders = [], isLoading: loadingOrders } = useQuery<OrderResponse[]>({
     queryKey: ['orders'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/orders`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch orders');
-      return res.json();
+      return await apiClient.get<OrderResponse[]>('/trade/orders');
     },
     enabled: !!token,
   });
@@ -50,13 +46,10 @@ export default function OrdersPage() {
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['all-stores-for-orders'],
     queryFn: async () => {
-      const [storesRes, prospectsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/trade/stores`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE_URL}/trade/stores?is_prospect=true`, { headers: { 'Authorization': `Bearer ${token}` } })
+      const [storesList, prospectsList] = await Promise.all([
+        apiClient.get<StoreResponse[]>('/trade/stores').catch(() => []),
+        apiClient.get<StoreResponse[]>('/trade/stores?is_prospect=true').catch(() => [])
       ]);
-      
-      const storesList = storesRes.ok ? await storesRes.json() : [];
-      const prospectsList = prospectsRes.ok ? await prospectsRes.json() : [];
       
       return [...storesList, ...prospectsList];
     },

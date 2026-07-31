@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Package, 
@@ -40,11 +40,7 @@ function ProductsPageContent() {
   const { data: products = [], isLoading: loadingProducts } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch products');
-      return res.json();
+      return await apiClient.get<ProductResponse[]>('/trade/products');
     },
     enabled: !!token,
   });
@@ -53,11 +49,11 @@ function ProductsPageContent() {
   const { data: categories = [], isLoading: loadingCategories } = useQuery<CategoryResponse[]>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<CategoryResponse[]>('/trade/categories');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -66,16 +62,11 @@ function ProductsPageContent() {
   const { data: business } = useQuery({
     queryKey: ['business'],
     queryFn: async () => {
-      if (!token) return null;
       try {
-        const res = await fetch(`${API_BASE_URL}/business/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) return res.json();
+        return await apiClient.get<any>('/business/me');
       } catch {
-        // Silent fail
+        return null;
       }
-      return null;
     },
     enabled: !!token,
   });

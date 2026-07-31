@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   User as UserIcon, 
@@ -14,7 +14,7 @@ import {
   ChevronLeft,
   FileText,
   ShoppingBag,
-  Store,
+  Store as StoreIcon,
   Activity,
   Plus,
   ArrowUpRight,
@@ -26,13 +26,16 @@ import {
   Zap,
   ChevronRight,
   ExternalLink,
-  Trash2
+  Trash2,
+  LucideIcon
 } from 'lucide-react';
-import { components } from '@/types/api';
-
-type ClientResponse = components['schemas']['ClientResponse'];
-type StoreResponse = components['schemas']['StoreResponse'];
-type OrderResponse = components['schemas']['OrderResponse'];
+import { 
+  Client as ClientModel, 
+  Store as StoreModel, 
+  Order as OrderModel, 
+  CustomerNote as CustomerNoteModel, 
+  ClientDetail as ClientDetailModel 
+} from '@/types/models';
 
 type TabType = 'overview' | 'stores' | 'orders' | 'timeline';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
@@ -49,14 +52,10 @@ export default function RetailerDetailPageV2() {
   const [activeNoteSubTab, setActiveNoteSubTab] = useState<NoteSubTab>('all');
 
   // Fetch Client Detail (Aggregated endpoint)
-  const { data: detail, isLoading, isFetched } = useQuery({
+  const { data: detail, isLoading, isFetched } = useQuery<ClientDetailModel>({
     queryKey: ['client-detail', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Client not found');
-      return res.json();
+      return await apiClient.get<ClientDetailModel>(`/crm/clients/${id}`);
     },
     enabled: !!token && !!id,
   });
@@ -69,12 +68,12 @@ export default function RetailerDetailPageV2() {
   ];
 
   if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400 italic animate-pulse">Consulting Sherpa Intelligence...</div>;
-  if (isFetched && !detail) return <div className="p-20 text-center font-bold text-red-500">Contact not found</div>;
+  if (!detail) return <div className="p-20 text-center font-bold text-red-500">Contact not found</div>;
 
   const { client, stores = [], trade_notes = [], orders = [] } = detail;
-  const totalSpend = orders.reduce((sum: number, o: any) => sum + o.total_amount, 0);
+  const totalSpend = orders.reduce((sum: number, o: OrderModel) => sum + (o.total_amount || 0), 0);
 
-  const filteredNotes = (trade_notes || []).filter((note: any) => {
+  const filteredNotes = (trade_notes || []).filter((note: CustomerNoteModel) => {
     if (activeNoteSubTab === 'all') return true;
     if (activeNoteSubTab === 'intel') return note.risks || note.opportunities;
     return note.note_type === activeNoteSubTab;
@@ -82,7 +81,7 @@ export default function RetailerDetailPageV2() {
 
   const tabs = [
     { id: 'overview', label: 'Intelligence', icon: Sparkles },
-    { id: 'stores', label: 'Stores', icon: Store },
+    { id: 'stores', label: 'Stores', icon: StoreIcon },
     { id: 'orders', label: 'Order History', icon: ShoppingBag },
     { id: 'timeline', label: 'Field Reports', icon: Activity },
   ];
@@ -104,17 +103,10 @@ export default function RetailerDetailPageV2() {
             const term = isProspect ? 'contact' : 'client';
             if (confirm(`Are you sure you want to delete ${term} ${client?.name}?`)) {
               try {
-                const res = await fetch(`${API_BASE_URL}/crm/clients/${client?.id}`, {
-                  method: 'DELETE',
-                  headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                  router.push(isProspect ? '/trade/prospects/contacts' : '/trade/retailers');
-                } else {
-                  alert(`Failed to delete ${term}`);
-                }
+                await apiClient.delete<void>(`/crm/clients/${client?.id}`);
+                router.push(isProspect ? '/trade/prospects/contacts' : '/trade/retailers');
               } catch (err) {
-                alert(`Error deleting ${term}`);
+                alert(`Failed to delete ${term}`);
               }
             }
           }}
@@ -173,7 +165,7 @@ export default function RetailerDetailPageV2() {
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Managed Points</span>
               <span className="text-2xl font-black text-white">{stores.length} Stores</span>
               <div className="flex items-center gap-1 text-blue-400 text-[10px] font-bold mt-1 uppercase">
-                <Store size={12} /> Network
+                <StoreIcon size={12} /> Network
               </div>
             </div>
           </div>
@@ -219,7 +211,7 @@ export default function RetailerDetailPageV2() {
                         <h4 className="text-sm font-bold text-gray-900">Relationship Dynamics</h4>
                       </div>
                       <div className="space-y-4">
-                        <DetailRow label="Preferred Comms" value={client.custom_fields?.preferred_comms || 'WhatsApp'} icon={MessageSquare} />
+                        <DetailRow label="Preferred Comms" value={String((client.custom_fields as Record<string, unknown>)?.preferred_comms || 'WhatsApp')} icon={MessageSquare} />
                         <DetailRow label="Comm Style" value={trade_notes[0]?.comm_style || 'Professional / Direct'} icon={Zap} />
                         <DetailRow label="Visit Frequency" value={trade_notes[0]?.visit_frequency || 'Bi-Weekly'} icon={Calendar} />
                       </div>
@@ -252,12 +244,12 @@ export default function RetailerDetailPageV2() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {stores.map((store: any) => (
+                  {stores.map((store: StoreModel) => (
                     <div key={store.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:border-blue-200 transition-all">
                       <div className="p-6 bg-gray-50/50 border-b border-gray-50 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-blue-500">
-                            <Store size={20} />
+                            <StoreIcon size={20} />
                           </div>
                           <div>
                             <p className="font-black text-gray-900">{store.name}</p>
@@ -287,7 +279,7 @@ export default function RetailerDetailPageV2() {
                 <h3 className="text-xl font-black text-gray-900 mb-4">Direct Order History</h3>
                 {orders.length > 0 ? (
                   <div className="divide-y divide-gray-50">
-                    {orders.map((order: any) => (
+                    {orders.map((order: OrderModel) => (
                       <div key={order.id} className="py-6 flex items-center justify-between group">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
@@ -296,7 +288,7 @@ export default function RetailerDetailPageV2() {
                           <div>
                             <p className="font-bold text-gray-900">Order #{order.id.slice(0, 8)}</p>
                             <p className="text-xs text-gray-400 font-bold uppercase">
-                              {new Date(order.created_at).toLocaleDateString()} • {order.status}
+                              {new Date(order.created_at || '').toLocaleDateString()} • {order.status}
                             </p>
                           </div>
                         </div>
@@ -340,18 +332,18 @@ export default function RetailerDetailPageV2() {
                 
                 {filteredNotes.length > 0 ? (
                   <div className="space-y-6">
-                    {filteredNotes.map((note: any) => (
+                    {filteredNotes.map((note: CustomerNoteModel) => (
                       <div key={note.id} className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 hover:border-blue-100 hover:bg-white transition-all group">
                         <div className="flex items-center justify-between mb-4">
                           <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
-                            ['risk', 'threat'].includes(note.note_type) ? 'bg-red-100 text-red-600 border border-red-200' :
+                            ['risk', 'threat'].includes(note.note_type || '') ? 'bg-red-100 text-red-600 border border-red-200' :
                             note.note_type === 'opportunity' ? 'bg-green-100 text-green-600 border border-green-200' :
                             note.note_type === 'anniversary' ? 'bg-purple-100 text-purple-600 border border-purple-200' :
                             'bg-blue-100 text-blue-600 border border-blue-200'
                           }`}>
                             {note.note_type}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-400">{new Date(note.created_at).toLocaleDateString()}</span>
+                          <span className="text-[10px] font-bold text-gray-400">{new Date(note.created_at || '').toLocaleDateString()}</span>
                         </div>
                         <p className="text-gray-900 font-medium leading-relaxed italic pr-12">&quot;{note.general_notes}&quot;</p>
                         {(note.risks || note.opportunities) && (
@@ -488,7 +480,14 @@ export default function RetailerDetailPageV2() {
   );
 }
 
-function IntelligenceMetricRow({ label, value, color, bg }: any) {
+interface IntelligenceMetricRowProps {
+  label: string;
+  value: string;
+  color: string;
+  bg: string;
+}
+
+function IntelligenceMetricRow({ label, value, color, bg }: IntelligenceMetricRowProps) {
   return (
     <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-colors group">
       <span className="text-xs text-gray-400 font-bold">{label}</span>
@@ -499,7 +498,13 @@ function IntelligenceMetricRow({ label, value, color, bg }: any) {
   );
 }
 
-function DetailRow({ label, value, icon: Icon }: any) {
+interface DetailRowProps {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+}
+
+function DetailRow({ label, value, icon: Icon }: DetailRowProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">

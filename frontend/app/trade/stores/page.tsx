@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Store as StoreIcon, 
@@ -36,12 +36,11 @@ export default function StoresPageV2() {
   const { data: business } = useQuery({
     queryKey: ['business'],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) return res.json();
-      return { vertical_type: 'BASIC' };
+      try {
+        return await apiClient.get<any>('/business/me');
+      } catch {
+        return { vertical_type: 'BASIC' };
+      }
     },
     enabled: !!token,
   });
@@ -55,11 +54,7 @@ export default function StoresPageV2() {
   const { data: stores = [], isLoading } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch stores');
-      return res.json();
+      return await apiClient.get<StoreResponse[]>('/trade/stores');
     },
     enabled: !!token,
   });
@@ -205,17 +200,10 @@ export default function StoresPageV2() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete store ${store.name}?`)) {
                           try {
-                            const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['stores'] });
-                            } else {
-                              alert('Failed to delete store');
-                            }
+                            await apiClient.delete<any>(`/trade/stores/${store.id}`);
+                            queryClient.invalidateQueries({ queryKey: ['stores'] });
                           } catch (err) {
-                            alert('Error deleting store');
+                            alert('Failed to delete store');
                           }
                         }
                       }}
@@ -263,17 +251,10 @@ export default function StoresPageV2() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete store ${store.name}?`)) {
                           try {
-                            const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['stores'] });
-                            } else {
-                              alert('Failed to delete store');
-                            }
+                            await apiClient.delete<any>(`/trade/stores/${store.id}`);
+                            queryClient.invalidateQueries({ queryKey: ['stores'] });
                           } catch (err) {
-                            alert('Error deleting store');
+                            alert('Failed to delete store');
                           }
                         }
                       }}

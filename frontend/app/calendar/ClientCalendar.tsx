@@ -19,7 +19,7 @@ import AddAppointmentModal from '@/components/AddAppointmentModal';
 import RescheduleAppointmentModal from '@/components/RescheduleAppointmentModal';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import SafeDate from '@/components/SafeDate';
 
 import { components } from '@/types/api';
@@ -55,11 +55,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   const { data: appointments = [], isFetching: isFetchingApts } = useQuery<AppointmentResponse[]>({
     queryKey: ['appointments'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/appointments`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch appointments');
-      return res.json();
+      return apiClient.get<AppointmentResponse[]>('/crm/appointments');
     },
     initialData: initialAppointments,
     staleTime: 30 * 1000,
@@ -68,11 +64,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   const { data: busySlots = [], isFetching: isFetchingBusy } = useQuery<BusySlot[]>({
     queryKey: ['busy_slots'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/integrations/google/availability`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch availability');
-      const data = await res.json();
+      const data = await apiClient.get<{ busy_slots?: BusySlot[] }>('/integrations/google/availability');
       return data.busy_slots || [];
     },
     initialData: initialBusySlots,
@@ -82,10 +74,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
   const handleManualSync = async () => {
     setIsSyncing(true);
     try {
-      await fetch(`${API_BASE_URL}/integrations/google/sync`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await apiClient.post('/integrations/google/sync');
       // Invalidate and refetch
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
@@ -102,16 +91,9 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
     if (!confirm('Are you sure you want to cancel this appointment? It will also be removed from Google Calendar.')) return;
     
     try {
-      const res = await fetch(`${API_BASE_URL}/crm/appointments/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ['appointments'] });
-        queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
-      } else {
-        alert('Failed to cancel appointment');
-      }
+      await apiClient.delete(`/crm/appointments/${id}`);
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
     } catch (err) {
       console.error(err);
     }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Settings as SettingsIcon, Calendar, MessageSquare, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -70,10 +70,7 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   const { data: business = initialBusiness, isFetching: isFetchingBiz } = useQuery({
     queryKey: ['business'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return apiClient.get<BusinessProfileResponse>('/business/me');
     },
     initialData: initialBusiness,
     staleTime: 60 * 1000,
@@ -82,10 +79,7 @@ export default function SettingsContent({ initialBusiness, initialUser, token }:
   const { data: user = initialUser } = useQuery({
     queryKey: ['user'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return apiClient.get<UserResponse>('/auth/me');
     },
     initialData: initialUser,
     staleTime: 60 * 1000,

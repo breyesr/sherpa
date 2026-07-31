@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { MessageSquare, Save, Loader2, Send } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { components } from '@/types/api';
@@ -83,20 +83,9 @@ export default function AssistantSettings({ business, user, token, onMessage, on
     e.preventDefault();
     setSavingAssistant(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/business/me/assistant`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(editAssistant)
-      });
-      if (res.ok) {
-        onMessage({ type: 'success', text: 'Assistant configuration updated successfully!' });
-        queryClient.invalidateQueries({ queryKey: ['business'] });
-      } else {
-        throw new Error('Failed to update assistant configuration');
-      }
+      await apiClient.patch('/business/me/assistant', editAssistant);
+      onMessage({ type: 'success', text: 'Assistant configuration updated successfully!' });
+      queryClient.invalidateQueries({ queryKey: ['business'] });
     } catch (err: any) {
       onMessage({ type: 'error', text: err.message });
     } finally {
@@ -114,25 +103,16 @@ export default function AssistantSettings({ business, user, token, onMessage, on
     setIsSandboxLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/business/test-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: sandboxInput,
-          assistant_config: editAssistant,
-          simulate_role: sandboxRole
-        })
+      interface TestChatResponse {
+        response: string;
+      }
+      const data = await apiClient.post<TestChatResponse>('/business/test-chat', {
+        message: sandboxInput,
+        assistant_config: editAssistant,
+        simulate_role: sandboxRole
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setSandboxMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
-      } else {
-        throw new Error('Failed to get response');
-      }
+      setSandboxMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
     } catch (err) {
       setSandboxMessages(prev => [...prev, { role: 'assistant', content: "Error: Could not connect to the AI service." }]);
     } finally {

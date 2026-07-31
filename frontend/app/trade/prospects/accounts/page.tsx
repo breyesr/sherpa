@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Store as StoreIcon, 
@@ -39,11 +39,7 @@ function ProspectStoresContent() {
   const { data: stores = [], isLoading } = useQuery<StoreResponse[]>({
     queryKey: ['stores', { is_prospect: true, segment }],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores?is_prospect=true&prospect_segment=${segment}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch prospect accounts');
-      return res.json();
+      return await apiClient.get<StoreResponse[]>(`/trade/stores?is_prospect=true&prospect_segment=${segment}`);
     },
     enabled: !!token,
   });
@@ -51,16 +47,7 @@ function ProspectStoresContent() {
   // Verify Store mutation
   const verifyStoreMutation = useMutation({
     mutationFn: async (storeId: string) => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores/${storeId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ is_verified: true })
-      });
-      if (!res.ok) throw new Error('Failed to verify account');
-      return res.json();
+      return await apiClient.patch<any>(`/trade/stores/${storeId}`, { is_verified: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stores'] });
@@ -246,27 +233,17 @@ function ProspectStoresContent() {
                         if (confirm(`Are you sure you want to delete prospect account ${store.name}?`)) {
                           try {
                             const clientId = store.clients?.[0]?.id;
-                            const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              if (clientId) {
-                                try {
-                                  await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
-                                    method: 'DELETE',
-                                    headers: { 'Authorization': `Bearer ${token}` }
-                                  });
-                                } catch (clientErr) {
-                                  console.error('Error deleting client contact:', clientErr);
-                                }
+                            await apiClient.delete<any>(`/trade/stores/${store.id}`);
+                            if (clientId) {
+                              try {
+                                await apiClient.delete<any>(`/crm/clients/${clientId}`);
+                              } catch (clientErr) {
+                                console.error('Error deleting client contact:', clientErr);
                               }
-                              queryClient.invalidateQueries({ queryKey: ['stores'] });
-                            } else {
-                              alert('Failed to delete store');
                             }
+                            queryClient.invalidateQueries({ queryKey: ['stores'] });
                           } catch (err) {
-                            alert('Error deleting store');
+                            alert('Failed to delete store');
                           }
                         }
                       }}
@@ -325,27 +302,17 @@ function ProspectStoresContent() {
                         if (confirm(`Are you sure you want to delete store ${store.name}?`)) {
                           try {
                             const clientId = store.clients?.[0]?.id;
-                            const res = await fetch(`${API_BASE_URL}/trade/stores/${store.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              if (clientId) {
-                                try {
-                                  await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
-                                    method: 'DELETE',
-                                    headers: { 'Authorization': `Bearer ${token}` }
-                                  });
-                                } catch (clientErr) {
-                                  console.error('Error deleting client contact:', clientErr);
-                                }
+                            await apiClient.delete<any>(`/trade/stores/${store.id}`);
+                            if (clientId) {
+                              try {
+                                await apiClient.delete<any>(`/crm/clients/${clientId}`);
+                              } catch (clientErr) {
+                                console.error('Error deleting client contact:', clientErr);
                               }
-                              queryClient.invalidateQueries({ queryKey: ['stores'] });
-                            } else {
-                              alert('Failed to delete store');
                             }
+                            queryClient.invalidateQueries({ queryKey: ['stores'] });
                           } catch (err) {
-                            alert('Error deleting store');
+                            alert('Failed to delete store');
                           }
                         }
                       }}

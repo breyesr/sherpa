@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import Drawer from './Drawer';
 import { 
-  Store, 
+  Store as StoreIcon, 
   MapPin, 
   Layers, 
   Loader2, 
@@ -13,13 +13,31 @@ import {
   Users,
   CheckCircle
 } from 'lucide-react';
+import { Store as StoreModel, Client as ClientModel, Business as BusinessModel } from '@/types/models';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { accountFormSchema, AccountFormValues } from '@/lib/schemas/account';
+
+interface PostalCode {
+  zip_code: string;
+  colonia: string;
+  municipality: string;
+  state: string;
+  city?: string;
+}
+
+interface FeaturesConfig {
+  sales_intelligence?: {
+    enabled?: boolean;
+  };
+}
 
 interface AccountDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   token: string | null;
   storeId?: string | null; // If provided, we are in Edit Mode
-  initialData?: any; // Data passed from list view for instant population
+  initialData?: StoreModel | null; // Data passed from list view for instant population
   isProspect?: boolean;
 }
 
@@ -30,24 +48,42 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   
   const isEditing = !!storeId;
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    street_address: '',
-    colonia: '',
-    municipality: '',
-    city: '',
-    state: '',
-    zip_code: '',
-    country: 'México',
-    market: '',
-    segment: '',
-    region: '',
-    external_id: '',
-    client_ids: [] as string[],
-    delivery_zip_codes: ''
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    getValues,
+    reset,
+    formState: { errors },
+  } = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      street_address: '',
+      colonia: '',
+      municipality: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      country: 'México',
+      market: '',
+      segment: '',
+      region: '',
+      external_id: '',
+      client_ids: [],
+      delivery_zip_codes: ''
+    }
   });
+
+  const stateVal = watch('state') || '';
+  const municipalityVal = watch('municipality') || '';
+  const zipCodeVal = watch('zip_code') || '';
+  const coloniaVal = watch('colonia') || '';
+  const clientIdsVal = watch('client_ids') || [];
+  const nameVal = watch('name') || '';
 
   // List of resolved colonias for autocomplete selection in manual address mode
   const [colonias, setColonias] = useState<string[]>([]);
@@ -58,7 +94,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   const [addressZipCodes, setAddressZipCodes] = useState<string[]>([]);
   const [addressColonias, setAddressColonias] = useState<string[]>([]);
   const [deliveryMunicipalities, setDeliveryMunicipalities] = useState<string[]>([]);
-  const [deliveryZipCodesList, setDeliveryZipCodesList] = useState<any[]>([]);
+  const [deliveryZipCodesList, setDeliveryZipCodesList] = useState<PostalCode[]>([]);
 
   const [selectedState, setSelectedState] = useState<string>('');
   const [selectedMunicipality, setSelectedMunicipality] = useState<string>('');
@@ -97,7 +133,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
           client_ids: [] as string[],
           delivery_zip_codes: ''
         };
-        setFormData(defaultData);
+        reset(defaultData);
         setColonias([]);
         setInitialSnapshot(JSON.stringify(defaultData));
         setManualAddress(false);
@@ -121,10 +157,10 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
           segment: initialData.segment || '',
           region: initialData.region || '',
           external_id: initialData.external_id || '',
-          client_ids: initialData.clients?.map((c: any) => c.id) || [],
+          client_ids: initialData.clients?.map((c) => c.id) || [],
           delivery_zip_codes: initialData.delivery_zip_codes?.join(', ') || ''
         };
-        setFormData(eagerData);
+        reset(eagerData);
         if (initialData.colonia) {
           setColonias([initialData.colonia]);
         }
@@ -137,88 +173,78 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         setContactEmail(primaryClient?.email || initialData.email || '');
       }
     }
-  }, [isOpen, storeId, initialData]);
+  }, [isOpen, storeId, initialData, reset]);
 
   // Fetch full store data if editing (background sync for deep data)
   useEffect(() => {
     if (isOpen && storeId) {
       const fetchStore = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/stores/${storeId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const fullData = {
-              name: data.name || '',
-              phone: data.phone || '',
-              email: data.email || '',
-              street_address: data.street_address || '',
-              colonia: data.colonia || '',
-              municipality: data.municipality || '',
-              city: data.city || '',
-              state: data.state || '',
-              zip_code: data.zip_code || '',
-              country: data.country || 'México',
-              market: data.market || '',
-              segment: data.segment || '',
-              region: data.region || '',
-              external_id: data.external_id || '',
-              client_ids: data.clients?.map((c: any) => c.id) || [],
-              delivery_zip_codes: data.delivery_zip_codes?.join(', ') || ''
-            };
-            setFormData(prev => {
-              const prevJson = JSON.stringify(prev);
-              return (prevJson === initialSnapshot || !initialSnapshot) ? fullData : prev;
-            });
-            if (data.colonia) {
-              setColonias(prev => prev.includes(data.colonia) ? prev : [...prev, data.colonia]);
-            }
-            if (data.state && data.municipality && addressStates.length > 0) {
-              const hasMatch = addressStates.includes(data.state);
-              if (!hasMatch && data.state) {
-                setManualAddress(true);
-              }
-            }
-            setInitialSnapshot(JSON.stringify(fullData));
-
-            const primaryClient = data.clients?.[0];
-            setContactName(primaryClient?.name || '');
-            setContactPhone(primaryClient?.phone || data.phone || '');
-            setContactEmail(primaryClient?.email || data.email || '');
+          const data = await apiClient.get<StoreModel>(`/trade/stores/${storeId}`);
+          const fullData = {
+            name: data.name || '',
+            phone: data.phone || '',
+            email: data.email || '',
+            street_address: data.street_address || '',
+            colonia: data.colonia || '',
+            municipality: data.municipality || '',
+            city: data.city || '',
+            state: data.state || '',
+            zip_code: data.zip_code || '',
+            country: data.country || 'México',
+            market: data.market || '',
+            segment: data.segment || '',
+            region: data.region || '',
+            external_id: data.external_id || '',
+            client_ids: data.clients?.map((c) => c.id) || [],
+            delivery_zip_codes: data.delivery_zip_codes?.join(', ') || ''
+          };
+          const currentValues = getValues();
+          const prevJson = JSON.stringify(currentValues);
+          if (prevJson === initialSnapshot || !initialSnapshot) {
+            reset(fullData);
           }
+          if (data.colonia) {
+            const col = data.colonia;
+            setColonias(prev => prev.includes(col) ? prev : [...prev, col]);
+          }
+          if (data.state && data.municipality && addressStates.length > 0) {
+            const hasMatch = addressStates.includes(data.state);
+            if (!hasMatch && data.state) {
+              setManualAddress(true);
+            }
+          }
+          setInitialSnapshot(JSON.stringify(fullData));
+
+          const primaryClient = data.clients?.[0];
+          setContactName(primaryClient?.name || '');
+          setContactPhone(primaryClient?.phone || data.phone || '');
+          setContactEmail(primaryClient?.email || data.email || '');
         } catch (err) {
           console.error('Failed to fetch store for background sync', err);
         }
       };
       fetchStore();
     }
-  }, [isOpen, storeId, token, addressStates.length]);
+  }, [isOpen, storeId, token, addressStates.length, reset, getValues, initialSnapshot]);
 
   // Autocomplete geographic fields on ZIP Code change (Manual Address Mode)
   useEffect(() => {
     const lookupZIP = async () => {
-      const code = formData.zip_code.trim();
+      const code = zipCodeVal.trim();
       if (code.length === 5 && manualAddress) {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/${code}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.length > 0) {
-              const firstMatch = data[0];
-              const uniqueColonias = Array.from(new Set(data.map((item: any) => item.colonia))) as string[];
-              setColonias(uniqueColonias);
-              
-              setFormData(prev => ({
-                ...prev,
-                municipality: firstMatch.municipality || prev.municipality,
-                city: firstMatch.city || firstMatch.municipality || prev.city,
-                state: firstMatch.state || prev.state,
-                colonia: uniqueColonias.includes(prev.colonia) ? prev.colonia : uniqueColonias[0]
-              }));
-            }
+          const data = await apiClient.get<PostalCode[]>(`/trade/postal-codes/${code}`);
+          if (data && data.length > 0) {
+            const firstMatch = data[0];
+            const uniqueColonias = Array.from(new Set(data.map((item) => item.colonia))) as string[];
+            setColonias(uniqueColonias);
+            
+            const currentValues = getValues();
+            setValue('municipality', firstMatch.municipality || currentValues.municipality);
+            setValue('city', firstMatch.city || firstMatch.municipality || currentValues.city);
+            setValue('state', firstMatch.state || currentValues.state);
+            setValue('colonia', uniqueColonias.includes(currentValues.colonia || '') ? currentValues.colonia : uniqueColonias[0]);
           }
         } catch (err) {
           console.error('Failed to resolve ZIP code details', err);
@@ -226,26 +252,22 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       }
     };
     lookupZIP();
-  }, [formData.zip_code, manualAddress, token]);
+  }, [zipCodeVal, manualAddress, token, getValues, setValue]);
 
   // Fetch unique states on drawer open
   useEffect(() => {
     if (isOpen) {
       const fetchStates = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/states`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAddressStates(data);
-            
-            // Check if active store state exists in loaded states data, if not auto-toggle manual mode
-            if (storeId && formData.state) {
-              const hasMatch = data.includes(formData.state);
-              if (!hasMatch) {
-                setManualAddress(true);
-              }
+          const data = await apiClient.get<string[]>(`/trade/postal-codes/states`);
+          setAddressStates(data);
+          
+          // Check if active store state exists in loaded states data, if not auto-toggle manual mode
+          const currentValues = getValues();
+          if (storeId && currentValues.state) {
+            const hasMatch = data.includes(currentValues.state);
+            if (!hasMatch) {
+              setManualAddress(true);
             }
           }
         } catch (err) {
@@ -254,27 +276,23 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       };
       fetchStates();
       // Reset dropdown values
-      setSelectedState(formData.state || '');
-      setSelectedMunicipality(formData.municipality || '');
+      const currentValues = getValues();
+      setSelectedState(currentValues.state || '');
+      setSelectedMunicipality(currentValues.municipality || '');
       setSelectedZipCodesArray([]);
       setLastClickedIndex(null);
       setCustomZipInput('');
       setManualAddress(false);
     }
-  }, [isOpen, storeId, token]);
+  }, [isOpen, storeId, token, getValues]);
 
   // Fetch municipalities when physical address State changes
   useEffect(() => {
-    if (formData.state) {
+    if (stateVal) {
       const fetchMunicipalities = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/municipalities?state=${encodeURIComponent(formData.state)}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAddressMunicipalities(data);
-          }
+          const data = await apiClient.get<string[]>(`/trade/postal-codes/municipalities?state=${encodeURIComponent(stateVal)}`);
+          setAddressMunicipalities(data);
         } catch (err) {
           console.error('Failed to fetch municipalities', err);
         }
@@ -285,22 +303,17 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       setAddressZipCodes([]);
       setAddressColonias([]);
     }
-  }, [formData.state, token]);
+  }, [stateVal, token]);
 
   // Fetch ZIP codes when physical address State & Municipality change
   useEffect(() => {
-    if (formData.state && formData.municipality) {
+    if (stateVal && municipalityVal) {
       const fetchZipCodes = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/zip-codes?state=${encodeURIComponent(formData.state)}&municipality=${encodeURIComponent(formData.municipality)}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setDeliveryZipCodesList(data);
-            const zips = Array.from(new Set(data.map((pc: any) => pc.zip_code))).sort() as string[];
-            setAddressZipCodes(zips);
-          }
+          const data = await apiClient.get<PostalCode[]>(`/trade/postal-codes/zip-codes?state=${encodeURIComponent(stateVal)}&municipality=${encodeURIComponent(municipalityVal)}`);
+          setDeliveryZipCodesList(data);
+          const zips = Array.from(new Set(data.map((pc) => pc.zip_code))).sort() as string[];
+          setAddressZipCodes(zips);
         } catch (err) {
           console.error('Failed to fetch zip codes', err);
         }
@@ -310,32 +323,27 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       setAddressZipCodes([]);
       setAddressColonias([]);
     }
-  }, [formData.state, formData.municipality, token]);
+  }, [stateVal, municipalityVal, token]);
 
   // Derive colonias when physical address ZIP Code changes
   useEffect(() => {
-    if (formData.zip_code && deliveryZipCodesList.length > 0) {
+    if (zipCodeVal && deliveryZipCodesList.length > 0) {
       const filtered = deliveryZipCodesList
-        .filter((pc: any) => pc.zip_code === formData.zip_code)
-        .map((pc: any) => pc.colonia);
+        .filter((pc) => pc.zip_code === zipCodeVal)
+        .map((pc) => pc.colonia);
       setAddressColonias(Array.from(new Set(filtered)).sort() as string[]);
     } else {
       setAddressColonias([]);
     }
-  }, [formData.zip_code, deliveryZipCodesList]);
+  }, [zipCodeVal, deliveryZipCodesList]);
 
   // Fetch delivery municipalities when delivery State changes
   useEffect(() => {
     if (selectedState) {
       const fetchDeliveryMunicipalities = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/municipalities?state=${encodeURIComponent(selectedState)}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setDeliveryMunicipalities(data);
-          }
+          const data = await apiClient.get<string[]>(`/trade/postal-codes/municipalities?state=${encodeURIComponent(selectedState)}`);
+          setDeliveryMunicipalities(data);
         } catch (err) {
           console.error('Failed to fetch delivery municipalities', err);
         }
@@ -352,14 +360,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     if (selectedState && selectedMunicipality) {
       const fetchDeliveryZipCodes = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/trade/postal-codes/zip-codes?state=${encodeURIComponent(selectedState)}&municipality=${encodeURIComponent(selectedMunicipality)}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const zips = Array.from(new Set(data.map((pc: any) => pc.zip_code))).sort() as string[];
-            setSelectedZipCodesArray(zips);
-          }
+          const data = await apiClient.get<PostalCode[]>(`/trade/postal-codes/zip-codes?state=${encodeURIComponent(selectedState)}&municipality=${encodeURIComponent(selectedMunicipality)}`);
+          const zips = Array.from(new Set(data.map((pc) => pc.zip_code))).sort() as string[];
+          setSelectedZipCodesArray(zips);
         } catch (err) {
           console.error('Failed to fetch delivery zip codes', err);
         }
@@ -372,13 +375,13 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
 
   // Preselect delivery zone State and Municipality based on Store Address
   useEffect(() => {
-    if (formData.state) {
-      setSelectedState(formData.state);
+    if (stateVal) {
+      setSelectedState(stateVal);
     }
-    if (formData.municipality) {
-      setSelectedMunicipality(formData.municipality);
+    if (municipalityVal) {
+      setSelectedMunicipality(municipalityVal);
     }
-  }, [formData.state, formData.municipality]);
+  }, [stateVal, municipalityVal]);
 
 
   // Reset snapshot on close
@@ -389,7 +392,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   }, [isOpen]);
 
   // Derive dirty state
-  const isDirty = initialSnapshot !== '' && JSON.stringify(formData) !== initialSnapshot;
+  const isDirty = initialSnapshot !== '' && JSON.stringify(watch()) !== initialSnapshot;
 
   // Warn before browser tab reload/close if dirty
   useEffect(() => {
@@ -434,12 +437,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
   // Fetch all clients for linking
   const { data: allClients = [] } = useQuery({
     queryKey: ['clients-minimal'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
-    },
+    queryFn: () => apiClient.get<ClientModel[]>('/crm/clients'),
     enabled: isOpen,
   });
 
@@ -448,17 +446,16 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     queryKey: ['business'],
     queryFn: async () => {
       if (!token) return null;
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) return res.json();
-      return { vertical_type: 'BASIC' };
+      try {
+        return await apiClient.get<BusinessModel>('/business/me');
+      } catch {
+        return { vertical_type: 'BASIC' } as BusinessModel;
+      }
     },
     enabled: isOpen && !!token,
   });
 
-  const features = business?.features_config || {};
-  const showSalesIntelligence = features.sales_intelligence?.enabled ?? false;
+  const showSalesIntelligence = (business?.features_config as FeaturesConfig | undefined)?.sales_intelligence?.enabled ?? false;
 
   // Warn before closing drawer if dirty
   const handleClose = () => {
@@ -469,36 +466,33 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
     onClose();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: AccountFormValues) => {
     setLoading(true);
     setError('');
 
-    const url = isEditing 
-      ? `${API_BASE_URL}/trade/stores/${storeId}` 
-      : `${API_BASE_URL}/trade/stores`;
-    
-    const method = isEditing ? 'PATCH' : 'POST';
+    const path = isEditing 
+      ? `/trade/stores/${storeId}` 
+      : `/trade/stores`;
 
     // Clean payload
     const payload = {
-      ...formData,
+      ...data,
       is_prospect: isEditing ? (initialData?.is_prospect ?? isProspect) : isProspect,
-      street_address: formData.street_address || null,
-      colonia: formData.colonia || null,
-      municipality: formData.municipality || null,
-      city: formData.city || null,
-      state: formData.state || null,
-      zip_code: formData.zip_code || null,
-      country: formData.country || 'México',
-      phone: formData.phone || null,
-      email: formData.email || null,
-      market: formData.market || null,
-      segment: formData.segment || null,
-      region: formData.region || null,
-      external_id: formData.external_id || null,
-      delivery_zip_codes: formData.delivery_zip_codes
-        ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+      street_address: data.street_address || null,
+      colonia: data.colonia || null,
+      municipality: data.municipality || null,
+      city: data.city || null,
+      state: data.state || null,
+      zip_code: data.zip_code || null,
+      country: data.country || 'México',
+      phone: data.phone || null,
+      email: data.email || null,
+      market: data.market || null,
+      segment: data.segment || null,
+      region: data.region || null,
+      external_id: data.external_id || null,
+      delivery_zip_codes: data.delivery_zip_codes
+        ? data.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
         : []
     };
 
@@ -506,65 +500,29 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       if (isProspect) {
         if (isEditing) {
           // Send the standard store PATCH request to update the store address/metadata/name.
-          const res = await fetch(url, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-          });
+          await apiClient.patch<StoreModel>(path, payload);
 
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.detail || 'Failed to save account');
-          }
-
-          // Check if there is an associated client ID (e.g. from formData.client_ids[0], initialData?.clients?.[0]?.id, or fetched client ID)
-          const clientId = formData.client_ids?.[0] || initialData?.clients?.[0]?.id;
+          // Check if there is an associated client ID (e.g. from data.client_ids[0], initialData?.clients?.[0]?.id, or fetched client ID)
+          const clientId = data.client_ids?.[0] || initialData?.clients?.[0]?.id;
           if (clientId) {
-            const clientRes = await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                name: contactName,
-                phone: contactPhone,
-                email: contactEmail
-              })
+            await apiClient.patch<ClientModel>(`/crm/clients/${clientId}`, {
+              name: contactName,
+              phone: contactPhone,
+              email: contactEmail
             });
-            if (!clientRes.ok) {
-              const clientErrData = await clientRes.json();
-              throw new Error(clientErrData.detail || 'Failed to update contact profile');
-            }
           }
         } else {
           // Create mode:
           // 1. Send POST request to /crm/clients
-          const segment = formData.segment || null;
-          const clientRes = await fetch(`${API_BASE_URL}/crm/clients`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: contactName,
-              phone: contactPhone,
-              email: contactEmail,
-              is_prospect: true,
-              prospect_segment: segment
-            })
+          const segment = data.segment || null;
+          const clientData = await apiClient.post<ClientModel>('/crm/clients', {
+            name: contactName,
+            phone: contactPhone,
+            email: contactEmail,
+            is_prospect: true,
+            prospect_segment: segment
           });
 
-          if (!clientRes.ok) {
-            const clientErrData = await clientRes.json();
-            throw new Error(clientErrData.detail || 'Failed to create associated contact');
-          }
-
-          const clientData = await clientRes.json();
           const createdClientId = clientData.id;
 
           // 2. Send store POST request to /trade/stores adding client_ids: [client.id]
@@ -573,34 +531,14 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
             client_ids: [createdClientId]
           };
 
-          const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(storePayload)
-          });
-
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.detail || 'Failed to create prospect store');
-          }
+          await apiClient.post<StoreModel>('/trade/stores', storePayload);
         }
       } else {
         // Standard non-prospect flow
-        const res = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.detail || 'Failed to save account');
+        if (isEditing) {
+          await apiClient.patch<StoreModel>(path, payload);
+        } else {
+          await apiClient.post<StoreModel>(path, payload);
         }
       }
 
@@ -609,20 +547,19 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       
       setInitialSnapshot('');
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
   const toggleClient = (clientId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      client_ids: prev.client_ids.includes(clientId)
-        ? prev.client_ids.filter(id => id !== clientId)
-        : [...prev.client_ids, clientId]
-    }));
+    const currentClients = getValues('client_ids') || [];
+    const updated = currentClients.includes(clientId)
+      ? currentClients.filter(id => id !== clientId)
+      : [...currentClients, clientId];
+    setValue('client_ids', updated);
   };
 
   const footer = (
@@ -634,8 +571,8 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         Cancel
       </button>
       <button 
-        onClick={handleSubmit}
-        disabled={loading || !formData.name}
+        onClick={handleSubmit(onSubmit)}
+        disabled={loading || !nameVal}
         className="flex-1 px-6 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? 'Save Changes' : (isProspect ? 'Create Prospect Account' : 'Create Account'))}
@@ -650,7 +587,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       isOpen={isOpen} 
       onClose={handleClose} 
       title={isEditing ? (isProspect ? "Edit Prospect Account" : "Edit Account") : (isProspect ? "New Prospect Account" : "New Account")} 
-      subtitle={isEditing ? `Editing: ${formData.name || (isProspect ? 'Prospect Account' : 'Account')}` : (isProspect ? "Register a new prospective company or entity." : "Register a new physical point of sale.")}
+      subtitle={isEditing ? `Editing: ${nameVal || (isProspect ? 'Prospect Account' : 'Account')}` : (isProspect ? "Register a new prospective company or entity." : "Register a new physical point of sale.")}
       footer={footer}
       size="wide"
     >
@@ -666,7 +603,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1 mb-2">
             <div className="flex items-center gap-2">
-              <Store size={16} className="text-blue-600" />
+              <StoreIcon size={16} className="text-blue-600" />
               <h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest text-blue-600">Identity & Location</h4>
             </div>
             <button
@@ -685,9 +622,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
               type="text"
               placeholder={isProspect ? "e.g. Distribuidora del Norte" : "e.g. Tienda La Norteña"}
               className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
+              {...register('name')}
             />
+            {errors.name && <p className="text-red-500 text-xs mt-1 font-bold">{errors.name.message}</p>}
           </div>
 
           {isProspect && (
@@ -738,9 +675,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                     placeholder="e.g. 04210"
                     maxLength={5}
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
-                    value={formData.zip_code}
-                    onChange={e => setFormData({...formData, zip_code: e.target.value})}
+                    {...register('zip_code')}
                   />
+                  {errors.zip_code && <p className="text-red-500 text-xs mt-1 font-bold">{errors.zip_code.message}</p>}
                 </div>
                 
                 <div className="space-y-2">
@@ -748,8 +685,8 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                   {colonias.length > 0 ? (
                     <select
                       className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none"
-                      value={formData.colonia}
-                      onChange={e => setFormData({...formData, colonia: e.target.value})}
+                      value={coloniaVal}
+                      onChange={e => setValue('colonia', e.target.value)}
                     >
                       {colonias.map((col, idx) => (
                         <option key={idx} value={col}>{col}</option>
@@ -760,10 +697,10 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                       type="text"
                       placeholder="e.g. Portales Sur"
                       className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
-                      value={formData.colonia}
-                      onChange={e => setFormData({...formData, colonia: e.target.value})}
+                      {...register('colonia')}
                     />
                   )}
+                  {errors.colonia && <p className="text-red-500 text-xs mt-1 font-bold">{errors.colonia.message}</p>}
                 </div>
               </div>
 
@@ -774,9 +711,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                     type="text"
                     placeholder="e.g. Benito Juárez"
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
-                    value={formData.municipality}
-                    onChange={e => setFormData({...formData, municipality: e.target.value})}
+                    {...register('municipality')}
                   />
+                  {errors.municipality && <p className="text-red-500 text-xs mt-1 font-bold">{errors.municipality.message}</p>}
                 </div>
                 
                 <div className="space-y-2">
@@ -785,9 +722,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                     type="text"
                     placeholder="e.g. CDMX"
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900"
-                    value={formData.state}
-                    onChange={e => setFormData({...formData, state: e.target.value})}
+                    {...register('state')}
                   />
+                  {errors.state && <p className="text-red-500 text-xs mt-1 font-bold">{errors.state.message}</p>}
                 </div>
               </div>
             </>
@@ -799,16 +736,13 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">State</label>
                   <select
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none"
-                    value={formData.state}
+                    value={stateVal}
                     onChange={e => {
-                      setFormData({
-                        ...formData,
-                        state: e.target.value,
-                        municipality: '',
-                        zip_code: '',
-                        colonia: '',
-                        city: ''
-                      });
+                      setValue('state', e.target.value);
+                      setValue('municipality', '');
+                      setValue('zip_code', '');
+                      setValue('colonia', '');
+                      setValue('city', '');
                     }}
                   >
                     <option value="">Select State...</option>
@@ -816,29 +750,28 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                       <option key={idx} value={st}>{st}</option>
                     ))}
                   </select>
+                  {errors.state && <p className="text-red-500 text-xs mt-1 font-bold">{errors.state.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Municipality</label>
                   <select
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
-                    value={formData.municipality}
+                    value={municipalityVal}
                     onChange={e => {
-                      setFormData({
-                        ...formData,
-                        municipality: e.target.value,
-                        zip_code: '',
-                        colonia: '',
-                        city: e.target.value
-                      });
+                      setValue('municipality', e.target.value);
+                      setValue('zip_code', '');
+                      setValue('colonia', '');
+                      setValue('city', e.target.value);
                     }}
-                    disabled={!formData.state}
+                    disabled={!stateVal}
                   >
                     <option value="">Select Municipality...</option>
                     {addressMunicipalities.map((mun, idx) => (
                       <option key={idx} value={mun}>{mun}</option>
                     ))}
                   </select>
+                  {errors.municipality && <p className="text-red-500 text-xs mt-1 font-bold">{errors.municipality.message}</p>}
                 </div>
               </div>
 
@@ -847,41 +780,37 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ZIP Code</label>
                   <select
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
-                    value={formData.zip_code}
+                    value={zipCodeVal}
                     onChange={e => {
-                      setFormData({
-                        ...formData,
-                        zip_code: e.target.value,
-                        colonia: ''
-                      });
+                      setValue('zip_code', e.target.value);
+                      setValue('colonia', '');
                     }}
-                    disabled={!formData.municipality}
+                    disabled={!municipalityVal}
                   >
                     <option value="">Select ZIP Code...</option>
                     {addressZipCodes.map((zip, idx) => (
                       <option key={idx} value={zip}>{zip}</option>
                     ))}
                   </select>
+                  {errors.zip_code && <p className="text-red-500 text-xs mt-1 font-bold">{errors.zip_code.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Colonia / Neighborhood</label>
                   <select
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none disabled:opacity-50"
-                    value={formData.colonia}
+                    value={coloniaVal}
                     onChange={e => {
-                      setFormData({
-                        ...formData,
-                        colonia: e.target.value
-                      });
+                      setValue('colonia', e.target.value);
                     }}
-                    disabled={!formData.zip_code}
+                    disabled={!zipCodeVal}
                   >
                     <option value="">Select Colonia...</option>
                     {addressColonias.map((col, idx) => (
                       <option key={idx} value={col}>{col}</option>
                     ))}
                   </select>
+                  {errors.colonia && <p className="text-red-500 text-xs mt-1 font-bold">{errors.colonia.message}</p>}
                 </div>
               </div>
             </>
@@ -894,11 +823,11 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                 type="text"
                 placeholder="e.g. Calzada de Tlalpan 1209"
                 className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900 pr-12"
-                value={formData.street_address}
-                onChange={e => setFormData({...formData, street_address: e.target.value})}
+                {...register('street_address')}
               />
               <MapPin size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
+            {errors.street_address && <p className="text-red-500 text-xs mt-1 font-bold">{errors.street_address.message}</p>}
           </div>
         </div>
 
@@ -912,8 +841,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
             {/* Display added ZIPs as tags */}
             <div className="flex flex-wrap gap-2 min-h-[36px] p-3 bg-gray-50 rounded-xl border border-gray-50">
               {(() => {
-                const currentZipArray = formData.delivery_zip_codes
-                  ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+                const deliveryZipCodes = watch('delivery_zip_codes');
+                const currentZipArray = deliveryZipCodes
+                  ? deliveryZipCodes.split(',').map((s: string) => s.trim()).filter(Boolean)
                   : [];
                 return (
                   <>
@@ -927,7 +857,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                           type="button" 
                           onClick={() => {
                             const updated = currentZipArray.filter(z => z !== zip);
-                            setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                            setValue('delivery_zip_codes', updated.join(', '));
                           }}
                           className="text-blue-500 hover:text-red-600 transition-colors text-[10px] font-black focus:outline-none"
                         >
@@ -945,8 +875,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
 
             {/* Select helpers */}
             {(() => {
-              const currentZipArray = formData.delivery_zip_codes
-                ? formData.delivery_zip_codes.split(',').map((s: string) => s.trim()).filter(Boolean)
+              const deliveryZipCodes = watch('delivery_zip_codes');
+              const currentZipArray = deliveryZipCodes
+                ? deliveryZipCodes.split(',').map((s: string) => s.trim()).filter(Boolean)
                 : [];
               
               // Get unique states sorted
@@ -1068,7 +999,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                       type="button"
                       onClick={() => {
                         const updated = Array.from(new Set([...currentZipArray, ...selectedZipCodesArray]));
-                        setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                        setValue('delivery_zip_codes', updated.join(', '));
                         setSelectedZipCodesArray([]);
                       }}
                       disabled={selectedZipCodesArray.length === 0}
@@ -1091,7 +1022,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                       onClick={() => {
                         if (customZipInput.length === 5 && !currentZipArray.includes(customZipInput)) {
                           const updated = [...currentZipArray, customZipInput];
-                          setFormData({ ...formData, delivery_zip_codes: updated.join(', ') });
+                          setValue('delivery_zip_codes', updated.join(', '));
                           setCustomZipInput('');
                         }
                       }}
@@ -1121,8 +1052,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                 type="text"
                 placeholder="e.g. North, Sur, Central"
                 className="w-full p-3 bg-white border border-gray-100 rounded-xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.region}
-                onChange={e => setFormData({...formData, region: e.target.value})}
+                {...register('region')}
                 list="region-options"
               />
               <datalist id="region-options">
@@ -1137,13 +1067,13 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                 <option value="Este" />
                 <option value="Oeste" />
               </datalist>
+              {errors.region && <p className="text-red-500 text-xs mt-1 font-bold">{errors.region.message}</p>}
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Segment</label>
               <select 
                 className="w-full p-3 bg-white border border-gray-100 rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                value={formData.segment}
-                onChange={e => setFormData({...formData, segment: e.target.value})}
+                {...register('segment')}
               >
                 <option value="">Select Segment...</option>
                 <option value="Premium">Premium</option>
@@ -1151,6 +1081,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                 <option value="Economic">Economic</option>
                 <option value="Enterprise">Enterprise</option>
               </select>
+              {errors.segment && <p className="text-red-500 text-xs mt-1 font-bold">{errors.segment.message}</p>}
             </div>
           </div>
 
@@ -1160,9 +1091,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
               type="text"
               placeholder="e.g. Retail, Wholesale, Convenience"
               className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold"
-              value={formData.market}
-              onChange={e => setFormData({...formData, market: e.target.value})}
+              {...register('market')}
             />
+            {errors.market && <p className="text-red-500 text-xs mt-1 font-bold">{errors.market.message}</p>}
           </div>
         </div>
 
@@ -1175,30 +1106,30 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
           </div>
 
           <div className="max-h-48 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-            {allClients.map((client: any) => (
+            {allClients.map((client) => (
               <button
                 key={client.id}
                 onClick={() => toggleClient(client.id)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                  formData.client_ids.includes(client.id)
+                  clientIdsVal.includes(client.id)
                     ? 'bg-blue-50 border-blue-200 shadow-sm'
                     : 'bg-white border-gray-100 hover:border-gray-200'
                 }`}
               >
                 <div className="flex items-center gap-3 text-left">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    formData.client_ids.includes(client.id) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'
+                    clientIdsVal.includes(client.id) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'
                   }`}>
                     <Users size={14} />
                   </div>
                   <div>
-                    <p className={`text-sm font-bold ${formData.client_ids.includes(client.id) ? 'text-blue-900' : 'text-gray-700'}`}>
+                    <p className={`text-sm font-bold ${clientIdsVal.includes(client.id) ? 'text-blue-900' : 'text-gray-700'}`}>
                       {client.name}
                     </p>
                     <p className="text-[10px] text-gray-400 font-bold uppercase">{client.role || 'Partner'}</p>
                   </div>
                 </div>
-                {formData.client_ids.includes(client.id) && <CheckCircle size={16} className="text-blue-600" />}
+                {clientIdsVal.includes(client.id) && <CheckCircle size={16} className="text-blue-600" />}
               </button>
             ))}
           </div>
@@ -1214,9 +1145,9 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
                 type="text"
                 placeholder="e.g. ERP-10293"
                 className="w-full p-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-gray-300 outline-none text-xs font-mono text-gray-500"
-                value={formData.external_id}
-                onChange={e => setFormData({...formData, external_id: e.target.value})}
+                {...register('external_id')}
               />
+              {errors.external_id && <p className="text-red-500 text-xs mt-1 font-bold">{errors.external_id.message}</p>}
             </div>
           </div>
         )}

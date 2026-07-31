@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trash2, AlertCircle, CheckCircle, Plus, X, Settings, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { components } from '@/types/api';
 
@@ -119,19 +119,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ features_config: newFeaturesConfig })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: 'Failed to save attribute configuration' }));
-        throw new Error(errorData.detail || 'Failed to save attribute configuration');
-      }
+      await apiClient.patch<any>('/business/me', { features_config: newFeaturesConfig });
 
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       setIsAddingField(false);
@@ -151,28 +139,23 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
     setError('');
 
     try {
-      const url = service 
-        ? `${API_BASE_URL}/services/${service.id}`
-        : `${API_BASE_URL}/services/`;
+      const path = service 
+        ? `/services/${service.id}`
+        : `/services/`;
       
-      const method = service ? 'PATCH' : 'POST';
+      const payload = { 
+        name, 
+        description, 
+        duration_minutes: duration, 
+        price,
+        attributes 
+      };
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          name, 
-          description, 
-          duration_minutes: duration, 
-          price,
-          attributes 
-        })
-      });
-
-      if (!res.ok) throw new Error(`Failed to ${service ? 'update' : 'create'} service`);
+      if (service) {
+        await apiClient.patch<any>(path, payload);
+      } else {
+        await apiClient.post<any>(path, payload);
+      }
 
       onSuccess();
       onClose();
@@ -190,14 +173,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/services/${service.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) throw new Error('Failed to delete service');
+      await apiClient.delete<any>(`/services/${service.id}`);
 
       onSuccess();
       onClose();

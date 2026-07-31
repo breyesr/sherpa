@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trash2, AlertCircle, X, CheckCircle, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { components } from '@/types/api';
 
@@ -43,15 +43,7 @@ export default function ManageFieldsDrawer({ isOpen, onClose, business, token }:
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ crm_config: fields })
-      });
-      if (!res.ok) throw new Error('Failed to update fields');
+      await apiClient.patch<any>('/business/me', { crm_config: fields });
       
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       onClose();
@@ -70,15 +62,7 @@ export default function ManageFieldsDrawer({ isOpen, onClose, business, token }:
     try {
       const updatedFields = fields.filter(f => f.key !== fieldToDelete.key);
       
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ crm_config: updatedFields })
-      });
-      if (!res.ok) throw new Error('Failed to delete field');
+      await apiClient.patch<any>('/business/me', { crm_config: updatedFields });
       
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       setFields(updatedFields);

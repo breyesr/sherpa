@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check, Package, Scissors, Play } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { components } from '@/types/api';
 
 type UserResponse = components['schemas']['UserResponse'];
@@ -71,25 +71,16 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const headers = { 'Authorization': `Bearer ${token}` };
-        
         // Fetch Settings
-        const settingsRes = await fetch(`${API_BASE_URL}/admin/settings`, { headers });
-        if (settingsRes.status === 403) {
+        const data = await apiClient.get<SystemSettings>('/admin/settings');
+        setSettings((prev: SystemSettings) => ({ ...prev, ...data }));
+        setIsAuthorized(true);
+      } catch (err: any) {
+        if (err.status === 403) {
           setIsAuthorized(false);
-          setLoading(false);
-          return;
+        } else {
+          console.error(err);
         }
-        
-        if (settingsRes.ok) {
-          const data = await settingsRes.json();
-          setSettings((prev: SystemSettings) => ({ ...prev, ...data }));
-          setIsAuthorized(true);
-        }
-
-        } catch (err) {
-
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -99,24 +90,17 @@ export default function AdminSettingsPage() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const userData = await res.json();
-        console.log('Admin: Fetched users:', userData);
-        if (Array.isArray(userData)) {
-          setUsers(userData);
-        } else {
-          console.error('Admin: Users response is not an array:', userData);
-        }
+      const userData = await apiClient.get<UserResponse[]>('/admin/users');
+      console.log('Admin: Fetched users:', userData);
+      if (Array.isArray(userData)) {
+        setUsers(userData);
       } else {
-        console.error('Admin: Failed to fetch users. Status:', res.status);
+        console.error('Admin: Users response is not an array:', userData);
       }
     } catch (err) {
       console.error('Admin: Error fetching users:', err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'users' && isAuthorized) {
@@ -129,19 +113,8 @@ export default function AdminSettingsPage() {
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/settings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(settings)
-      });
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'System settings updated successfully!' });
-      } else {
-        throw new Error('Failed to update system settings.');
-      }
+      await apiClient.post('/admin/settings', settings);
+      setMessage({ type: 'success', text: 'System settings updated successfully!' });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setMessage({ type: 'error', text: errorMessage });
@@ -154,8 +127,7 @@ export default function AdminSettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const url = editingUser ? `${API_BASE_URL}/admin/users/${editingUser.id}` : `${API_BASE_URL}/admin/users`;
-      const method = editingUser ? 'PATCH' : 'POST';
+      const path = editingUser ? `/admin/users/${editingUser.id}` : '/admin/users';
       
       const config = userForm.features_config as any;
       const finalForm = {
@@ -174,42 +146,34 @@ export default function AdminSettingsPage() {
         }
       };
       
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(finalForm)
-      });
+      const updatedUser = editingUser 
+        ? await apiClient.patch<UserResponse>(path, finalForm)
+        : await apiClient.post<UserResponse>(path, finalForm);
 
-      if (res.ok) {
-        const updatedUser = await res.json();
-        if (editingUser) {
-          setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
-        } else {
-          setUsers(prev => [...prev, updatedUser]);
-        }
-        setShowUserModal(false);
-        setEditingUser(null);
-        setUserForm({ 
-          email: '', 
-          password: '', 
-          role: 'member', 
-          is_active: true, 
-          vertical_type: 'BASIC',
-          features_config: {
-            scheduling: { enabled: true },
-            business_identity: { enabled: true },
-            crm_suite: { enabled: true },
-            campaign_flow: { enabled: false },
-            b2b_solutions: { enabled: false },
-            sales_intelligence: { enabled: false },
-            live_sandbox: { enabled: true }
-          }
-        });
-        setMessage({ type: 'success', text: `User ${editingUser ? 'updated' : 'created'} successfully!` });
+      if (editingUser) {
+        setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
+      } else {
+        setUsers(prev => [...prev, updatedUser]);
       }
+      setShowUserModal(false);
+      setEditingUser(null);
+      setUserForm({ 
+        email: '', 
+        password: '', 
+        role: 'member', 
+        is_active: true, 
+        vertical_type: 'BASIC',
+        features_config: {
+          scheduling: { enabled: true },
+          business_identity: { enabled: true },
+          crm_suite: { enabled: true },
+          campaign_flow: { enabled: false },
+          b2b_solutions: { enabled: false },
+          sales_intelligence: { enabled: false },
+          live_sandbox: { enabled: true }
+        }
+      });
+      setMessage({ type: 'success', text: `User ${editingUser ? 'updated' : 'created'} successfully!` });
     } catch (err) {
       console.error(err);
     } finally {
@@ -220,14 +184,9 @@ export default function AdminSettingsPage() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setUsers(users.filter(u => u.id !== userId));
-        setMessage({ type: 'success', text: 'User deleted successfully!' });
-      }
+      await apiClient.delete(`/admin/users/${userId}`);
+      setUsers(users.filter(u => u.id !== userId));
+      setMessage({ type: 'success', text: 'User deleted successfully!' });
     } catch (err) {
       console.error(err);
     }
@@ -235,21 +194,9 @@ export default function AdminSettingsPage() {
 
   const handleSaveCredits = async (businessId: string, credits: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/businesses/${businessId}/credits`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ purchased_credits: credits })
-      });
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'Credits updated successfully.' });
-        fetchUsers();
-      } else {
-        const errData = await res.json();
-        throw new Error(errData.detail || 'Failed to update credits.');
-      }
+      await apiClient.patch(`/admin/businesses/${businessId}/credits`, { purchased_credits: credits });
+      setMessage({ type: 'success', text: 'Credits updated successfully.' });
+      fetchUsers();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
     }

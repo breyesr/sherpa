@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, ShieldCheck, CheckCircle2, ChevronRight, MessageSquare, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -28,24 +28,10 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/integrations/whatsapp/provision`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          area_code: areaCode || undefined,
-          friendly_name: friendlyName || undefined
-        })
+      const data = await apiClient.post<{ phone_number: string }>('/integrations/whatsapp/provision', {
+        area_code: areaCode || undefined,
+        friendly_name: friendlyName || undefined
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Fallo al aprovisionar la línea de WhatsApp.');
-      }
-
-      const data = await res.json();
       setAssignedNumber(data.phone_number);
       setStep(4);
     } catch (err: any) {

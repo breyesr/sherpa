@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 
 interface AddCategoryModalProps {
   isOpen: boolean;
@@ -27,19 +27,7 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess, token }: 
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: 'Failed to create category' }));
-        throw new Error(errorData.detail || 'Failed to create category');
-      }
+      await apiClient.post('/trade/categories', formData);
 
       onSuccess();
       onClose();

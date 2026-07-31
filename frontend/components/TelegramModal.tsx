@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Send, ExternalLink, CheckCircle2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 
 interface TelegramModalProps {
   isOpen: boolean;
@@ -23,22 +23,11 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
   const fetchBindToken = async () => {
     setError('');
     try {
-      const tokenRes = await fetch(`${API_BASE_URL}/telegram/generate-bind-token`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (tokenRes.ok) {
-        const tokenData = await tokenRes.json();
-        if (tokenData.deep_link_url) {
-          setDeepLinkUrl(tokenData.deep_link_url);
-        } else {
-          throw new Error('Telegram bot is linked, but has no username configured.');
-        }
+      const tokenData = await apiClient.post<{ deep_link_url?: string }>('/telegram/generate-bind-token');
+      if (tokenData.deep_link_url) {
+        setDeepLinkUrl(tokenData.deep_link_url);
       } else {
-        const errorData = await tokenRes.json();
-        throw new Error(errorData.detail || 'Failed to generate admin binding token');
+        throw new Error('Telegram bot is linked, but has no username configured.');
       }
     } catch (tokenErr: any) {
       console.error('Failed to generate admin bind token:', tokenErr);
@@ -66,17 +55,10 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
       setAdminLinked(false);
       const checkStatus = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/telegram/bind-status`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.admin_linked) {
-              setAdminLinked(true);
-              clearInterval(intervalId);
-            }
+          const data = await apiClient.get<{ admin_linked?: boolean }>('/telegram/bind-status');
+          if (data.admin_linked) {
+            setAdminLinked(true);
+            clearInterval(intervalId);
           }
         } catch (err) {
           console.error('Failed to check bind status:', err);
@@ -100,19 +82,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
 
     try {
       // 1. Link Telegram Bot
-      const res = await fetch(`${API_BASE_URL}/telegram/link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ bot_token: botToken })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to save Telegram settings');
-      }
+      await apiClient.post('/telegram/link', { bot_token: botToken });
 
       // 2. Generate Admin Deep Link Token
       await fetchBindToken();

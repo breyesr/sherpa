@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, User, Bot, AlertCircle, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import SafeDate from '@/components/SafeDate';
 import { toast } from 'sonner';
 import { components } from '@/types/api';
@@ -30,10 +30,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
     queryKey: ['conversations'],
     queryFn: async () => {
       console.log("DEBUG INBOX: Fetching conversations...");
-      const res = await fetch(`${API_BASE_URL}/inbox/conversations`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await apiClient.get<ConversationResponse[]>('/inbox/conversations');
       console.log("DEBUG INBOX: Received conversations:", data);
       return data;
     },
@@ -46,10 +43,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
     queryKey: ['messages', selectedConvId],
     queryFn: async () => {
       if (!selectedConvId) return [];
-      const res = await fetch(`${API_BASE_URL}/inbox/conversations/${selectedConvId}/messages`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return apiClient.get<MessageResponse[]>(`/inbox/conversations/${selectedConvId}/messages`);
     },
     enabled: !!selectedConvId,
     refetchInterval: 3000, // Poll active chat faster
@@ -58,15 +52,7 @@ export default function ConversationsContent({ initialConversations, token }: Co
   // 3. Toggle AI Mutation
   const toggleAiMutation = useMutation({
     mutationFn: async ({ id, enabled }: { id: string, enabled: boolean }) => {
-      const res = await fetch(`${API_BASE_URL}/inbox/conversations/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ai_enabled: enabled })
-      });
-      return res.json();
+      return apiClient.patch(`/inbox/conversations/${id}`, { ai_enabled: enabled });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });

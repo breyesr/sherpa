@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, MessageSquare, CheckCircle2, RefreshCw, Send, Trash2, AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import WhatsAppModal from '@/components/WhatsAppModal';
 import TelegramModal from '@/components/TelegramModal';
@@ -10,6 +10,38 @@ import TelegramModal from '@/components/TelegramModal';
 import { components } from '@/types/api';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+
+interface Integration {
+  provider: string;
+  settings?: {
+    bot_username?: string;
+    admin_telegram_id?: string;
+    phone_number?: string;
+    twilio_from_number?: string;
+    provider_type?: string;
+  };
+}
+
+interface FeaturesConfig {
+  services?: { enabled?: boolean };
+  sales_intelligence?: { enabled?: boolean };
+  campaign_flow?: { enabled?: boolean };
+}
+
+interface WhatsAppStatusResponse {
+  status: 'connected' | 'disconnected' | 'pending_verification' | 'error' | 'loading';
+  twilio_from_number?: string;
+  error_message?: string;
+}
+
+interface WhatsAppUsageResponse {
+  used: number;
+  free_limit: number;
+  purchased: number;
+  total_limit: number;
+  remaining: number;
+  percent_used: number;
+}
 
 interface IntegrationsPanelProps {
   business: BusinessProfileResponse;
@@ -39,41 +71,30 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
   } | null>(null);
 
   const fetchWhatsAppStatus = async () => {
-    const waIntegration = (business?.integrations as any[])?.find((i: any) => i.provider === 'whatsapp');
+    const waIntegration = (business?.integrations as Integration[])?.find((i) => i.provider === 'whatsapp');
     if (!waIntegration) {
       setWhatsappStatus({ status: 'disconnected' });
       setWhatsappUsage(null);
       return;
     }
     try {
-      const res = await fetch(`${API_BASE_URL}/whatsapp/status`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWhatsappStatus(data);
-      } else {
-        setWhatsappStatus({ status: 'error', error_message: 'Fallo al verificar credenciales.' });
-      }
-    } catch (err) {
-      setWhatsappStatus({ status: 'error', error_message: 'Fallo de conexión al validar estado.' });
+      const data = await apiClient.get<WhatsAppStatusResponse>('/whatsapp/status');
+      setWhatsappStatus(data);
+    } catch (err: unknown) {
+      const error_message = (err as Record<string, unknown>).status ? 'Fallo al verificar credenciales.' : 'Fallo de conexión al validar estado.';
+      setWhatsappStatus({ status: 'error', error_message });
     }
   };
 
   const fetchWhatsAppUsage = async () => {
-    const waIntegration = (business?.integrations as any[])?.find((i: any) => i.provider === 'whatsapp');
+    const waIntegration = (business?.integrations as Integration[])?.find((i) => i.provider === 'whatsapp');
     if (!waIntegration) {
       setWhatsappUsage(null);
       return;
     }
     try {
-      const res = await fetch(`${API_BASE_URL}/integrations/whatsapp/usage/${business.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWhatsappUsage(data);
-      }
+      const data = await apiClient.get<WhatsAppUsageResponse>(`/integrations/whatsapp/usage/${business.id}`);
+      setWhatsappUsage(data);
     } catch (err) {
       console.error('Failed to fetch WhatsApp usage', err);
     }
@@ -87,10 +108,10 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
 
   const handleGoogleConnect = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/integrations/google/authorize`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await res.json();
+      interface AuthorizeResponse {
+        authorization_url?: string;
+      }
+      const data = await apiClient.get<AuthorizeResponse>('/integrations/google/authorize');
       if (data.authorization_url) {
         window.open(data.authorization_url, 'Connect Google Calendar', 'width=600,height=700');
       }
@@ -104,18 +125,11 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
     
     setIsDisconnecting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/integrations/${provider}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        onMessage({ type: 'success', text: `${provider} disconnected successfully.` });
-        queryClient.invalidateQueries({ queryKey: ['business'] });
-      } else {
-        throw new Error(`Failed to disconnect ${provider}`);
-      }
-    } catch (err: any) {
-      onMessage({ type: 'error', text: err.message });
+      await apiClient.delete<void>(`/integrations/${provider}`);
+      onMessage({ type: 'success', text: `${provider} disconnected successfully.` });
+      queryClient.invalidateQueries({ queryKey: ['business'] });
+    } catch (err: unknown) {
+      onMessage({ type: 'error', text: (err as Error).message });
     } finally {
       setIsDisconnecting(false);
     }
@@ -124,27 +138,24 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
   const handleManualSync = async () => {
     setIsSyncing(true);
     try {
-      await fetch(`${API_BASE_URL}/integrations/google/sync`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await apiClient.post('/integrations/google/sync');
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['business'] });
         setIsSyncing(false);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setIsSyncing(false);
     }
   };
 
-  const isGoogleConnected = (business?.integrations as any[])?.some((i: any) => i.provider === 'google');
-  const telegramBot = (business?.integrations as any[])?.find((i: any) => i.provider === 'telegram');
-  const whatsappIntegration = (business?.integrations as any[])?.find((i: any) => i.provider === 'whatsapp');
+  const isGoogleConnected = (business?.integrations as Integration[])?.some((i) => i.provider === 'google');
+  const telegramBot = (business?.integrations as Integration[])?.find((i) => i.provider === 'telegram');
+  const whatsappIntegration = (business?.integrations as Integration[])?.find((i) => i.provider === 'whatsapp');
   const isWhatsAppConnected = !!whatsappIntegration;
-  const whatsappProvider = (whatsappIntegration?.settings as any)?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
-
-  const features = (business?.features_config || {}) as any;
+  const whatsappProvider = whatsappIntegration?.settings?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
+ 
+  const features = (business?.features_config || {}) as FeaturesConfig;
   const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
   const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
   const showScheduling = showServices || showSalesIntel;
@@ -302,7 +313,7 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
                     {(whatsappIntegration?.settings?.phone_number || whatsappIntegration?.settings?.twilio_from_number) && (
                       <div className="text-right mr-2">
                         <p className="text-sm font-bold text-gray-900">
-                          +{ (whatsappIntegration.settings.phone_number || whatsappIntegration.settings.twilio_from_number).replace(/\D/g, '') }
+                          +{ ((whatsappIntegration?.settings?.phone_number || whatsappIntegration?.settings?.twilio_from_number) || '').replace(/\D/g, '') }
                         </p>
                         <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Activo</p>
                       </div>

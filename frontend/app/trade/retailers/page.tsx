@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Users as UserIcon, 
@@ -38,11 +38,7 @@ export default function RetailersPageV2() {
   const { data: retailers = [], isLoading } = useQuery<ClientResponse[]>({
     queryKey: ['clients'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch clients');
-      return res.json();
+      return await apiClient.get<ClientResponse[]>('/crm/clients');
     },
     enabled: !!token,
   });
@@ -198,17 +194,10 @@ export default function RetailersPageV2() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete client ${retailer.name}?`)) {
                           try {
-                            const res = await fetch(`${API_BASE_URL}/crm/clients/${retailer.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['clients'] });
-                            } else {
-                              alert('Failed to delete client');
-                            }
+                            await apiClient.delete<any>(`/crm/clients/${retailer.id}`);
+                            queryClient.invalidateQueries({ queryKey: ['clients'] });
                           } catch (err) {
-                            alert('Error deleting client');
+                            alert('Failed to delete client');
                           }
                         }
                       }}
@@ -256,17 +245,10 @@ export default function RetailersPageV2() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete client ${retailer.name}?`)) {
                           try {
-                            const res = await fetch(`${API_BASE_URL}/crm/clients/${retailer.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['clients'] });
-                            } else {
-                              alert('Failed to delete client');
-                            }
+                            await apiClient.delete<any>(`/crm/clients/${retailer.id}`);
+                            queryClient.invalidateQueries({ queryKey: ['clients'] });
                           } catch (err) {
-                            alert('Error deleting client');
+                            alert('Failed to delete client');
                           }
                         }
                       }}

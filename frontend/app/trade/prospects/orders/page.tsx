@@ -4,7 +4,7 @@ import { useState, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Package, 
@@ -38,11 +38,7 @@ function ProspectOrdersContent() {
   const { data: orders = [], isLoading: isLoadingOrders } = useQuery<OrderResponse[]>({
     queryKey: ['prospect-orders', segment],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/prospects/orders?segment=${segment}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch prospect orders');
-      return res.json();
+      return await apiClient.get<OrderResponse[]>(`/trade/prospects/orders?segment=${segment}`);
     },
     enabled: !!token,
   });
@@ -51,11 +47,11 @@ function ProspectOrdersContent() {
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores', { is_prospect: true, segment }],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores?is_prospect=true&prospect_segment=${segment}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<StoreResponse[]>(`/trade/stores?is_prospect=true&prospect_segment=${segment}`);
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -64,11 +60,11 @@ function ProspectOrdersContent() {
   const { data: products = [] } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<ProductResponse[]>('/trade/products');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -94,16 +90,7 @@ function ProspectOrdersContent() {
   // Verify Order mutation (Quick verify button)
   const verifyMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const res = await fetch(`${API_BASE_URL}/trade/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ is_verified: true })
-      });
-      if (!res.ok) throw new Error('Failed to verify order');
-      return res.json();
+      return await apiClient.patch<any>(`/trade/orders/${orderId}`, { is_verified: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['prospect-orders', segment] });

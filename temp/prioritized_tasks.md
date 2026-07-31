@@ -38,9 +38,9 @@
 - [x] 202.1 — Split `api/trade.py` into sub-routers *(4-6 hours)* — Split monolithic trade.py into sub-routers under api/trade/
 - [x] 202.2 — Split `models/trade.py` into domain modules *(3-4 hours)* — Split monolithic trade.py model into domain modules under models/trade/
 
-## 🟡 Phase 6: Frontend Architecture (Next Sprint)
-- [ ] 203.1 — Create centralized `apiClient.ts` *(4-6 hours)*
-- [ ] 203.3 — Complete v1→v2 Modal-to-Drawer migration *(3-4 hours)* — ClientModal.tsx & StoreModal.tsx still exist
-- [ ] 203.4 — Eliminate top-50 `: any` type annotations *(3-4 hours)* — 120 instances remain
-- [ ] 203.2 — Adopt `react-hook-form` + `zod` for Drawer forms *(1 day)*
-- [ ] 203.5 — Set up Vitest + React Testing Library *(4-6 hours)*
+## 🟡 Phase 6: Frontend Architecture (Next Sprint) ✅ COMPLETE
+- [x] 203.1 — Create centralized `apiClient.ts` *(4-6 hours)*
+- [x] 203.3 — Complete v1→v2 Modal-to-Drawer migration *(3-4 hours)*
+- [x] 203.4 — Eliminate top-50 `: any` type annotations *(3-4 hours)*
+- [x] 203.2 — Adopt `react-hook-form` + `zod` for Drawer forms *(1 day)*
+- [x] 203.5 — Set up Vitest + React Testing Library *(4-6 hours)*

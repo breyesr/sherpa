@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Users as UserIcon, 
@@ -41,11 +41,7 @@ function ProspectContactsContent() {
   const { data: prospects = [], isLoading } = useQuery<ClientResponse[]>({
     queryKey: ['clients', { is_prospect: true, segment }],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients?is_prospect=true&prospect_segment=${segment}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch prospect contacts');
-      return res.json();
+      return await apiClient.get<ClientResponse[]>(`/crm/clients?is_prospect=true&prospect_segment=${segment}`);
     },
     enabled: !!token,
   });
@@ -210,17 +206,10 @@ function ProspectContactsContent() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete prospect contact ${retailer.name}?`)) {
                           try {
-                            const res = await fetch(`${API_BASE_URL}/crm/clients/${retailer.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['clients'] });
-                            } else {
-                              alert('Failed to delete prospect contact');
-                            }
+                            await apiClient.delete<any>(`/crm/clients/${retailer.id}`);
+                            queryClient.invalidateQueries({ queryKey: ['clients'] });
                           } catch (err) {
-                            alert('Error deleting prospect contact');
+                            alert('Failed to delete prospect contact');
                           }
                         }
                       }}
@@ -268,17 +257,10 @@ function ProspectContactsContent() {
                         e.stopPropagation();
                         if (confirm(`Are you sure you want to delete prospect ${retailer.name}?`)) {
                           try {
-                            const res = await fetch(`${API_BASE_URL}/crm/clients/${retailer.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (res.ok) {
-                              queryClient.invalidateQueries({ queryKey: ['clients'] });
-                            } else {
-                              alert('Failed to delete prospect');
-                            }
+                            await apiClient.delete<any>(`/crm/clients/${retailer.id}`);
+                            queryClient.invalidateQueries({ queryKey: ['clients'] });
                           } catch (err) {
-                            alert('Error deleting prospect');
+                            alert('Failed to delete prospect');
                           }
                         }
                       }}

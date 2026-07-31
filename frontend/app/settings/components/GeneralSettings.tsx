@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, AlertCircle, RefreshCw } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 
 const TIMEZONES = [
@@ -28,6 +28,19 @@ import { components } from '@/types/api';
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 type UserResponse = components['schemas']['UserResponse'];
 
+interface EditCRMField {
+  key: string;
+  label: string;
+  type: string;
+  is_deleted?: boolean;
+}
+
+interface FeaturesConfig {
+  services?: { enabled?: boolean };
+  b2b_solutions?: { enabled?: boolean };
+  sales_intelligence?: { enabled?: boolean };
+}
+
 interface GeneralSettingsProps {
   business: BusinessProfileResponse;
   user: UserResponse;
@@ -47,9 +60,9 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     contact_phone: business?.contact_phone || '', 
     timezone: business?.timezone || 'UTC',
     vertical_type: business?.vertical_type || 'BASIC',
-    crm_config: (business?.crm_config as any[]) || [],
-    allowed_zip_codes: ((business as any)?.routing_config?.allowed_zip_codes || []).join(', '),
-    routing_config: (business as any)?.routing_config || {}
+    crm_config: (business?.crm_config as unknown as EditCRMField[]) || [],
+    allowed_zip_codes: (((business as Record<string, unknown> | undefined)?.routing_config as Record<string, unknown> | undefined)?.allowed_zip_codes as string[] || []).join(', '),
+    routing_config: ((business as Record<string, unknown> | undefined)?.routing_config as Record<string, unknown> | undefined) || {}
   };
 
   const initialUserData = { 
@@ -95,7 +108,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     setSavingBusiness(true);
     
     // Filter out soft-deleted fields before saving
-    const finalCrmConfig = (editBusiness.crm_config || []).filter((f: any) => !f.is_deleted);
+    const finalCrmConfig = (editBusiness.crm_config || []).filter((f: EditCRMField) => !f.is_deleted);
     
     // Parse allowed ZIP codes from comma-separated string
     const cleanZips = editBusiness.allowed_zip_codes
@@ -119,31 +132,18 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        onMessage({ type: 'success', text: 'Business profile updated successfully!' });
-        // Update local state to remove the deleted items from view
-        setEditBusiness(prev => ({ 
-          ...prev, 
-          crm_config: finalCrmConfig,
-          routing_config: finalRoutingConfig,
-          allowed_zip_codes: cleanZips.join(', ')
-        }));
-        queryClient.invalidateQueries({ queryKey: ['business'] });
-      } else {
-        const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
-        console.error('Update failed:', errorData);
-        throw new Error(errorData.detail || 'Failed to update business profile');
-      }
-    } catch (err: any) {
-      onMessage({ type: 'error', text: err.message });
+      await apiClient.patch('/business/me', payload);
+      onMessage({ type: 'success', text: 'Business profile updated successfully!' });
+      // Update local state to remove the deleted items from view
+      setEditBusiness(prev => ({ 
+        ...prev, 
+        crm_config: finalCrmConfig,
+        routing_config: finalRoutingConfig,
+        allowed_zip_codes: cleanZips.join(', ')
+      }));
+      queryClient.invalidateQueries({ queryKey: ['business'] });
+    } catch (err: unknown) {
+      onMessage({ type: 'error', text: (err as Error).message });
     } finally {
       setSavingBusiness(false);
     }
@@ -153,33 +153,21 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     e.preventDefault();
     setSavingUser(true);
     try {
-      const body: any = { email: editUser.email };
+      const body: Record<string, unknown> = { email: editUser.email };
       if (editUser.password) body.password = editUser.password;
 
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        onMessage({ type: 'success', text: 'Account settings updated successfully!' });
-        setEditUser(prev => ({ ...prev, password: '' }));
-        queryClient.invalidateQueries({ queryKey: ['user'] });
-      } else {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to update account settings');
-      }
-    } catch (err: any) {
-      onMessage({ type: 'error', text: err.message });
+      await apiClient.patch('/auth/me', body);
+      onMessage({ type: 'success', text: 'Account settings updated successfully!' });
+      setEditUser(prev => ({ ...prev, password: '' }));
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    } catch (err: unknown) {
+      onMessage({ type: 'error', text: (err as Error).message });
     } finally {
       setSavingUser(false);
     }
   };
 
-  const features = (business?.features_config || {}) as any;
+  const features = (business?.features_config || {}) as FeaturesConfig;
   const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
   const showB2BSolutions = features.b2b_solutions?.enabled ?? (business?.vertical_type === 'TRADE');
   const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
@@ -295,7 +283,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
             </div>
           ) : (
             <div className="space-y-3">
-              {editBusiness.crm_config.map((field: any, idx: number) => {
+              {editBusiness.crm_config.map((field: EditCRMField, idx: number) => {
                 const isSoftDeleted = field.is_deleted;
                 
                 return (
@@ -355,7 +343,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
             </div>
           )}
 
-          {editBusiness.crm_config.some((f: any) => f.is_deleted) && (
+          {editBusiness.crm_config.some((f: EditCRMField) => f.is_deleted) && (
             <div className="flex items-center gap-2 p-4 bg-red-50 rounded-2xl border border-red-100">
               <AlertCircle size={18} className="text-red-500 shrink-0" />
               <p className="text-xs text-red-800 font-medium">

@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   ChevronLeft, 
@@ -42,11 +42,7 @@ export default function OrderDetailPage() {
   const { data: order, isLoading: loadingOrder, error: orderError } = useQuery<OrderResponse>({
     queryKey: ['order', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/orders/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Order not found');
-      return res.json();
+      return await apiClient.get<OrderResponse>(`/trade/orders/${id}`);
     },
     enabled: !!token && !!id,
   });
@@ -55,11 +51,11 @@ export default function OrderDetailPage() {
   const { data: store = null } = useQuery<StoreResponse | null>({
     queryKey: ['store', order?.store_id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores/${order?.store_id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return null;
-      return res.json();
+      try {
+        return await apiClient.get<StoreResponse>(`/trade/stores/${order?.store_id}`);
+      } catch {
+        return null;
+      }
     },
     enabled: !!token && !!order?.store_id,
   });
@@ -68,11 +64,11 @@ export default function OrderDetailPage() {
   const { data: products = [] } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<ProductResponse[]>('/trade/products');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -101,16 +97,7 @@ export default function OrderDetailPage() {
     setUpdatingStatus(newStatus);
     setErrorMessage('');
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/orders/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      
-      if (!res.ok) throw new Error('Failed to update order status');
+      await apiClient.patch<any>(`/trade/orders/${id}`, { status: newStatus });
       
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });

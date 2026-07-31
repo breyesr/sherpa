@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import Drawer from './Drawer';
 import { 
   ShoppingBag, 
@@ -48,23 +48,13 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
   // Data Fetching
   const { data: stores = [] } = useQuery({
     queryKey: ['stores-minimal'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
-    },
+    queryFn: () => apiClient.get<any[]>('/trade/stores'),
     enabled: isOpen,
   });
 
   const { data: allProducts = [] } = useQuery({
     queryKey: ['products-catalog'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
-    },
+    queryFn: () => apiClient.get<any[]>('/trade/products'),
     enabled: isOpen && step === 2,
   });
 
@@ -112,23 +102,14 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...headerData,
-          items: lineItems.map(item => ({
-            product_id: item.id,
-            quantity: item.quantity,
-            unit_price: item.price
-          }))
-        })
+      await apiClient.post<any>('/trade/orders', {
+        ...headerData,
+        items: lineItems.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price
+        }))
       });
-
-      if (!res.ok) throw new Error('Failed to create order');
 
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       if (headerData.store_id) queryClient.invalidateQueries({ queryKey: ['store', headerData.store_id] });

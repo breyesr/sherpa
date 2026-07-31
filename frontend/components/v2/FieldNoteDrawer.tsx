@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import Drawer from './Drawer';
 import { 
   MessageSquare, 
@@ -46,38 +46,22 @@ export default function FieldNoteDrawer({ isOpen, onClose, storeId, token }: Fie
 
     try {
       // 1. Save the Note
-      const noteRes = await fetch(`${API_BASE_URL}/trade/stores/${storeId}/notes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          note: formData.note,
-          note_type: formData.note_type,
-          risks: formData.risks || null,
-          opportunities: formData.opportunities || null,
-          is_actionable: formData.is_actionable,
-          execution_level: formData.execution_level
-        })
+      await apiClient.post<any>(`/trade/stores/${storeId}/notes`, {
+        note: formData.note,
+        note_type: formData.note_type,
+        risks: formData.risks || null,
+        opportunities: formData.opportunities || null,
+        is_actionable: formData.is_actionable,
+        execution_level: formData.execution_level
       });
-
-      if (!noteRes.ok) throw new Error('Failed to save field observation');
 
       // 2. Optional: Save Competitor if provided
       if (formData.competitor_name) {
-        await fetch(`${API_BASE_URL}/trade/competitors`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            store_id: storeId,
-            name: formData.competitor_name,
-            presence_level: formData.competitor_presence,
-            notes: `Auto-generated from visit note: ${formData.note}`
-          })
+        await apiClient.post<any>('/trade/competitors', {
+          store_id: storeId,
+          name: formData.competitor_name,
+          presence_level: formData.competitor_presence,
+          notes: `Auto-generated from visit note: ${formData.note}`
         });
       }
 

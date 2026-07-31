@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Store as StoreIcon, 
@@ -24,15 +24,28 @@ import {
   AlertCircle,
   ExternalLink,
   Trash2,
-  Users
+  Users,
+  LucideIcon
 } from 'lucide-react';
 import { components } from '@/types/api';
+import { 
+  User as UserModel, 
+  Business as BusinessModel, 
+  Client as ClientModel 
+} from '@/types/models';
 
 type StoreResponse = components['schemas']['StoreResponse'];
 type StoreNoteResponse = components['schemas']['StoreNoteResponse'];
 type OrderResponse = components['schemas']['OrderResponse'];
 type ProductResponse = components['schemas']['ProductResponse'];
 type CompetitorResponse = components['schemas']['CompetitorResponse'];
+
+interface FeaturesConfig {
+  campaign_flow?: { enabled?: boolean };
+  sales_intelligence?: { enabled?: boolean };
+  b2b_solutions?: { enabled?: boolean };
+  products?: { enabled?: boolean };
+}
 import FieldNoteDrawer from '@/components/v2/FieldNoteDrawer';
 import OrderDrawer from '@/components/v2/OrderDrawer';
 
@@ -52,11 +65,7 @@ export default function StoreDetailPageV2() {
   const { data: store, isLoading, isFetched } = useQuery<StoreResponse>({
     queryKey: ['store', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Store not found');
-      return res.json();
+      return await apiClient.get<StoreResponse>(`/trade/stores/${id}`);
     },
     enabled: !!token && !!id,
   });
@@ -65,11 +74,11 @@ export default function StoreDetailPageV2() {
   const { data: orders = [] } = useQuery<OrderResponse[]>({
     queryKey: ['orders', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/orders?store_id=${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<OrderResponse[]>(`/trade/orders?store_id=${id}`);
+      } catch {
+        return [];
+      }
     },
     enabled: !!token && !!id,
   });
@@ -78,11 +87,11 @@ export default function StoreDetailPageV2() {
   const { data: competitors = [] } = useQuery<CompetitorResponse[]>({
     queryKey: ['competitors', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/competitors?store_id=${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<CompetitorResponse[]>(`/trade/competitors?store_id=${id}`);
+      } catch {
+        return [];
+      }
     },
     enabled: !!token && !!id,
   });
@@ -91,11 +100,11 @@ export default function StoreDetailPageV2() {
   const { data: products = [] } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<ProductResponse[]>('/trade/products');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -104,42 +113,38 @@ export default function StoreDetailPageV2() {
   const { data: referrals = [] } = useQuery<StoreResponse[]>({
     queryKey: ['referrals', id],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores?is_prospect=true&assigned_store_id=${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<StoreResponse[]>(`/trade/stores?is_prospect=true&assigned_store_id=${id}`);
+      } catch {
+        return [];
+      }
     },
     enabled: !!token && !!id,
   });
 
   // Fetch Current User
-  const { data: currentUser } = useQuery<any>({
+  const { data: currentUser } = useQuery<UserModel>({
     queryKey: ['me'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return await apiClient.get<UserModel>('/auth/me');
     },
     enabled: !!token,
   });
 
   // Fetch Business
-  const { data: business } = useQuery({
+  const { data: business } = useQuery<BusinessModel>({
     queryKey: ['business'],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) return res.json();
-      return { vertical_type: 'BASIC' };
+      try {
+        return await apiClient.get<BusinessModel>('/business/me');
+      } catch {
+        return { vertical_type: 'BASIC' } as BusinessModel;
+      }
     },
     enabled: !!token,
   });
 
-  const features = business?.features_config || {};
+  const features = (business?.features_config as FeaturesConfig | undefined) || {};
   const showCampaigns = features.campaign_flow?.enabled ?? false;
   const showSalesIntelligence = features.sales_intelligence?.enabled ?? false;
   const showB2B = features.b2b_solutions?.enabled ?? false;
@@ -166,12 +171,12 @@ export default function StoreDetailPageV2() {
     { id: 'intel', label: 'Opps / Risks' },
   ];
 
-  const filteredNotes = (store?.notes || []).filter((note: any) => {
+  const filteredNotes = (store?.notes || []).filter((note: StoreNoteResponse) => {
     if (activeNoteSubTab === 'all') return true;
     
     if (activeNoteSubTab === 'intel') {
       return (
-        ['risk', 'opportunity', 'threat', 'anniversary'].includes(note.note_type) ||
+        ['risk', 'opportunity', 'threat', 'anniversary'].includes(note.note_type || '') ||
         !!note.risks ||
         !!note.opportunities
       );
@@ -197,17 +202,10 @@ export default function StoreDetailPageV2() {
             const term = isProspect ? 'prospect account' : 'store';
             if (confirm(`Are you sure you want to delete ${term} ${store?.name}?`)) {
               try {
-                const res = await fetch(`${API_BASE_URL}/trade/stores/${store?.id}`, {
-                  method: 'DELETE',
-                  headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                  router.push(isProspect ? '/trade/prospects/accounts' : '/trade/stores');
-                } else {
-                  alert(`Failed to delete ${term}`);
-                }
+                await apiClient.delete<void>(`/trade/stores/${store?.id}`);
+                router.push(isProspect ? '/trade/prospects/accounts' : '/trade/stores');
               } catch (err) {
-                alert(`Error deleting ${term}`);
+                alert(`Failed to delete ${term}`);
               }
             }
           }}
@@ -537,18 +535,18 @@ export default function StoreDetailPageV2() {
                 
                 {filteredNotes.length > 0 ? (
                   <div className="space-y-6">
-                    {filteredNotes.map((note: any) => (
+                    {filteredNotes.map((note: StoreNoteResponse) => (
                       <div key={note.id} className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                           <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
-                            ['risk', 'threat'].includes(note.note_type) ? 'bg-red-100 text-red-600' :
+                            ['risk', 'threat'].includes(note.note_type || '') ? 'bg-red-100 text-red-600' :
                             note.note_type === 'opportunity' ? 'bg-green-100 text-green-600' :
                             note.note_type === 'anniversary' ? 'bg-purple-100 text-purple-600' :
                             'bg-blue-100 text-blue-600'
                           }`}>
                             {note.note_type}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-400">{new Date(note.created_at).toLocaleDateString()}</span>
+                          <span className="text-[10px] font-bold text-gray-400">{new Date(note.created_at || '').toLocaleDateString()}</span>
                         </div>
                         <p className="text-gray-900 font-medium leading-relaxed">{note.note}</p>
                         {(note.risks || note.opportunities) && (
@@ -612,7 +610,7 @@ export default function StoreDetailPageV2() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50 text-sm font-medium text-gray-700">
-                        {referrals.map((ref: any) => {
+                        {referrals.map((ref: StoreResponse) => {
                           const product = products.find(p => p.id === ref.requested_product_id);
                           const productName = product ? product.name : 'Unknown Product';
                           
@@ -707,7 +705,7 @@ export default function StoreDetailPageV2() {
             <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Linked Contacts</h4>
             <div className="space-y-4">
               {store.clients && store.clients.length > 0 ? (
-                store.clients.map((client: any) => (
+                store.clients.map((client: { id: string; name: string; role?: string | null }) => (
                   <div key={client.id} className="flex items-center gap-4 group">
                     <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
                       <FileText size={18} />
@@ -746,7 +744,13 @@ export default function StoreDetailPageV2() {
   );
 }
 
-function InfoItem({ label, value, icon: Icon }: any) {
+interface InfoItemProps {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+}
+
+function InfoItem({ label, value, icon: Icon }: InfoItemProps) {
   return (
     <div className="flex gap-4">
       <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 shrink-0">
@@ -760,7 +764,13 @@ function InfoItem({ label, value, icon: Icon }: any) {
   );
 }
 
-function IntelligenceMetric({ label, value, color }: any) {
+interface IntelligenceMetricProps {
+  label: string;
+  value: string;
+  color: string;
+}
+
+function IntelligenceMetric({ label, value, color }: IntelligenceMetricProps) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-white/5">
       <span className="text-xs text-gray-400 font-bold">{label}</span>

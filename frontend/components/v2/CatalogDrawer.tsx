@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import Drawer from './Drawer';
 import { 
   Package, 
@@ -37,10 +37,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     queryFn: async () => {
       if (!token) return null;
       try {
-        const res = await fetch(`${API_BASE_URL}/business/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) return res.json();
+        return await apiClient.get<any>('/business/me');
       } catch {
         // Silent fail
       }
@@ -98,23 +95,18 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
           // Fetch from API
           const fetchProduct = async () => {
             try {
-              const res = await fetch(`${API_BASE_URL}/trade/products/${productId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+              const data = await apiClient.get<any>(`/trade/products/${productId}`);
+              setProductData({
+                name: data.name || '',
+                category_id: data.category_id || '',
+                description: data.description || '',
+                price: data.price || 0,
+                sku: data.sku || '',
+                brand: data.brand || '',
+                product_type: data.product_type || '',
+                unit_of_measure: data.unit_of_measure || 'unit',
+                wholesale_threshold: data.wholesale_threshold ?? ''
               });
-              if (res.ok) {
-                const data = await res.json();
-                setProductData({
-                  name: data.name || '',
-                  category_id: data.category_id || '',
-                  description: data.description || '',
-                  price: data.price || 0,
-                  sku: data.sku || '',
-                  brand: data.brand || '',
-                  product_type: data.product_type || '',
-                  unit_of_measure: data.unit_of_measure || 'unit',
-                  wholesale_threshold: data.wholesale_threshold ?? ''
-                });
-              }
             } catch (err) {
               console.error(err);
             }
@@ -130,15 +122,10 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
   async function fetchCategories() {
     setFetchingCats(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data);
-        if (data.length > 0 && !productData.category_id && !productId) {
-          setProductData(prev => ({ ...prev, category_id: data[0].id }));
-        }
+      const data = await apiClient.get<any[]>('/trade/categories');
+      setCategories(data);
+      if (data.length > 0 && !productData.category_id && !productId) {
+        setProductData(prev => ({ ...prev, category_id: data[0].id }));
       }
     } catch (err) {
       console.error(err);
@@ -153,10 +140,9 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     setError('');
 
     try {
-      const url = isEditing 
-        ? `${API_BASE_URL}/trade/products/${productId}` 
-        : `${API_BASE_URL}/trade/products`;
-      const method = isEditing ? 'PATCH' : 'POST';
+      const path = isEditing 
+        ? `/trade/products/${productId}` 
+        : `/trade/products`;
 
       const payload = {
         ...productData,
@@ -165,16 +151,11 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
           : null
       };
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error(isEditing ? 'Failed to update product' : 'Failed to create product');
+      if (isEditing) {
+        await apiClient.patch<any>(path, payload);
+      } else {
+        await apiClient.post<any>(path, payload);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['products'] });
       if (isEditing) {
@@ -195,16 +176,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(categoryData)
-      });
-
-      if (!res.ok) throw new Error('Failed to create category');
+      await apiClient.post<any>('/trade/categories', categoryData);
 
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       fetchCategories(); // Refresh local list

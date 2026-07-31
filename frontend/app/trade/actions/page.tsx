@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   ShieldAlert, 
@@ -29,10 +29,17 @@ import {
   Award
 } from 'lucide-react';
 import { components } from '@/types/api';
+import { User as UserModel } from '@/types/models';
 
 type StoreActionResponse = components['schemas']['StoreActionResponse'];
 type ActionTemplateResponse = components['schemas']['ActionTemplateResponse'];
 type StoreResponse = components['schemas']['StoreResponse'];
+
+interface StoreActionObjective {
+  name: string;
+  label: string;
+  category: string;
+}
 
 import Drawer from '@/components/v2/Drawer';
 
@@ -57,13 +64,10 @@ export default function ActionsStrategyDesk() {
   const [error, setError] = useState('');
 
   // Fetch Current User (for authorization / default assignment checks)
-  const { data: currentUser } = useQuery<any>({
+  const { data: currentUser } = useQuery<UserModel>({
     queryKey: ['me'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return await apiClient.get<UserModel>('/auth/me');
     },
     enabled: !!token,
   });
@@ -71,14 +75,14 @@ export default function ActionsStrategyDesk() {
   const isAdmin = currentUser?.is_admin || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
 
   // Fetch Teammates (Admins only)
-  const { data: teammates = [] } = useQuery<any[]>({
+  const { data: teammates = [] } = useQuery<UserModel[]>({
     queryKey: ['teammates'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<UserModel[]>('/admin/users');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token && isAdmin,
   });
@@ -88,11 +92,7 @@ export default function ActionsStrategyDesk() {
   const { data: actions = [], isLoading: loadingActions } = useQuery<StoreActionResponse[]>({
     queryKey: ['actions'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/actions`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch actions');
-      return res.json();
+      return await apiClient.get<StoreActionResponse[]>('/trade/actions');
     },
     enabled: !!token,
   });
@@ -101,24 +101,16 @@ export default function ActionsStrategyDesk() {
   const { data: templates = [], isLoading: loadingTemplates } = useQuery<ActionTemplateResponse[]>({
     queryKey: ['action-templates'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/action-templates`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch templates');
-      return res.json();
+      return await apiClient.get<ActionTemplateResponse[]>('/trade/action-templates');
     },
     enabled: !!token,
   });
 
   // Fetch Store Action Objectives
-  const { data: objectives = [] } = useQuery<any[]>({
+  const { data: objectives = [] } = useQuery<StoreActionObjective[]>({
     queryKey: ['store-action-objectives'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/objectives`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch objectives');
-      return res.json();
+      return await apiClient.get<StoreActionObjective[]>('/trade/objectives');
     },
     enabled: !!token,
   });
@@ -127,10 +119,7 @@ export default function ActionsStrategyDesk() {
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return await apiClient.get<StoreResponse[]>('/trade/stores');
     },
     enabled: !!token,
   });
@@ -152,7 +141,7 @@ export default function ActionsStrategyDesk() {
     description: '',
     result_unit: '',
     target_value: '',
-    details: {} as Record<string, any>
+    details: {} as Record<string, unknown>
   });
 
   // Assignees are store contacts (Clients)
@@ -281,19 +270,7 @@ export default function ActionsStrategyDesk() {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/actions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(postPayload)
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Failed to create action');
-      }
+      await apiClient.post<StoreActionResponse>('/trade/actions', postPayload);
 
       queryClient.invalidateQueries({ queryKey: ['actions'] });
       setIsActionFormOpen(false);
@@ -311,8 +288,8 @@ export default function ActionsStrategyDesk() {
         target_value: '',
         details: {}
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -342,19 +319,7 @@ export default function ActionsStrategyDesk() {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/actions/${selectedAction.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(patchPayload)
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Failed to resolve action');
-      }
+      await apiClient.patch<StoreActionResponse>(`/trade/actions/${selectedAction.id}`, patchPayload);
 
       queryClient.invalidateQueries({ queryKey: ['actions'] });
       setIsResolutionOpen(false);
@@ -365,8 +330,8 @@ export default function ActionsStrategyDesk() {
         result_value: '',
         revenue_impact: ''
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -378,23 +343,10 @@ export default function ActionsStrategyDesk() {
     setError('');
 
     try {
-      const url = selectedTemplate 
-        ? `${API_BASE_URL}/trade/action-templates/${selectedTemplate.id}`
-        : `${API_BASE_URL}/trade/action-templates`;
-      const method = selectedTemplate ? 'PATCH' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(templateFormData)
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Failed to save template');
+      if (selectedTemplate) {
+        await apiClient.patch<ActionTemplateResponse>(`/trade/action-templates/${selectedTemplate.id}`, templateFormData);
+      } else {
+        await apiClient.post<ActionTemplateResponse>('/trade/action-templates', templateFormData);
       }
 
       queryClient.invalidateQueries({ queryKey: ['action-templates'] });
@@ -409,8 +361,8 @@ export default function ActionsStrategyDesk() {
         target_value: '',
         impact_level: 'MEDIUM'
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -420,14 +372,10 @@ export default function ActionsStrategyDesk() {
     if (!window.confirm('Are you sure you want to delete this action template?')) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/action-templates/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to delete template');
+      await apiClient.delete<void>(`/trade/action-templates/${id}`);
       queryClient.invalidateQueries({ queryKey: ['action-templates'] });
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert((err as Error).message);
     }
   };
 
@@ -452,8 +400,8 @@ export default function ActionsStrategyDesk() {
       objective: tpl.objective || 'THREAT_RESPONSE',
       default_unit: tpl.default_unit,
       description: tpl.description || '',
-      target_value: (tpl as any).target_value || '',
-      impact_level: (tpl as any).impact_level || 'MEDIUM'
+      target_value: ((tpl as Record<string, unknown>).target_value as string) || '',
+      impact_level: ((tpl as Record<string, unknown>).impact_level as string) || 'MEDIUM'
     });
     setIsTemplateFormOpen(true);
   };
@@ -485,7 +433,7 @@ export default function ActionsStrategyDesk() {
   };
 
   const objectiveMap = {
-    ...objectives.reduce((acc: Record<string, string>, obj: any) => {
+    ...objectives.reduce((acc: Record<string, string>, obj: StoreActionObjective) => {
       acc[obj.name] = obj.label;
       return acc;
     }, {}),
@@ -506,7 +454,7 @@ export default function ActionsStrategyDesk() {
       { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
       { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
     ];
-    return activeList.filter((o: any) => o.category === actionFormData.category);
+    return activeList.filter((o: StoreActionObjective) => o.category === actionFormData.category);
   }, [objectives, actionFormData.category]);
 
   return (
@@ -672,7 +620,7 @@ export default function ActionsStrategyDesk() {
                       {/* Action Title & Store */}
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Action Title</span>
                       <h3 className="text-lg font-black text-gray-900 mt-0.5 truncate group-hover:text-blue-600 transition-colors">
-                        {(action.details as any)?.title || action.template_name || 'Manual Audit'}
+                        {((action.details as Record<string, unknown> | undefined)?.title as string) || action.template_name || 'Manual Audit'}
                       </h3>
 
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mt-3">Account</span>
@@ -1092,26 +1040,25 @@ export default function ActionsStrategyDesk() {
               </div>
             </div>
 
-            {/* Custom Action details */}
-            {((selectedAction.details as any)?.title || (selectedAction.details as any)?.description || (selectedAction.details as any)?.target_value) && (
+            {!!((selectedAction.details as Record<string, unknown> | undefined)?.title || (selectedAction.details as Record<string, unknown> | undefined)?.description || (selectedAction.details as Record<string, unknown> | undefined)?.target_value) && (
               <div className="p-6 bg-blue-50/30 rounded-[2rem] space-y-4 border border-blue-50/50">
-                {(selectedAction.details as any)?.title && (
+                {!!(selectedAction.details as Record<string, unknown> | undefined)?.title && (
                   <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Main Action</span>
-                    <h4 className="text-base font-black text-gray-900 mt-0.5">{(selectedAction.details as any).title}</h4>
+                    <h4 className="text-base font-black text-gray-900 mt-0.5">{(selectedAction.details as Record<string, unknown>).title as string}</h4>
                   </div>
                 )}
-                {(selectedAction.details as any)?.description && (
+                {!!(selectedAction.details as Record<string, unknown> | undefined)?.description && (
                   <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Description / Guidelines</span>
-                    <p className="text-sm font-semibold text-gray-700 mt-1 whitespace-pre-line">{(selectedAction.details as any).description}</p>
+                    <p className="text-sm font-semibold text-gray-700 mt-1 whitespace-pre-line">{(selectedAction.details as Record<string, unknown>).description as string}</p>
                   </div>
                 )}
-                {(selectedAction.details as any)?.target_value && (
+                {!!(selectedAction.details as Record<string, unknown> | undefined)?.target_value && (
                   <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Goal</span>
                     <span className="text-sm font-black text-gray-900 mt-0.5">
-                      {(selectedAction.details as any).target_value} <span className="text-2xs font-bold text-gray-400 uppercase">{selectedAction.result_unit || 'units'}</span>
+                      {String((selectedAction.details as Record<string, unknown>).target_value)} <span className="text-2xs font-bold text-gray-400 uppercase">{selectedAction.result_unit || 'units'}</span>
                     </span>
                   </div>
                 )}
@@ -1290,7 +1237,7 @@ export default function ActionsStrategyDesk() {
                     { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
                     { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
                     { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
-                  ]).filter((o: any) => o.category === templateFormData.category).map((o: any) => (
+                  ]).filter((o: StoreActionObjective) => o.category === templateFormData.category).map((o: StoreActionObjective) => (
                     <option key={o.name} value={o.name}>{objectiveMap[o.name] || o.label}</option>
                   ))}
                 </select>

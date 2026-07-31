@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, Tag, DollarSign, Barcode } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -30,15 +30,10 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
       if (!isOpen) return;
       setFetchingCats(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCategories(data);
-          if (data.length > 0 && !formData.category_id) {
-            setFormData(prev => ({ ...prev, category_id: data[0].id }));
-          }
+        const data = await apiClient.get<any[]>('/trade/categories');
+        setCategories(data);
+        if (data.length > 0 && !formData.category_id) {
+          setFormData(prev => ({ ...prev, category_id: data[0].id }));
         }
       } catch (err) {
         console.error(err);
@@ -64,19 +59,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
           : null
       };
 
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: 'Failed to create product' }));
-        throw new Error(errorData.detail || 'Failed to create product');
-      }
+      await apiClient.post('/trade/products', payload);
 
       onSuccess();
       onClose();

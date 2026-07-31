@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   ClipboardList, 
@@ -21,6 +21,20 @@ import {
   ExternalLink
 } from 'lucide-react';
 import SafeDate from '@/components/SafeDate';
+import { Store as StoreModel } from '@/types/models';
+
+interface FlattenedNote {
+  id?: string;
+  note?: string | null;
+  note_type?: string | null;
+  created_at?: string | null;
+  is_actionable?: boolean | null;
+  risks?: string | null;
+  opportunities?: string | null;
+  store_name: string;
+  store_id: string;
+  region?: string | null;
+}
 
 export default function NotesPulsePage() {
   const token = useAuthStore((state) => state.token);
@@ -30,31 +44,27 @@ export default function NotesPulsePage() {
   // Fetch all notes from all stores
   // Note: Using the trade/stores endpoint and flattening for now, 
   // but a dedicated /trade/notes endpoint is recommended for the future.
-  const { data: stores = [], isLoading } = useQuery({
+  const { data: stores = [], isLoading } = useQuery<StoreModel[]>({
     queryKey: ['stores-with-notes'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch intelligence');
-      return res.json();
+      return await apiClient.get<StoreModel[]>('/trade/stores');
     },
     enabled: !!token,
   });
 
   // Flatten and sort notes
-  const allNotes = stores.flatMap((store: any) => 
-    (store.notes || []).map((note: any) => ({
+  const allNotes = stores.flatMap((store: StoreModel) => 
+    (store.notes || []).map((note) => ({
       ...note,
       store_name: store.name,
       store_id: store.id,
       region: store.region
     }))
-  ).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  ).sort((a: FlattenedNote, b: FlattenedNote) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
 
-  const filteredNotes = allNotes.filter((note: any) => {
+  const filteredNotes = allNotes.filter((note: FlattenedNote) => {
     const matchesSearch = 
-      note.note.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (note.note || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       note.store_name.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = activeFilter === 'all' || note.note_type === activeFilter;
@@ -133,7 +143,7 @@ export default function NotesPulsePage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredNotes.map((note: any) => (
+          {filteredNotes.map((note: FlattenedNote) => (
             <div 
               key={note.id}
               className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all"
@@ -151,7 +161,7 @@ export default function NotesPulsePage() {
                     </span>
                     <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
                       <Calendar size={14} />
-                      <SafeDate date={note.created_at} />
+                      <SafeDate date={note.created_at || ''} />
                     </div>
                     {note.is_actionable && (
                       <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-lg">

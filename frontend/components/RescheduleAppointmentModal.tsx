@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 
 import { components } from '@/types/api';
 
@@ -45,28 +45,10 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, onSuccess,
     const end = new Date(start.getTime() + parseInt(duration) * 60000);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/crm/appointments/${appointment.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          start_time: start.toISOString(),
-          end_time: end.toISOString()
-        })
+      await apiClient.patch(`/crm/appointments/${appointment.id}`, { 
+        start_time: start.toISOString(),
+        end_time: end.toISOString()
       });
-
-      if (!res.ok) {
-        let errorMessage = 'Failed to reschedule appointment';
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.detail || errorMessage;
-        } catch {
-          errorMessage = `${res.status}: ${res.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
 
       onSuccess();
       onClose();

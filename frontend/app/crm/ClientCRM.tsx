@@ -5,7 +5,7 @@ import { UserPlus, Search, Phone, Mail, Calendar, Users, Edit2, Loader2, AlertCi
 import ClientDrawer from '@/components/v2/ClientDrawer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { components } from '@/types/api';
 
 type ClientResponse = components['schemas']['ClientResponse'];
@@ -31,10 +31,7 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
   const { data: business } = useQuery<BusinessProfileResponse>({
     queryKey: ['business'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return res.json();
+      return apiClient.get<BusinessProfileResponse>('/business/me');
     },
     initialData: initialBusiness,
     staleTime: 60 * 1000,
@@ -43,11 +40,7 @@ export default function ClientCRM({ initialClients, initialBusiness, token }: Cl
   const { data: clients = [], isFetching } = useQuery<ClientResponse[]>({
     queryKey: ['clients'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/crm/clients`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch clients');
-      return res.json();
+      return apiClient.get<ClientResponse[]>('/crm/clients');
     },
     initialData: initialClients,
     staleTime: 30 * 1000, // 30 seconds

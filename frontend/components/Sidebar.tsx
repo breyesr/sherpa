@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { 
   LayoutDashboard, 
   Users, 
@@ -45,15 +45,7 @@ function SidebarContent() {
     queryFn: async () => {
       if (!token) return null;
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          await logout();
-          router.push('/auth/login');
-          return null;
-        }
-        if (res.ok) return res.json();
+        return await apiClient.get<any>('/auth/me');
       } catch {
         // Silent fail
       }
@@ -67,15 +59,7 @@ function SidebarContent() {
     queryFn: async () => {
       if (!token) return null;
       try {
-        const res = await fetch(`${API_BASE_URL}/business/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          await logout();
-          router.push('/auth/login');
-          return { vertical_type: 'BASIC' };
-        }
-        if (res.ok) return res.json();
+        return await apiClient.get<any>('/business/me');
       } catch {
         // Silent fail
       }

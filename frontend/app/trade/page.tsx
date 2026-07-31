@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
   Package, 
@@ -15,7 +15,7 @@ import {
   LayoutGrid,
   ClipboardList
 } from 'lucide-react';
-import StoreModal from '@/components/StoreModal';
+import AccountDrawer from '@/components/v2/AccountDrawer';
 import CatalogDrawer from '@/components/v2/CatalogDrawer';
 import OrderDrawer from '@/components/v2/OrderDrawer';
 import { components } from '@/types/api';
@@ -40,11 +40,7 @@ export default function TradeHubPage() {
   const { data: stores = [] } = useQuery<StoreResponse[]>({
     queryKey: ['stores'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/stores`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch stores');
-      return res.json();
+      return await apiClient.get<StoreResponse[]>('/trade/stores');
     },
     enabled: !!token,
   });
@@ -53,11 +49,11 @@ export default function TradeHubPage() {
   const { data: categories = [] } = useQuery<CategoryResponse[]>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/categories`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<CategoryResponse[]>('/trade/categories');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -66,11 +62,11 @@ export default function TradeHubPage() {
   const { data: products = [] } = useQuery<ProductResponse[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/trade/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiClient.get<ProductResponse[]>('/trade/products');
+      } catch {
+        return [];
+      }
     },
     enabled: !!token,
   });
@@ -229,13 +225,9 @@ export default function TradeHubPage() {
         </div>
       </div>
 
-      {/* Modals */}
-      <StoreModal 
+      <AccountDrawer 
         isOpen={isAddStoreOpen}
         onClose={() => setIsAddStoreOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['stores'] });
-        }}
         token={token}
       />
 

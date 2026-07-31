@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { Info, Loader2 } from 'lucide-react';
 
 const TIMEZONES = [
@@ -60,12 +60,7 @@ export default function OnboardingPage() {
 
   const handleGoogleConnect = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/integrations/google/authorize`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
+      const data = await apiClient.get<{ authorization_url?: string }>('/integrations/google/authorize');
       if (data.authorization_url) {
         window.open(data.authorization_url, 'Connect Google Calendar', 'width=600,height=700');
       }
@@ -87,45 +82,20 @@ export default function OnboardingPage() {
     setError('');
 
     try {
-      const businessRes = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: businessName,
-          category: category,
-          contact_phone: phone,
-          timezone: timezone,
-        }),
+      await apiClient.post('/business/me', {
+        name: businessName,
+        category: category,
+        contact_phone: phone,
+        timezone: timezone,
       });
 
-      if (!businessRes.ok) throw new Error('Failed to create business profile');
-
-      const assistantRes = await fetch(`${API_BASE_URL}/business/me/assistant`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: assistantName,
-          tone: assistantTone,
-          greeting: greeting,
-        }),
+      await apiClient.patch('/business/me/assistant', {
+        name: assistantName,
+        tone: assistantTone,
+        greeting: greeting,
       });
 
-      if (!assistantRes.ok) throw new Error('Failed to update assistant configuration');
-
-      const trialRes = await fetch(`${API_BASE_URL}/business/me/activate-trial`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!trialRes.ok) throw new Error('Failed to activate trial');
+      await apiClient.post('/business/me/activate-trial');
 
       router.push('/');
     } catch (err: unknown) {

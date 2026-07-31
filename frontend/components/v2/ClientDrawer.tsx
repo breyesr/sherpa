@@ -1,36 +1,51 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trash2, AlertCircle, CheckCircle, Store, ClipboardList, ShoppingCart, ChevronRight, Sparkles, BrainCircuit, Loader2, UserCircle, Calendar, Users, Plus, X, Settings } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { Trash2, AlertCircle, CheckCircle, Store as StoreIcon, ClipboardList, ShoppingCart, ChevronRight, Sparkles, BrainCircuit, Loader2, UserCircle, Calendar, Users, Plus, X, Settings } from 'lucide-react';
+import { apiClient } from '@/lib/apiClient';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { clientFormSchema, ClientFormValues } from '@/lib/schemas/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import SafeDate from '../SafeDate';
-import { components } from '@/types/api';
-
-type ClientResponse = components['schemas']['ClientResponse'];
-type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+import { Client, Business, ClientDetail, CRMField, Store, Order, CustomerNote } from '@/types/models';
 import Drawer from './Drawer';
 import ManageFieldsDrawer from './ManageFieldsDrawer';
-
 interface ClientDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   token: string | null;
-  client?: ClientResponse | null; // If provided, we are in edit mode
-  business: BusinessProfileResponse;
+  client?: Client | null; // If provided, we are in edit mode
+  business: Business;
 }
 
 export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client, business }: ClientDrawerProps) {
   const queryClient = useQueryClient();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
-  const [birthday, setBirthday] = useState('');
-  const [gender, setGender] = useState('');
-  const [customFields, setCustomFields] = useState<Record<string, any>>({});
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<ClientFormValues>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      role: '',
+      birthday: '',
+      gender: '',
+      custom_fields: {},
+    },
+  });
+
+  const name = watch('name');
+  const customFields = watch('custom_fields') || {};
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -55,21 +70,25 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
   useEffect(() => {
     if (isOpen) {
       if (client) {
-        setName(client.name || '');
-        setPhone(client.phone || '');
-        setEmail(client.email || '');
-        setRole(client.role || '');
-        setBirthday(client.birthday || '');
-        setGender(client.gender || '');
-        setCustomFields((client.custom_fields as Record<string, any>) || {});
+        reset({
+          name: client.name || '',
+          phone: client.phone || '',
+          email: client.email || '',
+          role: client.role || '',
+          birthday: client.birthday || '',
+          gender: client.gender || '',
+          custom_fields: (client.custom_fields as Record<string, unknown>) || {},
+        });
       } else {
-        setName('');
-        setPhone('');
-        setEmail('');
-        setRole('');
-        setBirthday('');
-        setGender('');
-        setCustomFields({});
+        reset({
+          name: '',
+          phone: '',
+          email: '',
+          role: '',
+          birthday: '',
+          gender: '',
+          custom_fields: {},
+        });
       }
       setActiveTab('info');
       setAiReport(null);
@@ -80,24 +99,20 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
       setNewFieldOptions('');
       setNewFieldErr('');
     }
-  }, [client, isOpen]);
+  }, [client, isOpen, reset]);
 
   // Fetch Trade Context
-  const { data: tradeContext, isLoading: loadingTrade } = useQuery({
+  const { data: tradeContext, isLoading: loadingTrade } = useQuery<ClientDetail>({
     queryKey: ['client-trade-detail', client?.id],
-    queryFn: async () => {
-      if (!client) return null;
-      const res = await fetch(`${API_BASE_URL}/crm/clients/${client.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch client trade context');
-      return res.json();
-    },
+    queryFn: () => apiClient.get<ClientDetail>(`/crm/clients/${client!.id}`),
     enabled: !!client?.id && !!token && activeTab === 'trade' && isTrade,
   });
 
-  const handleCustomFieldChange = (key: string, value: any) => {
-    setCustomFields((prev) => ({ ...prev, [key]: value }));
+  const handleCustomFieldChange = (key: string, value: unknown) => {
+    setValue('custom_fields', {
+      ...customFields,
+      [key]: value,
+    }, { shouldValidate: true, shouldDirty: true });
   };
 
   const handleSaveNewField = async () => {
@@ -111,8 +126,8 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
       return;
     }
 
-    const existingConfig = business?.crm_config || [];
-    const isDuplicate = existingConfig.some((f: any) => f.key === cleanKey);
+    const existingConfig = (business?.crm_config as unknown as CRMField[]) || [];
+    const isDuplicate = existingConfig.some((f) => f.key === cleanKey);
     if (isDuplicate) {
       setNewFieldErr(`A field with key "${cleanKey}" already exists`);
       return;
@@ -121,7 +136,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
     setIsSavingNewField(true);
     setNewFieldErr('');
 
-    const newField: any = {
+    const newField: CRMField = {
       key: cleanKey,
       label: newFieldName.trim(),
       type: newFieldType
@@ -139,19 +154,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
     const newCrmConfig = [...existingConfig, newField];
 
     try {
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ crm_config: newCrmConfig })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: 'Failed to save field configuration' }));
-        throw new Error(errorData.detail || 'Failed to save field configuration');
-      }
+      await apiClient.patch<Business>('/business/me', { crm_config: newCrmConfig });
 
       // Success
       await queryClient.invalidateQueries({ queryKey: ['business'] });
@@ -159,8 +162,8 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
       setNewFieldName('');
       setNewFieldType('text');
       setNewFieldOptions('');
-    } catch (err: any) {
-      setNewFieldErr(err.message);
+    } catch (err) {
+      setNewFieldErr((err as Error).message);
     } finally {
       setIsSavingNewField(false);
     }
@@ -171,55 +174,44 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
     setGeneratingReport(true);
     setAiReport(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/trade/clients/${client.id}/${roleType}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to generate AI report');
-      const data = await res.json();
+      const data = await apiClient.post<{ report: string }>(`/trade/clients/${client.id}/${roleType}`);
       setAiReport(data.report);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setGeneratingReport(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: ClientFormValues) => {
     setLoading(true);
     setError('');
 
     try {
-      const url = client 
-        ? `${API_BASE_URL}/crm/clients/${client.id}`
-        : `${API_BASE_URL}/crm/clients`;
+      const path = client 
+        ? `/crm/clients/${client.id}`
+        : `/crm/clients`;
       
-      const method = client ? 'PATCH' : 'POST';
+      const payload = { 
+        name: data.name, 
+        phone: data.phone, 
+        email: data.email, 
+        role: data.role,
+        birthday: data.birthday,
+        gender: data.gender,
+        custom_fields: data.custom_fields 
+      };
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          name, 
-          phone, 
-          email, 
-          role,
-          birthday: birthday || null,
-          gender,
-          custom_fields: customFields 
-        })
-      });
-
-      if (!res.ok) throw new Error(`Failed to ${client ? 'update' : 'create'} client`);
+      if (client) {
+        await apiClient.patch<Client>(path, payload);
+      } else {
+        await apiClient.post<Client>(path, payload);
+      }
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -232,21 +224,12 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
 
     try {
       const updatedFields = { ...client.custom_fields, needs_review: false };
-      const res = await fetch(`${API_BASE_URL}/crm/clients/${client.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ custom_fields: updatedFields })
-      });
-
-      if (!res.ok) throw new Error('Failed to resolve alert');
+      await apiClient.patch<Client>(`/crm/clients/${client.id}`, { custom_fields: updatedFields });
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setResolving(false);
     }
@@ -259,19 +242,12 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/crm/clients/${client.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) throw new Error('Failed to delete client');
+      await apiClient.delete<void>(`/crm/clients/${client.id}`);
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setDeleting(false);
     }
@@ -342,14 +318,14 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
 
         {/* Tab Content */}
         {activeTab === 'info' ? (
-          <form id="client-form" onSubmit={handleSubmit} className="space-y-6">
-            {(client?.custom_fields as any)?.needs_review && (
+          <form id="client-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+            {!!(client?.custom_fields as Record<string, unknown>)?.needs_review && (
               <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3">
                 <AlertCircle className="text-red-500 mt-0.5 shrink-0" size={18} />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-red-800">Review Requested by AI</p>
                   <p className="text-xs text-red-600 mt-1">
-                    Reason: {(client?.custom_fields as any)?.review_reason || 'Manual intervention needed'}
+                    Reason: {((client?.custom_fields as Record<string, unknown>)?.review_reason as string) || 'Manual intervention needed'}
                   </p>
                   <button
                     type="button"
@@ -375,9 +351,11 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                 type="text" 
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
                 placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...register('name')}
               />
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1 font-bold">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -387,9 +365,11 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                 type="tel" 
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
                 placeholder="+1 234 567 890"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                {...register('phone')}
               />
+              {errors.phone && (
+                <p className="text-red-500 text-xs mt-1 font-bold">{errors.phone.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -398,9 +378,11 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                 type="email" 
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
                 placeholder="john@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register('email')}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1 font-bold">{errors.email.message}</p>
+              )}
             </div>
 
             {/* B2B / Personal Details Section */}
@@ -417,11 +399,13 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                         type="text" 
                         className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10 text-sm font-medium"
                         placeholder="e.g. Owner, Manager"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
+                        {...register('role')}
                       />
                       <UserCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
+                    {errors.role && (
+                      <p className="text-red-500 text-xs mt-1 font-bold">{errors.role.message}</p>
+                    )}
                   </div>
                 )}
 
@@ -431,28 +415,39 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                     <input 
                       type="date" 
                       className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10 text-sm font-medium"
-                      value={birthday}
-                      onChange={(e) => setBirthday(e.target.value)}
+                      {...register('birthday')}
                     />
                     <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
+                  {errors.birthday && (
+                    <p className="text-red-500 text-xs mt-1 font-bold">{errors.birthday.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Gender</label>
                   <div className="relative">
-                    <select 
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10 appearance-none text-sm font-medium"
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                    >
-                      <option value="">Select gender</option>
-                      <option value="Masculino">Masculino</option>
-                      <option value="Femenino">Femenino</option>
-                      <option value="Otro">Otro</option>
-                    </select>
+                    <Controller
+                      name="gender"
+                      control={control}
+                      render={({ field }) => (
+                        <select 
+                          className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all pl-10 appearance-none text-sm font-medium"
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                        >
+                          <option value="">Select gender</option>
+                          <option value="Masculino">Masculino</option>
+                          <option value="Femenino">Femenino</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+                      )}
+                    />
                     <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
+                  {errors.gender && (
+                    <p className="text-red-500 text-xs mt-1 font-bold">{errors.gender.message}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -517,7 +512,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                       <select 
                         className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-xs font-medium"
                         value={newFieldType}
-                        onChange={(e) => setNewFieldType(e.target.value as any)}
+                        onChange={(e) => setNewFieldType(e.target.value as CRMField['type'])}
                       >
                         <option value="text">Text</option>
                         <option value="number">Number</option>
@@ -581,7 +576,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
 
               {business?.crm_config && business.crm_config.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6">
-                  {business.crm_config.map((field: any) => (
+                  {(business.crm_config as unknown as CRMField[]).map((field) => (
                     <div key={field.key} className="space-y-2">
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">{field.label}</label>
                       {field.type === 'boolean' ? (
@@ -598,7 +593,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                         <input 
                           type="date"
                           className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-sm"
-                          value={customFields[field.key] || ''}
+                          value={(customFields[field.key] as string) || ''}
                           onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
                         />
                       ) : field.type === 'textarea' ? (
@@ -606,13 +601,13 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                           rows={3}
                           className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-sm resize-none"
                           placeholder={`Enter ${field.label.toLowerCase()}`}
-                          value={customFields[field.key] || ''}
+                          value={(customFields[field.key] as string) || ''}
                           onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
                         />
                       ) : field.type === 'dropdown' ? (
                         <select 
                           className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-sm appearance-none"
-                          value={customFields[field.key] || ''}
+                          value={(customFields[field.key] as string) || ''}
                           onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
                         >
                           <option value="">Select...</option>
@@ -623,7 +618,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                       ) : field.type === 'multiselect' ? (
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           {field.options?.map((opt: string) => {
-                            const currentSelection = Array.isArray(customFields[field.key]) ? customFields[field.key] : [];
+                            const currentSelection = Array.isArray(customFields[field.key]) ? (customFields[field.key] as string[]) : [];
                             const isChecked = currentSelection.includes(opt);
                             return (
                               <label key={opt} className="flex items-center gap-2 cursor-pointer group p-2 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200">
@@ -652,7 +647,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                           type={field.type === 'number' ? 'number' : 'text'} 
                           className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-sm"
                           placeholder={`Enter ${field.label.toLowerCase()}`}
-                          value={customFields[field.key] || ''}
+                          value={(customFields[field.key] as string | number) || ''}
                           onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
                         />
                       )}
@@ -684,11 +679,11 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                 {/* Stores */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <Store size={14} className="text-blue-500" />
+                    <StoreIcon size={14} className="text-blue-500" />
                     Linked Stores ({tradeContext?.stores?.length || 0})
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {tradeContext?.stores?.map((store: any) => (
+                    {tradeContext?.stores?.map((store: Store) => (
                       <Link 
                         key={store.id} 
                         href={`/trade/stores/${store.id}`}
@@ -716,7 +711,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                     Recent Orders ({tradeContext?.orders?.length || 0})
                   </h3>
                   <div className="space-y-2">
-                    {tradeContext?.orders?.map((order: any) => (
+                    {tradeContext?.orders?.map((order: Order) => (
                       <div key={order.id} className="p-3 bg-white border border-gray-100 rounded-xl flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
@@ -747,7 +742,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                     Customer Context ({tradeContext?.trade_notes?.length || 0})
                   </h3>
                   <div className="space-y-3">
-                    {tradeContext?.trade_notes?.map((note: any) => (
+                    {tradeContext?.trade_notes?.map((note: CustomerNote) => (
                       <div key={note.id} className="p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex gap-2">

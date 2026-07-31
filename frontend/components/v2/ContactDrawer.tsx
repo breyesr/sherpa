@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import Drawer from './Drawer';
 import { 
   User, 
@@ -90,27 +90,22 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
     if (isOpen && clientId) {
       const fetchClient = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/crm/clients/${clientId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            // Only update fields that might not be in initialData
-            setFormData(prev => ({
-              ...prev,
-              name: data.name || prev.name,
-              phone: data.phone || prev.phone,
-              email: data.email || prev.email,
-              role: data.role || prev.role,
-              birthday: data.birthday || prev.birthday,
-              gender: data.gender || prev.gender,
-              is_prospect: data.is_prospect ?? prev.is_prospect,
-              custom_fields: {
-                preferred_comms: data.custom_fields?.preferred_comms || prev.custom_fields.preferred_comms,
-                comm_style: data.custom_fields?.comm_style || prev.custom_fields.comm_style
-              }
-            }));
-          }
+          const data = await apiClient.get<any>(`/crm/clients/${clientId}`);
+          // Only update fields that might not be in initialData
+          setFormData(prev => ({
+            ...prev,
+            name: data.name || prev.name,
+            phone: data.phone || prev.phone,
+            email: data.email || prev.email,
+            role: data.role || prev.role,
+            birthday: data.birthday || prev.birthday,
+            gender: data.gender || prev.gender,
+            is_prospect: data.is_prospect ?? prev.is_prospect,
+            custom_fields: {
+              preferred_comms: data.custom_fields?.preferred_comms || prev.custom_fields.preferred_comms,
+              comm_style: data.custom_fields?.comm_style || prev.custom_fields.comm_style
+            }
+          }));
         } catch (err) {
           console.error('Failed to fetch contact for background sync', err);
         }
@@ -124,11 +119,9 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
     setLoading(true);
     setError('');
 
-    const url = isEditing 
-      ? `${API_BASE_URL}/crm/clients/${clientId}` 
-      : `${API_BASE_URL}/crm/clients`;
-    
-    const method = isEditing ? 'PATCH' : 'POST';
+    const path = isEditing 
+      ? `/crm/clients/${clientId}` 
+      : `/crm/clients`;
 
     // Clean payload: Convert empty strings to null for nullable fields
     const payload = {
@@ -142,18 +135,10 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
     };
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to save contact');
+      if (isEditing) {
+        await apiClient.patch<any>(path, payload);
+      } else {
+        await apiClient.post<any>(path, payload);
       }
 
       queryClient.invalidateQueries({ queryKey: ['clients'] });

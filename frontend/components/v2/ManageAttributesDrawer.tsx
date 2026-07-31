@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trash2, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '@/config';
+import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { components } from '@/types/api';
 
@@ -54,15 +54,7 @@ export default function ManageAttributesDrawer({ isOpen, onClose, business, toke
         }
       };
 
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ features_config: newFeaturesConfig })
-      });
-      if (!res.ok) throw new Error('Failed to update attributes');
+      await apiClient.patch<any>('/business/me', { features_config: newFeaturesConfig });
       
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       onClose();
@@ -89,15 +81,7 @@ export default function ManageAttributesDrawer({ isOpen, onClose, business, toke
         }
       };
       
-      const res = await fetch(`${API_BASE_URL}/business/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ features_config: newFeaturesConfig })
-      });
-      if (!res.ok) throw new Error('Failed to delete attribute');
+      await apiClient.patch<any>('/business/me', { features_config: newFeaturesConfig });
       
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       setFields(updatedFields);
