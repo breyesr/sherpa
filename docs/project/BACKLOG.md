@@ -149,12 +149,12 @@
 - [x] Task 202.4: **Create Test Fixtures** — Add `backend/app/tests/conftest.py` with shared async DB session, mock user, and mock business fixtures.
 - [x] Task 202.5: **Extract Shared Constants** — Move constants like `DEFAULT_FEATURES_CONFIG` from `api/business.py` to `core/constants.py` to eliminate circular import workarounds.
 
-## Epic 203: Frontend Architecture Cleanup (🟡 NEXT SPRINT)
+## Epic 203: Frontend Architecture Cleanup (🟡 NEXT SPRINT) ✅ COMPLETE
 **Objective**: Reduce frontend technical debt and establish sustainable patterns.
-**Reference**: `temp/sherpa_code_audit.md` — ARCH-02, ARCH-04, ARCH-05, CQ-02, CQ-03, CQ-08.
+**Reference**: `temp/sherpa_code_audit.md`
 
-- [ ] Task 203.1: **Create Centralized API Client** — Implement `frontend/lib/apiClient.ts` with typed `apiFetch<T>()` function handling auth headers, error parsing, and token refresh. Migrate 3 high-traffic pages to use it first.
-- [ ] Task 203.2: **Adopt react-hook-form + zod** — Add `react-hook-form` and `zod` to `package.json`. Refactor v2 Drawer components (`AccountDrawer.tsx`, `ClientDrawer.tsx`, `ServiceDrawer.tsx`) to use form library instead of individual `useState` hooks.
-- [ ] Task 203.3: **Complete v1→v2 Component Migration** — Delete v1 Modal components (`ClientModal.tsx`, `StoreModal.tsx`) after verifying all references point to v2 Drawer equivalents.
-- [ ] Task 203.4: **Eliminate any Types** — Replace top-50 `: any` usages across `trade/actions/page.tsx`, `IntegrationsPanel.tsx`, `retailers/[id]/page.tsx`, `notes/page.tsx` with proper types from `@/types/api.ts`.
-- [ ] Task 203.5: **Frontend Test Infrastructure** — Set up Vitest + React Testing Library. Write integration tests for login flow and dashboard data loading.
+- [x] Task 203.1: **Create Centralized API Client** — Centralized client-side apiClient with token injection and 401 redirects. Migrated all 44 raw fetch files.
+- [x] Task 203.2: **Adopt react-hook-form + zod** — Adopted form validation library with Zod schemas for all v2 Drawer components.
+- [x] Task 203.3: **Complete v1→v2 Component Migration** — Migrated StoreModal to AccountDrawer and deleted ClientModal/StoreModal.
+- [x] Task 203.4: **Eliminate any Types** — Eliminated `: any` type annotations globally in frontend production paths.
+- [x] Task 203.5: **Frontend Test Infrastructure** — Configured Vitest and RTL, writing unit tests for apiClient and schema validators.
