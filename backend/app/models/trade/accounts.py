@@ -1,16 +1,13 @@
-"""
-Trade Domain Relational Database Models.
-Defines SQL Alchemy models for stores, orders, items, products, categories, actions, and custom trade attributes.
-"""
-
-from typing import Optional, List, Dict, Any
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum, Text, Float, Integer, Table, Date, Index, Boolean, Numeric
+from typing import Optional
+from datetime import datetime
 import enum
+from sqlalchemy import (
+    Column, String, ForeignKey, DateTime, JSON, Enum as SQLEnum,
+    Text, Float, Integer, Table, Date, Index, Boolean
+)
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
-from datetime import datetime
-from pgvector.sqlalchemy import Vector
 
 class StoreNoteType(str, enum.Enum):
     RISK = "risk"
@@ -32,106 +29,6 @@ class DataSourceType(str, enum.Enum):
     MANUAL = "manual"
     AI_EXTRACTED = "ai_extracted"
     INTEGRATION = "integration"
-
-class OrderStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
-
-class Category(Base):
-    __tablename__ = "categories"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    
-    # Draft Hardening Fields
-    category_type = Column(String, nullable=True, index=True) # e.g., 'Beverage', 'Snack'
-    external_id = Column(String, nullable=True, index=True)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business_profile = relationship("BusinessProfile", back_populates="categories")
-    products = relationship("Product", back_populates="category", cascade="all, delete-orphan")
-
-    def get_semantic_summary(self) -> str:
-        summary = f"Categoría: {self.name}."
-        if self.category_type:
-            summary += f" Tipo: {self.category_type}."
-        if self.description:
-            summary += f" Descripción: {self.description}."
-        return summary
-
-    def get_knowledge_metadata(self) -> dict:
-        return {
-            "name": self.name,
-            "category_type": self.category_type,
-            "external_id": self.external_id
-        }
-
-class Product(Base):
-    __tablename__ = "products"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    category_id = Column(String, ForeignKey("categories.id"), nullable=False)
-    name = Column(String, nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    price = Column(Float, nullable=False, default=0.0)
-    sku = Column(String, nullable=True, index=True)
-    
-    # Draft Hardening Fields
-    product_type = Column(String, nullable=True, index=True)
-    brand = Column(String, nullable=True, index=True)
-    unit_of_measure = Column(String, nullable=True) # e.g., 'kg', 'unit', 'box'
-    external_id = Column(String, nullable=True, index=True)
-    wholesale_threshold = Column(Integer, nullable=True)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    category = relationship("Category", back_populates="products")
-
-    def get_semantic_summary(self) -> str:
-        summary = f"Producto: {self.name}."
-        if self.brand:
-            summary += f" Marca: {self.brand}."
-        if self.product_type:
-            summary += f" Tipo: {self.product_type}."
-        if self.sku:
-            summary += f" SKU: {self.sku}."
-        if self.unit_of_measure:
-            summary += f" Unidad: {self.unit_of_measure}."
-        if self.price:
-            summary += f" Precio: {self.price}."
-        if self.wholesale_threshold is not None:
-            summary += f" Umbral mayorista: {self.wholesale_threshold}."
-        if self.category:
-            summary += f" {self.category.get_semantic_summary()}"
-        return summary
-
-    def get_knowledge_metadata(self) -> dict:
-        return {
-            "name": self.name,
-            "brand": self.brand,
-            "sku": self.sku,
-            "product_type": self.product_type,
-            "wholesale_threshold": self.wholesale_threshold
-        }
-
-class PostalCode(Base):
-    __tablename__ = "postal_codes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    zip_code = Column(String(10), index=True, nullable=False)
-    colonia = Column(String, nullable=False)
-    municipality = Column(String, nullable=False)
-    city = Column(String, nullable=True)
-    state = Column(String, nullable=False)
-
 
 class Store(Base):
     __tablename__ = "stores"
@@ -162,7 +59,7 @@ class Store(Base):
     prospect_segment = Column(String, default="wholesale", server_default="wholesale", nullable=False, index=True)
     delivery_zip_codes = Column(JSON, nullable=True, default=list)
     
-    # Epic 138 Referral & Value Tracking Columns
+    # Referral & Value Tracking Columns
     assigned_store_id = Column(String, ForeignKey("stores.id"), nullable=True)
     requested_product_id = Column(String, ForeignKey("products.id"), nullable=True)
     requested_quantity = Column(Integer, nullable=True)
@@ -181,7 +78,7 @@ class Store(Base):
     notes = relationship("StoreNote", back_populates="store", cascade="all, delete-orphan")
     intelligence = relationship("AccountIntelligence", back_populates="store", uselist=False, cascade="all, delete-orphan")
 
-    # Epic 138 Referral Relationships
+    # Referral Relationships
     assigned_store = relationship("Store", remote_side="Store.id", backref="referred_prospects")
     requested_product = relationship("Product")
 
@@ -289,7 +186,6 @@ class StoreNote(Base):
     execution_level = Column(String, nullable=True) # e.g., 'high', 'medium', 'low'
     
     # Action Tracking & Future AI Triggers
-    # note_type: 'general', 'marketing', 'commercial', 'threat', 'anniversary'
     note_type = Column(String, nullable=False, default="general", index=True)
     is_actionable = Column(Boolean, default=False, index=True)
     
@@ -297,11 +193,7 @@ class StoreNote(Base):
     source_type = Column(SQLEnum(DataSourceType), nullable=False, default=DataSourceType.MANUAL, index=True)
     is_verified = Column(Boolean, default=True, index=True) # Defaults to True for manual, False for AI
     
-    # Structured metadata for the "Active AI" to eventually digest
-    # Stores: { "objective": "...", "outcome": "...", "items_requested": [...], "competitor_move": "..." }
     action_metadata = Column(JSON, nullable=True, default=dict)
-    
-    # Optional: Author of the note (User ID)
     author_id = Column(String, ForeignKey("users.id"), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -349,73 +241,6 @@ class StoreNote(Base):
                 "segment": self.store.segment
             })
         return meta
-
-class Order(Base):
-    __tablename__ = "orders"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
-    client_id = Column(String, ForeignKey("clients.id"), nullable=True) # Linked to Customer
-    
-    status = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
-    total_amount = Column(Float, nullable=False, default=0.0)
-    notes = Column(Text, nullable=True)
-    
-    # Provenance & Verification
-    source_type = Column(SQLEnum(DataSourceType), nullable=False, default=DataSourceType.MANUAL, index=True)
-    is_verified = Column(Boolean, default=True, index=True)
-    
-    # Draft Hardening Fields
-    delivery_id = Column(String, nullable=True, index=True)
-    delivery_date = Column(Date, nullable=True)
-    payment_method = Column(String, nullable=True)
-    shipping_address = Column(String, nullable=True)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business_profile = relationship("BusinessProfile")
-    store = relationship("Store")
-    client = relationship("Client")
-    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
-
-    def get_semantic_summary(self) -> str:
-        summary = f"Orden ID: {self.id}. Estado: {self.status}. Total: {self.total_amount}."
-        if self.delivery_id:
-            summary += f" ID Entrega: {self.delivery_id}."
-        if self.store:
-            summary += f" Tienda: {self.store.name}."
-        if self.client:
-            summary += f" Cliente: {self.client.name}."
-        return summary
-
-    def get_knowledge_metadata(self) -> dict:
-        meta = {
-            "status": self.status.value if hasattr(self.status, 'value') else self.status,
-            "total_amount": self.total_amount,
-            "delivery_id": self.delivery_id
-        }
-        if self.store:
-            meta["store_name"] = self.store.name
-        if self.client:
-            meta["client_name"] = self.client.name
-        return meta
-
-class OrderItem(Base):
-    __tablename__ = "order_items"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    order_id = Column(String, ForeignKey("orders.id"), nullable=False)
-    product_id = Column(String, ForeignKey("products.id"), nullable=False)
-    
-    quantity = Column(Integer, nullable=False, default=1)
-    unit_price = Column(Float, nullable=False)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    order = relationship("Order", back_populates="items")
-    product = relationship("Product")
 
 class Competitor(Base):
     __tablename__ = "competitors"
@@ -528,161 +353,6 @@ class CustomerNote(Base):
                 })
         return meta
 
-class ActionCategory(str, enum.Enum):
-    MARKETING = "MARKETING"
-    COMMERCIAL = "COMMERCIAL"
-
-class StoreActionObjective(Base):
-    __tablename__ = "store_action_objectives"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    
-    name = Column(String, nullable=False, index=True)
-    label = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business_profile = relationship("BusinessProfile")
-
-class ActionStatus(str, enum.Enum):
-    PROPOSED = "proposed"
-    PENDING = "pending"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-
-class ActionTemplate(Base):
-    __tablename__ = "action_templates"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    
-    name = Column(String, nullable=False)
-    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
-    default_unit = Column(String, nullable=False) # e.g. "exchanges", "participants"
-    objective = Column(String, nullable=True, index=True)
-    description = Column(Text, nullable=True)
-    details = Column(JSON, nullable=True, default=dict)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business_profile = relationship("BusinessProfile")
-
-class StoreAction(Base):
-    __tablename__ = "store_actions"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
-    author_id = Column(String, ForeignKey("users.id"), nullable=True)
-    assigned_to_id = Column(String, ForeignKey("clients.id"), nullable=True)
-    template_id = Column(String, ForeignKey("action_templates.id"), nullable=True)
-    
-    category = Column(SQLEnum(ActionCategory), nullable=False, index=True)
-    objective = Column(String, nullable=False, index=True)
-    impact_level = Column(String, nullable=True)
-    note_source_id = Column(String, ForeignKey("store_notes.id"), nullable=True)
-    details = Column(JSON, nullable=True, default=dict)
-    
-    # Execution & Results Columns
-    status = Column(SQLEnum(ActionStatus), default=ActionStatus.PROPOSED, nullable=False, index=True)
-    due_date = Column(DateTime, nullable=True)
-    resolution_notes = Column(Text, nullable=True)
-    resolved_at = Column(DateTime, nullable=True)
-    
-    result_value = Column(Numeric(10, 2), nullable=True)
-    result_unit = Column(String, nullable=True)
-    revenue_impact = Column(Numeric(10, 2), nullable=True)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business_profile = relationship("BusinessProfile")
-    store = relationship("Store")
-    author = relationship("User", foreign_keys=[author_id])
-    assigned_to = relationship("Client", foreign_keys=[assigned_to_id])
-    template = relationship("ActionTemplate")
-    note_source = relationship("StoreNote")
-
-    __table_args__ = (
-        Index('ix_store_actions_business_category', 'business_id', 'category'),
-        Index('ix_store_actions_business_objective', 'business_id', 'objective'),
-        Index('ix_store_actions_business_store_created', 'business_id', 'store_id', 'created_at'),
-        Index('ix_store_actions_assigned_status', 'assigned_to_id', 'status'),
-    )
-
-class AccountIntelligence(Base):
-    """
-    The 'Fat Table' for pre-calculated Account Dossiers (Epic 107).
-    Stores synthesized strategy, playbooks, and triggers for instant retrieval.
-    """
-    __tablename__ = "account_intelligence"
-
-    id = Column(String, primary_key=True, index=True, default=uuid7str)
-    business_id = Column(String, ForeignKey("business_profiles.id"), nullable=False)
-    store_id = Column(String, ForeignKey("stores.id"), nullable=False, unique=True)
-    
-    # The full synthesized dossier (Vital Signs, Matrix, Threats, Triggers)
-    dossier_json = Column(JSON, nullable=True, default=dict)
-    
-    # Performance & Freshness tracking
-    version = Column(Integer, default=1)
-    last_synthesized_at = Column(DateTime, default=datetime.utcnow)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    business_profile = relationship("BusinessProfile")
-    store = relationship("Store", back_populates="intelligence")
-
-    def get_semantic_summary(self) -> str:
-        """Convert the dossier JSON into a readable summary for vectorization."""
-        d = self.dossier_json or {}
-        summary = [f"Resumen de Inteligencia para la cuenta: {getattr(self.store, 'name', 'Desconocida')}"]
-        
-        # If the dossier has a 'content' key (Markdown), use it as the primary summary
-        if "content" in d:
-            summary.append(d["content"])
-
-        # Vital Signs
-        if "vital_signs" in d:
-            vs = d["vital_signs"]
-            summary.append(f"Estado: {vs.get('status', 'N/A')}. Salud: {vs.get('health_score', 'N/A')}/10.")
-        
-        # Playbook
-        if "playbook" in d:
-            p = d["playbook"]
-            summary.append(f"Estrategia Comercial: {p.get('commercial_strategy', 'N/A')}")
-            summary.append(f"Playbook de Ventas: {p.get('sales_playbook', 'N/A')}")
-        
-        # Triggers & Threats
-        if "threats" in d:
-            summary.append(f"Amenazas Detectadas: {', '.join(d['threats'])}")
-        
-        if "triggers" in d:
-            summary.append(f"Triggers Activos: {', '.join(d['triggers'])}")
-
-        return "\n".join(summary)
-
-    def get_knowledge_metadata(self) -> dict:
-        """Return metadata for filtering."""
-        return {
-            "store_id": self.store_id,
-            "version": self.version,
-            "last_synthesized": self.last_synthesized_at.isoformat() if self.last_synthesized_at else None,
-            "region": getattr(self.store, 'region', None),
-            "segment": getattr(self.store, 'segment', None)
-        }
-
-    __table_args__ = (
-        Index('ix_account_intel_business_store', 'business_id', 'store_id'),
-    )
-
-
 class ClientStoreHistory(Base):
     __tablename__ = "client_store_history"
 
@@ -697,6 +367,3 @@ class ClientStoreHistory(Base):
     old_store = relationship("Store", foreign_keys=[old_store_id])
     new_store = relationship("Store", foreign_keys=[new_store_id])
     changed_by = relationship("User")
-
-
-
