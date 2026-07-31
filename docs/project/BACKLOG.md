@@ -143,11 +143,11 @@
 **Objective**: Reduce technical debt and improve maintainability of the backend codebase.
 **Reference**: `temp/sherpa_code_audit.md` — ARCH-01, ARCH-03, ARCH-06 through ARCH-08.
 
-- [ ] Task 202.1: **Split trade.py API Router** — Break `backend/app/api/trade.py` (1,271 lines) into sub-routers: `api/trade/stores.py`, `api/trade/orders.py`, `api/trade/actions.py`, `api/trade/products.py`. Keep `api/trade/__init__.py` as the aggregator.
-- [ ] Task 202.2: **Split trade.py Models** — Break `backend/app/models/trade.py` (697 lines) into `models/store.py`, `models/order.py`, `models/product.py`, `models/action.py`. Keep `models/trade.py` as re-export hub for backward compatibility.
-- [ ] Task 202.3: **Organize Backend Scripts** — Move 34+ one-off scripts from `backend/` root into `backend/scripts/{diagnostics,migrations,repairs,seeders}/`.
-- [ ] Task 202.4: **Create Test Fixtures** — Add `backend/app/tests/conftest.py` with shared async DB session, mock user, and mock business fixtures.
-- [ ] Task 202.5: **Extract Shared Constants** — Move constants like `DEFAULT_FEATURES_CONFIG` from `api/business.py` to `core/constants.py` to eliminate circular import workarounds.
+- [x] Task 202.1: **Split trade.py API Router** — Break `backend/app/api/trade.py` (1,271 lines) into sub-routers: `api/trade/stores.py`, `api/trade/orders.py`, `api/trade/actions.py`, `api/trade/products.py`. Keep `api/trade/__init__.py` as the aggregator.
+- [x] Task 202.2: **Split trade.py Models** — Break `backend/app/models/trade.py` (697 lines) into sub-modules under `models/trade/`. Keep `models/trade/__init__.py` as the re-export hub for backward compatibility.
+- [x] Task 202.3: **Organize Backend Scripts** — Move 34+ one-off scripts from `backend/` root into `backend/scripts/{data_ops, diagnostics, dev_tools, manual_tests}/`.
+- [x] Task 202.4: **Create Test Fixtures** — Add `backend/app/tests/conftest.py` with shared async DB session, mock user, and mock business fixtures.
+- [x] Task 202.5: **Extract Shared Constants** — Move constants like `DEFAULT_FEATURES_CONFIG` from `api/business.py` to `core/constants.py` to eliminate circular import workarounds.
 
 ## Epic 203: Frontend Architecture Cleanup (🟡 NEXT SPRINT)
 **Objective**: Reduce frontend technical debt and establish sustainable patterns.
