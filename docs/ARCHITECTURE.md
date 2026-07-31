@@ -23,7 +23,8 @@ Sherpa is a B2B Sales Intelligence platform monorepo (`/backend` + `/frontend`).
 ```
 
 ## Backend Primary Modules
-- **`app/api/trade.py`**: B2B Store, Order, Product, & Action CRUD endpoints.
+- **`app/api/trade/`**: Package containing B2B sub-routers (stores, products, orders, actions).
+- **`app/models/trade/`**: Package containing B2B database models (catalog, accounts, orders, actions).
 - **`app/api/business.py`**: Business profile, feature flags, stats & live test chat.
 - **`app/api/whatsapp.py` / `telegram.py`**: Inbound webhook routing & messaging triggers.
 - **`app/api/crm.py`**: B2C Client management & custom CRM fields.

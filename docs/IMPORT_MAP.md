@@ -119,18 +119,45 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/services/identity_resolver`
 - Imports `backend/app/services/prospect_qualifier`
 
-### `backend/app/api/trade.py`
+### `backend/app/api/trade/actions.py`
 - Imports `backend/app/api/auth`
-- Imports `backend/app/core/ai_service`
-- Imports `backend/app/core/constants`
+- Imports `backend/app/api/trade`
 - Imports `backend/app/core/database`
+- Imports `backend/app/models/trade`
+- Imports `backend/app/models/user`
+- Imports `backend/app/schemas/trade`
+
+### `backend/app/api/trade/helpers.py`
+- Imports `backend/app/core/constants`
 - Imports `backend/app/models/business`
+- Imports `backend/app/models/user`
+
+### `backend/app/api/trade/orders.py`
+- Imports `backend/app/api/auth`
+- Imports `backend/app/api/trade`
+- Imports `backend/app/core/database`
+- Imports `backend/app/models/trade`
+- Imports `backend/app/models/user`
+- Imports `backend/app/schemas/trade`
+
+### `backend/app/api/trade/products.py`
+- Imports `backend/app/api/auth`
+- Imports `backend/app/api/trade`
+- Imports `backend/app/core/database`
+- Imports `backend/app/models/trade`
+- Imports `backend/app/models/user`
+- Imports `backend/app/schemas/trade`
+
+### `backend/app/api/trade/stores.py`
+- Imports `backend/app/api/auth`
+- Imports `backend/app/api/trade`
+- Imports `backend/app/core/ai_service`
+- Imports `backend/app/core/database`
 - Imports `backend/app/models/crm`
 - Imports `backend/app/models/trade`
 - Imports `backend/app/models/user`
 - Imports `backend/app/schemas/trade`
 - Imports `backend/app/services/graphrag`
-- Imports `backend/app/tasks/knowledge`
 
 ### `backend/app/api/whatsapp.py`
 - Imports `backend/app/api/auth`
@@ -255,8 +282,18 @@ Auto-generated reference showing internal app dependencies across backend module
 ### `backend/app/models/system.py`
 - Imports `backend/app/core/database`
 
-### `backend/app/models/trade.py`
+### `backend/app/models/trade/accounts.py`
 - Imports `backend/app/core/database`
+
+### `backend/app/models/trade/actions.py`
+- Imports `backend/app/core/database`
+
+### `backend/app/models/trade/catalog.py`
+- Imports `backend/app/core/database`
+
+### `backend/app/models/trade/orders.py`
+- Imports `backend/app/core/database`
+- Imports `backend/app/models/trade/accounts`
 
 ### `backend/app/models/user.py`
 - Imports `backend/app/core/database`
@@ -398,6 +435,11 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/models/crm`
 - Imports `backend/app/models/integration`
 
+### `backend/app/tests/conftest.py`
+- Imports `backend/app/models/business`
+- Imports `backend/app/models/crm`
+- Imports `backend/app/models/integration`
+
 ### `backend/app/tests/test_actions.py`
 - Imports `backend/app/schemas/trade`
 
@@ -485,7 +527,6 @@ Auto-generated reference showing internal app dependencies across backend module
 - Imports `backend/app/services/messaging/twilio_engine`
 
 ### `backend/app/tests/test_provisioner.py`
-- Imports `backend/app/core/encryption`
 - Imports `backend/app/models/integration`
 - Imports `backend/app/services/messaging/provisioner`
 
