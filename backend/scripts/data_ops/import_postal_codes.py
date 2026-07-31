@@ -5,7 +5,7 @@ from sqlalchemy import insert, delete
 from app.core.database import SessionLocal
 from app.models.trade import PostalCode
 
-CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../temp/mexico_geography_database.csv")
+CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../temp/mexico_geography_database.csv")
 CHUNK_SIZE = 5000
 
 async def import_postal_codes():
