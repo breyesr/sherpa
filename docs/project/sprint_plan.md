@@ -76,10 +76,12 @@ This document outlines the execution roadmap for transitioning Sherpa into a mod
 - [x] **Task 164.4 (FE):** Add "Verified/Unverified" status badges to listing and detail views.
 - [x] **Task 164.5 (FE):** Implement "Verify Prospect & Orders" button on details page.
 
+## Sprint 9: UX Hardening & Operational Gaps (NEXT)
+**Goal:** Address operational feedback gaps across messaging audits, order status regression, category editing, and product metadata.
 
-
-
-
-
-
+- [ ] **Task 9.1 (BE/FE):** Implement Inbox Audit Tracing for B2C/Scheduler chats.
+- [ ] **Task 9.2 (FE):** Implement Order Status revert action in detail pages.
+- [ ] **Task 9.3 (BE):** Create `PATCH /trade/categories/{id}` API.
+- [ ] **Task 9.4 (FE):** Implement edit category actions and CatalogDrawer integration.
+- [ ] **Task 9.5 (FE):** Add unit of measure field to the product CatalogDrawer form.
 

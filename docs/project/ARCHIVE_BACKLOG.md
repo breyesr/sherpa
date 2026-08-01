@@ -827,3 +827,44 @@ Completed epics moved from `docs/project/BACKLOG.md` on 2026-07-03.
 - [x] Task 167.2: **Integrate ServiceDrawer in Services Page**.
 - [x] Task 167.3: **Implement Service Custom Attributes Configuration**.
 - [x] Task 167.4: **Validation & Verification**.
+
+## Epic 200: Security Hardening
+- [x] Task 200.1: **Remove Default SECRET_KEY** — Remove the fallback string `"supersecretkey_please_change_in_production"` from `backend/app/core/config.py`. Make `SECRET_KEY` a required field with no default.
+- [x] Task 200.2: **Authenticate Data Gateway Sync** — Add `Depends(get_current_user)` to `POST /sync` in `backend/app/api/data_gateway.py:92`.
+- [x] Task 200.3: **Lock Down CORS Origins** — Replace `allow_origin_regex=r"https://.*\.up\.railway\.app"` in `backend/app/main.py` with explicit allowed origins list.
+- [x] Task 200.4: **Server-Side Auth Cookie** — Added `HttpOnly; Secure; SameSite=Lax` `Set-Cookie` header to `/auth/login` endpoint in `auth.py`.
+- [x] Task 200.5: **Protect Telegram Debug Endpoint** — Added `Depends(get_current_user)` authentication guard to `/debug/info` in `telegram.py`.
+- [x] Task 200.6: **File Upload Extension Whitelist** — Added allowed extension check (`.csv`, `.xlsx`, `.xls`, `.json`) in `data_gateway.py`.
+- [x] Task 200.7: **Replace print() with logging** — Replaced direct `print()` statements with standard `logging` in `encryption.py` and `whatsapp.py`.
+
+## Epic 204: AI Dev Team Token Optimization
+- [x] Task 204.1: **Consolidate Rule Files** — Deduplicate rule files. Keep `.agents/AGENTS.md` as single source of truth, reduced `GEMINI.md` to pointer, deleted root `AGENTS.md`.
+- [x] Task 204.2: **Create Architecture Map** — Created `docs/ARCHITECTURE.md` mapping routes, modules, models, and frontend pages.
+- [x] Task 204.3: **Optimize .geminiignore** — Excluded `migrations/`, `openapi.json`, `repomix-output.xml`, `*.sql`, `temp/`, etc.
+- [x] Task 204.4: **Add Module-Level Docstrings** — Added 3-line docstrings to primary backend files.
+- [x] Task 204.5: **Compress Completed Backlog Tasks** — Collapsed completed tasks in active epics to single line headers.
+- [x] Task 204.6: **Generate Import Map** — Created `backend/scripts/gen_import_map.py` and generated `docs/IMPORT_MAP.md`.
+
+## Epic 202: Backend Architecture Cleanup
+- [x] Task 202.1: **Split trade.py API Router** — Break `backend/app/api/trade.py` into sub-routers: `api/trade/stores.py`, `api/trade/orders.py`, `api/trade/actions.py`, `api/trade/products.py`. Keep `api/trade/__init__.py` as the aggregator.
+- [x] Task 202.2: **Split trade.py Models** — Break `backend/app/models/trade.py` into sub-modules under `models/trade/`. Keep `models/trade/__init__.py` as the re-export hub for backward compatibility.
+- [x] Task 202.3: **Organize Backend Scripts** — Move 34+ one-off scripts from `backend/` root into `backend/scripts/{data_ops, diagnostics, dev_tools, manual_tests}/`.
+- [x] Task 202.4: **Create Test Fixtures** — Add `backend/app/tests/conftest.py` with shared async DB session, mock user, and mock business fixtures.
+- [x] Task 202.5: **Extract Shared Constants** — Move constants like `DEFAULT_FEATURES_CONFIG` from `api/business.py` to `core/constants.py` to eliminate circular import workarounds.
+
+## Epic 203: Frontend Architecture Cleanup
+- [x] Task 203.1: **Create Centralized API Client** — Centralized client-side apiClient with token injection and 401 redirects. Migrated all 44 raw fetch files.
+- [x] Task 203.2: **Adopt react-hook-form + zod** — Adopted form validation library with Zod schemas for all v2 Drawer components.
+- [x] Task 203.3: **Complete v1→v2 Component Migration** — Migrated StoreModal to AccountDrawer and deleted ClientModal/StoreModal.
+- [x] Task 203.4: **Eliminate any Types** — Eliminated `: any` type annotations globally in frontend production paths.
+- [x] Task 203.5: **Frontend Test Infrastructure** — Configured Vitest and RTL, writing unit tests for apiClient and schema validators.
+
+## Epic 201: Performance & Reliability
+- [x] Task 201.1: **Parallelize GraphRAG Hybrid Search** — `asyncio.gather()` in `graphrag.py`.
+- [x] Task 201.2: **Add LLM Timeouts** — `timeout=30` on all `litellm.acompletion` calls.
+- [x] Task 201.3: **Pin Python Dependencies** — Pinned via requirements.lock and wired into nixpacks.toml.
+- [x] Task 201.4: **Enable TypeScript Build Checks** — Both `ignoreBuildErrors` and `ignoreDuringBuilds` set to `false` in `next.config.mjs`.
+- [x] Task 201.5: **Fix Bare Except Blocks** — Zero bare `except:` blocks remain in `backend/app/`.
+- [x] Task 201.6: **Celery Task Idempotency** — Redis-backed `@idempotent_task` decorator in `core/idempotency.py`, applied across `messages.py`, `ingestion.py`, and `data_gateway.py`.
+- [x] Task 201.7: **Async Context Summarization** — `asyncio.create_task()` fires background LLM summary with SHA-256 hash-based dedup in `context_assembler.py`.
+- [x] Task 201.8: **Catalog Service Validation in B2C Scheduling Tool** — `service_id` validated against active catalog in `calendar_tools.py`.

@@ -21,6 +21,8 @@
    - Installed `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, `jsdom`, and `@vitejs/plugin-react`.
    - Created `vitest.config.ts` and `vitest.setup.ts`.
    - Implemented unit tests under `lib/__tests__/apiClient.test.ts` and `lib/schemas/__tests__/client.test.ts` achieving **7/7 passing tests**.
+6. **Backlog Partitioning & Archive (Execution Hygiene)**:
+   - Cleaned the active `docs/project/BACKLOG.md` by archiving fully completed Epics (200, 204, 202, 203, and now 201) and transferring them to `docs/project/ARCHIVE_BACKLOG.md` to keep the active backlog under the 400-line limit.
 
 ## Compilation & Verification
 - Ran `npx tsc --noEmit` which exits with code `0`.
@@ -28,6 +30,12 @@
 - Ran `npm run test:ci` which runs 7/7 passing tests in 0.5s.
 
 ## Next Steps / Next Sprint
-1. **Phase 7: Mobile Responsiveness & Testing** or **Production Release of Phase 6**:
+1. **Epic 205 & Sprint 9 Implementation**:
+   - Deliver Task 205.1: B2C/Scheduler audit/reasoning log trace generation on the backend.
+   - Deliver Task 205.2: Reversion actions on the Order status timeline in `/trade/orders/[id]`.
+   - Deliver Task 205.3 & 205.4: Backend patch API for Categories, and frontend category editing integration in `CatalogDrawer`.
+   - Deliver Task 205.5: "Unit of Measure" field integration in product CatalogDrawer form.
+2. **Phase 7: Mobile Responsiveness & Testing / Production Release of Phase 6**:
    - Merge `refactor/phase-6-frontend-architecture` into `staging`.
    - Run end-to-end user tests on the Drawers and forms in the browser to ensure the RHF + Zod fields interact perfectly.
+

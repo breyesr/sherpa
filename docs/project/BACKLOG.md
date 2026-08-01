@@ -104,57 +104,42 @@
 
 ---
 
-## Epic 200: Security Hardening (🔴 IMMEDIATE — Before Next Deploy)
-**Objective**: Address all critical and high-severity security findings from the July 2026 code audit.
-**Reference**: `temp/sherpa_code_audit.md` — SEC-01 through SEC-09.
 
-- [x] Task 200.1: **Remove Default SECRET_KEY** — Remove the fallback string `"supersecretkey_please_change_in_production"` from `backend/app/core/config.py`. Make `SECRET_KEY` a required field with no default. *(5 min fix, critical impact)*
-- [x] Task 200.2: **Authenticate Data Gateway Sync** — Add `Depends(get_current_user)` to `POST /sync` in `backend/app/api/data_gateway.py:92`. *(10 min fix)*
-- [x] Task 200.3: **Lock Down CORS Origins** — Replace `allow_origin_regex=r"https://.*\.up\.railway\.app"` in `backend/app/main.py` with explicit allowed origins list. *(10 min fix)*
-- [x] Task 200.4: **Server-Side Auth Cookie** — Added `HttpOnly; Secure; SameSite=Lax` `Set-Cookie` header to `/auth/login` endpoint in `auth.py`.
-- [x] Task 200.5: **Protect Telegram Debug Endpoint** — Added `Depends(get_current_user)` authentication guard to `/debug/info` in `telegram.py`.
-- [x] Task 200.6: **File Upload Extension Whitelist** — Added allowed extension check (`.csv`, `.xlsx`, `.xls`, `.json`) in `data_gateway.py`.
-- [x] Task 200.7: **Replace print() with logging** — Replaced direct `print()` statements with standard `logging` in `encryption.py` and `whatsapp.py`.
+## Epic 205: Trade CRM & Messaging Feedback Actions (🔴 IMMEDIATE — Next Sprint)
+**Objective**: Fix critical UX friction and functional gaps identified during active operations, including B2C audit visibility, order status regression, category editing, and product metadata.
 
-## Epic 204: AI Dev Team Token Optimization (🔴 IMMEDIATE — After E200.1-200.3)
-**Objective**: Reduce token consumption per AI agent session by eliminating redundant context, providing pre-built navigation aids, and excluding noise from indexing. Every token saved compounds across all future sessions.
+- [ ] Task 205.1 (BE/FE): **Inbox Audit Tracing for All Use Cases**
+  - **Acceptance Criteria**:
+    - **Given** an admin is viewing a conversation in the Inbox,
+    - **When** they toggle the "Audit: ON" mode,
+    - **Then** they must see the "Brain Logic" block for both B2B (Trade) and B2C (Basic Scheduler) messaging turns.
+    - **Given** a message is being processed through the B2C / Basic Scheduler flow,
+    - **When** the AI Service runs Jinja template generation and tool-calling completions,
+    - **Then** it must accumulate a structured log of thoughts (e.g., prompt selected, tool executions, and final text formulation) and persist it to the message's `reasoning_trace` field in the database.
+- [ ] Task 205.2 (FE): **Orders Ledger Status Backwards Progression**
+  - **Acceptance Criteria**:
+    - **Given** a user is viewing an individual order details page at `/trade/orders/[id]`,
+    - **When** the current status of the order is `CONFIRMED`, `SHIPPED`, or `DELIVERED`,
+    - **Then** the page must present a secondary action button to revert the status to the previous step (e.g., "Revert to Pending" when `CONFIRMED`, "Revert to Confirmed" when `SHIPPED`, "Revert to Shipped" when `DELIVERED`).
+    - **When** the user clicks this revert button,
+    - **Then** the app must trigger a PATCH call to `/trade/orders/[id]` with the previous status, invalidate React Query caches, and update the status timeline accordingly.
+- [ ] Task 205.3 (BE): **API Endpoint to Edit Categories**
+  - **Acceptance Criteria**:
+    - **Given** an authenticated user with active features for products,
+    - **When** they perform a PATCH request to `/api/v1/trade/categories/{category_id}` with a JSON payload containing `name`, `description`, and/or `category_type`,
+    - **Then** the backend must update the matching `Category` in the database and return the updated `CategoryResponse`.
+- [ ] Task 205.4 (FE): **Edit Category Action and Form Integration**
+  - **Acceptance Criteria**:
+    - **Given** a user is on `/trade/products?tab=categories` viewing the categories list,
+    - **When** they click the "Edit" action button next to a category,
+    - **Then** the `CatalogDrawer` must slide open in category mode with the selected category's fields pre-populated.
+    - **When** they click "Update Category",
+    - **Then** it must perform a PATCH call to `/trade/categories/{id}` and refresh the active categories list upon success.
+- [ ] Task 205.5 (FE): **Edit Product Unit of Measure in Catalog Drawer**
+  - **Acceptance Criteria**:
+    - **Given** a user is creating or editing a product using the `CatalogDrawer`,
+    - **When** they view the form,
+    - **Then** there must be an input field (text input or dropdown select with common options like `unit`, `case`, `kg`, `liter`, `box`, `pack`) for "Unit of Measure".
+    - **When** they submit the form,
+    - **Then** the `unit_of_measure` value must be sent as part of the payload to `POST /trade/products` or `PATCH /trade/products/{id}`, and correctly persist to the database.
 
-- [x] Task 204.1: **Consolidate Rule Files** — Deduplicate rule files. Keep `.agents/AGENTS.md` as single source of truth, reduced `GEMINI.md` to pointer, deleted root `AGENTS.md`. *(Saves ~1,500 tokens/session)*
-- [x] Task 204.2: **Create Architecture Map** — Created `docs/ARCHITECTURE.md` mapping routes, modules, models, and frontend pages. *(Saves ~3,000-5,000 tokens/session)*
-- [x] Task 204.3: **Optimize .geminiignore** — Excluded `migrations/`, `openapi.json`, `repomix-output.xml`, `*.sql`, `temp/`, etc.
-- [x] Task 204.4: **Add Module-Level Docstrings** — Added 3-line docstrings to primary backend files.
-- [x] Task 204.5: **Compress Completed Backlog Tasks** — Collapsed completed tasks in active epics to single line headers.
-- [x] Task 204.6: **Generate Import Map** — Created `backend/scripts/gen_import_map.py` and generated `docs/IMPORT_MAP.md`.
-
-## Epic 201: Performance & Reliability (🟠 THIS SPRINT)
-**Objective**: Fix performance bottlenecks and reliability gaps identified in the code audit.
-**Reference**: `temp/sherpa_code_audit.md` — PERF-01 through PERF-07, CQ-01.
-
-- [x] Task 201.1: **Parallelize GraphRAG Hybrid Search** — Wrapped semantic + keyword search in `asyncio.gather()` in `backend/app/services/graphrag.py`.
-- [x] Task 201.2: **Add LLM Timeouts** — Added `timeout=30` to all `litellm.acompletion` calls in `ai_service.py` and `graphrag.py`.
-- [ ] Task 201.3: **Pin Python Dependencies** — Generate `requirements.lock` via `pip freeze` from the current production environment. Deploy from lock file. *(15 min)*
-- [ ] Task 201.4: **Enable TypeScript Build Checks** — Remove `ignoreBuildErrors: true` and `ignoreDuringBuilds: true` from `frontend/next.config.mjs`. Fix resulting type errors iteratively.
-- [x] Task 201.5: **Fix Bare Except Blocks** — Replaced bare `except:` blocks across `telegram.py` and `calendar_tools.py` with specific exception handling.
-- [ ] Task 201.6: **Celery Task Idempotency** — Add Redis-backed deduplication keys to `backend/app/tasks/messages.py` and `ingestion.py` to prevent duplicate processing on retries.
-- [ ] Task 201.7: **Async Context Summarization** — Move the synchronous LLM summarization call in `backend/app/core/context_assembler.py` to a post-response async task that caches the result in Redis.
-- [x] Task 201.8: **Catalog Service Validation in B2C Scheduling Tool** — Updated `calendar_tools.py` `create_appointment` to strictly validate `service_id` against the business's active service catalog.
-
-## Epic 202: Backend Architecture Cleanup (🟡 NEXT SPRINT)
-**Objective**: Reduce technical debt and improve maintainability of the backend codebase.
-**Reference**: `temp/sherpa_code_audit.md` — ARCH-01, ARCH-03, ARCH-06 through ARCH-08.
-
-- [x] Task 202.1: **Split trade.py API Router** — Break `backend/app/api/trade.py` (1,271 lines) into sub-routers: `api/trade/stores.py`, `api/trade/orders.py`, `api/trade/actions.py`, `api/trade/products.py`. Keep `api/trade/__init__.py` as the aggregator.
-- [x] Task 202.2: **Split trade.py Models** — Break `backend/app/models/trade.py` (697 lines) into sub-modules under `models/trade/`. Keep `models/trade/__init__.py` as the re-export hub for backward compatibility.
-- [x] Task 202.3: **Organize Backend Scripts** — Move 34+ one-off scripts from `backend/` root into `backend/scripts/{data_ops, diagnostics, dev_tools, manual_tests}/`.
-- [x] Task 202.4: **Create Test Fixtures** — Add `backend/app/tests/conftest.py` with shared async DB session, mock user, and mock business fixtures.
-- [x] Task 202.5: **Extract Shared Constants** — Move constants like `DEFAULT_FEATURES_CONFIG` from `api/business.py` to `core/constants.py` to eliminate circular import workarounds.
-
-## Epic 203: Frontend Architecture Cleanup (🟡 NEXT SPRINT) ✅ COMPLETE
-**Objective**: Reduce frontend technical debt and establish sustainable patterns.
-**Reference**: `temp/sherpa_code_audit.md`
-
-- [x] Task 203.1: **Create Centralized API Client** — Centralized client-side apiClient with token injection and 401 redirects. Migrated all 44 raw fetch files.
-- [x] Task 203.2: **Adopt react-hook-form + zod** — Adopted form validation library with Zod schemas for all v2 Drawer components.
-- [x] Task 203.3: **Complete v1→v2 Component Migration** — Migrated StoreModal to AccountDrawer and deleted ClientModal/StoreModal.
-- [x] Task 203.4: **Eliminate any Types** — Eliminated `: any` type annotations globally in frontend production paths.
-- [x] Task 203.5: **Frontend Test Infrastructure** — Configured Vitest and RTL, writing unit tests for apiClient and schema validators.
