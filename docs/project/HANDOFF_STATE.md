@@ -28,7 +28,8 @@
 8. **Module Docstrings for Large Files (Task 204.4)**:
    - Added standard triple-quote module docstrings to `backend/app/services/graphrag.py` and `backend/app/services/agentic_orchestrator.py` (both files >200 lines). Verified backend tests pass.
 9. **Nixpacks Staging Deployment Fix**:
-   - Fixed an issue in `backend/nixpacks.toml` where custom build overrides bypassed virtual environment initialization, causing `pip: command not found` errors. Added `python -m venv` creation and activation to the custom command, successfully deploying the code.
+   - Fixed an issue in `backend/nixpacks.toml` where custom build overrides bypassed virtual environment initialization, causing `pip: command not found` errors.
+   - Resolved a runtime `ImportError: no pq wrapper available` crash by: (a) restoring the missing `psycopg-binary==3.3.4` package to `backend/requirements.lock`, and (b) installing `libpq-dev` via `aptPkgs` in `backend/nixpacks.toml` to ensure the required PostgreSQL client libraries are available system-wide in standard dynamic linker search paths.
 
 ## Compilation & Verification
 - Ran `npx tsc --noEmit` which exits with code `0`.
@@ -36,6 +37,7 @@
 - Ran `npm run test:ci` which runs 7/7 passing tests in 0.5s.
 - Checked remaining print count: 0 (operational files).
 - Ran pytest suite: 58/58 tests passed successfully.
+- Verified staging deployment on Railway builds and boots successfully.
 
 ## Next Steps / Next Sprint
 1. **Epic 205 & Sprint 9 Implementation**:
@@ -43,7 +45,7 @@
    - Deliver Task 205.2: Reversion actions on the Order status timeline in `/trade/orders/[id]`.
    - Deliver Task 205.3 & 205.4: Backend patch API for Categories, and frontend category editing integration in `CatalogDrawer`.
    - Deliver Task 205.5: "Unit of Measure" field integration in product CatalogDrawer form.
-2. **Phase 7: Mobile Responsiveness & Testing / Production Release of Phase 6**:
-   - Merge `refactor/phase-6-frontend-architecture` into `staging`.
+2. **Phase 7: Mobile Responsiveness & Testing**:
    - Run end-to-end user tests on the Drawers and forms in the browser to ensure the RHF + Zod fields interact perfectly.
+
 
