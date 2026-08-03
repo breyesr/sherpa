@@ -19,9 +19,7 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { components } from '@/types/api';
-
-type ClientResponse = components['schemas']['ClientResponse'];
+import { Client } from '@/types/models';
 import ContactDrawer from '@/components/v2/ContactDrawer';
 
 export default function RetailersPageV2() {
@@ -29,16 +27,16 @@ export default function RetailersPageV2() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: any}>({
+  const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: Partial<Client>}>({
     isOpen: false,
     clientId: null
   });
 
   // Fetch Retailers (Clients)
-  const { data: retailers = [], isLoading } = useQuery<ClientResponse[]>({
+  const { data: retailers = [], isLoading } = useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: async () => {
-      return await apiClient.get<ClientResponse[]>('/crm/clients');
+      return await apiClient.get<Client[]>('/crm/clients');
     },
     enabled: !!token,
   });

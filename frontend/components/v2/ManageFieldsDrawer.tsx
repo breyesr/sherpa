@@ -47,8 +47,8 @@ export default function ManageFieldsDrawer({ isOpen, onClose, business, token }:
       
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while saving.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred while saving.');
     } finally {
       setLoading(false);
     }
@@ -67,8 +67,8 @@ export default function ManageFieldsDrawer({ isOpen, onClose, business, token }:
       await queryClient.invalidateQueries({ queryKey: ['business'] });
       setFields(updatedFields);
       setFieldToDelete(null);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while deleting.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred while deleting.');
     } finally {
       setLoading(false);
     }

@@ -79,8 +79,8 @@ export default function FieldNoteDrawer({ isOpen, onClose, storeId, token }: Fie
         competitor_name: '',
         competitor_presence: 'low'
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

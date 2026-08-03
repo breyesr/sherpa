@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
@@ -338,7 +339,14 @@ export default function Sidebar() {
   );
 }
 
-function SidebarLink({ href, icon: Icon, name, active }: any) {
+interface SidebarLinkProps {
+  href: string;
+  icon: React.ComponentType<{ className?: string; size?: number | string }>;
+  name: string;
+  active: boolean;
+}
+
+function SidebarLink({ href, icon: Icon, name, active }: SidebarLinkProps) {
   return (
     <Link 
       href={href}

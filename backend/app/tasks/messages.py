@@ -1,5 +1,8 @@
+import logging
 import asyncio
 import re
+
+logger = logging.getLogger(__name__)
 from typing import Optional
 from twilio.rest import Client
 from app.core.celery_app import celery_app
@@ -44,7 +47,7 @@ async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
             integration = all_wa[0]
             
     if not integration:
-        print(f"ERROR: send_twilio_reply failed. No integration found for number: {to_phone}")
+        logger.error("send_twilio_reply failed. No integration found for number: %s", to_phone)
         return
         
     try:
@@ -53,10 +56,9 @@ async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
         engine = MessagingService.get_engine(integration)
         await engine.send_text(to_number=sender_phone, text=body)
         await increment_whatsapp_usage(integration.business_id)
-        print(f"DEBUG: Sent WhatsApp reply to {sender_phone} via MessagingService")
+        logger.debug("Sent WhatsApp reply to %s via MessagingService", sender_phone)
     except Exception as e:
-        print(f"ERROR: Failed to send reply via MessagingService: {e}")
-        traceback.print_exc()
+        logger.exception("Failed to send reply via MessagingService: %s", e)
 
 
 
@@ -89,8 +91,7 @@ async def run_sales_rep_message(business_id: str, client_id: str, payload: dict)
             # Sales rep flow
             response_text = await ai.get_response(sender_phone, text, {"platform": "whatsapp", "name": profile_name, "flow": "sales_rep", "client_id": client_id})
         except Exception as e:
-            print(f"ERROR: AIService crash in sales rep flow: {e}")
-            traceback.print_exc()
+            logger.exception("AIService crash in sales rep flow: %s", e)
             response_text = "Error interno procesando mensaje de representante."
             
         await send_twilio_reply(db, to_phone, sender_phone, response_text)
@@ -124,8 +125,7 @@ async def run_distributor_message(business_id: str, client_id: str, payload: dic
             # Distributor flow
             response_text = await ai.get_response(sender_phone, text, {"platform": "whatsapp", "name": profile_name, "flow": "distributor", "client_id": client_id})
         except Exception as e:
-            print(f"ERROR: AIService crash in distributor flow: {e}")
-            traceback.print_exc()
+            logger.exception("AIService crash in distributor flow: %s", e)
             response_text = "Error interno procesando mensaje de distribuidor."
             
         await send_twilio_reply(db, to_phone, sender_phone, response_text)
@@ -151,8 +151,7 @@ async def run_prospect_message(business_id: str, client_id: Optional[str], paylo
                 user_message=text
             )
         except Exception as e:
-            print(f"ERROR: ProspectQualifier crash: {e}")
-            traceback.print_exc()
+            logger.exception("ProspectQualifier crash: %s", e)
             response_text = "Error interno procesando mensaje de prospecto."
             
         await send_twilio_reply(db, to_phone, sender_phone, response_text)
@@ -163,7 +162,7 @@ def process_sales_rep_message(self, business_id: str, client_id: str, payload: d
     try:
         return asyncio.run(run_sales_rep_message(business_id, client_id, payload))
     except Exception as exc:
-        print(f"ERROR: process_sales_rep_message failed. Retrying... {exc}")
+        logger.error("process_sales_rep_message failed. Retrying... %s", exc)
         raise self.retry(exc=exc)
 
 @celery_app.task(bind=True, name="process_distributor_message", max_retries=3, default_retry_delay=5)
@@ -172,7 +171,7 @@ def process_distributor_message(self, business_id: str, client_id: str, payload:
     try:
         return asyncio.run(run_distributor_message(business_id, client_id, payload))
     except Exception as exc:
-        print(f"ERROR: process_distributor_message failed. Retrying... {exc}")
+        logger.error("process_distributor_message failed. Retrying... %s", exc)
         raise self.retry(exc=exc)
 
 @celery_app.task(bind=True, name="process_prospect_message", max_retries=3, default_retry_delay=5)
@@ -181,7 +180,7 @@ def process_prospect_message(self, business_id: str, client_id: Optional[str], p
     try:
         return asyncio.run(run_prospect_message(business_id, client_id, payload))
     except Exception as exc:
-        print(f"ERROR: process_prospect_message failed. Retrying... {exc}")
+        logger.error("process_prospect_message failed. Retrying... %s", exc)
         raise self.retry(exc=exc)
 
 async def run_customer_message(business_id: str, client_id: Optional[str], payload: dict):
@@ -217,8 +216,7 @@ async def run_customer_message(business_id: str, client_id: Optional[str], paylo
                 {"platform": "whatsapp", "name": profile_name, "flow": "customer", "client_id": client_id}
             )
         except Exception as e:
-            print(f"ERROR: AIService crash in customer flow: {e}")
-            traceback.print_exc()
+            logger.exception("AIService crash in customer flow: %s", e)
             response_text = "Error interno procesando mensaje de cliente."
             
         await send_twilio_reply(db, to_phone, sender_phone, response_text)
@@ -230,5 +228,5 @@ def process_customer_message(self, business_id: str, client_id: Optional[str], p
     try:
         return asyncio.run(run_customer_message(business_id, client_id, payload))
     except Exception as exc:
-        print(f"ERROR: process_customer_message failed. Retrying... {exc}")
+        logger.error("process_customer_message failed. Retrying... %s", exc)
         raise self.retry(exc=exc)

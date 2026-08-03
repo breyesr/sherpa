@@ -86,8 +86,8 @@ export default function AssistantSettings({ business, user, token, onMessage, on
       await apiClient.patch('/business/me/assistant', editAssistant);
       onMessage({ type: 'success', text: 'Assistant configuration updated successfully!' });
       queryClient.invalidateQueries({ queryKey: ['business'] });
-    } catch (err: any) {
-      onMessage({ type: 'error', text: err.message });
+    } catch (err: unknown) {
+      onMessage({ type: 'error', text: err instanceof Error ? err.message : 'An unexpected error occurred' });
     } finally {
       setSavingAssistant(false);
     }

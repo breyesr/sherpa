@@ -25,6 +25,9 @@ from app.schemas.business import (
 
 from app.schemas.crm import AppointmentResponse
 from app.api.auth import get_current_user
+import logging
+
+logger = logging.getLogger(__name__)
 from app.core.limiter import limiter
 
 from app.core.constants import DEFAULT_FEATURES_CONFIG
@@ -102,21 +105,21 @@ async def get_business_stats(
     if not business:
         raise HTTPException(status_code=404, detail="Business profile not found")
     
-    print(f"DEBUG STATS: Fetching for business {business.id} ({business.name})")
+    logger.debug("STATS: Fetching for business %s (%s)", business.id, business.name)
     
     # 1. Total Clients
     client_count_res = await db.execute(
         select(func.count(Client.id)).where(Client.business_id == business.id)
     )
     total_clients = client_count_res.scalar() or 0
-    print(f"DEBUG STATS: total_clients={total_clients}")
+    logger.debug("STATS: total_clients=%s", total_clients)
     
     # 2. Total Appointments (All time)
     apt_count_res = await db.execute(
         select(func.count(Appointment.id)).where(Appointment.business_id == business.id)
     )
     total_appointments = apt_count_res.scalar() or 0
-    print(f"DEBUG STATS: total_appointments={total_appointments}")
+    logger.debug("STATS: total_appointments=%s", total_appointments)
     
     # 3. Flagged Clients (Action Required)
     # Use a safer check for JSONB
@@ -127,7 +130,7 @@ async def get_business_stats(
         )
     )
     flagged_clients = flagged_count_res.scalar() or 0
-    print(f"DEBUG STATS: flagged_clients={flagged_clients}")
+    logger.debug("STATS: flagged_clients=%s", flagged_clients)
     
     # 4. Today's Appointments
     from zoneinfo import ZoneInfo
@@ -150,7 +153,7 @@ async def get_business_stats(
         )
     )
     today_appointments = today_count_res.scalar() or 0
-    print(f"DEBUG STATS: today_appointments={today_appointments} (Local Range: {today_start_local} to {today_end_local})")
+    logger.debug("STATS: today_appointments=%s (Local Range: %s to %s)", today_appointments, today_start_local, today_end_local)
     
     # 5. Upcoming & Recent (Focus on the last 24h + future)
     yesterday = (now_local - timedelta(days=1)).astimezone(timezone.utc).replace(tzinfo=None)
@@ -166,7 +169,7 @@ async def get_business_stats(
         .limit(10)
     )
     upcoming = upcoming_res.scalars().all()
-    print(f"DEBUG STATS: upcoming_count={len(upcoming)}")
+    logger.debug("STATS: upcoming_count=%s", len(upcoming))
     
     # 6. Serialize for response
     serialized_upcoming = [AppointmentResponse.from_orm(a) for a in upcoming]
@@ -582,7 +585,7 @@ async def update_business_me(
     
     if not business:
         # Auto-create if it doesn't exist (robust for admins/legacy)
-        print(f"DEBUG: Business not found for user {current_user.id}, creating new profile.")
+        logger.debug("Business not found for user %s, creating new profile.", current_user.id)
         v_type = business_in.vertical_type or VerticalType.BASIC
         business = BusinessProfile(
             user_id=current_user.id,

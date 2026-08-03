@@ -17,9 +17,7 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { components } from '@/types/api';
-
-type StoreResponse = components['schemas']['StoreResponse'];
+import { Store, Business } from '@/types/models';
 import AccountDrawer from '@/components/v2/AccountDrawer';
 
 export default function StoresPageV2() {
@@ -27,9 +25,10 @@ export default function StoresPageV2() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: any}>({
+  const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: Store | null}>({
     isOpen: false,
-    storeId: null
+    storeId: null,
+    initialData: null
   });
 
   // Fetch Business
@@ -37,24 +36,30 @@ export default function StoresPageV2() {
     queryKey: ['business'],
     queryFn: async () => {
       try {
-        return await apiClient.get<any>('/business/me');
+        return await apiClient.get<Business>('/business/me');
       } catch {
-        return { vertical_type: 'BASIC' };
+        return { vertical_type: 'BASIC' } as Business;
       }
     },
     enabled: !!token,
   });
 
-  const features = business?.features_config || {};
+  interface FeaturesConfig {
+    campaign_flow?: { enabled?: boolean };
+    sales_intelligence?: { enabled?: boolean };
+    b2b_solutions?: { enabled?: boolean };
+  }
+
+  const features = (business?.features_config || {}) as FeaturesConfig;
   const showCampaigns = features.campaign_flow?.enabled ?? false;
   const showSalesIntelligence = features.sales_intelligence?.enabled ?? false;
   const showB2B = features.b2b_solutions?.enabled ?? false;
 
   // Fetch Stores
-  const { data: stores = [], isLoading } = useQuery<StoreResponse[]>({
+  const { data: stores = [], isLoading } = useQuery<Store[]>({
     queryKey: ['stores'],
     queryFn: async () => {
-      return await apiClient.get<StoreResponse[]>('/trade/stores');
+      return await apiClient.get<Store[]>('/trade/stores');
     },
     enabled: !!token,
   });

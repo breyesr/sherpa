@@ -1,5 +1,8 @@
+import logging
 from typing import Optional
 from twilio.rest import Client
+
+logger = logging.getLogger(__name__)
 from app.services.messaging.base import BaseMessagingEngine
 from app.core.encryption import decrypt_value
 
@@ -25,7 +28,7 @@ class TwilioSubaccountEngine(BaseMessagingEngine):
             )
             return True
         except Exception as e:
-            print(f"ERROR: TwilioSubaccountEngine.send_text failed: {e}")
+            logger.error("TwilioSubaccountEngine.send_text failed: %s", e)
             return False
 
     async def send_media(self, to_number: str, media_url: str, caption: Optional[str] = None, **kwargs) -> bool:
@@ -44,7 +47,7 @@ class TwilioSubaccountEngine(BaseMessagingEngine):
             )
             return True
         except Exception as e:
-            print(f"ERROR: TwilioSubaccountEngine.send_media failed: {e}")
+            logger.error("TwilioSubaccountEngine.send_media failed: %s", e)
             return False
 
     async def register_webhook(self, webhook_url: str, **kwargs) -> bool:
@@ -71,5 +74,5 @@ class TwilioSubaccountEngine(BaseMessagingEngine):
             await anyio.to_thread.run_sync(_update_number)
             return True
         except Exception as e:
-            print(f"ERROR: TwilioSubaccountEngine.register_webhook failed: {e}")
+            logger.error("TwilioSubaccountEngine.register_webhook failed: %s", e)
             return False

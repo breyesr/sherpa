@@ -1,6 +1,9 @@
+import logging
 import litellm
 from typing import List, Any
 from app.core.system_config import ConfigService
+
+logger = logging.getLogger(__name__)
 
 class EmbeddingService:
     def __init__(self, db: Any):
@@ -22,5 +25,5 @@ class EmbeddingService:
             )
             return response.data[0]["embedding"]
         except Exception as e:
-            print(f"ERROR: Embedding generation failed: {e}")
+            logger.error("Embedding generation failed: %s", e)
             raise

@@ -98,8 +98,8 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
       // Invalidate queries to refresh the UI
       await queryClient.invalidateQueries({ queryKey: ['stats'] });
       await queryClient.invalidateQueries({ queryKey: ['stores'] });
-    } catch (err: any) {
-      alert(err.message || 'An error occurred while verifying');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'An error occurred while verifying');
     } finally {
       setVerifyingLeads(prev => ({ ...prev, [leadId]: false }));
     }
@@ -285,7 +285,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
 
               {stats.attention_leads && stats.attention_leads.length > 0 ? (
                 <div className="divide-y divide-gray-50">
-                  {stats.attention_leads.map((lead: any) => {
+                  {stats.attention_leads.map((lead: AttentionLead) => {
                     const isVerifyingLead = verifyingLeads[lead.id];
                     return (
                       <div key={lead.id} className="p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-gray-50/50 transition-all group">

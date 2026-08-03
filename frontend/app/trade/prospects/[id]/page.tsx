@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -98,8 +98,8 @@ export default function ProspectDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ['prospect-orders'] });
       await queryClient.invalidateQueries({ queryKey: ['stores'] });
 
-    } catch (err: any) {
-      alert(err.message || 'An error occurred while verifying');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'An error occurred while verifying');
     } finally {
       setIsVerifying(false);
     }
@@ -399,7 +399,13 @@ export default function ProspectDetailPage() {
   );
 }
 
-function InfoItem({ label, value, icon: Icon }: any) {
+interface InfoItemProps {
+  label: string;
+  value: string | number | null;
+  icon: React.ComponentType<{ className?: string; size?: number | string }>;
+}
+
+function InfoItem({ label, value, icon: Icon }: InfoItemProps) {
   return (
     <div className="flex gap-4">
       <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 shrink-0">

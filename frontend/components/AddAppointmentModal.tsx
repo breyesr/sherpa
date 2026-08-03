@@ -69,8 +69,9 @@ export default function AddAppointmentModal({ isOpen, onClose, onSuccess, token 
       setStoreId('');
       setCustomerId('');
       setStartTime('');
-    } catch (err: any) {
-      setError(err.message === 'Failed to fetch' ? 'Cannot reach server. Is the backend running?' : err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      setError(msg === 'Failed to fetch' ? 'Cannot reach server. Is the backend running?' : (msg || 'An unexpected error occurred'));
     } finally {
       setLoading(false);
     }

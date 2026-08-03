@@ -19,6 +19,9 @@ from app.models.business import BusinessProfile
 from app.models.integration import Integration
 from app.models.calendar import BusySlot
 from app.api.auth import get_current_user
+import logging
+
+logger = logging.getLogger(__name__)
 from app.core.google_calendar import GoogleCalendarService
 from app.core.security import encrypt_token
 
@@ -79,9 +82,9 @@ async def google_callback(
         redirect_uri = await ConfigService.get(db, "GOOGLE_REDIRECT_URI", settings.GOOGLE_REDIRECT_URI)
 
         if client_id and client_secret:
-            print(f"DEBUG: Using Client ID: {client_id[:5]}...{client_id[-3:]}")
-            print(f"DEBUG: Using Client Secret: {client_secret[:3]}...{client_secret[-3:]}")
-            print(f"DEBUG: Using Redirect URI: {redirect_uri}")
+            logger.debug("Using Client ID: %s...%s", client_id[:5], client_id[-3:])
+            logger.debug("Using Client Secret: %s...%s", client_secret[:3], client_secret[-3:])
+            logger.debug("Using Redirect URI: %s", redirect_uri)
 
         if not client_id or not client_secret:
             raise HTTPException(status_code=400, detail="Google credentials not found in database.")
@@ -101,7 +104,7 @@ async def google_callback(
             token_data = response.json()
         
         if "error" in token_data:
-            print(f"DEBUG: Google Token Exchange Error: {token_data}")
+            logger.debug("Google Token Exchange Error: %s", token_data)
             raise HTTPException(status_code=400, detail=f"Google Error: {token_data.get('error_description', token_data['error'])}")
 
         # 2. Extract tokens
@@ -143,8 +146,7 @@ async def google_callback(
         return RedirectResponse(url=f"{base_frontend}/integrations/google/success")
         
     except Exception as e:
-        print("CRITICAL: Error in google_callback:")
-        traceback.print_exc()
+        logger.critical("Error in google_callback", exc_info=True)
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e))
@@ -282,7 +284,7 @@ async def disconnect_integration(
             try:
                 await release_whatsapp_sender(integration.settings or {})
             except Exception as release_err:
-                print(f"ERROR: Failed to release whatsapp integration: {release_err}")
+                logger.error("Failed to release whatsapp integration: %s", release_err)
         elif provider == 'telegram':
             try:
                 from app.core.security import decrypt_token
@@ -291,7 +293,7 @@ async def disconnect_integration(
                 async with httpx.AsyncClient() as http_client:
                     await http_client.get(f"https://api.telegram.org/bot{token}/deleteWebhook", params={"drop_pending_updates": True})
             except Exception as release_err:
-                print(f"ERROR: Failed to delete telegram webhook on disconnect: {release_err}")
+                logger.error("Failed to delete telegram webhook on disconnect: %s", release_err)
                 
         # Delete the integration record
         await db.execute(

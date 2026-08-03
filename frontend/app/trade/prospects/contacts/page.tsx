@@ -20,9 +20,7 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { components } from '@/types/api';
-
-type ClientResponse = components['schemas']['ClientResponse'];
+import { Client } from '@/types/models';
 import ContactDrawer from '@/components/v2/ContactDrawer';
 
 function ProspectContactsContent() {
@@ -32,16 +30,16 @@ function ProspectContactsContent() {
   const segment = searchParams.get('segment') || 'wholesale';
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: any}>({
+  const [contactDrawer, setContactDrawer] = useState<{isOpen: boolean, clientId: string | null, initialData?: Partial<Client>}>({
     isOpen: false,
     clientId: null
   });
 
   // Fetch Prospect Contacts (Clients with is_prospect=true)
-  const { data: prospects = [], isLoading } = useQuery<ClientResponse[]>({
+  const { data: prospects = [], isLoading } = useQuery<Client[]>({
     queryKey: ['clients', { is_prospect: true, segment }],
     queryFn: async () => {
-      return await apiClient.get<ClientResponse[]>(`/crm/clients?is_prospect=true&prospect_segment=${segment}`);
+      return await apiClient.get<Client[]>(`/crm/clients?is_prospect=true&prospect_segment=${segment}`);
     },
     enabled: !!token,
   });

@@ -52,8 +52,9 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, onSuccess,
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message === 'Failed to fetch' ? 'Cannot reach server.' : err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      setError(msg === 'Failed to fetch' ? 'Cannot reach server.' : (msg || 'An unexpected error occurred'));
     } finally {
       setLoading(false);
     }

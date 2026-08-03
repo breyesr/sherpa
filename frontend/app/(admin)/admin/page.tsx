@@ -75,8 +75,8 @@ export default function AdminSettingsPage() {
         const data = await apiClient.get<SystemSettings>('/admin/settings');
         setSettings((prev: SystemSettings) => ({ ...prev, ...data }));
         setIsAuthorized(true);
-      } catch (err: any) {
-        if (err.status === 403) {
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'status' in err && err.status === 403) {
           setIsAuthorized(false);
         } else {
           console.error(err);
@@ -197,8 +197,8 @@ export default function AdminSettingsPage() {
       await apiClient.patch(`/admin/businesses/${businessId}/credits`, { purchased_credits: credits });
       setMessage({ type: 'success', text: 'Credits updated successfully.' });
       fetchUsers();
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'An unexpected error occurred' });
     }
   };
 

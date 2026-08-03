@@ -122,7 +122,7 @@ CORE_POSTAL_CODES = [
 
 async def seed_postal_codes(db: AsyncSession):
     """Seed key Mexican postal codes if they do not exist already."""
-    print("Seeding Postal Code lookups (SEPOMEX)...")
+    logger.info("Seeding Postal Code lookups (SEPOMEX)...")
     
     # Clean existing postal codes
     await db.execute(delete(PostalCode))
@@ -139,4 +139,4 @@ async def seed_postal_codes(db: AsyncSession):
         db.add(pc)
         
     await db.flush()
-    print(f"Postal Code lookups preloaded successfully ({len(CORE_POSTAL_CODES)} records).")
+    logger.info("Postal Code lookups preloaded successfully (%s records).", len(CORE_POSTAL_CODES))

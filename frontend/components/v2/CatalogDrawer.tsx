@@ -16,13 +16,15 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+import { Product } from '@/types/models';
+
 interface CatalogDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   token: string | null;
   initialMode?: 'product' | 'category';
   productId?: string | null;
-  initialData?: any;
+  initialData?: Partial<Product>;
 }
 
 export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'product', productId, initialData }: CatalogDrawerProps) {
@@ -163,8 +165,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       }
       onClose();
       resetForms();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -182,8 +184,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       fetchCategories(); // Refresh local list
       setMode('product'); // Switch back to product mode to add items to new category
       setCategoryData({ name: '', description: '', category_type: '' });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

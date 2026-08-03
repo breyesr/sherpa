@@ -18,9 +18,7 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { components } from '@/types/api';
-
-type StoreResponse = components['schemas']['StoreResponse'];
+import { Store } from '@/types/models';
 import AccountDrawer from '@/components/v2/AccountDrawer';
 
 function ProspectStoresContent() {
@@ -30,16 +28,17 @@ function ProspectStoresContent() {
   const segment = searchParams.get('segment') || 'wholesale';
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: any}>({
+  const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: Store | null}>({
     isOpen: false,
-    storeId: null
+    storeId: null,
+    initialData: null
   });
 
   // Fetch Prospect Stores
-  const { data: stores = [], isLoading } = useQuery<StoreResponse[]>({
+  const { data: stores = [], isLoading } = useQuery<Store[]>({
     queryKey: ['stores', { is_prospect: true, segment }],
     queryFn: async () => {
-      return await apiClient.get<StoreResponse[]>(`/trade/stores?is_prospect=true&prospect_segment=${segment}`);
+      return await apiClient.get<Store[]>(`/trade/stores?is_prospect=true&prospect_segment=${segment}`);
     },
     enabled: !!token,
   });

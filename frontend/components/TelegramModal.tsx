@@ -29,9 +29,9 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
       } else {
         throw new Error('Telegram bot is linked, but has no username configured.');
       }
-    } catch (tokenErr: any) {
+    } catch (tokenErr: unknown) {
       console.error('Failed to generate admin bind token:', tokenErr);
-      setError(tokenErr.message);
+      setError(tokenErr instanceof Error ? tokenErr.message : 'An unexpected error occurred');
     }
   };
 
@@ -50,7 +50,7 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
 
   // Poll for admin binding status when on step 3
   useEffect(() => {
-    let intervalId: any;
+    let intervalId: number | undefined = undefined;
     if (step === 3 && isOpen) {
       setAdminLinked(false);
       const checkStatus = async () => {
@@ -58,7 +58,9 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
           const data = await apiClient.get<{ admin_linked?: boolean }>('/telegram/bind-status');
           if (data.admin_linked) {
             setAdminLinked(true);
-            clearInterval(intervalId);
+            if (intervalId !== undefined) {
+              window.clearInterval(intervalId);
+            }
           }
         } catch (err) {
           console.error('Failed to check bind status:', err);
@@ -66,11 +68,13 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
       };
       
       checkStatus();
-      intervalId = setInterval(checkStatus, 2000);
+      intervalId = window.setInterval(checkStatus, 2000) as unknown as number;
     }
     
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+      }
     };
   }, [step, isOpen, token]);
 
@@ -89,8 +93,8 @@ export default function TelegramModal({ isOpen, onClose, onSuccess, token, initi
 
       setStep(3); // Go to Admin Deep Link/QR step
       setLoading(false);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setLoading(false);
     }
   };

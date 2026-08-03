@@ -64,8 +64,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
       onSuccess();
       onClose();
       setFormData({ name: '', category_id: '', description: '', price: 0, sku: '', wholesale_threshold: '' });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

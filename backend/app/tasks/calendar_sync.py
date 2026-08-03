@@ -1,5 +1,8 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.future import select
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import delete
 from app.core.celery_app import celery_app
 from app.core.celery_utils import async_task
@@ -72,7 +75,7 @@ async def sync_single_calendar(integration_id: str):
                 db.add(slot)
             
             await db.commit()
-            print(f"Synced {len(events)} slots for business {integration.business_id}")
+            logger.info("Synced %s slots for business %s", len(events), integration.business_id)
         except Exception as e:
-            print(f"Failed to sync calendar for business {integration.business_id}: {str(e)}")
+            logger.error("Failed to sync calendar for business %s: %s", integration.business_id, e)
             await db.rollback()

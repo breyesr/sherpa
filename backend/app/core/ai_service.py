@@ -3,9 +3,12 @@ Core AI Agent Messaging and Tool Pipeline.
 Coordinates user dialog processing, template prompt formatting, calendar/CRM tool execution, and LLM completions.
 """
 
+import logging
 import json
 import traceback
 import asyncio
+
+logger = logging.getLogger(__name__)
 import re
 from typing import List, Dict, Any, Optional, Tuple
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -35,7 +38,7 @@ try:
         autoescape=select_autoescape()
     )
 except Exception as e:
-    print(f"CRITICAL: Failed to initialize Jinja2 environment: {e}")
+    logger.critical("Failed to initialize Jinja2 environment: %s", e)
     prompt_env = None
 
 class AIService:
@@ -77,8 +80,7 @@ class AIService:
                 await self.db.refresh(client)
             return client, is_new
         except Exception as e:
-            print(f"DIAGNOSTIC: _get_client failed for {identifier}: {e}")
-            traceback.print_exc()
+            logger.debug("_get_client failed for %s: %s", identifier, e, exc_info=True)
             raise
 
     async def _get_llm_response(self, system_prompt: str, user_message: str, identifier: str, history: List[Dict[str, str]]) -> str:
@@ -117,12 +119,12 @@ class AIService:
             if response_message.get("tool_calls"):
                 messages.append(response_message)
                 for tool_call in response_message.tool_calls:
-                    print(f"DEBUG: AI calling tool: {tool_call.function.name}")
+                    logger.debug("AI calling tool: %s", tool_call.function.name)
                     try:
                         args = json.loads(tool_call.function.arguments)
                         result = await self._dispatch_tool(tool_call.function.name, args, identifier)
                     except Exception as te:
-                        print(f"ERROR: Tool {tool_call.function.name} failed: {te}")
+                        logger.error("Tool %s failed: %s", tool_call.function.name, te)
                         result = f"Error executing tool: {te}"
                         
                     messages.append({
@@ -141,8 +143,7 @@ class AIService:
             
             return response_message.content or "I processed your request but have no verbal response."
         except Exception as e:
-            print(f"ERROR: LLM generation failed: {e}")
-            traceback.print_exc()
+            logger.exception("LLM generation failed: %s", e)
             raise
 
     async def _get_or_create_conversation(self, client_id: str, platform: str, platform_chat_id: str) -> Conversation:
@@ -156,7 +157,7 @@ class AIService:
         )
         conv = res.scalars().first()
         if not conv:
-            print(f"DEBUG INBOX: Creating NEW conversation for client {client_id} on {platform}")
+            logger.debug("Creating NEW conversation for client %s on %s", client_id, platform)
             conv = Conversation(
                 business_id=self.business.id,
                 client_id=client_id,
@@ -166,7 +167,7 @@ class AIService:
             self.db.add(conv)
             await self.db.flush()
         else:
-            print(f"DEBUG INBOX: Found EXISTING conversation {conv.id}")
+            logger.debug("Found EXISTING conversation %s", conv.id)
         return conv
 
     async def get_response(self, identifier: str, user_message: str, metadata: Optional[Dict] = None) -> str:
@@ -213,7 +214,7 @@ class AIService:
                 return b2b_response
             else:
                 # Basic flows don't use the complex B2B orchestrator
-                print(f"DEBUG AISERVICE: Basic vertical detected. Skipping B2B Orchestration.")
+                logger.debug("Basic vertical detected. Skipping B2B Orchestration.")
 
             # 5. Prompt Construction Stage (Jinja2)
             try:
@@ -221,7 +222,7 @@ class AIService:
                     raise Exception("Jinja2 environment not initialized")
                 
                 if not self.assistant_config:
-                    print(f"ERROR: No agent configured for business {self.business.id}. Falling back to default behavior.")
+                    logger.error("No agent configured for business %s. Falling back to default behavior.", self.business.id)
                     from app.models.business import Agent
                     self.assistant_config = Agent(
                         name="Sherpa",
@@ -285,7 +286,7 @@ class AIService:
                         
                         identity_instruction = f"IDENTITY CONFIRMATION: This is a returning client. Greet them by their full name '{client_obj.name}'. Show them their registered info (Email: {client_obj.email}, Phone: {client_obj.phone or identifier}) and ask them to confirm if it is still correct before proceeding to book."
                     except Exception as ge:
-                        print(f"WARNING: Personalized greeting formatting failed: {ge}")
+                        logger.warning("Personalized greeting formatting failed: %s", ge)
                         greeting_context = self.assistant_config.greeting
                         identity_instruction = "IDENTITY CONFIRMATION: Greet the user and verify their details."
                 else:
@@ -313,15 +314,14 @@ class AIService:
                     intent=intent
                 )
             except Exception as e:
-                print(f"CRITICAL: Prompt Construction Stage (Jinja2) Failed: {e}")
-                traceback.print_exc()
+                logger.critical("Prompt Construction Stage (Jinja2) Failed: %s", e, exc_info=True)
                 return "I'm having trouble setting up the conversation. Please try again."
 
             # 4. Generation Stage
             try:
                 response_text = await self._get_llm_response(system_prompt, user_message, identifier, history)
             except Exception as e:
-                print(f"CRITICAL: Generation Stage Failed: {e}")
+                logger.critical("Generation Stage Failed: %s", e)
                 return "I'm having trouble thinking right now. My AI provider might be busy or misconfigured. Please try again later."
 
             # 5. Response Hand-off
@@ -338,8 +338,7 @@ class AIService:
             return response_text
             
         except Exception as e:
-            print(f"CRITICAL: AIService UNCAUGHT ERROR for {identifier}: {e}")
-            traceback.print_exc()
+            logger.critical("AIService UNCAUGHT ERROR for %s: %s", identifier, e, exc_info=True)
             return "I'm having unexpected trouble. Please try again later."
 
     async def get_specialized_response(self, client_id: str, role: str) -> str:
@@ -380,7 +379,7 @@ class AIService:
                     orders=orders
                 )
             except Exception as e:
-                print(f"ERROR: Template rendering failed for {role}: {e}")
+                logger.error("Template rendering failed for %s: %s", role, e)
                 return "Failed to generate specialized prompt."
 
             # 4. Generation (Direct LLM call, no history or tools needed for reports)
@@ -401,8 +400,7 @@ class AIService:
             return response.choices[0].message.content or "No response generated."
 
         except Exception as e:
-            print(f"CRITICAL: Specialized Response Failed: {e}")
-            traceback.print_exc()
+            logger.critical("Specialized Response Failed: %s", e, exc_info=True)
             return "Internal error during report generation."
 
     def _get_tools_definition(self):
@@ -595,8 +593,7 @@ class AIService:
             tz_name = self.business.timezone or "UTC"
             return f"FREE SLOTS (in {tz_name} time):\n" + "\n".join([f"- {s}" for s in available_slots]) if available_slots else "No free slots found."
         except Exception as e:
-            print(f"Error in _get_available_slots_tool: {e}")
-            traceback.print_exc()
+            logger.exception("Error in _get_available_slots_tool: %s", e)
             return "Error searching for slots."
 
     async def _check_client_direct(self, identifier: str) -> Client:
@@ -656,7 +653,7 @@ class AIService:
 
             if existing_apt:
                 # RESCHEDULE MODE
-                print(f"DEBUG: Rescheduling existing appointment {existing_apt.id}")
+                logger.debug("Rescheduling existing appointment %s", existing_apt.id)
                 
                 # Convert old time to business local for feedback
                 old_local = existing_apt.start_time.replace(tzinfo=timezone.utc).astimezone(biz_tz)
@@ -680,7 +677,7 @@ class AIService:
                             location=location_str
                         )
                     except Exception as e:
-                        print(f"WARNING: Google Reschedule failed: {e}")
+                        logger.warning("Google Reschedule failed: %s", e)
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
@@ -712,7 +709,7 @@ class AIService:
                         )
                         apt.google_event_id = google_id
                     except Exception as e:
-                        print(f"WARNING: Google Booking failed: {e}")
+                        logger.warning("Google Booking failed: %s", e)
                 
                 await self.db.commit()
                 local_start = dt.astimezone(biz_tz)
@@ -760,7 +757,7 @@ class AIService:
             
             return "\n".join(lines)
         except Exception as e:
-            print(f"Error in _get_client_appointments_tool: {e}")
+            logger.error("Error in _get_client_appointments_tool: %s", e)
             return "Error retrieving your appointments."
 
     async def _flag_for_review_tool(self, identifier: str, reason: str = None) -> str:
@@ -776,7 +773,7 @@ class AIService:
             await self.db.commit()
             return "SUCCESS: Manager has been notified."
         except Exception as e:
-            print(f"Error in _flag_for_review_tool: {e}")
+            logger.error("Error in _flag_for_review_tool: %s", e)
             return "Error notifying manager."
 
     async def _update_client_metadata_tool(self, identifier: str, metadata: dict = None) -> str:
@@ -799,5 +796,5 @@ class AIService:
             await self.db.commit()
             return f"SUCCESS: Client information updated: {', '.join(metadata.keys())}."
         except Exception as e:
-            print(f"Error in _update_client_metadata_tool: {e}")
+            logger.error("Error in _update_client_metadata_tool: %s", e)
             return "Failed to save client information."

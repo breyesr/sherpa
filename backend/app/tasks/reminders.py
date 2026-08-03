@@ -1,5 +1,8 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.future import select
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import selectinload
 from app.core.celery_app import celery_app
 from app.core.celery_utils import async_task
@@ -91,9 +94,9 @@ async def send_single_reminder(appointment_id: str):
                         if res.status_code < 400:
                             sent = True
                         else:
-                            print(f"WhatsApp API Error: {res.text}")
+                            logger.error("WhatsApp API Error: %s", res.text)
             except Exception as e:
-                print(f"WhatsApp reminder failed for apt {apt.id}: {e}")
+                logger.error("WhatsApp reminder failed for apt %s: %s", apt.id, e)
 
         # 4. Fallback/Alternative: Telegram
         if not sent and telegram:
@@ -104,12 +107,12 @@ async def send_single_reminder(appointment_id: str):
                 # if we have a linked chat_id in settings (e.g. for testing).
                 # REALITY: Telegram reminders only work if the user has messaged the bot.
                 # For now, we log it.
-                print(f"Telegram reminder would be sent to {client.phone} if chat_id was linked.")
+                logger.info("Telegram reminder would be sent to %s if chat_id was linked.", client.phone)
             except Exception as e:
-                print(f"Telegram reminder failed for apt {apt.id}: {e}")
+                logger.error("Telegram reminder failed for apt %s: %s", apt.id, e)
 
         if sent:
             apt.reminder_sent = True
             db.add(apt)
             await db.commit()
-            print(f"Reminder sent for appointment {apt.id}")
+            logger.info("Reminder sent for appointment %s", apt.id)

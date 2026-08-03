@@ -1,5 +1,8 @@
+import logging
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
+
+logger = logging.getLogger(__name__)
 from app.services.ingestion import IngestionAgent
 from app.models.business import BusinessProfile
 from app.core.idempotency import idempotent_task
@@ -13,7 +16,7 @@ async def run_ingestion(business_id: str, user_message: str):
         result = await agent.process_report(business_id, user_message)
         
         # TODO: Send confirmation message back to WhatsApp/Telegram
-        print(f"DEBUG INGESTION TASK RESULT: {result}")
+        logger.debug("DEBUG INGESTION TASK RESULT: %s", result)
         return result
 
 @celery_app.task(bind=True, name="process_b2b_ingestion", max_retries=3, default_retry_delay=5)
@@ -23,7 +26,7 @@ def process_b2b_ingestion(self, business_id: str, user_message: str):
     try:
         return asyncio.run(run_ingestion(business_id, user_message))
     except Exception as exc:
-        print(f"ERROR: process_b2b_ingestion failed. Retrying... {exc}")
+        logger.error("process_b2b_ingestion failed. Retrying... %s", exc)
         raise self.retry(exc=exc)
 
 async def run_prospect_qualification(business_id: str, payload: dict):
@@ -80,11 +83,11 @@ async def run_prospect_qualification(business_id: str, payload: dict):
                 await engine.send_text(to_number=sender_phone, text=response_text)
                 from app.core.limiter import increment_whatsapp_usage
                 await increment_whatsapp_usage(integration.business_id)
-                print(f"DEBUG: Sent WhatsApp prospect campaign reply to {sender_phone} via MessagingService")
+                logger.debug("Sent WhatsApp prospect campaign reply to %s via MessagingService", sender_phone)
             except Exception as e:
-                print(f"ERROR: Failed to send prospect reply via MessagingService: {e}")
+                logger.error("Failed to send prospect reply via MessagingService: %s", e)
         else:
-            print("ERROR: Integration or response text not available. Cannot send async reply.")
+            logger.error("Integration or response text not available. Cannot send async reply.")
 
             
     return {"status": "success", "is_completed": is_completed}
@@ -97,5 +100,5 @@ def process_whatsapp_prospect_message(self, business_id: str, payload: dict):
     try:
         return asyncio.run(run_prospect_qualification(business_id, payload))
     except Exception as exc:
-        print(f"ERROR: process_whatsapp_prospect_message failed. Retrying... {exc}")
+        logger.error("process_whatsapp_prospect_message failed. Retrying... %s", exc)
         raise self.retry(exc=exc)

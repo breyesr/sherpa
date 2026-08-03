@@ -1,5 +1,13 @@
+"""
+GraphRAG Hybrid Search and Retrieval Engine.
+Implements parallelized semantic + keyword search with RRF ranking over the KnowledgeCorpus for context-aware AI responses.
+"""
+
+import logging
 from typing import List, Dict, Any, Optional, Tuple
 import asyncio
+
+logger = logging.getLogger(__name__)
 from datetime import datetime
 from sqlalchemy.future import select
 from sqlalchemy import text, or_, func
@@ -120,8 +128,7 @@ class GraphRAGService:
             }
 
         except Exception as e:
-            print(f"ERROR: query_knowledge failed: {e}")
-            traceback.print_exc()
+            logger.exception("query_knowledge failed: %s", e)
             return {"success": False, "error": str(e)}
 
     async def generate_brief(self, query_text: str, business_id: str, history: list = None, chat_id: str = None, discovery_scope: str = None, store_name_to_strip: str = None) -> Tuple[str, str]:
@@ -256,7 +263,7 @@ class GraphRAGService:
                 memory = ChatMemory()
                 await memory.update_metadata(chat_id, {"active_store_id": target_store.id})
                 is_context_shift = True
-                print(f"DEBUG GRAPHRAG: Activated SESSION LOCK for '{target_store.name}'.")
+                logger.debug("Activated SESSION LOCK for '%s'.", target_store.name)
 
             # 3. Sequential Data Retrieval
             context = await self.get_store_context(target_store.id)
@@ -322,15 +329,14 @@ class GraphRAGService:
             return ai_content, " | ".join(reasoning)
 
         except Exception as e:
-            print(f"ERROR: generate_brief failed: {e}")
-            traceback.print_exc()
+            logger.exception("generate_brief failed: %s", e)
             return "Lo siento, tuve un problema al generar el reporte de inteligencia.", f"ERROR: {str(e)}"
 
 
     async def find_similar_notes(self, query_text: str, business_id: str, limit: int = 5, store_id: str = None, filters: Dict[str, str] = None, discovery_scope: str = "GLOBAL") -> List[Dict[str, Any]]:
         """Perform Hybrid Vector + Keyword search against the unified knowledge corpus (Task 111.6)."""
         if not query_text or not query_text.strip():
-            print("WARNING: find_similar_notes called with empty query_text. Returning empty list.")
+            logger.warning("find_similar_notes called with empty query_text. Returning empty list.")
             return []
             
         try:
@@ -343,7 +349,7 @@ class GraphRAGService:
             # Task 113.1: Strict Identity Locking in LOCAL scope
             if discovery_scope == "LOCAL":
                 if not store_id:
-                    print("WARNING: LOCAL scope requested but no store_id provided. Returning empty hits.")
+                    logger.warning("LOCAL scope requested but no store_id provided. Returning empty hits.")
                     return []
                 base_filters.append(or_(
                     KnowledgeCorpus.metadata_json['store_id'].astext == str(store_id),
@@ -423,8 +429,7 @@ class GraphRAGService:
             
             return results
         except Exception as e:
-            print(f"ERROR: hybrid find_similar_notes failed: {e}")
-            traceback.print_exc()
+            logger.exception("hybrid find_similar_notes failed: %s", e)
             return []
 
     async def update_account_intelligence(self, store_id: str, business_id: str) -> Optional[str]:
@@ -483,12 +488,11 @@ class GraphRAGService:
                 self.db.add(intel)
             
             await self.db.commit()
-            print(f"✅ SUCCESS: Updated Account Intelligence for store {store_id}")
+            logger.info("Updated Account Intelligence for store %s", store_id)
             return dossier_text
 
         except Exception as e:
-            print(f"❌ ERROR: update_account_intelligence failed: {e}")
-            traceback.print_exc()
+            logger.exception("update_account_intelligence failed: %s", e)
             await self.db.rollback()
             return None
 
@@ -593,7 +597,7 @@ class GraphRAGService:
                 })
             return results
         except Exception as e:
-            print(f"ERROR: search_store_profiles failed: {e}")
+            logger.error("search_store_profiles failed: %s", e)
             return []
 
     async def generate_discovery_response(self, query: str, stores: List[Dict]) -> str:
@@ -630,5 +634,5 @@ class GraphRAGService:
             )
             return response.choices[0].message.content or "No pude procesar la respuesta global."
         except Exception as e:
-            print(f"ERROR in generate_discovery_response: {e}")
+            logger.error("ERROR in generate_discovery_response: %s", e)
             return "Encontré algunas tiendas pero tuve un error al resumir la información."

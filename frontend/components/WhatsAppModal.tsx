@@ -34,8 +34,8 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess, token }: Wha
       });
       setAssignedNumber(data.phone_number);
       setStep(4);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setStep(2); // Go back to config step to let them retry
       setLoading(false);
     }

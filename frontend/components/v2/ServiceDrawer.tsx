@@ -5,6 +5,7 @@ import { Trash2, AlertCircle, CheckCircle, Plus, X, Settings, Loader2 } from 'lu
 import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { components } from '@/types/api';
+import { CRMField } from '@/types/models';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 import Drawer from './Drawer';
@@ -67,7 +68,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
     }
   }, [isOpen, service]);
 
-  const handleAttributeChange = (key: string, value: any) => {
+  const handleAttributeChange = (key: string, value: string | number | boolean | string[]) => {
     setAttributes((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -85,7 +86,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
 
     const featuresConfig = (business.features_config as any) || {};
     const existingAttributes = featuresConfig?.services?.attributes || [];
-    const isDuplicate = existingAttributes.some((f: any) => f.key === cleanKey);
+    const isDuplicate = existingAttributes.some((f: CRMField) => f.key === cleanKey);
     if (isDuplicate) {
       setNewFieldErr(`An attribute with key "${cleanKey}" already exists`);
       return;
@@ -94,7 +95,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
     setIsSavingNewField(true);
     setNewFieldErr('');
 
-    const newField: any = {
+    const newField: CRMField = {
       key: cleanKey,
       label: newFieldName.trim(),
       type: newFieldType
@@ -126,8 +127,8 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
       setNewFieldName('');
       setNewFieldType('text');
       setNewFieldOptions('');
-    } catch (err: any) {
-      setNewFieldErr(err.message);
+    } catch (err: unknown) {
+      setNewFieldErr(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsSavingNewField(false);
     }
@@ -159,8 +160,8 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -177,8 +178,8 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setDeleting(false);
     }
@@ -410,7 +411,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
 
             {businessAttributes.length > 0 ? (
               <div className="grid grid-cols-1 gap-6">
-                {businessAttributes.map((field: any) => (
+                {businessAttributes.map((field: CRMField) => (
                   <div key={field.key} className="space-y-2">
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">{field.label}</label>
                     {field.type === 'boolean' ? (

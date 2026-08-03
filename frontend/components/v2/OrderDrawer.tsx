@@ -3,10 +3,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { Store, Product, Client } from '@/types/models';
 import Drawer from './Drawer';
 import { 
   ShoppingBag, 
-  Store, 
+  Store as StoreIcon, 
   User, 
   Search, 
   Plus, 
@@ -42,19 +43,23 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
     payment_method: 'Cash'
   });
 
-  const [lineItems, setLineItems] = useState<any[]>([]);
+  interface OrderLineItem extends Product {
+    quantity: number;
+  }
+
+  const [lineItems, setLineItems] = useState<OrderLineItem[]>([]);
   const [productSearch, setProductSearch] = useState('');
 
   // Data Fetching
-  const { data: stores = [] } = useQuery({
+  const { data: stores = [] } = useQuery<Store[]>({
     queryKey: ['stores-minimal'],
-    queryFn: () => apiClient.get<any[]>('/trade/stores'),
+    queryFn: () => apiClient.get<Store[]>('/trade/stores'),
     enabled: isOpen,
   });
 
-  const { data: allProducts = [] } = useQuery({
+  const { data: allProducts = [] } = useQuery<Product[]>({
     queryKey: ['products-catalog'],
-    queryFn: () => apiClient.get<any[]>('/trade/products'),
+    queryFn: () => apiClient.get<Product[]>('/trade/products'),
     enabled: isOpen && step === 2,
   });
 
@@ -62,21 +67,21 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
     if (preselectedStoreId) setHeaderData(prev => ({ ...prev, store_id: preselectedStoreId }));
   }, [preselectedStoreId]);
 
-  const selectedStore = useMemo(() => stores.find((s: any) => s.id === headerData.store_id), [stores, headerData.store_id]);
+  const selectedStore = useMemo(() => stores.find((s: Store) => s.id === headerData.store_id), [stores, headerData.store_id]);
 
   const filteredProducts = useMemo(() => {
     if (!productSearch) return allProducts.slice(0, 5);
-    return allProducts.filter((p: any) => 
+    return allProducts.filter((p: Product) => 
       p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
       p.sku?.toLowerCase().includes(productSearch.toLowerCase())
     );
   }, [allProducts, productSearch]);
 
   const totalAmount = useMemo(() => {
-    return lineItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    return lineItems.reduce((sum, item) => sum + (item.quantity * (item.price ?? 0)), 0);
   }, [lineItems]);
 
-  const addToOrder = (product: any) => {
+  const addToOrder = (product: Product) => {
     const existing = lineItems.find(item => item.id === product.id);
     if (existing) {
       setLineItems(lineItems.map(item => 
@@ -116,8 +121,8 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
       
       onClose();
       resetDrawer();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -196,9 +201,9 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
                   disabled={!!preselectedStoreId}
                 >
                   <option value="">Select a store...</option>
-                  {stores.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {stores.map((s: Store) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-                <Store size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                <StoreIcon size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
               </div>
             </div>
 
@@ -211,7 +216,7 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
                   onChange={e => setHeaderData({...headerData, client_id: e.target.value})}
                 >
                   <option value="">No specific contact</option>
-                  {selectedStore?.clients?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {selectedStore?.clients?.map((c: NonNullable<Store['clients']>[number]) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <User size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
               </div>
@@ -265,7 +270,7 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
 
             {/* Quick Add Results */}
             <div className="grid grid-cols-1 gap-2">
-              {filteredProducts.map((product: any) => (
+              {filteredProducts.map((product: Product) => (
                 <button 
                   key={product.id}
                   onClick={() => addToOrder(product)}
@@ -299,7 +304,7 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
                     <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-900 text-sm truncate">{item.name}</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase">${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase">${((item.price ?? 0) * item.quantity).toFixed(2)}</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-100 p-1">
@@ -357,7 +362,7 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
                       <span className="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center text-[10px] font-black text-gray-500">{item.quantity}x</span>
                       <span className="text-sm font-bold text-gray-700">{item.name}</span>
                     </div>
-                    <span className="text-sm font-black text-gray-900">${(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="text-sm font-black text-gray-900">${((item.price ?? 0) * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>

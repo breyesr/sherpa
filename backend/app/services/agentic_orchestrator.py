@@ -1,3 +1,8 @@
+"""
+B2B Agentic Orchestrator for Trade Intelligence.
+Routes inbound messages through the LangGraph-based multi-agent pipeline for store visit notes, action extraction, and GraphRAG-enriched responses.
+"""
+
 import os
 import json
 import traceback

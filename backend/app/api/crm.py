@@ -22,10 +22,13 @@ from app.schemas.crm import (
     AppointmentCreate, AppointmentResponse, AppointmentUpdate,
     ClientDetailResponse
 )
+import logging
 from app.api.auth import get_current_user
 from app.core.google_calendar import GoogleCalendarService
 
 from app.tasks.knowledge import sync_vector_task, delete_vector_task
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -239,7 +242,7 @@ async def create_appointment(
         except HTTPException:
             raise
         except Exception as e:
-            print(f"WARNING: Google availability check failed: {e}")
+            logger.warning("Google availability check failed: %s", e)
 
     # 4. Create appointment
     result = await db.execute(select(Client).where(Client.id == appointment_in.client_id))
@@ -268,7 +271,7 @@ async def create_appointment(
             )
             appointment.google_event_id = google_event_id
         except Exception as e:
-            print(f"ERROR: Google Sync Failed: {str(e)}")
+            logger.error("Google Sync Failed: %s", e)
 
     db.add(appointment)
     await db.commit()
@@ -328,7 +331,7 @@ async def update_appointment(
                 if busy_slots:
                     raise HTTPException(status_code=400, detail="New slot overlaps with a busy slot in Google Calendar.")
             except HTTPException: raise
-            except Exception as e: print(f"Google check failed: {e}")
+            except Exception as e: logger.error("Google check failed: %s", e)
 
         appointment.start_time = new_start
         appointment.end_time = new_end
@@ -356,7 +359,7 @@ async def update_appointment(
                         end_time=appointment.end_time
                     )
             except Exception as e:
-                print(f"ERROR: Google Update Failed: {str(e)}")
+                logger.error("Google Update Failed: %s", e)
 
     db.add(appointment)
     await db.commit()
@@ -386,7 +389,7 @@ async def delete_appointment(
                 service = GoogleCalendarService(integration, db)
                 await service.delete_event(appointment.google_event_id)
             except Exception as e:
-                print(f"ERROR: Google Delete Failed: {str(e)}")
+                logger.error("Google Delete Failed: %s", e)
 
     await db.delete(appointment)
     await db.commit()

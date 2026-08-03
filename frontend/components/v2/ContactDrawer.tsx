@@ -16,13 +16,14 @@ import {
   CheckCircle,
   Sparkles
 } from 'lucide-react';
+import { Client } from '@/types/models';
 
 interface ContactDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   token: string | null;
   clientId?: string | null; // If provided, we are in Edit Mode
-  initialData?: any; // Data passed from list view for instant population
+  initialData?: Partial<Client>; // Data passed from list view for instant population
   isProspect?: boolean;
 }
 
@@ -145,8 +146,8 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
       if (clientId) queryClient.invalidateQueries({ queryKey: ['client-detail', clientId] });
       
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

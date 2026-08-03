@@ -101,8 +101,8 @@ export default function OrderDetailPage() {
       
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Error updating order status');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error updating order status');
     } finally {
       setUpdatingStatus(null);
     }

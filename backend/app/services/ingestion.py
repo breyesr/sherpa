@@ -1,3 +1,4 @@
+import logging
 import instructor
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -9,6 +10,8 @@ from sqlalchemy.future import select
 from sqlalchemy import or_
 from app.tasks.knowledge import sync_vector_task, update_account_intelligence_task
 import os
+
+logger = logging.getLogger(__name__)
 
 # Setup prompt template environment with absolute path for reliability
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -100,7 +103,7 @@ class IngestionAgent:
             )
             return result
         except Exception as e:
-            print(f"ERROR: IngestionAgent extraction failed: {e}")
+            logger.error("IngestionAgent extraction failed: %s", e)
             raise
 
     async def process_report(self, business_id: str, user_message: str) -> Dict[str, Any]:

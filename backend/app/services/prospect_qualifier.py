@@ -637,7 +637,7 @@ Estado actual de los datos recopilados:
                 try:
                     potential_val = float(qty) * product.price
                 except Exception as e:
-                    print(f"ERROR: Failed to calculate potential value: {e}")
+                    logger.error("Failed to calculate potential value: %s", e)
 
             # Look up matched store name, address and phone if retail referral
             matched_store_name = "la sucursal"
@@ -940,7 +940,7 @@ Estado actual de los datos recopilados:
                 )
                 
                 if is_reset or is_greeting_reset:
-                    print(f"DEBUG: Resetting qualifier state for thread {thread_id}...")
+                    logger.debug("Resetting qualifier state for thread %s...", thread_id)
                     from sqlalchemy import text
                     await self.db.execute(text("DELETE FROM checkpoints WHERE thread_id = :tid"), {"tid": thread_id})
                     await self.db.execute(text("DELETE FROM checkpoint_writes WHERE thread_id = :tid"), {"tid": thread_id})
@@ -1012,6 +1012,5 @@ Estado actual de los datos recopilados:
             return response_content, is_completed
             
         except Exception as e:
-            logger.error(f"ProspectQualifier execution error: {e}")
-            traceback.print_exc()
+            logger.exception("ProspectQualifier execution error: %s", e)
             return "Lo siento, tuve un problema interno. Por favor, intenta de nuevo más tarde.", False

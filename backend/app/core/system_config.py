@@ -1,8 +1,11 @@
+import logging
 from typing import Dict, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.system import SystemConfiguration
 from app.core.security import encrypt_token, decrypt_token
+
+logger = logging.getLogger(__name__)
 
 class ConfigService:
     @staticmethod
@@ -37,7 +40,7 @@ class ConfigService:
             await db.commit()
         except Exception as e:
             await db.rollback()
-            print(f"ERROR: Failed to save system config '{key}': {e}")
+            logger.error("Failed to save system config '%s': %s", key, e)
             raise e
 
     @staticmethod
