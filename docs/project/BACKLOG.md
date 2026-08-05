@@ -254,3 +254,31 @@
     - Edit: [config.py](file:///Users/bernardo/projects/sherpa/backend/app/core/config.py)
     - Edit: `backend/requirements.txt`
 
+
+## Epic 209: Meta Pixel & Conversions API Integration (Ad Tracking & Compliance) (FUTURE)
+**Objective**: Enable marketing event tracking, conversion attribution, and ad optimization using Meta Pixel and Conversions API (CAPI), while fully complying with Meta's Business Tools Terms (cookie consent, user notifications, and hash-based contact matching).
+
+- [ ] Task 209.1 (FE): **Cookie Consent Banner & Compliance Notices**
+  - **Acceptance Criteria**:
+    - **Given** a new or un-consented user lands on the website or mobile app,
+    - **When** the page loads,
+    - **Then** display a clear, accessible cookie consent banner prompting for "Marketing & Tracking" preferences.
+    - **Given** the user accepts or rejects cookies,
+    - **When** checking the Privacy Policy,
+    - **Then** ensure it includes explicit notice of Meta Pixel/CAPI tracking, options to opt-out, and direct links to consumer choice opt-out portals (e.g., http://www.aboutads.info/choices and http://www.youronlinechoices.eu/).
+  
+- [ ] Task 209.2 (FE): **Meta Pixel SDK & Event Tracking**
+  - **Acceptance Criteria**:
+    - **Given** a user has granted marketing cookie consent,
+    - **When** navigating the web dashboard,
+    - **Then** load the Meta Pixel script dynamically and trigger standard event tracking (e.g., `PageView`, `Lead`, `CompleteRegistration` on onboarding success).
+    - **When** cookie consent is denied or not yet answered,
+    - **Then** suppress the Meta Pixel SDK entirely.
+
+- [ ] Task 209.3 (BE): **Meta Conversions API (CAPI) Server-Side Ingestion**
+  - **Acceptance Criteria**:
+    - **Given** a critical transaction event occurs on the server (e.g., successful subscription or store onboarding completed),
+    - **When** CAPI logging is active,
+    - **Then** securely hash the user's contact information (email, phone number) via SHA-256 and dispatch a Conversions API payload to Meta's endpoints to achieve high-precision attribution matching.
+
+
