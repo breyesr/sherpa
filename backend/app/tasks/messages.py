@@ -54,6 +54,54 @@ async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
         from app.services.messaging import MessagingService
         from app.core.limiter import increment_whatsapp_usage
         engine = MessagingService.get_engine(integration)
+        
+        provider_type = integration.settings.get("provider_type", "twilio_subaccount")
+        if provider_type == "meta_cloud_api":
+            # Check 24-hour window
+            from app.models.messaging import Conversation
+            res = await db.execute(
+                select(Conversation).where(
+                    Conversation.business_id == integration.business_id,
+                    Conversation.platform_chat_id == sender_phone,
+                    Conversation.platform == "whatsapp"
+                )
+            )
+            conv = res.scalars().first()
+            
+            outside_window = True
+            if conv and conv.extra_data and "whatsapp_24h_window_start" in conv.extra_data:
+                from datetime import datetime, timezone
+                try:
+                    window_start = datetime.fromisoformat(conv.extra_data["whatsapp_24h_window_start"])
+                    if window_start.tzinfo is None:
+                        now = datetime.utcnow()
+                    else:
+                        now = datetime.now(timezone.utc)
+                    delta = now - window_start
+                    if delta.total_seconds() < 24 * 3600:
+                        outside_window = False
+                except Exception:
+                    logger.exception("Failed to parse whatsapp_24h_window_start")
+            
+            if outside_window:
+                default_template = integration.settings.get("default_template_name", "hello_communication")
+                logger.warning(
+                    "WhatsApp conversation outside 24h window for %s on integration %s. "
+                    "Attempting to send template '%s'.",
+                    sender_phone, integration.id, default_template
+                )
+                success = await engine.send_template(
+                    to_number=sender_phone,
+                    template_name=default_template,
+                    language=integration.settings.get("default_template_lang", "es")
+                )
+                if success:
+                    await increment_whatsapp_usage(integration.business_id)
+                    logger.debug("Successfully sent WhatsApp template to %s outside 24h window", sender_phone)
+                else:
+                    logger.error("Failed to send WhatsApp template to %s outside 24h window", sender_phone)
+                return
+                
         await engine.send_text(to_number=sender_phone, text=body)
         await increment_whatsapp_usage(integration.business_id)
         logger.debug("Sent WhatsApp reply to %s via MessagingService", sender_phone)

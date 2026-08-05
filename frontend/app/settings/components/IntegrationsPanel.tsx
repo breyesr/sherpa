@@ -153,7 +153,7 @@ export default function IntegrationsPanel({ business, token, onMessage }: Integr
   const telegramBot = (business?.integrations as Integration[])?.find((i) => i.provider === 'telegram');
   const whatsappIntegration = (business?.integrations as Integration[])?.find((i) => i.provider === 'whatsapp');
   const isWhatsAppConnected = !!whatsappIntegration;
-  const whatsappProvider = whatsappIntegration?.settings?.provider_type === 'twilio' ? 'Twilio' : 'Cloud API';
+  const whatsappProvider = whatsappIntegration?.settings?.provider_type?.startsWith('twilio') ? 'Twilio' : 'Cloud API';
  
   const features = (business?.features_config || {}) as FeaturesConfig;
   const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');

@@ -53,7 +53,10 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
     """Receive messages from WhatsApp Cloud API."""
     logger.info("WHATSAPP WEBHOOK PING RECEIVED")
     try:
-        payload = await request.json()
+        # SECURITY: Validate Meta signature BEFORE processing the payload
+        from app.core.webhook_security import verify_meta_signature
+        raw_body = await verify_meta_signature(request, settings.META_APP_SECRET)
+        payload = json.loads(raw_body)
         logger.debug(f"Incoming WhatsApp Payload: {payload}")
         
         entries = payload.get("entry", [])
@@ -65,6 +68,15 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                 metadata = value.get("metadata", {})
                 phone_id = metadata.get("phone_number_id")
                 
+                # Check for message statuses (delivery/read receipts)
+                statuses = value.get("statuses", [])
+                if statuses:
+                    for status in statuses:
+                        msg_id = status.get("id")
+                        msg_status = status.get("status")
+                        logger.debug(f"WhatsApp message {msg_id} status update: {msg_status}")
+                    continue
+                
                 if messages:
                     message = messages[0]
                     sender_phone = message.get("from")
@@ -73,6 +85,14 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     
                     if msg_type == "text":
                         text = message.get("text", {}).get("body")
+                    elif msg_type == "image":
+                        text = "[Imagen enviada]"
+                    elif msg_type == "audio":
+                        text = "[Audio enviado]"
+                    elif msg_type == "document":
+                        text = "[Documento enviado]"
+                    else:
+                        text = f"[{msg_type.capitalize()} enviado]"
                     
                     # 1. Find integration by phone_id
                     result = await db.execute(
@@ -100,58 +120,94 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     contacts = value.get("contacts", [])
                     profile_name = contacts[0].get("profile", {}).get("name") if contacts else None
                     
-                    if text:
-                        # 1. Mark as Read immediately
-                        try:
-                            access_token = decrypt_token(integration.access_token)
-                            read_url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
-                            read_payload = {
-                                "messaging_product": "whatsapp",
-                                "status": "read",
-                                "message_id": message.get("id")
-                            }
-                            async with httpx.AsyncClient() as http_client:
-                                await http_client.post(read_url, json=read_payload, headers={"Authorization": f"Bearer {access_token}"})
-                        except Exception as re:
-                            logger.debug(f"WhatsApp mark-as-read failed: {re}")
+                    # 3. Mark as Read immediately
+                    try:
+                        from app.services.messaging import MessagingService
+                        engine = MessagingService.get_engine(integration)
+                        await engine.mark_as_read(message.get("id"))
+                    except Exception as re:
+                        logger.debug(f"WhatsApp mark-as-read failed: {re}")
 
-                        from app.core.ai_service import AIService
-                        ai = AIService(business, db)
-                        
-                        meta = {
-                            "platform": "whatsapp",
-                            "name": profile_name
-                        }
-                        
+                    # 4. Match identity
+                    from app.services.identity_resolver import IdentityResolver
+                    sender_type, client = await IdentityResolver.resolve_sender(db, business.id, sender_phone)
+
+                    # 5. Check dynamic routing and feature configuration flags
+                    from app.models.business import VerticalType
+                    is_trade = business.vertical_type == VerticalType.TRADE
+
+                    from app.api.business import get_default_features_config, get_default_routing_config
+                    vertical = business.vertical_type.value if hasattr(business.vertical_type, "value") else (business.vertical_type or "BASIC")
+                    feat_cfg = business.features_config or get_default_features_config(vertical)
+                    feature_enabled = True
+                    flow_enabled = False
+
+                    cfg = business.routing_config or get_default_routing_config(vertical)
+
+                    if sender_type == "customer":
+                        feature_enabled = feat_cfg.get("scheduling", {}).get("enabled", True)
+                        flow_enabled = cfg.get("prospective_clients", {}).get("enabled", True)
+                    elif sender_type == "prospective_client":
+                        feature_enabled = is_trade and feat_cfg.get("campaign_flow", {}).get("enabled", False)
+                        flow_enabled = is_trade and (cfg.get("prospective_clients", {}).get("enabled", False) or feature_enabled)
+                    elif sender_type == "distributor_retailer":
+                        feature_enabled = is_trade and feat_cfg.get("b2b_solutions", {}).get("enabled", False)
+                        flow_enabled = is_trade and cfg.get("distributors_retailers", {}).get("enabled", False)
+                    elif sender_type == "sales_rep":
+                        feature_enabled = is_trade and feat_cfg.get("sales_intelligence", {}).get("enabled", False)
+                        flow_enabled = is_trade and cfg.get("sales_reps", {}).get("enabled", True)
+
+                    if not feature_enabled or not flow_enabled:
+                        logger.warning(f"Feature or flow disabled for sender {sender_phone} on business {business.id}")
                         try:
-                            response_text = await ai.get_response(sender_phone, text, meta)
-                            logger.debug(f"AI success for WA {sender_phone}. Sending...")
-                        except Exception as e:
-                            logger.error(f"WA AIService failed: {e}")
-                            traceback.print_exc()
-                            response_text = "Lo siento, estoy teniendo problemas técnicos. Por favor, intenta de nuevo."
-                        
-                        # 3. Send back via WhatsApp (decrypted token)
-                        import httpx
-                        access_token = decrypt_token(integration.access_token)
-                        url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
-                        headers = {
-                            "Authorization": f"Bearer {access_token}",
-                            "Content-Type": "application/json"
-                        }
-                        wa_payload = {
-                            "messaging_product": "whatsapp",
-                            "to": sender_phone,
-                            "type": "text",
-                            "text": {"body": response_text}
-                        }
-                        
-                        async with httpx.AsyncClient() as http_client:
-                            wa_res = await http_client.post(url, json=wa_payload, headers=headers)
-                            if wa_res.status_code >= 400:
-                                logger.error(f"WhatsApp API returned {wa_res.status_code}: {wa_res.text}")
+                            from app.services.messaging import MessagingService
+                            engine = MessagingService.get_engine(integration)
+                            if sender_type == "sales_rep":
+                                msg_text = (
+                                    "¡Hola! Tu número está registrado como administrador/colaborador en Sherpa. "
+                                    "Las herramientas de consulta de Inteligencia de Ventas no están activadas actualmente para tu cuenta."
+                                )
                             else:
-                                logger.debug(f"Successfully sent WA reply to {sender_phone}")
+                                msg_text = "Este servicio no está habilitado actualmente para este número."
+                            await engine.send_text(sender_phone, msg_text)
+                        except Exception as se:
+                            logger.error(f"Failed to send disable notification: {se}")
+                        continue
+
+                    # 6. Normalize payload format to mimic Twilio for the tasks
+                    normalized_payload = {
+                        "From": f"whatsapp:+{sender_phone}",
+                        "To": f"whatsapp:+{integration.settings.get('phone_number') or phone_id}",
+                        "Body": text or "",
+                        "ProfileName": profile_name or ""
+                    }
+
+                    # 7. Dispatch to Celery queues (asynchronously)
+                    from app.tasks.messages import (
+                        process_sales_rep_message, 
+                        process_distributor_message, 
+                        process_prospect_message,
+                        process_customer_message
+                    )
+                    
+                    if sender_type == "customer":
+                        client_id = client.id if client else None
+                        process_customer_message.apply_async(
+                            args=[business.id, client_id, normalized_payload], queue="prospects"
+                        )
+                    elif sender_type == "sales_rep":
+                        process_sales_rep_message.apply_async(
+                            args=[business.id, client.id, normalized_payload], queue="sales-reps"
+                        )
+                    elif sender_type == "distributor_retailer":
+                        process_distributor_message.apply_async(
+                            args=[business.id, client.id, normalized_payload], queue="distributors"
+                        )
+                    else:
+                        client_id = client.id if client else None
+                        process_prospect_message.apply_async(
+                            args=[business.id, client_id, normalized_payload], queue="prospects"
+                        )
 
         return {"status": "ok"}
     except Exception as e:

@@ -78,23 +78,9 @@ async def send_single_reminder(appointment_id: str):
         # 3. Send via WhatsApp (Priority)
         if whatsapp:
             try:
-                access_token = decrypt_token(whatsapp.access_token)
-                phone_id = whatsapp.settings.get("phone_number_id")
-                if access_token and phone_id:
-                    url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
-                    headers = {"Authorization": f"Bearer {access_token}"}
-                    body = {
-                        "messaging_product": "whatsapp",
-                        "to": client.phone,
-                        "type": "text",
-                        "text": {"body": reminder_text}
-                    }
-                    async with httpx.AsyncClient() as client_http:
-                        res = await client_http.post(url, json=body, headers=headers)
-                        if res.status_code < 400:
-                            sent = True
-                        else:
-                            logger.error("WhatsApp API Error: %s", res.text)
+                from app.services.messaging import MessagingService
+                engine = MessagingService.get_engine(whatsapp)
+                sent = await engine.send_text(client.phone, reminder_text)
             except Exception as e:
                 logger.error("WhatsApp reminder failed for apt %s: %s", apt.id, e)
 

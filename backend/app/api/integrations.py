@@ -256,6 +256,167 @@ async def provision_whatsapp(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/whatsapp/config")
+async def get_whatsapp_config(
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Get public configuration for Meta WhatsApp onboarding."""
+    return {
+        "app_id": settings.META_APP_ID,
+        "config_id": settings.META_EMBEDDED_SIGNUP_CONFIG_ID
+    }
+
+@router.post("/whatsapp/meta-onboard")
+async def meta_onboard_whatsapp(
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """
+    Onboards a client's WhatsApp Business Account using Meta Cloud API.
+    Can be called with:
+      Option A (Embedded Signup Code):
+        - code: str (OAuth authorization code from Meta login)
+      Option B (Manual Input / Sandbox):
+        - phone_number_id: str
+        - waba_id: str
+        - display_phone_number: str
+    """
+    result = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.user_id == current_user.id)
+    )
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+
+    phone_number_id = data.get("phone_number_id")
+    waba_id = data.get("waba_id")
+    display_phone_number = data.get("display_phone_number")
+    code = data.get("code")
+
+    import httpx
+    version = settings.META_GRAPH_API_VERSION or "v22.0"
+
+    # Option A: Automatic resolution using OAuth authorization code
+    if code:
+        if not settings.META_APP_ID or not settings.META_APP_SECRET:
+            raise HTTPException(
+                status_code=500,
+                detail="META_APP_ID and META_APP_SECRET are not configured on the server."
+            )
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                token_res = await client.get(
+                    f"https://graph.facebook.com/{version}/oauth/access_token",
+                    params={
+                        "client_id": settings.META_APP_ID,
+                        "client_secret": settings.META_APP_SECRET,
+                        "code": code
+                    },
+                    timeout=15.0
+                )
+                if token_res.status_code >= 400:
+                    logger.error("Failed to exchange code: %s", token_res.text)
+                    raise HTTPException(status_code=400, detail=f"Code exchange failed: {token_res.text}")
+                
+                client_token = token_res.json().get("access_token")
+                
+                waba_res = await client.get(
+                    f"https://graph.facebook.com/{version}/me/client_whatsapp_business_accounts",
+                    headers={"Authorization": f"Bearer {client_token}"},
+                    timeout=15.0
+                )
+                if waba_res.status_code >= 400 or not waba_res.json().get("data"):
+                    logger.error("Failed to fetch client WABAs: %s", waba_res.text)
+                    raise HTTPException(status_code=400, detail="Could not retrieve WhatsApp Business Account from Meta.")
+                
+                waba_id = waba_res.json()["data"][0]["id"]
+                
+                phone_res = await client.get(
+                    f"https://graph.facebook.com/{version}/{waba_id}/phone_numbers",
+                    headers={"Authorization": f"Bearer {client_token}"},
+                    timeout=15.0
+                )
+                if phone_res.status_code >= 400 or not phone_res.json().get("data"):
+                    logger.error("Failed to fetch phone numbers: %s", phone_res.text)
+                    raise HTTPException(status_code=400, detail="Could not retrieve phone numbers from Meta.")
+                
+                phone_data = phone_res.json()["data"][0]
+                phone_number_id = phone_data["id"]
+                display_phone_number = phone_data["display_phone_number"]
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("Meta API resolution error during onboarding")
+            raise HTTPException(status_code=500, detail=f"Failed to auto-resolve Meta account details: {str(e)}")
+
+    if not phone_number_id or not waba_id or not display_phone_number:
+        raise HTTPException(
+            status_code=400, 
+            detail="Missing required fields: phone_number_id, waba_id, display_phone_number"
+        )
+        
+    import re
+    clean_phone = re.sub(r"\D", "", display_phone_number)
+    if not clean_phone.startswith("+"):
+        clean_phone = f"+{clean_phone}"
+
+    if not settings.META_SYSTEM_USER_TOKEN:
+        raise HTTPException(
+            status_code=500,
+            detail="META_SYSTEM_USER_TOKEN is not configured on the server."
+        )
+
+    access_token_encrypted = encrypt_token(settings.META_SYSTEM_USER_TOKEN)
+
+    int_result = await db.execute(
+        select(Integration)
+        .where(Integration.business_id == business.id, Integration.provider == "whatsapp")
+    )
+    integration = int_result.scalars().first()
+    
+    if not integration:
+        integration = Integration(
+            business_id=business.id,
+            provider="whatsapp",
+            access_token=access_token_encrypted,
+            settings={
+                "provider_type": "meta_cloud_api",
+                "phone_number_id": phone_number_id,
+                "waba_id": waba_id,
+                "phone_number": clean_phone,
+                "default_template_name": "hello_communication",
+                "default_template_lang": "es"
+            }
+        )
+        db.add(integration)
+    else:
+        integration.access_token = access_token_encrypted
+        integration.settings = {
+            **integration.settings,
+            "provider_type": "meta_cloud_api",
+            "phone_number_id": phone_number_id,
+            "waba_id": waba_id,
+            "phone_number": clean_phone
+        }
+        
+    await db.commit()
+    await db.refresh(integration)
+    
+    logger.info(
+        "Meta WhatsApp onboarding completed for business %s: WABA=%s, phone_id=%s, phone=%s",
+        business.id, waba_id, phone_number_id, clean_phone
+    )
+    
+    return {
+        "status": "success",
+        "phone_number": clean_phone,
+        "provider_type": "meta_cloud_api"
+    }
+
 @router.delete("/{provider}")
 async def disconnect_integration(
     provider: str,

@@ -72,6 +72,13 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str | None = None
     TWILIO_WHATSAPP_NUMBER: str | None = None # Master sandbox number or main platform number
 
+    # META WHATSAPP CLOUD API PLATFORM SETTINGS
+    META_APP_ID: str | None = None
+    META_APP_SECRET: str | None = None
+    META_SYSTEM_USER_TOKEN: str | None = None
+    META_EMBEDDED_SIGNUP_CONFIG_ID: str | None = None
+    META_GRAPH_API_VERSION: str = "v22.0"
+
     model_config = {
         "case_sensitive": True,
         "env_file": ".env",

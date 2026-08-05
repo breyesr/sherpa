@@ -186,6 +186,16 @@ class AIService:
             user_msg_obj = Message(conversation_id=conv.id, role="user", content=user_message)
             self.db.add(user_msg_obj)
             conv.last_message_at = datetime.utcnow()
+            
+            # Track 24-hour window for WhatsApp Cloud API
+            if platform == "whatsapp":
+                if not conv.extra_data:
+                    conv.extra_data = {}
+                # Use a safe dict copy to trigger SQLAlchemy tracking
+                extra = dict(conv.extra_data)
+                extra["whatsapp_24h_window_start"] = datetime.utcnow().isoformat()
+                conv.extra_data = extra
+                
             await self.db.commit()
 
             # 3. Memory Stage (Redis for quick LLM context)

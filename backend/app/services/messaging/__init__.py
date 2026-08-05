@@ -32,5 +32,22 @@ class MessagingService:
                 auth_token_encrypted=auth_token_encrypted,
                 phone_number=phone_number
             )
+        elif provider_type == "meta_cloud_api":
+            phone_number_id = integration.settings.get("phone_number_id")
+            waba_id = integration.settings.get("waba_id")
+            access_token_encrypted = integration.access_token  # encrypted token in DB
+            
+            if not phone_number_id or not waba_id or not access_token_encrypted:
+                raise ValueError(
+                    f"Incomplete Meta configuration for integration {integration.id}. "
+                    f"Required: phone_number_id, waba_id, access_token."
+                )
+                
+            from app.services.messaging.meta_cloud_engine import MetaCloudEngine
+            return MetaCloudEngine(
+                phone_number_id=phone_number_id,
+                access_token_encrypted=access_token_encrypted,
+                waba_id=waba_id
+            )
         else:
             raise NotImplementedError(f"Messaging provider type '{provider_type}' is not supported")

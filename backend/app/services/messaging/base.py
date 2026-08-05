@@ -23,3 +23,17 @@ class BaseMessagingEngine(ABC):
         Configure the webhook target URL for incoming messages.
         """
         pass
+
+    @abstractmethod
+    async def send_template(self, to_number: str, template_name: str, language: str = "es", components: list = None, **kwargs) -> bool:
+        """
+        Send a WhatsApp message template.
+        """
+        pass
+
+    @abstractmethod
+    async def mark_as_read(self, message_id: str, **kwargs) -> bool:
+        """
+        Mark a message as read in the provider channel.
+        """
+        pass

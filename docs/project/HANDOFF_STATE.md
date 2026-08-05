@@ -1,43 +1,37 @@
-# Handoff State: 2026-08-03 (All Prioritized Tasks 100% COMPLETE)
+# Handoff State: 2026-08-05 (Meta WhatsApp Cloud API Integration Complete)
 
 ## Current Branch
-`refactor/phase-6-frontend-architecture` (Successfully merged and deployed to `staging`)
+`feature/backend/meta-whatsapp-migration` (Successfully implemented and verified locally)
 
 ## Accomplishments This Session
-1. **Centralized API Client (Epic 203.1)**:
-   - Created client-side centralized `frontend/lib/apiClient.ts` that handles automatic token injection from Zustand (`store/authStore.ts`), 401 redirects to `/auth/login`, and standardized error throwing.
-   - Refactored all **44 files** that previously had raw `fetch` and inline `Authorization` headers to use `apiClient`.
-   - Fixed a TypeScript type check issue in `app/DashboardHome.tsx` regarding features configuration casting.
-2. **Modal-to-Drawer Migration (Epic 203.3)**:
-   - Swapped the legacy popup `StoreModal.tsx` usage in `app/trade/page.tsx` with the sliding `AccountDrawer.tsx`.
-   - Completely deleted the orphaned legacy files `components/ClientModal.tsx` and `components/StoreModal.tsx` from the codebase.
-3. **Elimination of `: any` annotations (Epic 203.4)**:
-   - Performed two passes of `: any` removal, reducing the instances of `: any` across the entire codebase to **0** by utilizing proper typings from `@/types/models` and automatic TypeScript type inference. Resolved all residual compilation and Lucide icon typing errors in `Sidebar.tsx`, `TelegramModal.tsx`, `OrderDrawer.tsx`, and `ServiceDrawer.tsx`. Verified with `npx tsc --noEmit` which now exits with code `0`.
-4. **react-hook-form + zod integration (Epic 203.2)**:
-   - Added `react-hook-form`, `zod`, and `@hookform/resolvers` to the frontend.
-   - Created validation schemas: `client.ts` (client details), `account.ts` (account details), `catalog.ts` (products & categories), and `order.ts` (orders list).
-   - Refactored `ClientDrawer.tsx` and `AccountDrawer.tsx` to use `useForm` hooks with Zod schema validation resolvers.
-5. **Vitest & React Testing Library (Epic 203.5)**:
-   - Installed `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, `jsdom`, and `@vitejs/plugin-react`.
-   - Created `vitest.config.ts` and `vitest.setup.ts`.
-   - Implemented unit tests under `lib/__tests__/apiClient.test.ts` and `lib/schemas/__tests__/client.test.ts` achieving **7/7 passing tests**.
-6. **Backlog Partitioning & Archive (Execution Hygiene)**:
-   - Cleaned the active `docs/project/BACKLOG.md` by archiving fully completed Epics (200, 204, 202, 203, and now 201) and transferring them to `docs/project/ARCHIVE_BACKLOG.md` to keep the active backlog under the 400-line limit.
-7. **Backend print() to logging Refactor (Task 200.7)**:
-   - Replaced 110 direct `print()` calls across 18 backend python files (including core modules like `ai_service.py`, `graphrag.py`, and tasks) with appropriate logging levels (critical, error, warning, info, debug) using standard logger and lazy `%s` formatting. Verified count is 0 and all tests pass.
-8. **Module Docstrings for Large Files (Task 204.4)**:
-   - Added standard triple-quote module docstrings to `backend/app/services/graphrag.py` and `backend/app/services/agentic_orchestrator.py` (both files >200 lines). Verified backend tests pass.
-9. **Nixpacks Staging Deployment Fix**:
-   - Fixed an issue in `backend/nixpacks.toml` where custom build overrides bypassed virtual environment initialization, causing `pip: command not found` errors.
-   - Resolved a runtime `ImportError: no pq wrapper available` crash by: (a) restoring the missing `psycopg-binary==3.3.4` package to `backend/requirements.lock`, and (b) installing `libpq-dev` via `aptPkgs` in `backend/nixpacks.toml` to ensure the required PostgreSQL client libraries are available system-wide in standard dynamic linker search paths.
+1. **Core Messaging Engine (Task 206.2)**:
+   - Implemented `MetaCloudEngine` in [meta_cloud_engine.py](file:///Users/bernardo/projects/sherpa/backend/app/services/messaging/meta_cloud_engine.py) using `httpx.AsyncClient` and Graph API `v22.0`.
+   - Supports `send_text` (with automatic 4096-char chunking), `send_media`, `send_template`, and `mark_as_read`.
+   - Registered `meta_cloud_api` inside the unified [MessagingService factory](file:///Users/bernardo/projects/sherpa/backend/app/services/messaging/__init__.py).
 
-## Compilation & Verification
-- Ran `npx tsc --noEmit` which exits with code `0`.
-- Ran `npm run build` which compiles successfully.
-- Ran `npm run test:ci` which runs 7/7 passing tests in 0.5s.
-- Checked remaining print count: 0 (operational files).
-- Ran pytest suite: 58/58 tests passed successfully.
-- Verified staging deployment on Railway builds and boots successfully.
+2. **Webhook Signature Security (Task 206.1)**:
+   - Developed HMAC-SHA256 request signature verification middleware inside [webhook_security.py](file:///Users/bernardo/projects/sherpa/backend/app/core/webhook_security.py).
+   - Validates `X-Hub-Signature-256` using `settings.META_APP_SECRET` with logging indicators and environment fallbacks for local testing and pytest suites.
+
+3. **Asynchronous Webhook Overhaul (Task 206.3)**:
+   - Refactored the direct `/webhook` POST endpoint in [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py).
+   - Validates incoming Meta signatures, parses message statuses, normalizes incoming messaging data to standard formatting, and dispatches processing asynchronously to Celery worker queues (`apply_async()`) rather than running blocking LLM completions inline.
+
+4. **24-Hour Window Gating (Task 207.1)**:
+   - Tracked the start of the WhatsApp 24-hour conversation window using [Conversation.extra_data["whatsapp_24h_window_start"]](file:///Users/bernardo/projects/sherpa/backend/app/core/ai_service.py) during message storage.
+   - Built a compliance check check gate in the Celery `send_twilio_reply` task [messages.py](file:///Users/bernardo/projects/sherpa/backend/app/tasks/messages.py) to block free-form outgoing texts and trigger an approved template message fallback (`hello_communication` by default) if outside the 24-hour window.
+
+5. **Multi-Mode Meta Onboarding (Task 207.2 & 207.3)**:
+   - Added backend endpoints `GET /whatsapp/config` (exposes public app settings) and `POST /whatsapp/meta-onboard` which supports both automated OAuth authorization code exchange (resolves user token, WABA ID, and phone number details automatically from Meta's Graph API) and manual input fallbacks.
+
+6. **Frontend Signup UI Wizard (Task 208.1 & 208.2)**:
+   - Redesigned the [WhatsAppModal.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/WhatsAppModal.tsx) onboarding wizard component to load the Facebook Login SDK, trigger Meta's Embedded Signup popup using `config_id`, and POST the authorization code to the backend.
+   - Built a beautiful developer manual toggle inside the modal to paste details directly for staging testing.
+   - Adjusted [IntegrationsPanel.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/settings/components/IntegrationsPanel.tsx) provider name checks to dynamically show "Cloud API" instead of "Twilio" for Meta channels.
+
+7. **Type Safety & Verification**:
+   - Regenerated `openapi.json` and type-synced the frontend using `npm run gen:api`.
+   - Verified that all backend and frontend checks (`pytest`, `npx tsc --noEmit`) pass successfully with zero errors.
 
 ## Next Steps / Next Sprint
 1. **Epic 205 & Sprint 9 Implementation**:
@@ -47,5 +41,5 @@
    - Deliver Task 205.5: "Unit of Measure" field integration in product CatalogDrawer form.
 2. **Phase 7: Mobile Responsiveness & Testing**:
    - Run end-to-end user tests on the Drawers and forms in the browser to ensure the RHF + Zod fields interact perfectly.
-
-
+3. **Deprecate Twilio Code (Task 208.3)**:
+   - Once the user is fully migrated and ready to remove Twilio support entirely, clean up legacy Twilio engines and routes.

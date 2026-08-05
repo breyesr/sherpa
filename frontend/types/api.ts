@@ -19,6 +19,13 @@ export interface paths {
     /** Login */
     post: operations["login_api_v1_auth_login_post"];
   };
+  "/api/v1/auth/logout": {
+    /**
+     * Logout
+     * @description Clear the server-side HttpOnly sherpa_token cookie.
+     */
+    post: operations["logout_api_v1_auth_logout_post"];
+  };
   "/api/v1/business/stats": {
     /** Get Business Stats */
     get: operations["get_business_stats_api_v1_business_stats_get"];
@@ -71,6 +78,27 @@ export interface paths {
      * @description Automate Twilio subaccount and MX number provisioning for this business.
      */
     post: operations["provision_whatsapp_api_v1_integrations_whatsapp_provision_post"];
+  };
+  "/api/v1/integrations/whatsapp/config": {
+    /**
+     * Get Whatsapp Config
+     * @description Get public configuration for Meta WhatsApp onboarding.
+     */
+    get: operations["get_whatsapp_config_api_v1_integrations_whatsapp_config_get"];
+  };
+  "/api/v1/integrations/whatsapp/meta-onboard": {
+    /**
+     * Meta Onboard Whatsapp
+     * @description Onboards a client's WhatsApp Business Account using Meta Cloud API.
+     * Can be called with:
+     *   Option A (Embedded Signup Code):
+     *     - code: str (OAuth authorization code from Meta login)
+     *   Option B (Manual Input / Sandbox):
+     *     - phone_number_id: str
+     *     - waba_id: str
+     *     - display_phone_number: str
+     */
+    post: operations["meta_onboard_whatsapp_api_v1_integrations_whatsapp_meta_onboard_post"];
   };
   "/api/v1/integrations/{provider}": {
     /**
@@ -155,12 +183,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -388,6 +416,39 @@ export interface paths {
      */
     get: operations["lookup_postal_code_api_v1_trade_postal_codes__zip_code__get"];
   };
+  "/api/v1/trade/competitors": {
+    /**
+     * List Competitors
+     * @description List all competitors, optionally filtered by store.
+     */
+    get: operations["list_competitors_api_v1_trade_competitors_get"];
+    /**
+     * Create Competitor
+     * @description Record a new competitor entry.
+     */
+    post: operations["create_competitor_api_v1_trade_competitors_post"];
+  };
+  "/api/v1/trade/stores/{store_id}/brief": {
+    /**
+     * Get Strategic Brief
+     * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
+     */
+    get: operations["get_strategic_brief_api_v1_trade_stores__store_id__brief_get"];
+  };
+  "/api/v1/trade/clients/{client_id}/brief": {
+    /**
+     * Generate Visit Brief
+     * @description Generate a specialized AI brief for a store visit.
+     */
+    post: operations["generate_visit_brief_api_v1_trade_clients__client_id__brief_post"];
+  };
+  "/api/v1/trade/clients/{client_id}/qualify": {
+    /**
+     * Qualify Lead
+     * @description Generate a lead qualification report for a retailer.
+     */
+    post: operations["qualify_lead_api_v1_trade_clients__client_id__qualify_post"];
+  };
   "/api/v1/trade/categories": {
     /**
      * List Categories
@@ -459,39 +520,6 @@ export interface paths {
      * @description Update order metadata or status.
      */
     patch: operations["update_order_api_v1_trade_orders__order_id__patch"];
-  };
-  "/api/v1/trade/competitors": {
-    /**
-     * List Competitors
-     * @description List all competitors, optionally filtered by store.
-     */
-    get: operations["list_competitors_api_v1_trade_competitors_get"];
-    /**
-     * Create Competitor
-     * @description Record a new competitor entry.
-     */
-    post: operations["create_competitor_api_v1_trade_competitors_post"];
-  };
-  "/api/v1/trade/stores/{store_id}/brief": {
-    /**
-     * Get Strategic Brief
-     * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
-     */
-    get: operations["get_strategic_brief_api_v1_trade_stores__store_id__brief_get"];
-  };
-  "/api/v1/trade/clients/{client_id}/brief": {
-    /**
-     * Generate Visit Brief
-     * @description Generate a specialized AI brief for a store visit.
-     */
-    post: operations["generate_visit_brief_api_v1_trade_clients__client_id__brief_post"];
-  };
-  "/api/v1/trade/clients/{client_id}/qualify": {
-    /**
-     * Qualify Lead
-     * @description Generate a lead qualification report for a retailer.
-     */
-    post: operations["qualify_lead_api_v1_trade_clients__client_id__qualify_post"];
   };
   "/api/v1/trade/action-templates": {
     /**
@@ -2411,6 +2439,20 @@ export interface operations {
       };
     };
   };
+  /**
+   * Logout
+   * @description Clear the server-side HttpOnly sherpa_token cookie.
+   */
+  logout_api_v1_auth_logout_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   /** Get Business Stats */
   get_business_stats_api_v1_business_stats_get: {
     responses: {
@@ -2599,6 +2641,54 @@ export interface operations {
    * @description Automate Twilio subaccount and MX number provisioning for this business.
    */
   provision_whatsapp_api_v1_integrations_whatsapp_provision_post: {
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Whatsapp Config
+   * @description Get public configuration for Meta WhatsApp onboarding.
+   */
+  get_whatsapp_config_api_v1_integrations_whatsapp_config_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Meta Onboard Whatsapp
+   * @description Onboards a client's WhatsApp Business Account using Meta Cloud API.
+   * Can be called with:
+   *   Option A (Embedded Signup Code):
+   *     - code: str (OAuth authorization code from Meta login)
+   *   Option B (Manual Input / Sandbox):
+   *     - phone_number_id: str
+   *     - waba_id: str
+   *     - display_phone_number: str
+   */
+  meta_onboard_whatsapp_api_v1_integrations_whatsapp_meta_onboard_post: {
     requestBody: {
       content: {
         "application/json": {
@@ -3084,7 +3174,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -3860,6 +3950,131 @@ export interface operations {
     };
   };
   /**
+   * List Competitors
+   * @description List all competitors, optionally filtered by store.
+   */
+  list_competitors_api_v1_trade_competitors_get: {
+    parameters: {
+      query?: {
+        store_id?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CompetitorResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Create Competitor
+   * @description Record a new competitor entry.
+   */
+  create_competitor_api_v1_trade_competitors_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompetitorCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CompetitorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Strategic Brief
+   * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
+   */
+  get_strategic_brief_api_v1_trade_stores__store_id__brief_get: {
+    parameters: {
+      path: {
+        store_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Generate Visit Brief
+   * @description Generate a specialized AI brief for a store visit.
+   */
+  generate_visit_brief_api_v1_trade_clients__client_id__brief_post: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Qualify Lead
+   * @description Generate a lead qualification report for a retailer.
+   */
+  qualify_lead_api_v1_trade_clients__client_id__qualify_post: {
+    parameters: {
+      path: {
+        client_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
    * List Categories
    * @description List all product categories.
    */
@@ -4137,131 +4352,6 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["OrderResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /**
-   * List Competitors
-   * @description List all competitors, optionally filtered by store.
-   */
-  list_competitors_api_v1_trade_competitors_get: {
-    parameters: {
-      query?: {
-        store_id?: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["CompetitorResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /**
-   * Create Competitor
-   * @description Record a new competitor entry.
-   */
-  create_competitor_api_v1_trade_competitors_post: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CompetitorCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["CompetitorResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /**
-   * Get Strategic Brief
-   * @description Generate a strategic pre-visit brief for a specific store using GraphRAG.
-   */
-  get_strategic_brief_api_v1_trade_stores__store_id__brief_get: {
-    parameters: {
-      path: {
-        store_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /**
-   * Generate Visit Brief
-   * @description Generate a specialized AI brief for a store visit.
-   */
-  generate_visit_brief_api_v1_trade_clients__client_id__brief_post: {
-    parameters: {
-      path: {
-        client_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /**
-   * Qualify Lead
-   * @description Generate a lead qualification report for a retailer.
-   */
-  qualify_lead_api_v1_trade_clients__client_id__qualify_post: {
-    parameters: {
-      path: {
-        client_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": unknown;
         };
       };
       /** @description Validation Error */

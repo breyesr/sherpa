@@ -157,6 +157,28 @@
         }
       }
     },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout",
+        "description": "Clear the server-side HttpOnly sherpa_token cookie.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Logout Api V1 Auth Logout Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/business/stats": {
       "get": {
         "tags": [
@@ -573,6 +595,82 @@
               "application/json": {
                 "schema": {
                   "title": "Response Provision Whatsapp Api V1 Integrations Whatsapp Provision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/whatsapp/config": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Get Whatsapp Config",
+        "description": "Get public configuration for Meta WhatsApp onboarding.",
+        "operationId": "get_whatsapp_config_api_v1_integrations_whatsapp_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Whatsapp Config Api V1 Integrations Whatsapp Config Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/whatsapp/meta-onboard": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Meta Onboard Whatsapp",
+        "description": "Onboards a client's WhatsApp Business Account using Meta Cloud API.\nCan be called with:\n  Option A (Embedded Signup Code):\n    - code: str (OAuth authorization code from Meta login)\n  Option B (Manual Input / Sandbox):\n    - phone_number_id: str\n    - waba_id: str\n    - display_phone_number: str",
+        "operationId": "meta_onboard_whatsapp_api_v1_integrations_whatsapp_meta_onboard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Meta Onboard Whatsapp Api V1 Integrations Whatsapp Meta Onboard Post"
                 }
               }
             }
@@ -1594,7 +1692,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1612,7 +1710,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1734,7 +1832,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/telegram/webhook/{webhook_id}": {
@@ -2577,7 +2680,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/trade/stores": {
@@ -2954,12 +3062,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/trade/postal-codes/states": {
@@ -2985,12 +3088,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/trade/postal-codes/municipalities": {
@@ -3001,11 +3099,6 @@
         "summary": "List Municipalities",
         "description": "Retrieve all unique municipalities for a given state.",
         "operationId": "list_municipalities_api_v1_trade_postal_codes_municipalities_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "state",
@@ -3053,11 +3146,6 @@
         "summary": "List Zip Codes",
         "description": "Retrieve all zip codes and colonias for a given state and municipality.",
         "operationId": "list_zip_codes_api_v1_trade_postal_codes_zip_codes_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "state",
@@ -3114,11 +3202,6 @@
         "summary": "Lookup Postal Code",
         "description": "Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.",
         "operationId": "lookup_postal_code_api_v1_trade_postal_codes__zip_code__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "zip_code",
@@ -3141,6 +3224,247 @@
                     "$ref": "#/components/schemas/PostalCodeResponse"
                   },
                   "title": "Response Lookup Postal Code Api V1 Trade Postal Codes  Zip Code  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/competitors": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List Competitors",
+        "description": "List all competitors, optionally filtered by store.",
+        "operationId": "list_competitors_api_v1_trade_competitors_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompetitorResponse"
+                  },
+                  "title": "Response List Competitors Api V1 Trade Competitors Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Create Competitor",
+        "description": "Record a new competitor entry.",
+        "operationId": "create_competitor_api_v1_trade_competitors_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompetitorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/stores/{store_id}/brief": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Get Strategic Brief",
+        "description": "Generate a strategic pre-visit brief for a specific store using GraphRAG.",
+        "operationId": "get_strategic_brief_api_v1_trade_stores__store_id__brief_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Strategic Brief Api V1 Trade Stores  Store Id  Brief Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/clients/{client_id}/brief": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Generate Visit Brief",
+        "description": "Generate a specialized AI brief for a store visit.",
+        "operationId": "generate_visit_brief_api_v1_trade_clients__client_id__brief_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Generate Visit Brief Api V1 Trade Clients  Client Id  Brief Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/clients/{client_id}/qualify": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Qualify Lead",
+        "description": "Generate a lead qualification report for a retailer.",
+        "operationId": "qualify_lead_api_v1_trade_clients__client_id__qualify_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Qualify Lead Api V1 Trade Clients  Client Id  Qualify Post"
                 }
               }
             }
@@ -3703,247 +4027,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrderResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/competitors": {
-      "get": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "List Competitors",
-        "description": "List all competitors, optionally filtered by store.",
-        "operationId": "list_competitors_api_v1_trade_competitors_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "store_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "title": "Store Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CompetitorResponse"
-                  },
-                  "title": "Response List Competitors Api V1 Trade Competitors Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Create Competitor",
-        "description": "Record a new competitor entry.",
-        "operationId": "create_competitor_api_v1_trade_competitors_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompetitorCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompetitorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/stores/{store_id}/brief": {
-      "get": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Get Strategic Brief",
-        "description": "Generate a strategic pre-visit brief for a specific store using GraphRAG.",
-        "operationId": "get_strategic_brief_api_v1_trade_stores__store_id__brief_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "store_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Store Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Get Strategic Brief Api V1 Trade Stores  Store Id  Brief Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/clients/{client_id}/brief": {
-      "post": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Generate Visit Brief",
-        "description": "Generate a specialized AI brief for a store visit.",
-        "operationId": "generate_visit_brief_api_v1_trade_clients__client_id__brief_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "client_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Client Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Generate Visit Brief Api V1 Trade Clients  Client Id  Brief Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/clients/{client_id}/qualify": {
-      "post": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Qualify Lead",
-        "description": "Generate a lead qualification report for a retailer.",
-        "operationId": "qualify_lead_api_v1_trade_clients__client_id__qualify_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "client_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Client Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Qualify Lead Api V1 Trade Clients  Client Id  Qualify Post"
                 }
               }
             }

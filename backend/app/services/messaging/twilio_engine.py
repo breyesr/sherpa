@@ -76,3 +76,10 @@ class TwilioSubaccountEngine(BaseMessagingEngine):
         except Exception as e:
             logger.error("TwilioSubaccountEngine.register_webhook failed: %s", e)
             return False
+
+    async def send_template(self, to_number: str, template_name: str, language: str = "es", components: list = None, **kwargs) -> bool:
+        logger.warning("TwilioSubaccountEngine.send_template called. Falling back to plain text send.")
+        return await self.send_text(to_number, f"[Template: {template_name}]", **kwargs)
+
+    async def mark_as_read(self, message_id: str, **kwargs) -> bool:
+        return True
