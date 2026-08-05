@@ -449,13 +449,34 @@ async def get_whatsapp_status(
         return {"status": "disconnected", "error_message": "No WhatsApp integration configured."}
         
     settings_dict = integration.settings or {}
-    from_num = settings_dict.get("twilio_from_number")
+    from_num = settings_dict.get("phone_number") or settings_dict.get("twilio_from_number")
     
     if not from_num:
         return {"status": "pending_verification", "error_message": "Configure un número de WhatsApp en la configuración de la integración."}
         
     # Active Connection Health Check
     provider_type = settings_dict.get("provider_type", "twilio_subaccount")
+    from datetime import datetime
+    
+    if provider_type == "meta_cloud_api":
+        phone_number_id = settings_dict.get("phone_number_id")
+        waba_id = settings_dict.get("waba_id")
+        access_token = integration.access_token
+        
+        if not phone_number_id or not waba_id or not access_token:
+            return {
+                "status": "error",
+                "error_code": "meta_credentials_missing",
+                "error_message": "Credenciales de la API de Meta incompletas."
+            }
+        
+        return {
+            "status": "connected",
+            "provider_type": "meta_cloud_api",
+            "phone_number": from_num,
+            "checked_at": datetime.utcnow().isoformat()
+        }
+        
     if provider_type == "twilio_subaccount":
         account_sid = settings_dict.get("subaccount_sid")
         from app.core.encryption import decrypt_value
