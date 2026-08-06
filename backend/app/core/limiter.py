@@ -16,48 +16,60 @@ def _get_redis_client():
 
 async def get_whatsapp_usage(business_id: str) -> int:
     """Get the current tenant's message usage count for the current calendar month."""
-    redis_client = _get_redis_client()
-    now = datetime.datetime.utcnow()
-    key = f"usage:whatsapp:{business_id}:{now.strftime('%Y-%m')}"
-    val = await redis_client.get(key)
-    return int(val.decode('utf-8')) if val else 0
+    try:
+        redis_client = _get_redis_client()
+        now = datetime.datetime.utcnow()
+        key = f"usage:whatsapp:{business_id}:{now.strftime('%Y-%m')}"
+        val = await redis_client.get(key)
+        return int(val.decode('utf-8')) if val else 0
+    except Exception as e:
+        logger.warning("Failed to get WhatsApp usage from Redis (falling back to 0): %s", e)
+        return 0
 
 async def increment_whatsapp_usage(business_id: str) -> int:
     """Increment the current tenant's message usage count atomically with end-of-month TTL."""
-    redis_client = _get_redis_client()
-    now = datetime.datetime.utcnow()
-    key = f"usage:whatsapp:{business_id}:{now.strftime('%Y-%m')}"
-    
-    val = await redis_client.incr(key)
-    if val == 1:
-        # Expire at the first day of next month
-        if now.month == 12:
-            next_month = datetime.datetime(now.year + 1, 1, 1)
-        else:
-            next_month = datetime.datetime(now.year, now.month + 1, 1)
-        ttl_seconds = int((next_month - now).total_seconds())
-        await redis_client.expire(key, max(ttl_seconds, 60))
-    return val
+    try:
+        redis_client = _get_redis_client()
+        now = datetime.datetime.utcnow()
+        key = f"usage:whatsapp:{business_id}:{now.strftime('%Y-%m')}"
+        
+        val = await redis_client.incr(key)
+        if val == 1:
+            # Expire at the first day of next month
+            if now.month == 12:
+                next_month = datetime.datetime(now.year + 1, 1, 1)
+            else:
+                next_month = datetime.datetime(now.year, now.month + 1, 1)
+            ttl_seconds = int((next_month - now).total_seconds())
+            await redis_client.expire(key, max(ttl_seconds, 60))
+        return val
+    except Exception as e:
+        logger.warning("Failed to increment WhatsApp usage in Redis (falling back to 1): %s", e)
+        return 1
 
 async def check_whatsapp_limit(db, business_id: str) -> bool:
     """
     Check if the business has exceeded its WhatsApp monthly usage limit.
     Returns True if allowed (within limit), False if blocked (limit exceeded).
     """
-    from sqlalchemy.future import select
-    from app.models.business import BusinessProfile
-    
-    result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.id == business_id)
-    )
-    business = result.scalars().first()
-    if not business:
-        return False
+    try:
+        from sqlalchemy.future import select
+        from app.models.business import BusinessProfile
         
-    from app.core.constants import DEFAULT_WHATSAPP_LIMIT
-    allowed_limit = DEFAULT_WHATSAPP_LIMIT + business.purchased_credits
-    current_usage = await get_whatsapp_usage(business_id)
-    return current_usage < allowed_limit
+        result = await db.execute(
+            select(BusinessProfile).where(BusinessProfile.id == business_id)
+        )
+        business = result.scalars().first()
+        if not business:
+            return False
+            
+        from app.core.constants import DEFAULT_WHATSAPP_LIMIT
+        allowed_limit = DEFAULT_WHATSAPP_LIMIT + business.purchased_credits
+        current_usage = await get_whatsapp_usage(business_id)
+        return current_usage < allowed_limit
+    except Exception as e:
+        logger.warning("Failed to check WhatsApp limit (defaulting to True/allow): %s", e)
+        return True
 
 async def check_and_send_usage_alert(db, business, used: int, limit: int, threshold: str):
     """Trigger 80% and 100% usage alerts if they haven't been sent yet this month."""
