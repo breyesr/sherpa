@@ -244,6 +244,7 @@
     - **Given** all client migration is finished,
     - **When** deleting deprecated code,
     - **Then** completely remove `twilio_engine.py`, legacy Twilio provisioner, TwiML references in webhook rejections, and the `POST /webhook/twilio` routes.
+    - **Then** rename the Celery background task `send_twilio_reply` to a provider-agnostic name (e.g., `send_whatsapp_reply`) across the entire codebase.
     - **When** upgrading Graph API versions,
     - **Then** modify all Graph API references to target `v22.0` (using centralized `META_GRAPH_API_VERSION` settings).
   - **Files to Modify/Delete**:

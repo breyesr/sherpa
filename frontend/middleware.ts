@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. If no token and trying to access protected route
-  if (!token && !pathname.startsWith('/auth')) {
+  if (!token && !pathname.startsWith('/auth') && pathname !== '/privacy') {
     // Only redirect if it's not the onboarding page (which handles its own state)
     // Actually, onboarding also needs auth, so it's fine.
     if (pathname !== '/') {

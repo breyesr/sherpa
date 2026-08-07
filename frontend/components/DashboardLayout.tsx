@@ -26,7 +26,7 @@ export default function DashboardLayout({
                            document.body.innerText.includes("Active Pipeline") ||
                            document.body.innerText.includes("business briefing");
       
-      const isProtectedRoute = !pathname.startsWith('/auth') && pathname !== '/';
+      const isProtectedRoute = !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/privacy';
       
       if (hasDashboard || isProtectedRoute) {
         fetch('/api/auth', {
@@ -45,7 +45,7 @@ export default function DashboardLayout({
   }, [isClient, token, pathname]);
 
   // Standard Public Routes
-  if (pathname.startsWith('/auth') || pathname.startsWith('/onboarding')) {
+  if (pathname.startsWith('/auth') || pathname.startsWith('/onboarding') || pathname === '/privacy') {
     return <>{children}</>;
   }
 

@@ -43,3 +43,5 @@
    - Run end-to-end user tests on the Drawers and forms in the browser to ensure the RHF + Zod fields interact perfectly.
 3. **Deprecate Twilio Code (Task 208.3)**:
    - Once the user is fully migrated and ready to remove Twilio support entirely, clean up legacy Twilio engines and routes.
+   - Rename the Celery task `send_twilio_reply` to `send_whatsapp_reply` to ensure codebase clean-up and nomenclature alignment.
+
