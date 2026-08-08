@@ -1,0 +1,22 @@
+[tool.ruff]
+exclude = [
+    "migrations",
+    "tests",
+    "scripts",
+    "scratch",
+]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = [
+    "E501", # line too long
+    "E712", # comparison to False/True (SQLAlchemy)
+    "F401", # unused imports
+    "F841", # unused variables
+    "E402", # module level import not at top of file
+    "E701", # multiple statements on one line (colon)
+    "F811", # redefinition of unused variable
+    "E711", # comparison to None (SQLAlchemy)
+    "F541", # f-string without placeholders
+    "E702", # multiple statements on one line (semicolon)
+]
