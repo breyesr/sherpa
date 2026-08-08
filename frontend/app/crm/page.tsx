@@ -14,23 +14,33 @@ export default async function CRMPage() {
   let clients = [];
   let business = null;
 
+  let shouldRedirectToOnboarding = false;
+
   try {
     const [clientsRes, bizRes] = await Promise.all([
       serverFetch('/crm/clients'),
       serverFetch('/business/me')
     ]);
 
-    if (clientsRes.ok) {
-      clients = await clientsRes.json();
-    } else if (clientsRes.status === 401) {
-      redirect('/auth/login');
-    }
+    if (bizRes.status === 404) {
+      shouldRedirectToOnboarding = true;
+    } else {
+      if (clientsRes.ok) {
+        clients = await clientsRes.json();
+      } else if (clientsRes.status === 401) {
+        redirect('/auth/login');
+      }
 
-    if (bizRes.ok) {
-      business = await bizRes.json();
+      if (bizRes.ok) {
+        business = await bizRes.json();
+      }
     }
   } catch (err) {
     console.error('Failed to fetch CRM data:', err);
+  }
+
+  if (shouldRedirectToOnboarding) {
+    redirect('/onboarding');
   }
 
   return <ClientCRM initialClients={clients} initialBusiness={business} token={token} />;

@@ -14,20 +14,30 @@ export default async function SettingsPage() {
   let business = null;
   let user = null;
 
+  let shouldRedirectToOnboarding = false;
+
   try {
     const [busRes, userRes] = await Promise.all([
       serverFetch('/business/me'),
       serverFetch('/auth/me')
     ]);
 
-    if (busRes.ok) business = await busRes.json();
-    if (userRes.ok) user = await userRes.json();
+    if (busRes.status === 404) {
+      shouldRedirectToOnboarding = true;
+    } else {
+      if (busRes.ok) business = await busRes.json();
+      if (userRes.ok) user = await userRes.json();
+    }
 
     if (busRes.status === 401) {
       redirect('/auth/login');
     }
   } catch (err) {
     console.error('Failed to fetch settings data:', err);
+  }
+
+  if (shouldRedirectToOnboarding) {
+    redirect('/onboarding');
   }
 
   return (

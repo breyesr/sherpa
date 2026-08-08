@@ -15,6 +15,8 @@ export default async function CalendarPage() {
   let busySlots = [];
   let business = null;
 
+  let shouldRedirectToOnboarding = false;
+
   try {
     const [aptRes, busyRes, bizRes] = await Promise.all([
       serverFetch('/crm/appointments'),
@@ -22,20 +24,24 @@ export default async function CalendarPage() {
       serverFetch('/business/me')
     ]);
 
-    if (aptRes.ok) appointments = await aptRes.json();
-    if (busyRes.ok) {
-      const data = await busyRes.json();
-      busySlots = data.busy_slots || [];
-    }
-    if (bizRes.ok) {
-      business = await bizRes.json();
-      const features = business?.features_config || {};
-      const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
-      const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
-      const showScheduling = showServices || showSalesIntel;
+    if (bizRes.status === 404) {
+      shouldRedirectToOnboarding = true;
+    } else {
+      if (aptRes.ok) appointments = await aptRes.json();
+      if (busyRes.ok) {
+        const data = await busyRes.json();
+        busySlots = data.busy_slots || [];
+      }
+      if (bizRes.ok) {
+        business = await bizRes.json();
+        const features = business?.features_config || {};
+        const showServices = features.services?.enabled ?? (business?.vertical_type === 'BASIC');
+        const showSalesIntel = features.sales_intelligence?.enabled ?? (business?.vertical_type === 'TRADE');
+        const showScheduling = showServices || showSalesIntel;
 
-      if (!showScheduling) {
-        redirect('/');
+        if (!showScheduling) {
+          redirect('/');
+        }
       }
     }
 
@@ -44,6 +50,10 @@ export default async function CalendarPage() {
     }
   } catch (err) {
     console.error('Failed to fetch calendar data:', err);
+  }
+
+  if (shouldRedirectToOnboarding) {
+    redirect('/onboarding');
   }
 
   return (

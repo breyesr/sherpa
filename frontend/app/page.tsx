@@ -2,6 +2,7 @@ import { serverFetch } from '@/lib/api';
 import DashboardHome from './DashboardHome';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 export default async function Home() {
   const cookieStore = cookies();
@@ -41,16 +42,26 @@ export default async function Home() {
     upcoming: []
   };
 
+  let shouldRedirectToOnboarding = false;
+
   try {
     const [busRes, statsRes] = await Promise.all([
       serverFetch('/business/me'),
       serverFetch('/business/stats')
     ]);
 
-    if (busRes.ok) business = await busRes.json();
-    if (statsRes.ok) stats = await statsRes.json();
+    if (busRes.status === 404) {
+      shouldRedirectToOnboarding = true;
+    } else {
+      if (busRes.ok) business = await busRes.json();
+      if (statsRes.ok) stats = await statsRes.json();
+    }
   } catch (err) {
     console.error('Failed to fetch dashboard data:', err);
+  }
+
+  if (shouldRedirectToOnboarding) {
+    redirect('/onboarding');
   }
 
   return (
