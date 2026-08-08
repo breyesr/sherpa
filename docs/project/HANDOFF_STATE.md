@@ -1,27 +1,22 @@
-# Handoff State: 2026-08-08 (WhatsApp Flow Fixed & CI Green)
+# Handoff State: 2026-08-08 (Onboarding Redirects & E2E Validation)
 
 ## Current Branch
-`feature/backend/whatsapp-flow-fix` (Created from `staging` and successfully deployed to staging and production)
+`feature/backend/whatsapp-flow-fix` (Successfully merged to `staging` and `main` / Production)
 
 ## Accomplishments This Session
-1. **Identified & Documented Critical Bugs**:
-   - Conducted a full parallel audit of the WhatsApp incoming/outgoing channels.
-   - Discovered 3 critical bugs blocking the test flow and generated [whatsapp_flow_audit.md](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md).
+1. **Frontend Onboarding Redirection**:
+   - Added server-side checks in Next.js 14 page files (`frontend/app/page.tsx`, `frontend/app/calendar/page.tsx`, `frontend/app/crm/page.tsx`, and `frontend/app/settings/page.tsx`).
+   - If `/api/v1/business/me` returns `404` (indicating a newly registered user or a user account without a business profile), the server instantly redirects the browser to `/onboarding` instead of loading a broken dashboard and throwing a cascade of 404 console errors.
 
-2. **Created Backlog Epics**:
-   - Added Epic 210 (WhatsApp 24h Window & Template Fallback Fix), Epic 211 (WhatsApp Webhook Robustness), and Epic 212 (Twilio→Meta Naming & Import Cleanup) to [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md).
+2. **Meta app configuration & Webhook Diagnosis**:
+   - Validated that the production webhook is successfully receiving and verifying signatures (`200 OK`) using the updated `META_APP_SECRET` in Railway.
+   - Identified that Meta's Graph API was returning `400 API access deactivated` due to an archived/inactive app status in Facebook Developers, which the user subsequently unarchived/activated.
 
-3. **Applied & Verified Hotfixes (Epic 210 Completed & Task 211.1 Completed)**:
-   - **Prospect Qualifier 24h window**: Updated `prospect_qualifier.py` to record `whatsapp_24h_window_start` in the DB conversation metadata.
-   - **Template fallback default**: Swapped `hello_communication` for `hello_world` and added a warning log in `messages.py` containing the `body` so text messages aren't lost silently.
-   - **Safe webhook dispatch client lookup**: Added `client.id if client else None` safety checks in `whatsapp.py` to avoid `AttributeError` for sales rep and distributor tasks.
-   - Merged `feature/backend/whatsapp-flow-fix` into `staging` and then into `main` (Production).
-   - **SUCCESSFUL E2E TEST**: User sent a message via WhatsApp, and the system responded with the AI-generated reply instantly!
+3. **E2E messaging success**:
+   - The user confirmed that the entire WhatsApp incoming and outgoing AI response pipeline is fully operational in production.
 
-4. **Resolved CI Ruff Linting Issues**:
-   - Created [pyproject.toml](file:///Users/bernardo/projects/sherpa/backend/pyproject.toml) to configure Ruff. It excludes generated migrations, tests, manual scripts, and ignores style/formatting warnings (E402, E701, E702, E711, E712, F401, F541, F811, F841).
-   - Cleaned up PEP8 violations in modified files (`whatsapp.py`, `messages.py`, `prospect_qualifier.py`).
-   - Verified that `ruff check backend` runs with zero errors locally, which resolves the GitHub Actions pipeline failures.
+4. **Repository Cleanliness**:
+   - Discarded local database initialization scripts at the user's request (since they configured their API keys on their side) to keep the repository clean.
 
 ## Next Steps / Next Sprint
 1. **Epic 211: Webhook Robustness**:

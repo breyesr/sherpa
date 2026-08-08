@@ -1,5 +1,10 @@
 # Handoff Log
 
+- **2026-08-08 (Onboarding Redirects & Meta Cloud API Production Confirmed)**: Implemented frontend onboarding redirects on 404 business profiles, and successfully validated end-to-end production messaging.
+  - **Onboarding Redirects**: Configured server-side redirects to `/onboarding` if `/business/me` returns 404 on all primary authenticated routes (`/`, `/calendar`, `/crm`, `/settings`), preventing console error cascades and broken page rendering.
+  - **Meta Webhook Signature & App Activation**: Diagnosed and assisted in resolving Meta App webhook signature mismatches and unarchiving the Meta Developer App to restore full API access in production.
+  - **Repository Cleanup**: Discarded local database initialization scripts at user request once keys were verified operational in production.
+
 - **2026-08-07 (WhatsApp Flow Fixes & Backlog Epics - VERIFIED)**: Created branch `feature/backend/whatsapp-flow-fix` and resolved multiple bugs blocking webhook replies. Merged to `staging` and `main` (Production), and verified working via an end-to-end WhatsApp messaging test.
   - **Fixed 24h Window Tracking (Task 210.3)**: Set `whatsapp_24h_window_start` inside `conv.extra_data` on incoming messages in `prospect_qualifier.py`.
   - **Fixed Template Fallback & Discard (Tasks 210.1 & 210.2)**: Set fallback default template in `messages.py` to `hello_world` and added warning logging for unsent AI responses.
