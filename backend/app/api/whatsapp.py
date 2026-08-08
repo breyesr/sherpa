@@ -196,12 +196,14 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                             args=[business.id, client_id, normalized_payload], queue="slow_queue"
                         )
                     elif sender_type == "sales_rep":
+                        client_id = client.id if client else None
                         process_sales_rep_message.apply_async(
-                            args=[business.id, client.id, normalized_payload], queue="slow_queue"
+                            args=[business.id, client_id, normalized_payload], queue="slow_queue"
                         )
                     elif sender_type == "distributor_retailer":
+                        client_id = client.id if client else None
                         process_distributor_message.apply_async(
-                            args=[business.id, client.id, normalized_payload], queue="slow_queue"
+                            args=[business.id, client_id, normalized_payload], queue="slow_queue"
                         )
                     else:
                         client_id = client.id if client else None

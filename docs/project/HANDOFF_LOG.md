@@ -1,5 +1,11 @@
 # Handoff Log
 
+- **2026-08-07 (WhatsApp Flow Fixes & Backlog Epics)**: Created branch `feature/backend/whatsapp-flow-fix` and resolved multiple bugs blocking webhook replies.
+  - **Fixed 24h Window Tracking (Task 210.3)**: Set `whatsapp_24h_window_start` inside `conv.extra_data` on incoming messages in `prospect_qualifier.py`.
+  - **Fixed Template Fallback & Discard (Tasks 210.1 & 210.2)**: Set fallback default template in `messages.py` to `hello_world` and added warning logging for unsent AI responses.
+  - **Fixed Webhook Dispatch Safety (Task 211.1)**: Added safe `client.id` check fallback to avoid webhook crash inside `whatsapp.py`.
+  - **Backlog**: Documented Epics 210, 211, and 212 in `BACKLOG.md`.
+
 - **2026-08-05 (Meta WhatsApp Cloud API Core Integration & Onboarding Complete)**: Completed Epics 206 and 207, and implemented the core frontend parts of Epic 208 for the Meta WhatsApp Cloud API migration.
   - **Core Messaging Engine (Task 206.2)**: Implemented `MetaCloudEngine` in `backend/app/services/messaging/meta_cloud_engine.py` using `httpx.AsyncClient` and Graph API `v22.0`, providing fully non-blocking asynchronous calls to Meta's endpoints. Registered the engine in the unified `MessagingService` factory.
   - **Webhook Signature Security (Task 206.1)**: Developed an HMAC-SHA256 request signature verification middleware (`X-Hub-Signature-256`) inside `backend/app/core/webhook_security.py` using `META_APP_SECRET`.

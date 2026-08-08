@@ -282,4 +282,34 @@
     - **When** CAPI logging is active,
     - **Then** securely hash the user's contact information (email, phone number) via SHA-256 and dispatch a Conversions API payload to Meta's endpoints to achieve high-precision attribution matching.
 
+---
 
+## Epic 210: WhatsApp 24h Window & Template Fallback Fix
+**Objective**: Fix critical bugs in the WhatsApp message delivery pipeline where AI-generated responses are silently discarded when the system believes the conversation is outside Meta's 24-hour window, and the template fallback fails due to missing/misconfigured templates.
+
+**Source**: [WhatsApp Flow Audit (2026-08-07)](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md) — Findings C1, C2.
+
+- [ ] Task 210.1: **Fix Response Discard on Outside-Window** (`tasks/messages.py`): Remove the early `return` in `send_twilio_reply` after template send attempt. When outside the 24h window, send the template but do NOT discard the AI-generated `body`. Log the body as a pending message so it is not permanently lost.
+- [ ] Task 210.2: **Fix Template Fallback Default** (`tasks/messages.py`): Change the hardcoded default template from `hello_communication` to `hello_world` (Meta's built-in default), or make it configurable per-integration with proper `components` support.
+- [ ] Task 210.3: **Fix 24h Window Tracking in ProspectQualifier** (`services/prospect_qualifier.py`): Ensure `whatsapp_24h_window_start` is saved to `conv.extra_data` on every incoming WhatsApp message. *(Fix already applied, pending push.)*
+
+## Epic 211: WhatsApp Webhook Robustness
+**Objective**: Harden the WhatsApp webhook entry point against edge-case crashes, batch message loss, and security bypass.
+
+**Source**: [WhatsApp Flow Audit (2026-08-07)](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md) — Findings C3, H1, H2, H3.
+
+- [ ] Task 211.1: **Safe `client.id` Access** (`api/whatsapp.py`): Add null-check guard (`client.id if client else None`) on the `sales_rep` and `distributor_retailer` Celery dispatch branches (L199, L203) to prevent `AttributeError` crashes.
+- [ ] Task 211.2: **Process All Messages in Batch** (`api/whatsapp.py`): Replace `messages[0]` with a loop over all messages in the Meta webhook payload to prevent message loss when Meta bundles multiple messages.
+- [ ] Task 211.3: **SQL-Level Integration Lookup** (`api/whatsapp.py`, `tasks/messages.py`): Replace in-memory Python filtering of all WhatsApp integrations with a direct SQL filter on `phone_number_id` / `phone_number` to improve scalability.
+- [ ] Task 211.4: **Enforce `META_APP_SECRET` in Production** (`core/webhook_security.py`): Crash at startup (not just warn) if `META_APP_SECRET` is unset and `ENVIRONMENT != "testing"`, consistent with the `SECRET_KEY` security rule in AGENTS.md.
+
+## Epic 212: Twilio→Meta Naming & Import Cleanup
+**Objective**: Clean up legacy Twilio naming conventions and dead imports across the WhatsApp messaging pipeline now that Meta Cloud API is the primary provider. Twilio engine code remains functional for legacy integrations but naming in shared code paths should be provider-agnostic.
+
+**Source**: [WhatsApp Flow Audit (2026-08-07)](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md) — Findings L1, L3, L4.
+
+- [ ] Task 212.1: **Rename `send_twilio_reply`** (`tasks/messages.py`): Rename to `send_whatsapp_reply` (or `deliver_message`) to accurately reflect that it handles both Twilio and Meta Cloud API providers.
+- [ ] Task 212.2: **Remove Dead Twilio Import** (`tasks/messages.py`): Remove unused `from twilio.rest import Client` on L7.
+- [ ] Task 212.3: **Standardize `To` Cleaning** (`tasks/messages.py`): Apply `clean_num` to `payload.get("To")` in `run_prospect_message` to match the pattern used by all other task runners.
+- [ ] Task 212.4: **Rename `/debug/twilio` Endpoint** (`api/whatsapp.py`): Rename to `/debug/whatsapp` and update log messages to remove Twilio references.
+- [ ] Task 212.5: **Audit & Update Internal Log Messages**: Replace all log strings referencing "Twilio" in the Meta Cloud API code paths with provider-agnostic or "WhatsApp" terminology.

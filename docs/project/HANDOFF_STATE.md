@@ -1,47 +1,32 @@
-# Handoff State: 2026-08-05 (Meta WhatsApp Cloud API Integration Complete)
+# Handoff State: 2026-08-07 (WhatsApp Flow Fixes)
 
 ## Current Branch
-`feature/backend/meta-whatsapp-migration` (Successfully implemented and verified locally)
+`feature/backend/whatsapp-flow-fix` (Created from `staging` and currently active)
 
 ## Accomplishments This Session
-1. **Core Messaging Engine (Task 206.2)**:
-   - Implemented `MetaCloudEngine` in [meta_cloud_engine.py](file:///Users/bernardo/projects/sherpa/backend/app/services/messaging/meta_cloud_engine.py) using `httpx.AsyncClient` and Graph API `v22.0`.
-   - Supports `send_text` (with automatic 4096-char chunking), `send_media`, `send_template`, and `mark_as_read`.
-   - Registered `meta_cloud_api` inside the unified [MessagingService factory](file:///Users/bernardo/projects/sherpa/backend/app/services/messaging/__init__.py).
+1. **Created Feature Branch**:
+   - Switched to `staging`, pulled origin, and branched into `feature/backend/whatsapp-flow-fix`.
 
-2. **Webhook Signature Security (Task 206.1)**:
-   - Developed HMAC-SHA256 request signature verification middleware inside [webhook_security.py](file:///Users/bernardo/projects/sherpa/backend/app/core/webhook_security.py).
-   - Validates `X-Hub-Signature-256` using `settings.META_APP_SECRET` with logging indicators and environment fallbacks for local testing and pytest suites.
+2. **Added Backlog Epics**:
+   - Added Epic 210 (WhatsApp 24h Window & Template Fallback Fix), Epic 211 (WhatsApp Webhook Robustness), and Epic 212 (Twilio→Meta Naming & Import Cleanup) to [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md).
 
-3. **Asynchronous Webhook Overhaul (Task 206.3)**:
-   - Refactored the direct `/webhook` POST endpoint in [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py).
-   - Validates incoming Meta signatures, parses message statuses, normalizes incoming messaging data to standard formatting, and dispatches processing asynchronously to Celery worker queues (`apply_async()`) rather than running blocking LLM completions inline.
+3. **Fixed 24h Window Tracking for Prospects (Task 210.3)**:
+   - Updated [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) to set `whatsapp_24h_window_start` inside `conv.extra_data` whenever a WhatsApp message is processed. This ensures the 24-hour customer window is marked as open in the database, allowing subsequent text replies to be sent.
 
-4. **24-Hour Window Gating (Task 207.1)**:
-   - Tracked the start of the WhatsApp 24-hour conversation window using [Conversation.extra_data["whatsapp_24h_window_start"]](file:///Users/bernardo/projects/sherpa/backend/app/core/ai_service.py) during message storage.
-   - Built a compliance check check gate in the Celery `send_twilio_reply` task [messages.py](file:///Users/bernardo/projects/sherpa/backend/app/tasks/messages.py) to block free-form outgoing texts and trigger an approved template message fallback (`hello_communication` by default) if outside the 24-hour window.
+4. **Fixed Template Fallback & Saved Body Warning (Task 210.1 & 210.2)**:
+   - Modified [messages.py](file:///Users/bernardo/projects/sherpa/backend/app/tasks/messages.py) to use `hello_world` as the fallback default template (instead of the non-existent `hello_communication`).
+   - Added a clear warning log containing the AI-generated `body` if delivery fails due to the 24-hour window, preventing silent data discard.
 
-5. **Multi-Mode Meta Onboarding (Task 207.2 & 207.3)**:
-   - Added backend endpoints `GET /whatsapp/config` (exposes public app settings) and `POST /whatsapp/meta-onboard` which supports both automated OAuth authorization code exchange (resolves user token, WABA ID, and phone number details automatically from Meta's Graph API) and manual input fallbacks.
+5. **Fixed Webhook Dispatch Null Safety (Task 211.1)**:
+   - Modified [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py) to fetch `client_id` safely via `client.id if client else None` on both `sales_rep` and `distributor_retailer` branches before calling `apply_async()`, preventing potential `AttributeError` crashes.
 
-6. **Frontend Signup UI Wizard (Task 208.1 & 208.2)**:
-   - Redesigned the [WhatsAppModal.tsx](file:///Users/bernardo/projects/sherpa/frontend/components/WhatsAppModal.tsx) onboarding wizard component to load the Facebook Login SDK, trigger Meta's Embedded Signup popup using `config_id`, and POST the authorization code to the backend.
-   - Built a beautiful developer manual toggle inside the modal to paste details directly for staging testing.
-   - Adjusted [IntegrationsPanel.tsx](file:///Users/bernardo/projects/sherpa/frontend/app/settings/components/IntegrationsPanel.tsx) provider name checks to dynamically show "Cloud API" instead of "Twilio" for Meta channels.
-
-7. **Type Safety & Verification**:
-   - Regenerated `openapi.json` and type-synced the frontend using `npm run gen:api`.
-   - Verified that all backend and frontend checks (`pytest`, `npx tsc --noEmit`) pass successfully with zero errors.
+6. **Verified Compilation**:
+   - Ran `py_compile` checks for all modified python files to guarantee zero syntax issues.
 
 ## Next Steps / Next Sprint
-1. **Epic 205 & Sprint 9 Implementation**:
-   - Deliver Task 205.1: B2C/Scheduler audit/reasoning log trace generation on the backend.
-   - Deliver Task 205.2: Reversion actions on the Order status timeline in `/trade/orders/[id]`.
-   - Deliver Task 205.3 & 205.4: Backend patch API for Categories, and frontend category editing integration in `CatalogDrawer`.
-   - Deliver Task 205.5: "Unit of Measure" field integration in product CatalogDrawer form.
-2. **Phase 7: Mobile Responsiveness & Testing**:
-   - Run end-to-end user tests on the Drawers and forms in the browser to ensure the RHF + Zod fields interact perfectly.
-3. **Deprecate Twilio Code (Task 208.3)**:
-   - Once the user is fully migrated and ready to remove Twilio support entirely, clean up legacy Twilio engines and routes.
-   - Rename the Celery task `send_twilio_reply` to `send_whatsapp_reply` to ensure codebase clean-up and nomenclature alignment.
-
+1. **Verify Staging Build**:
+   - Push this feature branch, open a PR to staging, and merge it with the user's permission.
+2. **Perform End-to-End Test**:
+   - Trigger a new test message from WhatsApp via the QR code to verify the client-bot interaction functions flawlessly and the AI response is delivered.
+3. **Execute Remaining Tasks in Epics 210-212**:
+   - Proceed with remaining tasks in the backlog to clean up legacy Twilio references and harden the webhook entry point against batching and signature bypass.

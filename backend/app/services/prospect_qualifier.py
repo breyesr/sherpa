@@ -902,6 +902,14 @@ Estado actual de los datos recopilados:
             )
             self.db.add(user_msg)
             conv.last_message_at = datetime.utcnow()
+            
+            if platform == "whatsapp":
+                if not conv.extra_data:
+                    conv.extra_data = {}
+                extra = dict(conv.extra_data)
+                extra["whatsapp_24h_window_start"] = datetime.utcnow().isoformat()
+                conv.extra_data = extra
+                
             await self.db.commit()
 
             # 1. Fetch product list

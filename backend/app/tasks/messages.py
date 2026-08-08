@@ -84,11 +84,11 @@ async def send_twilio_reply(db, to_phone: str, sender_phone: str, body: str):
                     logger.exception("Failed to parse whatsapp_24h_window_start")
             
             if outside_window:
-                default_template = integration.settings.get("default_template_name", "hello_communication")
+                default_template = integration.settings.get("default_template_name", "hello_world")
                 logger.warning(
                     "WhatsApp conversation outside 24h window for %s on integration %s. "
-                    "Attempting to send template '%s'.",
-                    sender_phone, integration.id, default_template
+                    "Attempting to send template '%s'. AI reply body that could not be delivered: '%s'",
+                    sender_phone, integration.id, default_template, body
                 )
                 success = await engine.send_template(
                     to_number=sender_phone,
