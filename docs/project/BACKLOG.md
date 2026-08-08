@@ -289,16 +289,16 @@
 
 **Source**: [WhatsApp Flow Audit (2026-08-07)](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md) — Findings C1, C2.
 
-- [ ] Task 210.1: **Fix Response Discard on Outside-Window** (`tasks/messages.py`): Remove the early `return` in `send_twilio_reply` after template send attempt. When outside the 24h window, send the template but do NOT discard the AI-generated `body`. Log the body as a pending message so it is not permanently lost.
-- [ ] Task 210.2: **Fix Template Fallback Default** (`tasks/messages.py`): Change the hardcoded default template from `hello_communication` to `hello_world` (Meta's built-in default), or make it configurable per-integration with proper `components` support.
-- [ ] Task 210.3: **Fix 24h Window Tracking in ProspectQualifier** (`services/prospect_qualifier.py`): Ensure `whatsapp_24h_window_start` is saved to `conv.extra_data` on every incoming WhatsApp message. *(Fix already applied, pending push.)*
+- [x] Task 210.1: **Fix Response Discard on Outside-Window** (`tasks/messages.py`): Remove the early `return` in `send_twilio_reply` after template send attempt. When outside the 24h window, send the template but do NOT discard the AI-generated `body`. Log the body as a pending message so it is not permanently lost.
+- [x] Task 210.2: **Fix Template Fallback Default** (`tasks/messages.py`): Change the hardcoded default template from `hello_communication` to `hello_world` (Meta's built-in default), or make it configurable per-integration with proper `components` support.
+- [x] Task 210.3: **Fix 24h Window Tracking in ProspectQualifier** (`services/prospect_qualifier.py`): Ensure `whatsapp_24h_window_start` is saved to `conv.extra_data` on every incoming WhatsApp message. *(Fix already applied, pending push.)*
 
 ## Epic 211: WhatsApp Webhook Robustness
 **Objective**: Harden the WhatsApp webhook entry point against edge-case crashes, batch message loss, and security bypass.
 
 **Source**: [WhatsApp Flow Audit (2026-08-07)](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md) — Findings C3, H1, H2, H3.
 
-- [ ] Task 211.1: **Safe `client.id` Access** (`api/whatsapp.py`): Add null-check guard (`client.id if client else None`) on the `sales_rep` and `distributor_retailer` Celery dispatch branches (L199, L203) to prevent `AttributeError` crashes.
+- [x] Task 211.1: **Safe `client.id` Access** (`api/whatsapp.py`): Add null-check guard (`client.id if client else None`) on the `sales_rep` and `distributor_retailer` Celery dispatch branches (L199, L203) to prevent `AttributeError` crashes.
 - [ ] Task 211.2: **Process All Messages in Batch** (`api/whatsapp.py`): Replace `messages[0]` with a loop over all messages in the Meta webhook payload to prevent message loss when Meta bundles multiple messages.
 - [ ] Task 211.3: **SQL-Level Integration Lookup** (`api/whatsapp.py`, `tasks/messages.py`): Replace in-memory Python filtering of all WhatsApp integrations with a direct SQL filter on `phone_number_id` / `phone_number` to improve scalability.
 - [ ] Task 211.4: **Enforce `META_APP_SECRET` in Production** (`core/webhook_security.py`): Crash at startup (not just warn) if `META_APP_SECRET` is unset and `ENVIRONMENT != "testing"`, consistent with the `SECRET_KEY` security rule in AGENTS.md.

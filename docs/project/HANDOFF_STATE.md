@@ -1,32 +1,27 @@
-# Handoff State: 2026-08-07 (WhatsApp Flow Fixes)
+# Handoff State: 2026-08-07 (WhatsApp Flow Fixed & Verified)
 
 ## Current Branch
-`feature/backend/whatsapp-flow-fix` (Created from `staging` and currently active)
+`feature/backend/whatsapp-flow-fix` (Created from `staging` and successfully deployed to staging)
 
 ## Accomplishments This Session
-1. **Created Feature Branch**:
-   - Switched to `staging`, pulled origin, and branched into `feature/backend/whatsapp-flow-fix`.
+1. **Identified & Documented Critical Bugs**:
+   - Conducted a full parallel audit of the WhatsApp incoming/outgoing channels.
+   - Discovered 3 critical bugs blocking the test flow and generated [whatsapp_flow_audit.md](file:///Users/bernardo/projects/sherpa/temp/whatsapp_flow_audit.md).
 
-2. **Added Backlog Epics**:
+2. **Created Backlog Epics**:
    - Added Epic 210 (WhatsApp 24h Window & Template Fallback Fix), Epic 211 (WhatsApp Webhook Robustness), and Epic 212 (Twilio→Meta Naming & Import Cleanup) to [BACKLOG.md](file:///Users/bernardo/projects/sherpa/docs/project/BACKLOG.md).
 
-3. **Fixed 24h Window Tracking for Prospects (Task 210.3)**:
-   - Updated [prospect_qualifier.py](file:///Users/bernardo/projects/sherpa/backend/app/services/prospect_qualifier.py) to set `whatsapp_24h_window_start` inside `conv.extra_data` whenever a WhatsApp message is processed. This ensures the 24-hour customer window is marked as open in the database, allowing subsequent text replies to be sent.
-
-4. **Fixed Template Fallback & Saved Body Warning (Task 210.1 & 210.2)**:
-   - Modified [messages.py](file:///Users/bernardo/projects/sherpa/backend/app/tasks/messages.py) to use `hello_world` as the fallback default template (instead of the non-existent `hello_communication`).
-   - Added a clear warning log containing the AI-generated `body` if delivery fails due to the 24-hour window, preventing silent data discard.
-
-5. **Fixed Webhook Dispatch Null Safety (Task 211.1)**:
-   - Modified [whatsapp.py](file:///Users/bernardo/projects/sherpa/backend/app/api/whatsapp.py) to fetch `client_id` safely via `client.id if client else None` on both `sales_rep` and `distributor_retailer` branches before calling `apply_async()`, preventing potential `AttributeError` crashes.
-
-6. **Verified Compilation**:
-   - Ran `py_compile` checks for all modified python files to guarantee zero syntax issues.
+3. **Applied & Verified Hotfixes (Epic 210 Completed & Task 211.1 Completed)**:
+   - **Prospect Qualifier 24h window**: Updated `prospect_qualifier.py` to record `whatsapp_24h_window_start` in the DB conversation metadata.
+   - **Template fallback default**: Swapped `hello_communication` for `hello_world` and added a warning log in `messages.py` containing the `body` so text messages aren't lost silently.
+   - **Safe webhook dispatch client lookup**: Added `client.id if client else None` safety checks in `whatsapp.py` to avoid `AttributeError` for sales rep and distributor tasks.
+   - Merged `feature/backend/whatsapp-flow-fix` into `staging`.
+   - **SUCCESSFUL E2E TEST**: User sent a message via WhatsApp, and the system responded with the AI-generated reply instantly!
 
 ## Next Steps / Next Sprint
-1. **Verify Staging Build**:
-   - Push this feature branch, open a PR to staging, and merge it with the user's permission.
-2. **Perform End-to-End Test**:
-   - Trigger a new test message from WhatsApp via the QR code to verify the client-bot interaction functions flawlessly and the AI response is delivered.
-3. **Execute Remaining Tasks in Epics 210-212**:
-   - Proceed with remaining tasks in the backlog to clean up legacy Twilio references and harden the webhook entry point against batching and signature bypass.
+1. **Epic 211: Webhook Robustness**:
+   - Deliver Task 211.2: Loop over and process all messages in Meta webhook batch payload.
+   - Deliver Task 211.3: SQL-level integration lookups rather than in-memory filtering.
+   - Deliver Task 211.4: Enforce `META_APP_SECRET` verification in production environment.
+2. **Epic 212: Twilio→Meta Naming & Import Cleanup**:
+   - Deliver Tasks 212.1 to 212.5 to remove legacy naming, imports, and logs referencing Twilio.
