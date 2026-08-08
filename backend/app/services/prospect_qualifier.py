@@ -6,12 +6,9 @@ Dependencies: models/trade.py, models/crm.py, core/limiter.py
 
 import os
 import json
-import traceback
-import asyncio
-from typing import Dict, Any, List, Optional, Union, Tuple, TypedDict, Annotated
+from typing import List, Optional, Tuple, TypedDict, Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage, BaseMessage
@@ -24,7 +21,6 @@ from langgraph.graph.message import add_messages
 
 from app.core.system_config import ConfigService
 from app.core.config import settings
-from app.models.business import BusinessProfile
 from app.models.trade import Store, Product, Category, StoreAction, ActionCategory, ActionStatus, store_clients, PostalCode, Order, OrderItem, OrderStatus, DataSourceType
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
@@ -223,7 +219,6 @@ Estado actual:
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 """
             elif phase == "collecting_retail_details":
-                product = await self._get_product_by_id_or_name(state.get("product"), business_id)
                 qty = state.get("quantity") or 0
                 has_zip = bool(state.get("zip_code"))
                 
@@ -269,8 +264,6 @@ Estado actual de los datos recopilados:
 """
             elif phase == "collecting_waitlist":
                 zip_val = state.get("zip_code")
-                product = await self._get_product_by_id_or_name(state.get("product"), business_id)
-                product_name = product.name if product else "el producto"
                 
                 # Look up prospect state to filter alternative stores
                 res_pc = await self.db.execute(select(PostalCode).where(PostalCode.zip_code == zip_val))
@@ -282,7 +275,7 @@ Estado actual de los datos recopilados:
                     res_stores_all = await self.db.execute(
                         select(Store).where(
                             Store.business_id == business_id,
-                            Store.is_prospect == False
+                            Store.is_prospect.is_(False)
                         )
                     )
                     all_stores = res_stores_all.scalars().all()
@@ -418,7 +411,7 @@ Estado actual de los datos recopilados:
             if merged_phase == "collecting_retail_details" and merged_zip_code:
                 # Perform ZIP Code verification per store
                 res_stores = await self.db.execute(
-                    select(Store).where(Store.business_id == business_id, Store.is_prospect == False)
+                    select(Store).where(Store.business_id == business_id, Store.is_prospect.is_(False))
                 )
                 stores = res_stores.scalars().all()
                 
@@ -446,7 +439,6 @@ Estado actual de los datos recopilados:
                             ]
                 
                 product = await self._get_product_by_id_or_name(merged_product, business_id)
-                product_name = product.name if product else "el producto"
                 threshold = product.wholesale_threshold or 0 if product else 0
                 
                 if stores_in_state:
@@ -469,7 +461,7 @@ Estado actual de los datos recopilados:
             if merged_phase == "collecting" and merged_zip_code:
                 # Perform ZIP Code verification per store
                 res_stores = await self.db.execute(
-                    select(Store).where(Store.business_id == business_id, Store.is_prospect == False)
+                    select(Store).where(Store.business_id == business_id, Store.is_prospect.is_(False))
                 )
                 stores = res_stores.scalars().all()
                 
@@ -767,7 +759,7 @@ Estado actual de los datos recopilados:
                 res_stores_all = await self.db.execute(
                     select(Store).where(
                         Store.business_id == biz_id,
-                        Store.is_prospect == False
+                        Store.is_prospect.is_(False)
                     )
                 )
                 all_stores = res_stores_all.scalars().all()
@@ -939,7 +931,6 @@ Estado actual de los datos recopilados:
                 
                 state = await app.aget_state(config)
                 is_completed_state = state.values and state.values.get("is_completed")
-                has_existing_state = bool(state.values and state.values.get("phase"))
                 
                 greetings = ["hola", "buen", "dia", "hello", "hi", "iniciar", "start", "buenos", "buenas"]
                 is_greeting_reset = (

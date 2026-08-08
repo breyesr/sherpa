@@ -1,10 +1,7 @@
 import logging
 import asyncio
 import re
-
-logger = logging.getLogger(__name__)
 from typing import Optional
-from twilio.rest import Client
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.config import settings
@@ -12,7 +9,8 @@ from app.core.idempotency import idempotent_task
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.models.business import BusinessProfile
-import traceback
+
+logger = logging.getLogger(__name__)
 
 def clean_num(n: str): 
     return re.sub(r"\D", "", n)

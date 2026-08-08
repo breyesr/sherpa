@@ -16,7 +16,6 @@ from app.core.database import get_db
 from app.models.business import BusinessProfile
 from app.models.integration import Integration
 from app.api.auth import get_current_user
-from app.core.security import encrypt_token, decrypt_token
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.system_config import ConfigService
@@ -237,7 +236,6 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         raw_sender = payload.get("From", "")
         raw_to = payload.get("To", "")
         text = payload.get("Body")
-        profile_name = payload.get("ProfileName")
 
         import re
         def clean_num(n: str): return re.sub(r"\D", "", n)
@@ -404,7 +402,8 @@ async def setup_whatsapp(
     """
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
     business = result.scalars().first()
-    if not business: raise HTTPException(status_code=404, detail="Business not found")
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
 
     # In Option B, the user only provides their registered business number
     business_number = data.get("business_number")
