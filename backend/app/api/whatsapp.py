@@ -193,20 +193,20 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     if sender_type == "customer":
                         client_id = client.id if client else None
                         process_customer_message.apply_async(
-                            args=[business.id, client_id, normalized_payload], queue="prospects"
+                            args=[business.id, client_id, normalized_payload], queue="slow_queue"
                         )
                     elif sender_type == "sales_rep":
                         process_sales_rep_message.apply_async(
-                            args=[business.id, client.id, normalized_payload], queue="sales-reps"
+                            args=[business.id, client.id, normalized_payload], queue="slow_queue"
                         )
                     elif sender_type == "distributor_retailer":
                         process_distributor_message.apply_async(
-                            args=[business.id, client.id, normalized_payload], queue="distributors"
+                            args=[business.id, client.id, normalized_payload], queue="slow_queue"
                         )
                     else:
                         client_id = client.id if client else None
                         process_prospect_message.apply_async(
-                            args=[business.id, client_id, normalized_payload], queue="prospects"
+                            args=[business.id, client_id, normalized_payload], queue="slow_queue"
                         )
 
         return {"status": "ok"}
@@ -366,20 +366,20 @@ async def twilio_whatsapp_webhook(request: Request, db: AsyncSession = Depends(g
         if sender_type == "customer":
             client_id = client.id if client else None
             process_customer_message.apply_async(
-                args=[business.id, client_id, payload], queue="prospects"
+                args=[business.id, client_id, payload], queue="slow_queue"
             )
         elif sender_type == "sales_rep":
             process_sales_rep_message.apply_async(
-                args=[business.id, client.id, payload], queue="sales-reps"
+                args=[business.id, client.id, payload], queue="slow_queue"
             )
         elif sender_type == "distributor_retailer":
             process_distributor_message.apply_async(
-                args=[business.id, client.id, payload], queue="distributors"
+                args=[business.id, client.id, payload], queue="slow_queue"
             )
         else:
             client_id = client.id if client else None
             process_prospect_message.apply_async(
-                args=[business.id, client_id, payload], queue="prospects"
+                args=[business.id, client_id, payload], queue="slow_queue"
             )
 
         # Return 200 immediately to prevent Twilio timeout
