@@ -515,3 +515,142 @@ async def get_whatsapp_status(
             "error_code": "twilio_auth_failed",
             "error_message": "Error de autenticación con la plataforma de Twilio: credentials check failed."
         }
+
+from pydantic import BaseModel
+
+class TestSendRequest(BaseModel):
+    to_number: str
+    message: str
+    template_name: str | None = None
+    language: str | None = None
+
+@router.post("/test-send")
+async def test_send_message(
+    data: TestSendRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Send a test WhatsApp message using the active integration for Meta App Review."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    result = await db.execute(
+        select(Integration).where(
+            Integration.business_id == business.id, 
+            Integration.provider == 'whatsapp'
+        )
+    )
+    integration = result.scalars().first()
+    if not integration:
+        raise HTTPException(status_code=400, detail="No WhatsApp integration configured.")
+        
+    settings_dict = integration.settings or {}
+    provider_type = settings_dict.get("provider_type", "twilio_subaccount")
+    
+    from app.services.messaging import get_messaging_engine
+    try:
+        engine = await get_messaging_engine(integration)
+        if not engine:
+            raise HTTPException(status_code=400, detail="Failed to initialize messaging engine.")
+            
+        if provider_type == "meta_cloud_api" and data.template_name:
+            success = await engine.send_template(
+                to_number=data.to_number,
+                template_name=data.template_name,
+                language=data.language or "en_US"
+            )
+        else:
+            success = await engine.send_text(data.to_number, data.message)
+            
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to send message via messaging engine.")
+            
+        return {"status": "success", "message": "Test message sent successfully"}
+    except Exception as e:
+        logger.exception("Failed to send test message: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+class TestTemplateRequest(BaseModel):
+    name: str
+    category: str
+    body_text: str
+    language: str = "es_MX"
+
+@router.post("/test-template")
+async def test_create_template(
+    data: TestTemplateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Create a test template on Meta for App Review verification."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    result = await db.execute(
+        select(Integration).where(
+            Integration.business_id == business.id, 
+            Integration.provider == 'whatsapp'
+        )
+    )
+    integration = result.scalars().first()
+    if not integration:
+        raise HTTPException(status_code=400, detail="No WhatsApp integration configured.")
+        
+    settings_dict = integration.settings or {}
+    waba_id = settings_dict.get("waba_id")
+    access_token_encrypted = integration.access_token
+    
+    if not waba_id or not access_token_encrypted:
+        raise HTTPException(status_code=400, detail="Credentials incomplete or not configured for Meta Cloud API.")
+        
+    from app.core.encryption import decrypt_value
+    try:
+        access_token = decrypt_value(access_token_encrypted)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to decrypt Meta access token.")
+        
+    version = settings.META_GRAPH_API_VERSION or "v22.0"
+    url = f"https://graph.facebook.com/{version}/{waba_id}/message_templates"
+    
+    payload = {
+        "name": data.name.lower().replace(" ", "_"),
+        "language": data.language,
+        "category": data.category,
+        "components": [
+          {
+            "type": "BODY",
+            "text": data.body_text
+          }
+        ]
+    }
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            }
+            res = await client.post(url, json=payload, headers=headers, timeout=30.0)
+            if res.status_code >= 400:
+                logger.error(f"Meta template creation returned {res.status_code}: {res.text}")
+                try:
+                    err_detail = res.json().get("error", {}).get("message", res.text)
+                except Exception:
+                    err_detail = res.text
+                raise HTTPException(status_code=res.status_code, detail=f"Meta API error: {err_detail}")
+            return res.json()
+    except httpx.HTTPError as e:
+        logger.exception("HTTP error calling Meta API")
+        raise HTTPException(status_code=500, detail=f"Failed to communicate with Meta API: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error creating Meta template")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
