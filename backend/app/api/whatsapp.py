@@ -572,6 +572,67 @@ async def test_send_message(
         logger.exception("Failed to send test message: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/templates")
+async def get_meta_templates(
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    """Retrieve the list of WhatsApp message templates from Meta Graph API."""
+    result = await db.execute(select(BusinessProfile).where(BusinessProfile.user_id == current_user.id))
+    business = result.scalars().first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    result = await db.execute(
+        select(Integration).where(
+            Integration.business_id == business.id, 
+            Integration.provider == 'whatsapp'
+        )
+    )
+    integration = result.scalars().first()
+    if not integration:
+        raise HTTPException(status_code=400, detail="No WhatsApp integration configured.")
+        
+    settings_dict = integration.settings or {}
+    waba_id = settings_dict.get("waba_id")
+    access_token_encrypted = integration.access_token
+    
+    if not waba_id or not access_token_encrypted:
+        raise HTTPException(status_code=400, detail="Credentials incomplete or not configured for Meta Cloud API.")
+        
+    from app.core.encryption import decrypt_value
+    try:
+        access_token = decrypt_value(access_token_encrypted)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to decrypt Meta access token.")
+        
+    version = settings.META_GRAPH_API_VERSION or "v22.0"
+    url = f"https://graph.facebook.com/{version}/{waba_id}/message_templates"
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+            }
+            res = await client.get(url, headers=headers, timeout=30.0)
+            if res.status_code >= 400:
+                logger.error(f"Meta template retrieval returned {res.status_code}: {res.text}")
+                raise HTTPException(status_code=res.status_code, detail="Failed to retrieve templates from Meta.")
+            data = res.json()
+            templates_list = []
+            for t in data.get("data", []):
+                templates_list.append({
+                    "name": t.get("name"),
+                    "status": t.get("status"),
+                    "language": t.get("language"),
+                    "category": t.get("category")
+                })
+            return templates_list
+    except Exception as e:
+        logger.exception("Failed to get templates from Meta")
+        raise HTTPException(status_code=500, detail=str(e))
+
 class TestTemplateRequest(BaseModel):
     name: str
     category: str

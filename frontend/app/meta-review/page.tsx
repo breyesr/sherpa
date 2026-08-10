@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
-import { MessageSquare, Send, CheckCircle2, XCircle, Loader2, Info, ArrowLeft, Shield, FileText, PlusCircle } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, XCircle, Loader2, Info, ArrowLeft, Shield, FileText, PlusCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -15,6 +15,13 @@ interface WhatsAppStatusResponse {
   is_sandbox?: boolean;
   checked_at?: string;
   error_message?: string;
+}
+
+interface MetaTemplate {
+  name: string;
+  status: string;
+  language: string;
+  category: string;
 }
 
 interface TemplateCreateResponse {
@@ -37,7 +44,7 @@ export default function MetaReviewPage() {
   const [newTemplateName, setNewTemplateName] = useState('xerpa_test_template');
   const [newTemplateCategory, setNewTemplateCategory] = useState('UTILITY');
   const [newTemplateLang, setNewTemplateLang] = useState('es_MX');
-  const [newTemplateBody, setNewTemplateBody] = useState('Hola {{1}}, tu código de verificación para Xerpā es {{2}}.');
+  const [newTemplateBody, setNewTemplateBody] = useState('Hola {{1}}, tu código de verificación para ingresar a Xerpā es {{2}}.');
   const [createdTemplate, setCreatedTemplate] = useState<TemplateCreateResponse | null>(null);
 
   // Query to get current integration status
@@ -45,6 +52,30 @@ export default function MetaReviewPage() {
     queryKey: ['whatsappStatus'],
     queryFn: () => apiClient.get<WhatsAppStatusResponse>('/whatsapp/status'),
   });
+
+  const isConnected = status?.status === 'connected';
+
+  // Query to get templates list from Meta
+  const { data: templates = [], isLoading: isLoadingTemplates, refetch: refetchTemplates } = useQuery<MetaTemplate[]>({
+    queryKey: ['metaTemplates'],
+    queryFn: () => apiClient.get<MetaTemplate[]>('/whatsapp/templates'),
+    enabled: isConnected,
+  });
+
+  // Auto-set the first template in the selector when loaded
+  useEffect(() => {
+    if (templates.length > 0) {
+      // Find an approved template if possible, otherwise first
+      const approved = templates.find(t => t.status === 'APPROVED');
+      if (approved) {
+        setTemplateName(approved.name);
+        setLanguage(approved.language);
+      } else {
+        setTemplateName(templates[0].name);
+        setLanguage(templates[0].language);
+      }
+    }
+  }, [templates]);
 
   // Mutation to send test message
   const sendTestMutation = useMutation({
@@ -81,6 +112,7 @@ export default function MetaReviewPage() {
     onSuccess: (data) => {
       setCreatedTemplate(data);
       toast.success('¡Plantilla de mensaje creada en Meta!');
+      refetchTemplates(); // Auto refetch templates list
     },
     onError: (error: any) => {
       console.error(error);
@@ -111,7 +143,6 @@ export default function MetaReviewPage() {
     createTemplateMutation.mutate();
   };
 
-  const isConnected = status?.status === 'connected';
   const activeProvider = status?.provider_type === 'meta_cloud_api' ? 'Meta Cloud API' : 'Twilio / Platform';
 
   return (
@@ -225,7 +256,7 @@ export default function MetaReviewPage() {
             )}
             
             <button 
-              onClick={() => refetch()}
+              onClick={() => { refetch(); refetchTemplates(); }}
               className="w-full text-center py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-xs font-bold text-slate-600 transition-colors"
             >
               Actualizar Diagnóstico
@@ -243,7 +274,7 @@ export default function MetaReviewPage() {
                 <p><strong>Meta Permiso:</strong> <code className="text-blue-400 bg-slate-800 px-1.5 py-0.5 rounded">whatsapp_business_messaging</code></p>
                 <p>1. Graba tu pantalla mostrando esta página de Xerpā junto a una ventana de WhatsApp Web en el otro lado.</p>
                 <p>2. Ingresa tu número de teléfono móvil personal.</p>
-                <p>3. Deja el tipo de mensaje como <strong>Plantilla Oficial (hello_world)</strong>.</p>
+                <p>3. Selecciona una de tus **Plantillas Aprobadas** de la lista (por ejemplo, `xerpa_bienvenida`).</p>
                 <p>4. Presiona <strong>Enviar Mensaje de Prueba</strong> y muestra cómo llega al instante a tu celular.</p>
               </div>
             ) : (
@@ -251,7 +282,7 @@ export default function MetaReviewPage() {
                 <p><strong>Meta Permiso:</strong> <code className="text-blue-400 bg-slate-800 px-1.5 py-0.5 rounded">whatsapp_business_management</code></p>
                 <p>1. Inicia la grabación enfocando este formulario.</p>
                 <p>2. Define un nombre para tu nueva plantilla de pruebas (letras minúsculas y guiones bajos).</p>
-                <p>3. Selecciona la categoría <strong>UTILITY</strong> e ingresa un mensaje de cuerpo de ejemplo.</p>
+                <p>3. Selecciona la categoría <strong>MARKETING</strong> e ingresa un mensaje de cuerpo de ejemplo sin variables al inicio/fin.</p>
                 <p>4. Haz clic en <strong>Crear Plantilla Oficial</strong>.</p>
                 <p>5. Muestra la respuesta exitosa JSON devuelta por la API de Meta que aparecerá abajo en color verde.</p>
               </div>
@@ -304,7 +335,7 @@ export default function MetaReviewPage() {
                           : 'border-slate-200 text-slate-500 hover:bg-slate-50'
                       }`}
                     >
-                      Plantilla Oficial (hello_world)
+                      Plantilla Oficial
                     </button>
                     <button
                       type="button"
@@ -323,27 +354,64 @@ export default function MetaReviewPage() {
                   </div>
                   {status?.provider_type === 'meta_cloud_api' && (
                     <p className="text-[9px] text-amber-600 font-semibold leading-relaxed">
-                      * Para Meta Cloud API directa, se requiere enviar una plantilla pre-aprobada si no hay una ventana de 24 horas abierta. Se usará la plantilla por defecto de Meta.
+                      * Para Meta Cloud API directa, se requiere enviar una plantilla pre-aprobada si no hay una ventana de 24 horas abierta.
                     </p>
                   )}
                 </div>
 
                 {messageType === 'template' ? (
                   /* Template Details */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-blue-50/20 border border-blue-100/50 rounded-2xl">
-                    <div className="space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-blue-50/20 border border-blue-100/50 rounded-2xl relative">
+                    <button
+                      type="button"
+                      onClick={() => refetchTemplates()}
+                      className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors"
+                      title="Actualizar plantillas"
+                    >
+                      <RefreshCw size={14} className={isLoadingTemplates ? 'animate-spin text-blue-600' : ''} />
+                    </button>
+                    
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
                       <span className="block text-[10px] font-black text-blue-700 uppercase tracking-widest">
-                        Nombre de Plantilla
+                        Selecciona la Plantilla en Meta
                       </span>
-                      <input 
-                        type="text" 
-                        value={templateName}
-                        onChange={(e) => setTemplateName(e.target.value)}
-                        placeholder="hello_world"
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none"
-                      />
+                      {isLoadingTemplates ? (
+                        <div className="flex items-center gap-2 py-2 text-xs font-semibold text-slate-500">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                          <span>Cargando plantillas...</span>
+                        </div>
+                      ) : templates.length > 0 ? (
+                        <select
+                          value={templateName}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setTemplateName(val);
+                            const matched = templates.find(t => t.name === val);
+                            if (matched) {
+                              setLanguage(matched.language);
+                            }
+                          }}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                        >
+                          <option value="">-- Selecciona una plantilla --</option>
+                          {templates.map((t) => (
+                            <option key={`${t.name}_${t.language}`} value={t.name}>
+                              {t.name} ({t.status}) - {t.language}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input 
+                          type="text" 
+                          value={templateName}
+                          onChange={(e) => setTemplateName(e.target.value)}
+                          placeholder="hello_world"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                        />
+                      )}
                     </div>
-                    <div className="space-y-1.5">
+                    
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
                       <span className="block text-[10px] font-black text-blue-700 uppercase tracking-widest">
                         Idioma (Code)
                       </span>
@@ -425,8 +493,8 @@ export default function MetaReviewPage() {
                       onChange={(e) => setNewTemplateCategory(e.target.value)}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
                     >
-                      <option value="UTILITY">Utilidad / UTILITY (Recomendado)</option>
-                      <option value="MARKETING">Marketing / MARKETING</option>
+                      <option value="MARKETING">Marketing / MARKETING (Recomendado)</option>
+                      <option value="UTILITY">Utilidad / UTILITY</option>
                     </select>
                   </div>
 
@@ -457,12 +525,9 @@ export default function MetaReviewPage() {
                     onChange={(e) => setNewTemplateBody(e.target.value)}
                     rows={3}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all resize-none"
-                    placeholder="Escribe el cuerpo de la plantilla. Puedes usar variables tipo {{1}}, {{2}}."
+                    placeholder="Escribe el cuerpo de la plantilla."
                     required
                   />
-                  <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
-                    * Nota: Las plantillas de utilidad no pueden contener frases comerciales ni promocionales, o serán rechazadas automáticamente por Meta.
-                  </p>
                 </div>
 
                 {/* Submit Template */}
