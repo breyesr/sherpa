@@ -549,9 +549,9 @@ async def test_send_message(
     settings_dict = integration.settings or {}
     provider_type = settings_dict.get("provider_type", "twilio_subaccount")
     
-    from app.services.messaging import get_messaging_engine
+    from app.services.messaging import MessagingService
     try:
-        engine = await get_messaging_engine(integration)
+        engine = MessagingService.get_engine(integration)
         if not engine:
             raise HTTPException(status_code=400, detail="Failed to initialize messaging engine.")
             
