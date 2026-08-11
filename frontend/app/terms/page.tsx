@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { Shield, FileText, Scale, UserCheck, AlertTriangle, HelpCircle, Mail, CheckCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Términos de Servicio | Xerpā Sales Intelligence',
-  description: 'Consulta los términos y condiciones de uso de la plataforma Xerpā.',
+  title: 'Términos de Servicio | Xerpa Sales Intelligence',
+  description: 'Consulta los términos y condiciones de uso de la plataforma Xerpa.',
 };
 
 export default function TermsPage() {
@@ -22,7 +22,7 @@ export default function TermsPage() {
             Términos de Servicio
           </h1>
           <p className="text-slate-300 max-w-2xl mx-auto text-lg md:text-xl font-medium">
-            Por favor, lee detalladamente los términos de servicio que regulan el uso de la plataforma Xerpā.
+            Por favor, lee detalladamente los términos de servicio que regulan el uso de la plataforma Xerpa.
           </p>
           <div className="mt-6 text-sm text-indigo-300 font-medium">
             Última actualización: 10 de agosto de 2026
@@ -75,7 +75,7 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Al acceder o utilizar la plataforma Xerpā (en adelante, &quot;el Servicio&quot;), usted acepta estar sujeto a estos Términos de Servicio y a todas las leyes y regulaciones aplicables. Si no está de acuerdo con alguno de estos términos, tiene estrictamente prohibido utilizar o acceder a este sitio y sus aplicaciones.
+                  Al acceder o utilizar la plataforma Xerpa (en adelante, &quot;el Servicio&quot;), usted acepta estar sujeto a estos Términos de Servicio y a todas las leyes y regulaciones aplicables. Si no está de acuerdo con alguno de estos términos, tiene estrictamente prohibido utilizar o acceder a este sitio y sus aplicaciones.
                 </p>
               </div>
             </section>
@@ -90,7 +90,7 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Xerpā es una plataforma de inteligencia de ventas B2B que recopila, estructura y procesa datos para optimizar la planificación de rutas y visitas de campo de representantes comerciales a puntos de venta, integrando automatizaciones mediante GraphRAG y flujos de mensajería comercial.
+                  Xerpa es una plataforma de inteligencia de ventas B2B que recopila, estructura y procesa datos para optimizar la planificación de rutas y visitas de campo de representantes comerciales a puntos de venta, integrando automatizaciones mediante GraphRAG y flujos de mensajería comercial.
                 </p>
               </div>
             </section>
@@ -112,7 +112,7 @@ export default function TermsPage() {
                     <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                     <div>
                       <strong className="text-slate-800 block">Google Calendar:</strong> 
-                      Al conectar su cuenta de Google, Xerpā tendrá acceso de lectura y escritura a su calendario con el único fin de sincronizar, reprogramar o crear eventos de visitas comerciales. El uso de los datos obtenidos a través de la API de Google cumple estrictamente con las directrices de la Política de Datos de Google y el principio de &quot;Uso Limitado&quot;.
+                      Al conectar su cuenta de Google, Xerpa tendrá acceso de lectura y escritura a su calendario con el único fin de sincronizar, reprogramar o crear eventos de visitas comerciales. El uso de los datos obtenidos a través de la API de Google cumple estrictamente con las directrices de la Política de Datos de Google y el principio de &quot;Uso Limitado&quot;.
                     </div>
                   </li>
                   <li className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex gap-3">
@@ -157,7 +157,7 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Todo el software, diseño, logotipos, código fuente y material intelectual asociado con Xerpā son propiedad exclusiva de Xerpā o de sus licenciantes. Queda prohibida la reproducción, modificación o ingeniería inversa del software sin consentimiento previo por escrito.
+                  Todo el software, diseño, logotipos, código fuente y material intelectual asociado con Xerpa son propiedad exclusiva de Xerpa o de sus licenciantes. Queda prohibida la reproducción, modificación o ingeniería inversa del software sin consentimiento previo por escrito.
                 </p>
               </div>
             </section>
@@ -172,7 +172,7 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  En ningún caso Xerpā será responsable de daños indirectos, incidentales, especiales o consecuentes (incluyendo pérdida de ganancias, datos o interrupción del negocio) que surjan del uso o la imposibilidad de uso del Servicio, incluso si Xerpā ha sido notificado de la posibilidad de tales daños.
+                  En ningún caso Xerpa será responsable de daños indirectos, incidentales, especiales o consecuentes (incluyendo pérdida de ganancias, datos o interrupción del negocio) que surjan del uso o la imposibilidad de uso del Servicio, incluso si Xerpa ha sido notificado de la posibilidad de tales daños.
                 </p>
               </div>
             </section>
@@ -187,7 +187,7 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Xerpā se reserva el derecho de revisar y modificar estos Términos de Servicio en cualquier momento sin previo aviso. Al continuar utilizando la Plataforma, usted acepta estar sujeto a la versión vigente en ese momento de estos Términos de Servicio.
+                  Xerpa se reserva el derecho de revisar y modificar estos Términos de Servicio en cualquier momento sin previo aviso. Al continuar utilizando la Plataforma, usted acepta estar sujeto a la versión vigente en ese momento de estos Términos de Servicio.
                 </p>
               </div>
             </section>
@@ -218,7 +218,7 @@ export default function TermsPage() {
       {/* Simple Footer */}
       <footer className="border-t border-slate-200 bg-white py-8 text-center text-sm text-slate-500">
         <div className="max-w-6xl mx-auto px-6">
-          <p>© {new Date().getFullYear()} Xerpā Sales Intelligence. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Xerpa Sales Intelligence. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>

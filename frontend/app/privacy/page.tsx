@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { Shield, Eye, Lock, Database, FileText, Mail, Info, CheckCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Política de Privacidad | Xerpā Sales Intelligence',
-  description: 'Conoce cómo recopilamos, usamos y protegemos tus datos en la plataforma Xerpā, incluyendo nuestra integración con WhatsApp Cloud API.',
+  title: 'Política de Privacidad | Xerpa Sales Intelligence',
+  description: 'Conoce cómo recopilamos, usamos y protegemos tus datos en la plataforma Xerpa, incluyendo nuestra integración con WhatsApp Cloud API.',
 };
 
 export default function PrivacyPage() {
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
             Política de Privacidad
           </h1>
           <p className="text-slate-300 max-w-2xl mx-auto text-lg md:text-xl font-medium">
-            En Xerpā, tu privacidad es nuestra prioridad core. Conoce cómo gestionamos y protegemos la información de tu negocio.
+            En Xerpa, tu privacidad es nuestra prioridad core. Conoce cómo gestionamos y protegemos la información de tu negocio.
           </p>
           <div className="mt-6 text-sm text-indigo-300 font-medium">
             Última actualización: 6 de agosto de 2026
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Xerpā (en adelante, &quot;la Plataforma&quot;) es una solución B2B de inteligencia de ventas diseñada para optimizar las visitas de campo de representantes comerciales a puntos de venta.
+                  Xerpa (en adelante, &quot;la Plataforma&quot;) es una solución B2B de inteligencia de ventas diseñada para optimizar las visitas de campo de representantes comerciales a puntos de venta.
                 </p>
                 <p>
                   Esta Política de Privacidad describe nuestras prácticas con respecto a la recopilación, almacenamiento, uso y divulgación de los datos que nos proporcionas cuando utilizas nuestro sitio web, herramientas de integración de chat y servicios relacionados.
@@ -157,7 +157,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Xerpā se integra con <strong>Google Calendar API</strong> para sincronizar la agenda de citas comerciales de los representantes de ventas. Esta integración es completamente opcional y requiere el consentimiento explícito del usuario mediante el flujo de autorización OAuth 2.0 de Google.
+                  Xerpa se integra con <strong>Google Calendar API</strong> para sincronizar la agenda de citas comerciales de los representantes de ventas. Esta integración es completamente opcional y requiere el consentimiento explícito del usuario mediante el flujo de autorización OAuth 2.0 de Google.
                 </p>
 
                 <h3 className="text-lg font-semibold text-slate-800 mt-6">Datos que accedemos</h3>
@@ -169,7 +169,7 @@ export default function PrivacyPage() {
 
                 <h3 className="text-lg font-semibold text-slate-800 mt-6">Cómo usamos estos datos</h3>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>Los datos de calendario se utilizan <strong>exclusivamente</strong> para mostrar disponibilidad y gestionar citas comerciales dentro de Xerpā.</li>
+                  <li>Los datos de calendario se utilizan <strong>exclusivamente</strong> para mostrar disponibilidad y gestionar citas comerciales dentro de Xerpa.</li>
                   <li><strong>No vendemos, compartimos ni transferimos</strong> tus datos de Google Calendar a terceros bajo ninguna circunstancia.</li>
                   <li><strong>No utilizamos</strong> los datos de Google Calendar para publicidad, retargeting ni ningún propósito de marketing.</li>
                   <li><strong>No permitimos</strong> que personas lean tus datos de calendario a menos que hayas dado tu consentimiento explícito, sea necesario por razones de seguridad o para cumplir con la ley aplicable.</li>
@@ -177,13 +177,13 @@ export default function PrivacyPage() {
 
                 <h3 className="text-lg font-semibold text-slate-800 mt-6">Revocación del acceso</h3>
                 <p>
-                  Puedes desconectar Google Calendar en cualquier momento desde la sección de <strong>Configuración → Integraciones</strong> dentro de Xerpā. También puedes revocar el acceso directamente desde tu cuenta de Google en:{' '}
+                  Puedes desconectar Google Calendar en cualquier momento desde la sección de <strong>Configuración → Integraciones</strong> dentro de Xerpa. También puedes revocar el acceso directamente desde tu cuenta de Google en:{' '}
                   <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline hover:text-indigo-800">myaccount.google.com/permissions</a>.
                 </p>
 
                 <div className="p-4 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-900 text-sm">
                   <strong className="font-semibold block mb-1">Cumplimiento con la Política de Datos de Google:</strong>
-                  El uso y la transferencia a cualquier otra aplicación de la información recibida de las APIs de Google por parte de Xerpā se adhiere a la{' '}
+                  El uso y la transferencia a cualquier otra aplicación de la información recibida de las APIs de Google por parte de Xerpa se adhiere a la{' '}
                   <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">Política de Datos de Usuario de Google API Services</a>, incluyendo los requisitos de Uso Limitado (Limited Use).
                 </div>
               </div>
@@ -253,7 +253,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Si tienes dudas o deseas solicitar la eliminación completa de los datos de tu cuenta en Xerpā, puedes contactarnos en:
+                  Si tienes dudas o deseas solicitar la eliminación completa de los datos de tu cuenta en Xerpa, puedes contactarnos en:
                 </p>
                 <p className="flex items-center gap-2 text-indigo-700 font-semibold bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 max-w-sm">
                   <Mail className="w-5 h-5" />
@@ -269,7 +269,7 @@ export default function PrivacyPage() {
       {/* Simple Footer */}
       <footer className="border-t border-slate-200 bg-white py-8 text-center text-sm text-slate-500">
         <div className="max-w-6xl mx-auto px-6">
-          <p>© {new Date().getFullYear()} Xerpā Sales Intelligence. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Xerpa Sales Intelligence. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>
