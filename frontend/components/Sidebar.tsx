@@ -99,7 +99,7 @@ function SidebarContent() {
   return (
     <div className="w-64 bg-white border-r min-h-screen flex flex-col shrink-0">
       <div className="p-6 border-b">
-        <h1 className="text-2xl font-bold text-blue-600">Sherpa</h1>
+        <h1 className="text-2xl font-black text-indigo-600">Xerpā</h1>
       </div>
       
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto">

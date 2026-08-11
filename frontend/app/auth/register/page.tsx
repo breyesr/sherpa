@@ -69,7 +69,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-3xl shadow-sm border border-gray-100">
         <div className="space-y-2 text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Join Sherpa</h2>
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Registrarse en Xerpā</h2>
           <p className="text-gray-500 font-medium italic text-sm">Create your assistant today.</p>
         </div>
 
