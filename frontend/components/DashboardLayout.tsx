@@ -26,7 +26,7 @@ export default function DashboardLayout({
                            document.body.innerText.includes("Active Pipeline") ||
                            document.body.innerText.includes("business briefing");
       
-      const isProtectedRoute = !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/privacy' && pathname !== '/terms';
+      const isProtectedRoute = !pathname.startsWith('/auth') && pathname !== '/' && pathname !== '/privacy' && pathname !== '/terms' && pathname !== '/meta-review';
       
       if (hasDashboard || isProtectedRoute) {
         fetch('/api/auth', {
@@ -46,6 +46,11 @@ export default function DashboardLayout({
 
   // Standard Public Routes
   if (pathname.startsWith('/auth') || pathname.startsWith('/onboarding') || pathname === '/privacy' || pathname === '/terms') {
+    return <>{children}</>;
+  }
+
+  // Homepage without token = public landing page, no sidebar wrapper
+  if (pathname === '/' && !token) {
     return <>{children}</>;
   }
 
