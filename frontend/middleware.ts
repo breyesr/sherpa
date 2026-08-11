@@ -4,6 +4,12 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('sherpa_token')?.value;
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+
+  // Redirect root domain to app subdomain
+  if (hostname === 'xerpaa.com' || hostname === 'www.xerpaa.com') {
+    return NextResponse.redirect(`https://app.xerpaa.com${pathname}${request.nextUrl.search}`, 301);
+  }
 
   // 1. If no token and trying to access protected route
   if (!token && !pathname.startsWith('/auth') && pathname !== '/privacy' && pathname !== '/terms') {
