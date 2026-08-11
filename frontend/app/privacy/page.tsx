@@ -45,10 +45,11 @@ export default function PrivacyPage() {
                 <a href="#intro" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">1. Introducción</a>
                 <a href="#recopilacion" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">2. Datos que recopilamos</a>
                 <a href="#whatsapp" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">3. Integración de WhatsApp</a>
-                <a href="#uso" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">4. Uso de la Información</a>
-                <a href="#seguridad" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">5. Seguridad de Datos</a>
-                <a href="#derechos" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">6. Tus Derechos</a>
-                <a href="#contacto" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">7. Contacto</a>
+                <a href="#google" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">4. Integración de Google Calendar</a>
+                <a href="#uso" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">5. Uso de la Información</a>
+                <a href="#seguridad" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">6. Seguridad de Datos</a>
+                <a href="#derechos" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">7. Tus Derechos</a>
+                <a href="#contacto" className="block text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">8. Contacto</a>
               </nav>
               <div className="mt-8 pt-6 border-t border-slate-100">
                 <Link 
@@ -146,13 +147,55 @@ export default function PrivacyPage() {
               </div>
             </section>
 
-            {/* Section 4: Usage */}
+            {/* Section 4: Google Calendar Integration */}
+            <section id="google" className="p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm scroll-mt-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                  <Database className="w-5 h-5" />
+                </div>
+                <span>4. Integración de Google Calendar</span>
+              </h2>
+              <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
+                <p>
+                  Xerpā se integra con <strong>Google Calendar API</strong> para sincronizar la agenda de citas comerciales de los representantes de ventas. Esta integración es completamente opcional y requiere el consentimiento explícito del usuario mediante el flujo de autorización OAuth 2.0 de Google.
+                </p>
+
+                <h3 className="text-lg font-semibold text-slate-800 mt-6">Datos que accedemos</h3>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li><strong>Lectura de disponibilidad:</strong> Consultamos los eventos existentes en tu calendario principal para verificar la disponibilidad de horarios antes de agendar citas.</li>
+                  <li><strong>Creación y edición de eventos:</strong> Creamos eventos en tu Google Calendar cuando se agenda una cita comercial desde la plataforma, y los actualizamos si la cita es reagendada o cancelada.</li>
+                  <li><strong>Correo electrónico:</strong> Utilizamos tu dirección de correo electrónico asociada a tu cuenta de Google únicamente para identificarte dentro de la plataforma.</li>
+                </ul>
+
+                <h3 className="text-lg font-semibold text-slate-800 mt-6">Cómo usamos estos datos</h3>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>Los datos de calendario se utilizan <strong>exclusivamente</strong> para mostrar disponibilidad y gestionar citas comerciales dentro de Xerpā.</li>
+                  <li><strong>No vendemos, compartimos ni transferimos</strong> tus datos de Google Calendar a terceros bajo ninguna circunstancia.</li>
+                  <li><strong>No utilizamos</strong> los datos de Google Calendar para publicidad, retargeting ni ningún propósito de marketing.</li>
+                  <li><strong>No permitimos</strong> que personas lean tus datos de calendario a menos que hayas dado tu consentimiento explícito, sea necesario por razones de seguridad o para cumplir con la ley aplicable.</li>
+                </ul>
+
+                <h3 className="text-lg font-semibold text-slate-800 mt-6">Revocación del acceso</h3>
+                <p>
+                  Puedes desconectar Google Calendar en cualquier momento desde la sección de <strong>Configuración → Integraciones</strong> dentro de Xerpā. También puedes revocar el acceso directamente desde tu cuenta de Google en:{' '}
+                  <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline hover:text-indigo-800">myaccount.google.com/permissions</a>.
+                </p>
+
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-900 text-sm">
+                  <strong className="font-semibold block mb-1">Cumplimiento con la Política de Datos de Google:</strong>
+                  El uso y la transferencia a cualquier otra aplicación de la información recibida de las APIs de Google por parte de Xerpā se adhiere a la{' '}
+                  <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">Política de Datos de Usuario de Google API Services</a>, incluyendo los requisitos de Uso Limitado (Limited Use).
+                </div>
+              </div>
+            </section>
+
+            {/* Section 5: Usage */}
             <section id="uso" className="p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm scroll-mt-6">
               <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
                   <Lock className="w-5 h-5" />
                 </div>
-                <span>4. Uso de la Información</span>
+                <span>5. Uso de la Información</span>
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
@@ -173,7 +216,7 @@ export default function PrivacyPage() {
                 <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
                   <Shield className="w-5 h-5" />
                 </div>
-                <span>5. Seguridad de los Datos</span>
+                <span>6. Seguridad de los Datos</span>
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
@@ -191,7 +234,7 @@ export default function PrivacyPage() {
                 <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
                   <CheckCircle className="w-5 h-5" />
                 </div>
-                <span>6. Derechos ARCO</span>
+                <span>7. Derechos ARCO</span>
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
@@ -206,7 +249,7 @@ export default function PrivacyPage() {
                 <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-sm">
                   <Mail className="w-5 h-5" />
                 </div>
-                <span>7. Contacto e Información Legal</span>
+                <span>8. Contacto e Información Legal</span>
               </h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
