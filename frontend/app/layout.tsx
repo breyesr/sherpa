@@ -5,7 +5,7 @@ import Providers from "@/components/Providers";
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: "Xerpa Sales Intelligence",
+  title: "Xerpa",
   description: "Plataforma inteligente de ventas B2B que optimiza la gestión de visitas comerciales y sincroniza agendas mediante Google Calendar y GraphRAG.",
 };
 

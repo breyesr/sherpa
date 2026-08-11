@@ -36,8 +36,11 @@ export default async function Home() {
         <header className="bg-white border-b border-gray-100">
           <div className="max-w-5xl mx-auto px-6 py-16 sm:py-24 text-center">
             <h1 className="text-4xl sm:text-5xl font-black text-gray-900 tracking-tight leading-tight">
-              Xerpa <span className="text-indigo-600">Sales Intelligence</span>
+              Xerpa
             </h1>
+            <p className="mt-2 text-xl sm:text-2xl font-bold text-indigo-600">
+              Sales Intelligence
+            </p>
             <p className="mt-4 text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
               Xerpa is a B2B Sales Intelligence platform that empowers field sales representatives with data-driven account insights, automated visit planning, and seamless calendar synchronization through Google Calendar.
             </p>
