@@ -5,8 +5,8 @@ import Providers from "@/components/Providers";
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: "Sherpa MVP",
-  description: "AI assistant scheduling via WhatsApp and Google Calendar",
+  title: "Xerpā Sales Intelligence",
+  description: "Plataforma inteligente de ventas B2B que optimiza la gestión de visitas comerciales y sincroniza agendas mediante Google Calendar y GraphRAG.",
 };
 
 export default function RootLayout({

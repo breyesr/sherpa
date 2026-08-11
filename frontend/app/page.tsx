@@ -10,22 +10,27 @@ export default async function Home() {
 
   if (!token) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
-        <div className="max-w-2xl w-full text-center space-y-8 bg-white p-12 rounded-3xl shadow-sm border border-gray-100">
-          <h1 className="text-6xl font-extrabold text-blue-600 tracking-tight">Sherpa</h1>
-          <p className="text-2xl text-gray-500 font-medium italic">&quot;Scheduling made simple.&quot;</p>
-          <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center">
+      <main className="flex min-h-screen flex-col items-center justify-center p-6 sm:p-24 bg-gray-50">
+        <div className="max-w-2xl w-full text-center space-y-8 bg-white p-8 sm:p-12 rounded-3xl shadow-sm border border-gray-100">
+          <h1 className="text-5xl sm:text-6xl font-black text-indigo-600 tracking-tight">Xerpā</h1>
+          <p className="text-xl sm:text-2xl text-slate-700 font-bold">
+            B2B Sales Intelligence & Calendar Synchronization
+          </p>
+          <p className="text-sm sm:text-base text-slate-500 max-w-md mx-auto leading-relaxed">
+            Xerpā es una plataforma inteligente de ventas B2B que optimiza la gestión de visitas de representantes de campo, automatiza reportes comerciales y mantiene las citas perfectamente sincronizadas mediante Google Calendar.
+          </p>
+          <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/auth/login" 
-              className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95 text-lg"
+              className="px-10 py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-95 text-lg"
             >
-              Login
+              Iniciar Sesión
             </Link>
             <Link 
               href="/auth/register" 
-              className="px-10 py-4 border-2 border-blue-600 text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all active:scale-95 text-lg"
+              className="px-10 py-4 border-2 border-indigo-600 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-all active:scale-95 text-lg"
             >
-              Try for Free
+              Probar Gratis
             </Link>
           </div>
         </div>
