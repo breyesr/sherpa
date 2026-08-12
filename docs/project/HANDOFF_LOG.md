@@ -1,5 +1,10 @@
 # Handoff Log
 
+- **2026-08-11 (Google OAuth & Meta App Review Integration)**: Aligned codebase branding to ASCII "Xerpa", implemented root domain redirection, and guided user through Google and Meta verification submissions.
+  - **OAuth Branding**: Changed all instances of "Xerpā" to "Xerpa" to bypass encoding issues on Google's review bot, and simplified H1 and tab title definitions.
+  - **Root Domain Redirection**: Added a Next.js middleware check to redirect `xerpaa.com` to `app.xerpaa.com` via a clean 301, and completed custom domain and SSL provisioning in Railway and Namecheap.
+  - **Verification Submissions**: Drafted concise compliance descriptions and guided user through Google Cloud appeal forms and Meta App Review questionnaires.
+
 - **2026-08-08 (Onboarding Redirects & Meta Cloud API Production Confirmed)**: Implemented frontend onboarding redirects on 404 business profiles, and successfully validated end-to-end production messaging.
   - **Onboarding Redirects**: Configured server-side redirects to `/onboarding` if `/business/me` returns 404 on all primary authenticated routes (`/`, `/calendar`, `/crm`, `/settings`), preventing console error cascades and broken page rendering.
   - **Meta Webhook Signature & App Activation**: Diagnosed and assisted in resolving Meta App webhook signature mismatches and unarchiving the Meta Developer App to restore full API access in production.
