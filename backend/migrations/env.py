@@ -21,6 +21,8 @@ from app.models.crm import Client, Appointment
 from app.models.system import SystemConfiguration
 from app.models.trade import Store, StoreNote, Category, Product, Order, OrderItem, Competitor, CustomerNote
 from app.models.dlq import VectorizationDLQ
+from app.models.demo import DemoRequest
+
 
 from app.core.database import Base
 

@@ -10,8 +10,11 @@ from passlib.context import CryptContext
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
+from app.models.demo import DemoRequest
 from app.schemas.user import UserCreate, UserResponse, Token, UserUpdate
+from app.schemas.demo import DemoRequestCreate, DemoRequestResponse
 from app.core.limiter import limiter
+
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -124,29 +127,40 @@ async def update_user_me(
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> Any:
-    result = await db.execute(select(User).where(User.email == user_in.email))
-    user = result.scalars().first()
-    if user:
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Registration disabled"
+    )
+
+from uuid_extensions import uuid7str
+
+@router.post("/request-demo", response_model=DemoRequestResponse)
+async def request_demo(demo_in: DemoRequestCreate, db: AsyncSession = Depends(get_db)) -> Any:
+    result = await db.execute(select(DemoRequest).where(DemoRequest.email == demo_in.email))
+    existing = result.scalars().first()
+    if existing:
         raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A demo request with this email has already been submitted."
         )
-    user = User(
-        email=user_in.email,
-        hashed_password=get_password_hash(user_in.password),
-        role="member",
-        is_admin=False,
-        is_active=True
+    
+    demo = DemoRequest(
+        id=uuid7str(),
+        name=demo_in.name,
+        business_name=demo_in.business_name,
+        email=demo_in.email,
+        phone_number=demo_in.phone_number,
+        primary_use_case=demo_in.primary_use_case,
+        status="pending",
+        created_at=datetime.utcnow(),
     )
-    db.add(user)
+
+    db.add(demo)
     await db.commit()
-    # Refresh with eager load
-    result = await db.execute(
-        select(User)
-        .where(User.id == user.id)
-        .options(selectinload(User.business_profile))
-    )
-    return result.scalars().first()
+    await db.refresh(demo)
+    return demo
+
+
 
 from fastapi.responses import Response
 

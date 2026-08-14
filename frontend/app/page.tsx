@@ -23,11 +23,12 @@ export default async function Home() {
                 Iniciar Sesión
               </Link>
               <Link 
-                href="/auth/register" 
+                href="/auth/request-demo" 
                 className="px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
               >
-                Registrarse
+                Solicitar Demo
               </Link>
+
             </div>
           </div>
         </nav>

@@ -15,10 +15,13 @@ from app.models.business import BusinessProfile, VerticalType
 from app.api.auth import get_current_user, get_password_hash
 from app.core.system_config import ConfigService
 from app.schemas.user import UserResponse, UserCreateAdmin, UserUpdate
+from app.schemas.demo import DemoRequestResponse
+from app.models.demo import DemoRequest
 from app.models.dlq import VectorizationDLQ
 from app.tasks.knowledge import sync_vector_task, delete_vector_task
 from datetime import datetime
 from typing import Optional
+
 
 router = APIRouter()
 
@@ -318,5 +321,45 @@ async def update_business_credits(
     await db.commit()
     
     return {"status": "success", "business_id": business_id, "purchased_credits": business.purchased_credits}
+
+@router.get("/demo-requests", response_model=List[DemoRequestResponse])
+async def list_demo_requests(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+) -> Any:
+    """List all demo requests (Admin only)."""
+    result = await db.execute(
+        select(DemoRequest).order_by(DemoRequest.created_at.desc())
+    )
+    return result.scalars().all()
+
+@router.patch("/demo-requests/{request_id}/status", response_model=DemoRequestResponse)
+async def update_demo_request_status(
+    request_id: str,
+    payload: Dict[str, str],
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+) -> Any:
+    """Update status of a demo request (Admin only)."""
+    status_val = payload.get("status")
+    allowed_statuses = ["pending", "contacted", "converted", "rejected"]
+    if status_val not in allowed_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status. Allowed values: {', '.join(allowed_statuses)}"
+        )
+        
+    result = await db.execute(select(DemoRequest).where(DemoRequest.id == request_id))
+    demo_req = result.scalars().first()
+    if not demo_req:
+        raise HTTPException(status_code=404, detail="Demo request not found")
+        
+    demo_req.status = status_val
+    db.add(demo_req)
+    await db.commit()
+    await db.refresh(demo_req)
+    return demo_req
+
+
 
 

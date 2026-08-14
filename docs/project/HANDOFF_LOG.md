@@ -662,6 +662,22 @@
 - **Prospect Account Deletion Sandbox Leak Bug Fix**: Modified `delete_store` in [trade.py](file:///Users/bernardo/projects/sherpa/backend/app/api/trade.py) to identify and delete associated prospect clients (those with `is_prospect == True` not linked to other stores) alongside their vector embeddings and customer note vectors. This cascading deletion automatically removes client conversation sessions and history, preventing memory leakage when messaging the AI chatbot sandbox again.
 - **Verification & E2E Build**: Executed backend unit tests successfully and verified a clean Next.js build (`npm run build`) of the frontend.
 
+## [2026-08-11] - Google OAuth & Meta App Review Integration
+- **Google OAuth ASCII Alignment**: Replaced all instances of unicode `Xerpā` with standard ASCII `Xerpa` across layout titles, landing pages, login/register views, sidebar, privacy policy, and terms pages to resolve Google bot encoding matching issues.
+- **Domain Redirection**: Configured a clean 301 redirection rule inside `frontend/middleware.ts` to redirect the root domain `xerpaa.com` to `https://app.xerpaa.com`.
+- **Google & Meta Review Preparation**: Guided the user through the Google Cloud appeal process and provided business descriptions and use case documentation for the Meta App Review permissions.
+
+## [2026-08-13] - Epic 213: Self-Registration Deprecation & Demo Request Flow
+- **Backlog Expansion**: Added six new Epics (213-218) covering registration deprecation, payment methods, lead notifications, B2C SMS reminders, translations, and mobile-first improvements.
+- **Disabled Registration**: Blocked the `/auth/register` API endpoint on the backend and added client-side redirects to `/auth/request-demo` on mount of `/auth/register`.
+- **Demo Request DB Table & Single Migration**: Created the `DemoRequest` SQLAlchemy model with a `status` column defaulting to `pending`. Downgraded the initial revision and consolidated the DB work into a single Alembic migration revision (`c77414e45eca`) successfully applied against the local database.
+- **Demo Request Flow**: Built the `POST /auth/request-demo` backend API and created a highly polished, responsive, dark-themed **Demo Request Form page** at `frontend/app/auth/request-demo/page.tsx` for capturing prospective client details.
+- **Admin Settings Dashboard Integration**: Added `GET /admin/demo-requests` and `PATCH /admin/demo-requests/{request_id}/status` endpoints to the backend API. Extended the admin settings panel with a new **"Demo Requests"** tab that renders all submissions in a table, displays color-coded status badges (pending, contacted, converted, rejected), and embeds a select dropdown to update request status on the fly.
+- **Testing & Compilation**: Verified that all backend unit tests (including new status updates tests) pass successfully and that the Next.js production build (`npm run build`) compiles cleanly without any errors.
+
+
+
+
 
 
 

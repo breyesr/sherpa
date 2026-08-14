@@ -15,6 +15,10 @@ export interface paths {
     /** Register */
     post: operations["register_api_v1_auth_register_post"];
   };
+  "/api/v1/auth/request-demo": {
+    /** Request Demo */
+    post: operations["request_demo_api_v1_auth_request_demo_post"];
+  };
   "/api/v1/auth/login": {
     /** Login */
     post: operations["login_api_v1_auth_login_post"];
@@ -183,12 +187,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -212,6 +216,27 @@ export interface paths {
      * @description Get dynamic status and diagnostics for the WhatsApp/Twilio integration.
      */
     get: operations["get_whatsapp_status_api_v1_whatsapp_status_get"];
+  };
+  "/api/v1/whatsapp/test-send": {
+    /**
+     * Test Send Message
+     * @description Send a test WhatsApp message using the active integration for Meta App Review.
+     */
+    post: operations["test_send_message_api_v1_whatsapp_test_send_post"];
+  };
+  "/api/v1/whatsapp/templates": {
+    /**
+     * Get Meta Templates
+     * @description Retrieve the list of WhatsApp message templates from Meta Graph API.
+     */
+    get: operations["get_meta_templates_api_v1_whatsapp_templates_get"];
+  };
+  "/api/v1/whatsapp/test-template": {
+    /**
+     * Test Create Template
+     * @description Create a test template on Meta for App Review verification.
+     */
+    post: operations["test_create_template_api_v1_whatsapp_test_template_post"];
   };
   "/api/v1/telegram/debug/info": {
     /**
@@ -325,6 +350,20 @@ export interface paths {
      * @description Update manual purchased credits for a business (Admin only).
      */
     patch: operations["update_business_credits_api_v1_admin_businesses__business_id__credits_patch"];
+  };
+  "/api/v1/admin/demo-requests": {
+    /**
+     * List Demo Requests
+     * @description List all demo requests (Admin only).
+     */
+    get: operations["list_demo_requests_api_v1_admin_demo_requests_get"];
+  };
+  "/api/v1/admin/demo-requests/{request_id}/status": {
+    /**
+     * Update Demo Request Status
+     * @description Update status of a demo request (Admin only).
+     */
+    patch: operations["update_demo_request_status_api_v1_admin_demo_requests__request_id__status_patch"];
   };
   "/api/v1/data-gateway/me/imports": {
     /**
@@ -1394,6 +1433,47 @@ export interface components {
      * @enum {string}
      */
     DataSourceType: "manual" | "ai_extracted" | "integration";
+    /** DemoRequestCreate */
+    DemoRequestCreate: {
+      /** Name */
+      name: string;
+      /** Business Name */
+      business_name: string;
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Phone Number */
+      phone_number: string;
+      /** Primary Use Case */
+      primary_use_case: string;
+    };
+    /** DemoRequestResponse */
+    DemoRequestResponse: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Business Name */
+      business_name: string;
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Phone Number */
+      phone_number: string;
+      /** Primary Use Case */
+      primary_use_case: string;
+      /** Status */
+      status: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -2232,6 +2312,31 @@ export interface components {
        */
       simulate_role?: string | null;
     };
+    /** TestSendRequest */
+    TestSendRequest: {
+      /** To Number */
+      to_number: string;
+      /** Message */
+      message: string;
+      /** Template Name */
+      template_name?: string | null;
+      /** Language */
+      language?: string | null;
+    };
+    /** TestTemplateRequest */
+    TestTemplateRequest: {
+      /** Name */
+      name: string;
+      /** Category */
+      category: string;
+      /** Body Text */
+      body_text: string;
+      /**
+       * Language
+       * @default es_MX
+       */
+      language?: string;
+    };
     /** Token */
     Token: {
       /** Access Token */
@@ -2407,6 +2512,28 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Request Demo */
+  request_demo_api_v1_auth_request_demo_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DemoRequestCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DemoRequestResponse"];
         };
       };
       /** @description Validation Error */
@@ -3174,7 +3301,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -3237,6 +3364,70 @@ export interface operations {
       200: {
         content: {
           "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Test Send Message
+   * @description Send a test WhatsApp message using the active integration for Meta App Review.
+   */
+  test_send_message_api_v1_whatsapp_test_send_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TestSendRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Meta Templates
+   * @description Retrieve the list of WhatsApp message templates from Meta Graph API.
+   */
+  get_meta_templates_api_v1_whatsapp_templates_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /**
+   * Test Create Template
+   * @description Create a test template on Meta for App Review verification.
+   */
+  test_create_template_api_v1_whatsapp_test_template_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TestTemplateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -3606,6 +3797,52 @@ export interface operations {
       200: {
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Demo Requests
+   * @description List all demo requests (Admin only).
+   */
+  list_demo_requests_api_v1_admin_demo_requests_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DemoRequestResponse"][];
+        };
+      };
+    };
+  };
+  /**
+   * Update Demo Request Status
+   * @description Update status of a demo request (Admin only).
+   */
+  update_demo_request_status_api_v1_admin_demo_requests__request_id__status_patch: {
+    parameters: {
+      path: {
+        request_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DemoRequestResponse"];
         };
       };
       /** @description Validation Error */

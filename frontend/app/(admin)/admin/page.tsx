@@ -7,6 +7,8 @@ import { apiClient } from '@/lib/apiClient';
 import { components } from '@/types/api';
 
 type UserResponse = components['schemas']['UserResponse'];
+type DemoRequestResponse = components['schemas']['DemoRequestResponse'];
+
 
 interface SystemSettings {
   GOOGLE_CLIENT_ID: string;
@@ -62,7 +64,11 @@ export default function AdminSettingsPage() {
     }
   });
 
+  const [demoRequests, setDemoRequests] = useState<DemoRequestResponse[]>([]);
+  const [loadingDemo, setLoadingDemo] = useState(false);
+
   const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [creditEdits, setCreditEdits] = useState<Record<string, number>>({});
@@ -108,7 +114,28 @@ export default function AdminSettingsPage() {
     }
   }, [activeTab, isAuthorized, fetchUsers]);
 
+  const fetchDemoRequests = useCallback(async () => {
+    setLoadingDemo(true);
+    try {
+      const data = await apiClient.get<DemoRequestResponse[]>('/admin/demo-requests');
+      if (Array.isArray(data)) {
+        setDemoRequests(data);
+      }
+    } catch (err) {
+      console.error('Admin: Error fetching demo requests:', err);
+    } finally {
+      setLoadingDemo(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'demo-requests' && isAuthorized) {
+      fetchDemoRequests();
+    }
+  }, [activeTab, isAuthorized, fetchDemoRequests]);
+
   const handleSaveSettings = async (e: React.FormEvent) => {
+
     e.preventDefault();
     setSaving(true);
     setMessage({ type: '', text: '' });
@@ -202,6 +229,16 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    try {
+      await apiClient.patch(`/admin/demo-requests/${id}/status`, { status: newStatus });
+      setDemoRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
+    } catch (err) {
+      console.error('Admin: Error updating request status:', err);
+    }
+  };
+
+
 
   if (loading) return <div className="p-8 text-center animate-pulse text-gray-500 font-bold text-xl h-screen flex items-center justify-center">Authenticating Admin...</div>;
 
@@ -261,7 +298,17 @@ export default function AdminSettingsPage() {
           <Users size={18} />
           User Management
         </button>
+        <button
+          onClick={() => setActiveTab('demo-requests')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'demo-requests' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Sparkles size={18} />
+          Demo Requests
+        </button>
       </div>
+
 
       {activeTab === 'settings' ? (
         <form onSubmit={handleSaveSettings} className="grid gap-8 animate-in fade-in slide-in-from-bottom-4">
@@ -385,8 +432,9 @@ export default function AdminSettingsPage() {
             </button>
           </div>
         </form>
-      ) : (
+      ) : activeTab === 'users' ? (
         <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Manage Users</h2>
             <button
@@ -526,7 +574,106 @@ export default function AdminSettingsPage() {
             </table>
           </div>
         </section>
+      ) : (
+        <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Demo Requests</h2>
+            <button
+              onClick={fetchDemoRequests}
+              className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all active:scale-98"
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            {loadingDemo ? (
+              <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
+                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                Loading demo requests...
+              </div>
+            ) : demoRequests.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                No demo requests registered yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider border-b border-slate-100">
+                      <th className="py-4 px-6">Name</th>
+                      <th className="py-4 px-6">Business</th>
+                      <th className="py-4 px-6">Email</th>
+                      <th className="py-4 px-6">Phone</th>
+                      <th className="py-4 px-6">Use Case</th>
+                      <th className="py-4 px-6">Status</th>
+                      <th className="py-4 px-6">Date</th>
+                      <th className="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {demoRequests.map((req) => (
+                      <tr key={req.id} className="hover:bg-slate-50/50 transition-colors text-slate-700">
+                        <td className="py-4 px-6 font-semibold">{req.name}</td>
+                        <td className="py-4 px-6">{req.business_name}</td>
+                        <td className="py-4 px-6">
+                          <a href={`mailto:${req.email}`} className="text-blue-600 hover:underline">
+                            {req.email}
+                          </a>
+                        </td>
+                        <td className="py-4 px-6">
+                          <a href={`tel:${req.phone_number}`} className="text-slate-600 hover:underline">
+                            {req.phone_number}
+                          </a>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            req.primary_use_case === 'trade' 
+                              ? 'bg-blue-50 text-blue-700' 
+                              : 'bg-purple-50 text-purple-700'
+                          }`}>
+                            {req.primary_use_case === 'trade' ? 'Trade CRM' : 'B2C Scheduler'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+                            req.status === 'converted' 
+                              ? 'bg-green-50 text-green-700 border-green-200' 
+                              : req.status === 'contacted'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : req.status === 'rejected'
+                              ? 'bg-slate-100 text-slate-600 border-slate-200'
+                              : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                          }`}>
+                            {req.status || 'pending'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-xs text-slate-400">
+                          {new Date(req.created_at).toLocaleDateString()} {new Date(req.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <select
+                            value={req.status || 'pending'}
+                            onChange={(e) => handleUpdateStatus(req.id, e.target.value)}
+                            className="p-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="converted">Converted</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
       )}
+
 
       {/* User Modal */}
       {showUserModal && (

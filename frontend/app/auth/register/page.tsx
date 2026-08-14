@@ -6,7 +6,21 @@ import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/config';
 import { Loader2 } from 'lucide-react';
 
+import { useEffect } from 'react';
+
 export default function RegisterPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/auth/request-demo');
+  }, [router]);
+
+  return null;
+}
+
+// Keep a backup of the original registration logic in comments for future reversion (temporary deprecation)
+/*
+export default function OriginalRegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -127,4 +141,6 @@ export default function RegisterPage() {
     </div>
   );
 }
+*/
+
 

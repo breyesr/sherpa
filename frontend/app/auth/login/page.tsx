@@ -70,8 +70,9 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="text-center text-sm">
-          Don&apos;t have an account? <a href="/auth/register" className="text-blue-600">Register</a>
+          Want an account? <a href="/auth/request-demo" className="text-blue-600">Request a Demo</a>
         </p>
+
       </div>
     </div>
   );

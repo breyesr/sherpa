@@ -313,3 +313,82 @@
 - [ ] Task 212.3: **Standardize `To` Cleaning** (`tasks/messages.py`): Apply `clean_num` to `payload.get("To")` in `run_prospect_message` to match the pattern used by all other task runners.
 - [ ] Task 212.4: **Rename `/debug/twilio` Endpoint** (`api/whatsapp.py`): Rename to `/debug/whatsapp` and update log messages to remove Twilio references.
 - [ ] Task 212.5: **Audit & Update Internal Log Messages**: Replace all log strings referencing "Twilio" in the Meta Cloud API code paths with provider-agnostic or "WhatsApp" terminology.
+
+---
+
+## Epic 213: Self-Register Deprecation & Demo Request Flow (🔴 IMMEDIATE)
+**Objective**: Temporarily disable public user self-registration to gate account creation, routing interested users to a "Request a Demo/Account" form that collects lead details.
+
+- [ ] Task 213.1 (FE): **Replace Registration Buttons with Demo Request Link**
+  - **Acceptance Criteria**:
+    - **Given** a user visits the landing, login, or pricing pages,
+    - **When** they click or look for "Register" / "Sign Up",
+    - **Then** those actions must be hidden or replaced with a "Request a Demo" or "Request Account" button.
+- [ ] Task 213.2 (FE): **Create Demo Request Form Page**
+  - **Acceptance Criteria**:
+    - **Given** a user clicks "Request a Demo",
+    - **When** they are redirected,
+    - **Then** present a form collecting their Name, Business Name, Email, Phone Number, and Primary Use Case (Trade CRM vs. B2C Scheduler).
+    - **When** submitted, show a premium confirmation state ("Our team will contact you in less than 24 hours").
+- [ ] Task 213.3 (BE): **Store Demo Requests & Notify Admin**
+  - **Acceptance Criteria**:
+    - **Given** a demo request form submission,
+    - **When** processing on the backend,
+    - **Then** persist the submission in a `demo_requests` database table and trigger an email or system notification to the admin/owner.
+
+## Epic 214: Stripe & PayPal Subscription Integration
+**Objective**: Implement subscription billing with monthly and yearly options, integrating Stripe and PayPal to charge users based on their tier.
+*Note: Antigravity will guide the user step-by-step through configuring Stripe Webhooks, API keys, and PayPal Developer portal settings.*
+
+- [ ] Task 214.1 (BE): **Payment Gateway Setup & Schemas**
+  - **Acceptance Criteria**:
+    - Define a `Subscription` model in SQLAlchemy tracking `status`, `tier`, `provider` (stripe/paypal), `provider_subscription_id`, and `expiration_date`.
+- [ ] Task 214.2 (BE/FE): **Stripe Checkout & Webhook Integration**
+  - **Acceptance Criteria**:
+    - Build backend routes to initiate Stripe Checkout sessions for monthly/yearly plans and handle webhook events (`customer.subscription.created`, `customer.subscription.deleted`, `invoice.payment_succeeded`).
+- [ ] Task 214.3 (BE/FE): **PayPal Subscription Integration**
+  - **Acceptance Criteria**:
+    - Integrate PayPal Javascript SDK on the frontend for monthly/yearly subscription buttons and handle PayPal webhook notifications for payment capture and lifecycle changes.
+
+## Epic 215: Qualified Lead Alert Routing (Automated Intake & Campaigns)
+**Objective**: Automatically alert the business owner/admin via WhatsApp when a qualified wholesale lead has completed the intake funnel.
+
+- [ ] Task 215.1 (BE): **Owner Notification Trigger**
+  - **Acceptance Criteria**:
+    - **Given** a prospect completes the wholesale qualification campaign flow in `prospect_qualifier.py` and is marked as qualified/verified,
+    - **When** the qualification database transaction commits,
+    - **Then** trigger a Celery task that retrieves the business owner's registered WhatsApp/phone contact info and sends a WhatsApp template notification (e.g., "New qualified wholesale lead from {prospect_name} has arrived! Please check your dashboard.").
+
+## Epic 216: B2C SMS Appointment Reminders
+**Objective**: Expand the B2C basic scheduler module to send automated SMS reminders before scheduled appointments.
+
+- [ ] Task 216.1 (BE): **SMS Reminder Cron Task**
+  - **Acceptance Criteria**:
+    - **Given** a scheduled B2C appointment in the database,
+    - **When** a background cron runner checks for appointments starting in exactly 24 hours (and again at 1 hour),
+    - **Then** check if the client has opted into SMS reminders, and dispatch a reminder SMS using Twilio SMS or Meta Cloud API.
+
+## Epic 217: Internationalization (i18n) Support
+**Objective**: Implement full translation capability for Spanish and English languages across the landing page, auth screens, and main dashboards.
+
+- [ ] Task 217.1 (FE): **Setup next-intl or i18next**
+  - **Acceptance Criteria**:
+    - Configure translation middleware and locale routing (e.g., `/en/trade` and `/es/trade`), with automatic browser language detection.
+- [ ] Task 217.2 (FE): **Translate Layouts & Dictionary Files**
+  - **Acceptance Criteria**:
+    - Extract hardcoded strings across marketing and dashboard files into structured JSON translation dictionaries (`es.json`, `en.json`). Render a clean language switcher in the header.
+
+## Epic 218: Mobile-First Overhaul & Native App Roadmap
+**Objective**: Optimize the entire web dashboard layout to be exceptionally fast and easy to use on mobile devices, preparing the ground for native apps.
+
+- [ ] Task 218.1 (FE): **Mobile Responsive Audit & UI Adjustments (PRIORITY)**
+  - **Acceptance Criteria**:
+    - **Given** a sales rep is using the dashboard on a smartphone,
+    - **When** viewing lists, drawers, charts, and tables,
+    - **Then** they must be easily scrollable and fully legible with no horizontal overflow, utilizing bottom-sheets instead of heavy desktop drawers.
+- [ ] Task 218.2 (FE): **Progressive Web App (PWA) Configuration**
+  - **Acceptance Criteria**:
+    - Implement a service worker and manifest to allow "Add to Home Screen" on iOS and Android with offline caching capability for active field routes.
+- [ ] Task 218.3 (Architecture): **Android & iOS Native Apps Planning (Long Term)**
+  - **Acceptance Criteria**:
+    - Draft the native app integration architecture (e.g., utilizing Capacitor to wrap the Next.js bundle or React Native integration leveraging existing APIs).

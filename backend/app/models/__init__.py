@@ -10,3 +10,5 @@ from app.models.service import Service
 from app.models.messaging import Conversation, Message
 from app.models.system import SystemConfiguration
 from app.models.dlq import VectorizationDLQ
+from app.models.demo import DemoRequest
+
