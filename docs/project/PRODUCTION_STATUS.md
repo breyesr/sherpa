@@ -27,6 +27,17 @@ The application is deployed on Railway as a Multi-service Project targeting the 
 
 ---
 
+## 📋 Recent Deployments
+
+### [2026-08-13] Epic 213: Self-Registration Deprecation & Demo Request Flow
+*   **Registration Endpoint**: `POST /auth/register` now returns `400 Bad Request` ("Registration disabled"). Public self-registration is temporarily gated.
+*   **Demo Request Form**: New page at `/auth/request-demo` captures prospective client details (name, business, email, phone, use case).
+*   **Database Migration**: `c77414e45eca` — Created `demo_requests` table with `status` column (pending/contacted/converted/rejected).
+*   **Admin Dashboard**: New "Demo Requests" tab in `/admin` with color-coded status badges and inline status update dropdown via `PATCH /admin/demo-requests/{id}/status`.
+*   **Branch**: `feature/epic-213-demo-flow` merged to `staging` → `main`.
+
+---
+
 ## 🔒 Security & Verification Configs
 *   **Twilio Webhook Verification**: Active via Twilio `X-Twilio-Signature` headers.
 *   **CORS Configuration**: Allowed origins include local dev targets and Railway subdomains under `*.up.railway.app`.

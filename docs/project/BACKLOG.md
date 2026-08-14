@@ -316,25 +316,30 @@
 
 ---
 
-## Epic 213: Self-Register Deprecation & Demo Request Flow (🔴 IMMEDIATE)
+## Epic 213: Self-Register Deprecation & Demo Request Flow [DONE ✅]
 **Objective**: Temporarily disable public user self-registration to gate account creation, routing interested users to a "Request a Demo/Account" form that collects lead details.
 
-- [ ] Task 213.1 (FE): **Replace Registration Buttons with Demo Request Link**
+- [x] Task 213.1 (FE): **Replace Registration Buttons with Demo Request Link**
   - **Acceptance Criteria**:
     - **Given** a user visits the landing, login, or pricing pages,
     - **When** they click or look for "Register" / "Sign Up",
     - **Then** those actions must be hidden or replaced with a "Request a Demo" or "Request Account" button.
-- [ ] Task 213.2 (FE): **Create Demo Request Form Page**
+- [x] Task 213.2 (FE): **Create Demo Request Form Page**
   - **Acceptance Criteria**:
     - **Given** a user clicks "Request a Demo",
     - **When** they are redirected,
     - **Then** present a form collecting their Name, Business Name, Email, Phone Number, and Primary Use Case (Trade CRM vs. B2C Scheduler).
     - **When** submitted, show a premium confirmation state ("Our team will contact you in less than 24 hours").
-- [ ] Task 213.3 (BE): **Store Demo Requests & Notify Admin**
+- [x] Task 213.3 (BE): **Store Demo Requests & Notify Admin**
   - **Acceptance Criteria**:
     - **Given** a demo request form submission,
     - **When** processing on the backend,
     - **Then** persist the submission in a `demo_requests` database table and trigger an email or system notification to the admin/owner.
+- [x] Task 213.4 (FE+BE): **Admin Demo Request Status Management**
+  - **Acceptance Criteria**:
+    - Admin dashboard displays a "Demo Requests" tab listing all submissions with color-coded status badges (pending, contacted, converted, rejected).
+    - Admin can update a request's status via an inline dropdown, triggering `PATCH /admin/demo-requests/{id}/status`.
+
 
 ## Epic 214: Stripe & PayPal Subscription Integration
 **Objective**: Implement subscription billing with monthly and yearly options, integrating Stripe and PayPal to charge users based on their tier.
