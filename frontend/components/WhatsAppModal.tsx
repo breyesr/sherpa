@@ -68,7 +68,12 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
           config_id: configId,
           response_type: 'code',
           override_default_response_type: true,
-          extras: { featureType: 'coexistence' }
+          extras: {
+            setup: {},
+            featureType: 'whatsapp_business_app_onboarding',
+            sessionInfoVersion: '3',
+            coex: true,
+          }
         }
       );
     };
