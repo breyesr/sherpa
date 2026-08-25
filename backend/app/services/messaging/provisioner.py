@@ -182,23 +182,65 @@ async def provision_whatsapp_sender(
         raise Exception(f"WhatsApp provisioning failed: {provisioning_error}")
 
 
-async def release_whatsapp_sender(settings_dict: dict):
-    """Suspend the Twilio subaccount and release the purchased phone number to prevent ongoing costs."""
+async def release_whatsapp_sender(settings_dict: dict, access_token_encrypted: Optional[str] = None):
+    """Release WhatsApp sender resources.
+    For Meta Cloud API: Calls /{phone_number_id}/deregister.
+    For Twilio: Releases number and suspends subaccount.
+    """
+    provider_type = settings_dict.get("provider_type")
+
+    # Meta Cloud API Deregistration
+    if provider_type == "meta_cloud_api":
+        phone_number_id = settings_dict.get("phone_number_id")
+        if not phone_number_id:
+            return
+
+        from app.core.encryption import decrypt_value
+        import httpx
+
+        token = None
+        if access_token_encrypted:
+            try:
+                token = decrypt_value(access_token_encrypted)
+            except Exception as dec_err:
+                logger.error("Failed to decrypt access token for Meta deregister: %s", dec_err)
+
+        token = token or settings.META_SYSTEM_USER_TOKEN
+        if not token:
+            logger.warning("No token available to deregister Meta WhatsApp phone number %s", phone_number_id)
+            return
+
+        version = settings.META_GRAPH_API_VERSION or "v22.0"
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                res = await client.post(
+                    f"https://graph.facebook.com/{version}/{phone_number_id}/deregister",
+                    headers={"Authorization": f"Bearer {token}"}
+                )
+                if res.status_code < 400:
+                    logger.info("Successfully deregistered Meta WhatsApp phone number %s: %s", phone_number_id, res.text)
+                else:
+                    logger.warning("Meta deregister returned non-200 for %s: status=%s response=%s", phone_number_id, res.status_code, res.text)
+        except Exception as api_err:
+            logger.error("Exception during Meta WhatsApp deregister for %s: %s", phone_number_id, api_err)
+        return
+
+    # Legacy Twilio Subaccount Release
     subaccount_sid = settings_dict.get("subaccount_sid")
     from app.core.encryption import decrypt_value
     auth_token = decrypt_value(settings_dict.get("auth_token_encrypted"))
     phone_number_sid = settings_dict.get("phone_number_sid")
-    
+
     if not subaccount_sid or not auth_token:
         return
-        
+
     import anyio
     from twilio.rest import Client
-    
+
     def _release():
         from app.core.config import settings
         platform_client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        
+
         # 1. Release the phone number if SID is available
         if phone_number_sid:
             try:
@@ -207,13 +249,13 @@ async def release_whatsapp_sender(settings_dict: dict):
                 logger.info(f"Successfully released Twilio phone number {phone_number_sid}")
             except Exception as num_err:
                 logger.error(f"Failed to release phone number {phone_number_sid}: {num_err}")
-                
+
         # 2. Suspend subaccount to stop billing
         try:
             platform_client.api.v2010.accounts(subaccount_sid).update(status="suspended")
             logger.info(f"Successfully suspended Twilio subaccount {subaccount_sid}")
         except Exception as sub_err:
             logger.error(f"Failed to suspend Twilio subaccount {subaccount_sid}: {sub_err}")
-            
+
     await anyio.to_thread.run_sync(_release)
 

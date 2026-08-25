@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 import json
+import re
 import traceback
 
 from app.core.database import get_db
@@ -102,6 +103,27 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                     
                     if not integration:
                         logger.error(f"WhatsApp Integration for phone_id {phone_id} not found.")
+                        continue
+
+                    # Coexistence Echo Filter: ignore messages sent by merchant from WA Business App
+                    clean_sender = re.sub(r"\D", "", sender_phone or "")
+                    registered_phone = (integration.settings or {}).get("phone_number", "")
+                    clean_registered = re.sub(r"\D", "", registered_phone or "")
+                    display_phone = metadata.get("display_phone_number", "")
+                    clean_display = re.sub(r"\D", "", display_phone or "")
+
+                    is_echo = False
+                    if clean_sender:
+                        if clean_registered and clean_sender == clean_registered:
+                            is_echo = True
+                        elif clean_display and clean_sender == clean_display:
+                            is_echo = True
+                        elif clean_registered and len(clean_sender) >= 10 and len(clean_registered) >= 10:
+                            if clean_sender[-10:] == clean_registered[-10:] and clean_sender[:2] == clean_registered[:2]:
+                                is_echo = True
+
+                    if is_echo:
+                        logger.info(f"Skipping echo message from registered business number {sender_phone} (Coexistence mode)")
                         continue
 
                     # 2. Fetch business

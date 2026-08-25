@@ -1,5 +1,12 @@
 # Handoff Log
 
+- **2026-08-24 (WhatsApp Coexistence & Meta Tech Provider Onboarding)**: Implemented full Coexistence Mode and onboarding safety flow across frontend and backend on branch `feature/integrations/whatsapp-coexistence`.
+  - **Pre-flight UX (`WhatsAppModal.tsx`)**: Created Step 2 pre-flight check and Step 6 migration guide explaining how non-technical personal WhatsApp users can migrate to WhatsApp Business App to avoid losing their personal chats.
+  - **Always-on Coexistence (`WhatsAppModal.tsx`)**: Passed `extras: { featureType: 'coexistence' }` to `FB.login` in the Embedded Signup modal.
+  - **Webhook Echo Filtering (`whatsapp.py`)**: Added sender vs registered business number verification in the webhook handler to suppress duplicate AI loops when merchants reply manually from the WhatsApp Business mobile app.
+  - **Meta Deregistration on Disconnect (`provisioner.py` & `integrations.py`)**: Added `POST /{phone_number_id}/deregister` Meta Graph API call to clean up cloud registrations when disconnecting numbers from Sherpa.
+  - **Test Plan**: Created structured test guides in `temp/whatsapp-code-changes.md` and `temp/whatsapp-test-plan.md`.
+
 - **2026-08-11 (Google OAuth & Meta App Review Integration)**: Aligned codebase branding to ASCII "Xerpa", implemented root domain redirection, and guided user through Google and Meta verification submissions.
   - **OAuth Branding**: Changed all instances of "Xerpā" to "Xerpa" to bypass encoding issues on Google's review bot, and simplified H1 and tab title definitions.
   - **Root Domain Redirection**: Added a Next.js middleware check to redirect `xerpaa.com` to `app.xerpaa.com` via a clean 301, and completed custom domain and SSL provisioning in Railway and Namecheap.

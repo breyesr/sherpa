@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ShieldCheck, CheckCircle2, ChevronRight, MessageSquare, Loader2 } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, ChevronRight, MessageSquare, Loader2, Smartphone, AlertTriangle } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 
 interface WhatsAppModalProps {
@@ -12,7 +12,7 @@ interface WhatsAppModalProps {
 }
 
 export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppModalProps) {
-  const [step, setStep] = useState(1); // 1: Welcome, 2: Connect/Onboard, 3: Provisioning, 4: Success
+  const [step, setStep] = useState(1); // 1: Welcome, 2: Pre-flight (WA Business check), 3: Connect/Onboard, 4: Provisioning, 5: Success, 6: Migration Guide
   const [optIn, setOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +48,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
     }
     
     setError('');
-    setStep(3);
+    setStep(4);
     setLoading(true);
     
     const launchFBLogin = () => {
@@ -60,14 +60,15 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
             handleMetaOnboard(response.authResponse.code);
           } else {
             setError('No se completó el registro de Facebook. Por favor, intenta de nuevo.');
-            setStep(2);
+            setStep(3);
             setLoading(false);
           }
         },
         {
           config_id: configId,
           response_type: 'code',
-          override_default_response_type: true
+          override_default_response_type: true,
+          extras: { featureType: 'coexistence' }
         }
       );
     };
@@ -102,10 +103,10 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
         code
       });
       setAssignedNumber(data.phone_number);
-      setStep(4);
+      setStep(5);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al vincular tu cuenta de WhatsApp en el backend.');
-      setStep(2);
+      setStep(3);
     } finally {
       setLoading(false);
     }
@@ -118,7 +119,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
       return;
     }
 
-    setStep(3);
+    setStep(4);
     setLoading(true);
     setError('');
 
@@ -129,10 +130,10 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
         display_phone_number: phoneNum
       });
       setAssignedNumber(data.phone_number);
-      setStep(4);
+      setStep(5);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error al guardar la configuración manual.');
-      setStep(2);
+      setStep(3);
     } finally {
       setLoading(false);
     }
@@ -158,7 +159,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
               </div>
               <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-100">
                 <CheckCircle2 size={18} className="text-green-600 shrink-0" />
-                <p className="text-sm font-bold text-green-950">Asistente de inicio de sesión rápido en 2 minutos</p>
+                <p className="text-sm font-bold text-green-950">Sigue usando WhatsApp en tu celular normalmente</p>
               </div>
             </div>
             <button 
@@ -170,6 +171,54 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
           </div>
         );
       case 2:
+        return (
+          <div className="space-y-6 text-left animate-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600 border border-green-100">
+                <Smartphone size={22} />
+              </div>
+              <h3 className="font-bold text-lg text-gray-900">¿Ya usas WhatsApp Business?</h3>
+            </div>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Para conectar tu número a Sherpa necesitas tener la app <strong>WhatsApp Business</strong> (la del logo verde con la B) instalada en tu celular. Es diferente al WhatsApp normal.
+            </p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => setStep(3)}
+                className="w-full p-4 bg-green-50 rounded-2xl border-2 border-green-200 hover:border-green-400 transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-green-600 shrink-0" />
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">Sí, ya tengo WhatsApp Business</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Perfecto, continuemos con la conexión</p>
+                  </div>
+                  <ChevronRight size={16} className="ml-auto text-gray-400 group-hover:text-green-600 transition-colors" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => setStep(6)}
+                className="w-full p-4 bg-amber-50 rounded-2xl border-2 border-amber-200 hover:border-amber-400 transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle size={20} className="text-amber-600 shrink-0" />
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">No, uso WhatsApp normal</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Te explicamos cómo preparar tu número</p>
+                  </div>
+                  <ChevronRight size={16} className="ml-auto text-gray-400 group-hover:text-amber-600 transition-colors" />
+                </div>
+              </button>
+            </div>
+
+            <button onClick={() => setStep(1)} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 font-semibold transition-colors">
+              ← Volver al inicio
+            </button>
+          </div>
+        );
+      case 3:
         return (
           <div className="space-y-6 text-left animate-in slide-in-from-right-4 duration-300">
             <h3 className="font-bold text-lg text-gray-900">Enlace con Meta</h3>
@@ -202,7 +251,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
                   </label>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setStep(1)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">Atrás</button>
+                  <button onClick={() => setStep(2)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">Atrás</button>
                   <button 
                     disabled={!optIn || loading}
                     onClick={handleFacebookConnect}
@@ -276,7 +325,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
             )}
           </div>
         );
-      case 3:
+      case 4:
         return (
           <div className="text-center py-12 space-y-6 animate-in zoom-in duration-500">
             <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner animate-pulse">
@@ -288,7 +337,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
             </p>
           </div>
         );
-      case 4:
+      case 5:
         return (
           <div className="text-center py-12 space-y-6 animate-in zoom-in duration-500">
             <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -318,6 +367,65 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
             </button>
           </div>
         );
+      case 6:
+        // Pre-flight guide: User doesn't have WhatsApp Business yet
+        return (
+          <div className="space-y-6 text-left animate-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 border border-amber-100">
+                <Smartphone size={22} />
+              </div>
+              <h3 className="font-bold text-lg text-gray-900">Prepara tu número primero</h3>
+            </div>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              No te preocupes, es muy sencillo. Sigue estos 3 pasos antes de continuar:
+            </p>
+
+            <div className="space-y-4">
+              <div className="flex gap-3 items-start">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-sm shrink-0 mt-0.5">1</div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Descarga WhatsApp Business</p>
+                  <p className="text-xs text-gray-500 mt-1">Búscala en tu App Store o Play Store. Es gratuita y tiene un ícono verde con una <strong>B</strong>.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-sm shrink-0 mt-0.5">2</div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Transfiere tu WhatsApp</p>
+                  <p className="text-xs text-gray-500 mt-1">Al abrir la app, te preguntará si quieres transferir tus chats desde WhatsApp normal. <strong>Acepta</strong> — se conservan todos tus mensajes.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-sm shrink-0 mt-0.5">3</div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Regresa aquí</p>
+                  <p className="text-xs text-gray-500 mt-1">Una vez que WhatsApp Business esté funcionando con tu número, vuelve a esta pantalla y conecta.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+              <p className="text-xs text-green-800 font-semibold leading-relaxed">
+                💡 <strong>¿Por qué WhatsApp Business?</strong> Porque te permite seguir usando WhatsApp en tu celular normalmente, mientras Sherpa trabaja con tu número al mismo tiempo. ¡No pierdes nada!
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setStep(2)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all">
+                ← Atrás
+              </button>
+              <button 
+                onClick={() => setStep(3)}
+                className="flex-[2] py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+              >
+                Ya lo instalé, continuar <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -338,7 +446,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
           </div>
           <button 
             onClick={onClose} 
-            disabled={step === 3}
+            disabled={step === 4}
             className="text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 p-2 rounded-full disabled:opacity-50"
           >
             <X size={24} />

@@ -443,7 +443,7 @@ async def disconnect_integration(
         if provider == 'whatsapp':
             from app.services.messaging.provisioner import release_whatsapp_sender
             try:
-                await release_whatsapp_sender(integration.settings or {})
+                await release_whatsapp_sender(integration.settings or {}, integration.access_token)
             except Exception as release_err:
                 logger.error("Failed to release whatsapp integration: %s", release_err)
         elif provider == 'telegram':
