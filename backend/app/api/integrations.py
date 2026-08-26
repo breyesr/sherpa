@@ -406,15 +406,45 @@ async def meta_onboard_whatsapp(
     await db.commit()
     await db.refresh(integration)
     
+    # Auto-register phone on Meta Cloud API and subscribe WABA to webhooks
+    # This is the inverse of the /deregister call made during disconnect
+    reg_status = "skipped"
+    sub_status = "skipped"
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=15.0) as http_client:
+            # 1. Register phone number with Cloud API (activates "Conectado" status)
+            reg_res = await http_client.post(
+                f"https://graph.facebook.com/{version}/{phone_number_id}/register",
+                headers={"Authorization": f"Bearer {settings.META_SYSTEM_USER_TOKEN}"},
+                json={"messaging_product": "whatsapp", "pin": "123456"}
+            )
+            reg_status = "success" if reg_res.status_code < 400 else f"error:{reg_res.status_code}"
+            logger.info("Meta /register for %s: status=%s response=%s", phone_number_id, reg_res.status_code, reg_res.text)
+
+            # 2. Subscribe WABA to app webhooks (enables message reception)
+            sub_res = await http_client.post(
+                f"https://graph.facebook.com/{version}/{waba_id}/subscribed_apps",
+                headers={"Authorization": f"Bearer {settings.META_SYSTEM_USER_TOKEN}"},
+                json={"subscribed_fields": ["messages"]}
+            )
+            sub_status = "success" if sub_res.status_code < 400 else f"error:{sub_res.status_code}"
+            logger.info("Meta /subscribed_apps for %s: status=%s response=%s", waba_id, sub_res.status_code, sub_res.text)
+    except Exception as reg_err:
+        logger.error("Meta auto-registration during onboarding failed: %s", reg_err)
+        reg_status = f"exception:{reg_err}"
+
     logger.info(
-        "Meta WhatsApp onboarding completed for business %s: WABA=%s, phone_id=%s, phone=%s",
-        business.id, waba_id, phone_number_id, clean_phone
+        "Meta WhatsApp onboarding completed for business %s: WABA=%s, phone_id=%s, phone=%s, register=%s, subscribe=%s",
+        business.id, waba_id, phone_number_id, clean_phone, reg_status, sub_status
     )
     
     return {
         "status": "success",
         "phone_number": clean_phone,
-        "provider_type": "meta_cloud_api"
+        "provider_type": "meta_cloud_api",
+        "meta_register": reg_status,
+        "meta_subscribe": sub_status
     }
 
 @router.delete("/{provider}")
