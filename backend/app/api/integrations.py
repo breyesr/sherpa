@@ -409,7 +409,9 @@ async def meta_onboard_whatsapp(
     # Auto-register phone on Meta Cloud API and subscribe WABA to webhooks
     # This is the inverse of the /deregister call made during disconnect
     reg_status = "skipped"
+    reg_detail = ""
     sub_status = "skipped"
+    sub_detail = ""
     try:
         import httpx
         async with httpx.AsyncClient(timeout=15.0) as http_client:
@@ -419,8 +421,13 @@ async def meta_onboard_whatsapp(
                 headers={"Authorization": f"Bearer {settings.META_SYSTEM_USER_TOKEN}"},
                 json={"messaging_product": "whatsapp", "pin": "123456"}
             )
-            reg_status = "success" if reg_res.status_code < 400 else f"error:{reg_res.status_code}"
-            logger.info("Meta /register for %s: status=%s response=%s", phone_number_id, reg_res.status_code, reg_res.text)
+            reg_detail = reg_res.text
+            if reg_res.status_code < 400:
+                reg_status = "success"
+                logger.info("Meta /register success for %s: %s", phone_number_id, reg_detail)
+            else:
+                reg_status = f"error:{reg_res.status_code}"
+                logger.error("Meta /register failed for %s (status %s): %s", phone_number_id, reg_res.status_code, reg_detail)
 
             # 2. Subscribe WABA to app webhooks (enables message reception)
             sub_res = await http_client.post(
@@ -428,11 +435,17 @@ async def meta_onboard_whatsapp(
                 headers={"Authorization": f"Bearer {settings.META_SYSTEM_USER_TOKEN}"},
                 json={"subscribed_fields": ["messages"]}
             )
-            sub_status = "success" if sub_res.status_code < 400 else f"error:{sub_res.status_code}"
-            logger.info("Meta /subscribed_apps for %s: status=%s response=%s", waba_id, sub_res.status_code, sub_res.text)
+            sub_detail = sub_res.text
+            if sub_res.status_code < 400:
+                sub_status = "success"
+                logger.info("Meta /subscribed_apps success for %s: %s", waba_id, sub_detail)
+            else:
+                sub_status = f"error:{sub_res.status_code}"
+                logger.error("Meta /subscribed_apps failed for %s (status %s): %s", waba_id, sub_res.status_code, sub_detail)
     except Exception as reg_err:
-        logger.error("Meta auto-registration during onboarding failed: %s", reg_err)
+        logger.error("Meta auto-registration during onboarding exception: %s", reg_err)
         reg_status = f"exception:{reg_err}"
+        reg_detail = str(reg_err)
 
     logger.info(
         "Meta WhatsApp onboarding completed for business %s: WABA=%s, phone_id=%s, phone=%s, register=%s, subscribe=%s",
@@ -444,7 +457,9 @@ async def meta_onboard_whatsapp(
         "phone_number": clean_phone,
         "provider_type": "meta_cloud_api",
         "meta_register": reg_status,
-        "meta_subscribe": sub_status
+        "meta_register_detail": reg_detail,
+        "meta_subscribe": sub_status,
+        "meta_subscribe_detail": sub_detail
     }
 
 @router.delete("/{provider}")
