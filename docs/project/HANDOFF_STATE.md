@@ -11,7 +11,7 @@
    - Added Step 2 check: "¿Ya usas WhatsApp Business?" to prevent personal WhatsApp users from accidentally deactivating their personal chats when registering on Meta Cloud API.
    - Built a 3-step visual migration guide (Step 6) explaining how to download WhatsApp Business and transfer chats prior to connecting.
 3. **Always-On Coexistence Configuration (`WhatsAppModal.tsx`)**:
-   - Configured `FB.login` in the Embedded Signup launcher to always pass `extras: { featureType: 'coexistence' }`, enabling seamless mobile app + Cloud API pairing.
+   - Configured `FB.login` in the Embedded Signup launcher to pass official Meta Coexistence parameters (`setup: {}`, `featureType: 'whatsapp_business_app_onboarding'`, `sessionInfoVersion: '3'`, `coex: true`), enabling seamless mobile app + Cloud API pairing without generic SDK rejection.
 4. **Webhook Echo Filter (`whatsapp.py`)**:
    - Added coexistence echo filtering inside the `POST /api/v1/whatsapp/webhook` handler.
    - Compares sender phone numbers with the registered business number / display phone number, automatically skipping Celery dispatch when messages originate from the business owner's mobile app.

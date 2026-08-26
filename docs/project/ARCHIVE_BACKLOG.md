@@ -1,5 +1,13 @@
 # Archived Backlog
 
+## Epic 213: Self-Register Deprecation & Demo Request Flow [DONE ✅]
+**Objective**: Temporarily disable public user self-registration to gate account creation, routing interested users to a "Request a Demo/Account" form that collects lead details.
+- [x] Task 213.1 (FE): Replace Registration Buttons with Demo Request Link
+- [x] Task 213.2 (FE): Create Demo Request Form Page
+- [x] Task 213.3 (BE): Store Demo Requests & Notify Admin
+- [x] Task 213.4 (FE+BE): Admin Demo Request Status Management
+
+
 Completed epics moved from `docs/project/BACKLOG.md` on 2026-07-03.
 
 ## Sherpa B2B Sales Intelligence Pivot (PRIMARY)

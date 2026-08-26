@@ -316,29 +316,13 @@
 
 ---
 
-## Epic 213: Self-Register Deprecation & Demo Request Flow [DONE ✅]
-**Objective**: Temporarily disable public user self-registration to gate account creation, routing interested users to a "Request a Demo/Account" form that collects lead details.
+## Epic 219: Xerpa-Provisioned WhatsApp Virtual Numbers (1-Click Onboarding) [PINNED 📌]
+**Objective**: Allow non-technical users ("Marco") to activate an AI WhatsApp number in 1 click without going through Meta Business Manager, Facebook Login, or domain verification, by programmatically provisioning virtual Mexican/LatAm numbers via Twilio/Telnyx and binding them to Xerpa's WABA.
 
-- [x] Task 213.1 (FE): **Replace Registration Buttons with Demo Request Link**
-  - **Acceptance Criteria**:
-    - **Given** a user visits the landing, login, or pricing pages,
-    - **When** they click or look for "Register" / "Sign Up",
-    - **Then** those actions must be hidden or replaced with a "Request a Demo" or "Request Account" button.
-- [x] Task 213.2 (FE): **Create Demo Request Form Page**
-  - **Acceptance Criteria**:
-    - **Given** a user clicks "Request a Demo",
-    - **When** they are redirected,
-    - **Then** present a form collecting their Name, Business Name, Email, Phone Number, and Primary Use Case (Trade CRM vs. B2C Scheduler).
-    - **When** submitted, show a premium confirmation state ("Our team will contact you in less than 24 hours").
-- [x] Task 213.3 (BE): **Store Demo Requests & Notify Admin**
-  - **Acceptance Criteria**:
-    - **Given** a demo request form submission,
-    - **When** processing on the backend,
-    - **Then** persist the submission in a `demo_requests` database table and trigger an email or system notification to the admin/owner.
-- [x] Task 213.4 (FE+BE): **Admin Demo Request Status Management**
-  - **Acceptance Criteria**:
-    - Admin dashboard displays a "Demo Requests" tab listing all submissions with color-coded status badges (pending, contacted, converted, rejected).
-    - Admin can update a request's status via an inline dropdown, triggering `PATCH /admin/demo-requests/{id}/status`.
+- [ ] Task 219.1 (BE): **Automated Phone Number Purchasing API**: Integrate Telnyx/Twilio number search and instant rental API for Mexican (+52) local area codes.
+- [ ] Task 219.2 (BE): **Meta WABA Automated Binding**: Call Meta Graph API `POST /{waba_id}/phone_numbers` and `POST /{phone_number_id}/register` automatically upon line purchase.
+- [ ] Task 219.3 (FE): **1-Click WhatsApp Activation Card**: Build a simplified UI card in Settings where users click "Activar Asistente WhatsApp" and receive their dedicated assigned number in 3 seconds.
+- [ ] Task 219.4 (Billing): **Subscription & Number Lifecycle Sync**: Release and recycle virtual numbers upon account cancellation or payment lapse.
 
 
 ## Epic 214: Stripe & PayPal Subscription Integration
