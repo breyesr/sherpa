@@ -173,6 +173,15 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
             >
               Comenzar Configuración <ChevronRight size={18} />
             </button>
+            <div className="text-center pt-2">
+              <button 
+                type="button" 
+                onClick={() => { setManualMode(true); setStep(3); setError(''); }}
+                className="text-xs text-gray-400 hover:text-green-600 underline font-semibold"
+              >
+                Configurar manualmente (Desarrolladores)
+              </button>
+            </div>
           </div>
         );
       case 2:
@@ -218,9 +227,18 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
               </button>
             </div>
 
-            <button onClick={() => setStep(1)} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 font-semibold transition-colors">
-              ← Volver al inicio
-            </button>
+            <div className="flex justify-between items-center pt-2">
+              <button onClick={() => setStep(1)} className="text-sm text-gray-400 hover:text-gray-600 font-semibold transition-colors">
+                ← Volver al inicio
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setManualMode(true); setStep(3); setError(''); }}
+                className="text-xs text-gray-400 hover:text-green-600 underline font-semibold"
+              >
+                Configurar manualmente
+              </button>
+            </div>
           </div>
         );
       case 3:
