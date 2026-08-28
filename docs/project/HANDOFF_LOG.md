@@ -1,5 +1,11 @@
 # Handoff Log
 
+- **2026-08-28 (Meta App Review Submission & Tech Provider Live Status)**: Completed all Meta Developer requirements and submitted `public_profile` for App Review to enable 1-click WhatsApp onboarding for external public users.
+  - **Review Submission**: Completed Data Handling assessment (RGPD/privacy checklist), Allowed Usage certification, Website Platform registration (`https://app.xerpaa.com`), and test instructions pointing to `/meta-review`. Status transitioned to **"Revisión en curso"**.
+  - **Permissions Status**: Confirmed that `whatsapp_business_management` and `whatsapp_business_messaging` permissions are already **Approved** by Meta for Xerpa as an authorized Tech Provider.
+  - **Auto-Registration & Error Telemetry**: Added automated `POST /{phone_number_id}/register` and `POST /{waba_id}/subscribed_apps` calls during onboarding in `integrations.py`, with detailed Meta error response payloads returned directly to the client.
+  - **Modal Enhancements**: Made developer manual configuration accessible directly from all modal steps in `WhatsAppModal.tsx`.
+
 - **2026-08-24 (WhatsApp Coexistence & Meta Tech Provider Onboarding)**: Implemented full Coexistence Mode and onboarding safety flow across frontend and backend on branch `feature/integrations/whatsapp-coexistence`.
   - **Pre-flight UX (`WhatsAppModal.tsx`)**: Created Step 2 pre-flight check and Step 6 migration guide explaining how non-technical personal WhatsApp users can migrate to WhatsApp Business App to avoid losing their personal chats.
   - **Always-on Coexistence (`WhatsAppModal.tsx`)**: Passed `extras: { featureType: 'coexistence' }` to `FB.login` in the Embedded Signup modal.
