@@ -1,18 +1,19 @@
-# Handoff State: 2026-08-29 (Epic 220: Zero-Friction Embedded Signup Auto-Fill)
+# Handoff State: 2026-08-29 (Epic 220 Completed & Onboarding Strategy Evaluated)
 
 ## Current Branch
-`feature/epic-220-embedded-signup-prefill`
+`feature/epic-220-embedded-signup-prefill` (Merged & Pushed to `staging` and `main`)
 
 ## Accomplishments This Session
-1. **Epic 220 Implementation Completed**:
-   - **Task 220.1 (Backend)**: Extended `GET /integrations/whatsapp/config` in `backend/app/api/integrations.py` to return `prefill` (`business_name`, `category`) directly from the authenticated user's `BusinessProfile`. Added comprehensive unit tests in `test_integrations_api.py`.
-   - **Task 220.2 (Frontend)**: Updated `frontend/components/WhatsAppModal.tsx` to receive `prefill` from `/integrations/whatsapp/config` and inject `extras.setup.business` (`name`, `website: "https://xerpaa.com"`) and `extras.setup.phone` (`displayName`, `category`) into `FB.login()`.
-   - **OpenAPI & TypeScript Sync**: Re-generated `backend/openapi.json` and ran `npm run gen:api` to keep contract in sync.
-   - **Test & Build Verification**: All 63 backend tests pass and Next.js frontend builds with 0 errors (`tsc --noEmit` and `npm run build` both green).
+1. **Epic 220 Delivered**:
+   - Backend `GET /integrations/whatsapp/config` extended to return `prefill` (`business_name`, `category`).
+   - Frontend `WhatsAppModal.tsx` passes `setup.business` and fallback `website: "https://xerpaa.com"` to `FB.login()`.
+   - All tests passing (63 backend tests, frontend type check & production build clean).
+   - Merged and deployed to both `staging` and `main`.
+2. **Key Learnings & Evaluation**:
+   - **Meta Embedded Signup Behavior**: When users select an existing incomplete Business Portfolio (e.g. `Shopify Business Manager`), Meta bypasses prefill parameters and requires manual input of missing portfolio data.
+   - **Coexistence vs Virtual Numbers**: Twilio virtual numbers operate 100% in cloud API (no mobile app coexistence), whereas Embedded Signup connects the user's mobile WhatsApp Business app.
+   - **Decision**: Paused further onboarding automation changes to evaluate priorities.
 
 ## Next Steps
-1. **End-to-End Verification**:
-   - Test Embedded Signup flow in the UI to confirm Meta popup opens with business name and website pre-filled without user typing.
-2. **Epic 219 (Next): Xerpa-Provisioned WhatsApp Virtual Numbers (1-Click Onboarding)**:
-   - Task 219.1: Meta WABA Binding + SMS verification interception for Twilio-purchased numbers.
-   - Tasks 219.2-219.5: Endpoint, UI, webhook router, lifecycle.
+- System in clean, stable state across `main`, `staging`, and feature branch.
+- Await future directives regarding onboarding flows or new feature priorities.
