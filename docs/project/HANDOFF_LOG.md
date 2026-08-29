@@ -1,5 +1,12 @@
 # Handoff Log
 
+- **2026-08-29 (Epic 220: Zero-Friction Embedded Signup Auto-Fill Completed)**: Implemented automatic prefilling of business data and fallback website for Meta's Embedded Signup flow on branch `feature/epic-220-embedded-signup-prefill`.
+  - **Backend (`integrations.py`)**: `GET /whatsapp/config` now extracts `business_name` and `category` from the authenticated user's `BusinessProfile` and returns a `prefill` dictionary. Added unit tests in `test_integrations_api.py`.
+  - **Frontend (`WhatsAppModal.tsx`)**: Injected `setup.business` (`name`, `website: "https://xerpaa.com"`) and `setup.phone` (`displayName`, `category`) into `FB.login()` extras. Non-technical users no longer need to type website or business names manually into Meta's popup.
+  - **Contracts & Tests**: Re-generated `openapi.json` and TypeScript types via `gen:api`. Full backend pytest suite (63 tests) and Next.js production build (`npm run build`) passed with zero errors.
+
+- **2026-08-29 (Meta App Review Approved & Zero-Friction Onboarding Plan)**: Meta approved `public_profile` with Advanced Access (~2 hours after submission). Facebook Login is now 100% public. Identified and documented UX friction where Meta's popup forces users to manually enter website/business data. Created detailed implementation plan for Epic 220 (auto-fill Meta SDK fields, ~1.5 hrs) and refined Epic 219 (1-click virtual numbers via Twilio + Meta WABA binding, ~3-5 days). Plan at `temp/onboarding-optimization-plan.md`.
+
 - **2026-08-28 (Meta App Review Submission & Tech Provider Live Status)**: Completed all Meta Developer requirements and submitted `public_profile` for App Review to enable 1-click WhatsApp onboarding for external public users.
   - **Review Submission**: Completed Data Handling assessment (RGPD/privacy checklist), Allowed Usage certification, Website Platform registration (`https://app.xerpaa.com`), and test instructions pointing to `/meta-review`. Status transitioned to **"Revisión en curso"**.
   - **Permissions Status**: Confirmed that `whatsapp_business_management` and `whatsapp_business_messaging` permissions are already **Approved** by Meta for Xerpa as an authorized Tech Provider.

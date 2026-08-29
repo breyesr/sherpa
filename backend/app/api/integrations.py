@@ -261,9 +261,18 @@ async def get_whatsapp_config(
     current_user: User = Depends(get_current_user)
 ) -> Any:
     """Get public configuration for Meta WhatsApp onboarding."""
+    prefill = {}
+    if current_user.business_profile:
+        bp = current_user.business_profile
+        if bp.name:
+            prefill["business_name"] = bp.name
+        if bp.category:
+            prefill["category"] = bp.category
+
     return {
         "app_id": settings.META_APP_ID,
-        "config_id": settings.META_EMBEDDED_SIGNUP_CONFIG_ID
+        "config_id": settings.META_EMBEDDED_SIGNUP_CONFIG_ID,
+        "prefill": prefill
     }
 
 @router.post("/whatsapp/meta-onboard")

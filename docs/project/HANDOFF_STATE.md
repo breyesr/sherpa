@@ -1,23 +1,18 @@
-# Handoff State: 2026-08-28 (Meta App Review Submission & Tech Provider Live Status)
+# Handoff State: 2026-08-29 (Epic 220: Zero-Friction Embedded Signup Auto-Fill)
 
 ## Current Branch
-`feature/integrations/whatsapp-coexistence`
+`feature/epic-220-embedded-signup-prefill`
 
 ## Accomplishments This Session
-1. **Meta App Review Submission**:
-   - Completed Data Handling (Tratamiento de Datos), Allowed Usage (Uso Permitido), Platform Configuration (Website URL `https://app.xerpaa.com`), and App Reviewer Test Instructions.
-   - Successfully submitted `public_profile` for App Review.
-   - Meta confirmed receipt and the submission status is now **"Revisión en curso"**.
-   - Verified that `whatsapp_business_management` and `whatsapp_business_messaging` permissions are already **Approved** and renewed by Meta.
-2. **Meta Cloud API Auto-Registration on Onboarding**:
-   - Extended `meta_onboard_whatsapp` to automatically invoke Meta's `POST /{phone_number_id}/register` with PIN and `POST /{waba_id}/subscribed_apps` upon onboarding.
-   - Added detailed Meta error reporting (`meta_register_detail`) in API responses.
-3. **Modal UI Enhancements (`WhatsAppModal.tsx`)**:
-   - Added direct "Configurar manualmente (Desarrolladores)" links across all modal steps.
+1. **Epic 220 Implementation Completed**:
+   - **Task 220.1 (Backend)**: Extended `GET /integrations/whatsapp/config` in `backend/app/api/integrations.py` to return `prefill` (`business_name`, `category`) directly from the authenticated user's `BusinessProfile`. Added comprehensive unit tests in `test_integrations_api.py`.
+   - **Task 220.2 (Frontend)**: Updated `frontend/components/WhatsAppModal.tsx` to receive `prefill` from `/integrations/whatsapp/config` and inject `extras.setup.business` (`name`, `website: "https://xerpaa.com"`) and `extras.setup.phone` (`displayName`, `category`) into `FB.login()`.
+   - **OpenAPI & TypeScript Sync**: Re-generated `backend/openapi.json` and ran `npm run gen:api` to keep contract in sync.
+   - **Test & Build Verification**: All 63 backend tests pass and Next.js frontend builds with 0 errors (`tsc --noEmit` and `npm run build` both green).
 
 ## Next Steps
-1. **Meta App Review Resolution**:
-   - Await Meta's approval of `public_profile` (typically 24-48 hours).
-   - Once approved, test public 1-click onboarding with any external, non-tester Facebook account.
-2. **Internal Testing**:
-   - In the meantime, accounts added to Meta App Roles (Testers / Developers) can perform full end-to-end testing immediately.
+1. **End-to-End Verification**:
+   - Test Embedded Signup flow in the UI to confirm Meta popup opens with business name and website pre-filled without user typing.
+2. **Epic 219 (Next): Xerpa-Provisioned WhatsApp Virtual Numbers (1-Click Onboarding)**:
+   - Task 219.1: Meta WABA Binding + SMS verification interception for Twilio-purchased numbers.
+   - Tasks 219.2-219.5: Endpoint, UI, webhook router, lifecycle.

@@ -59,3 +59,41 @@ def test_provision_whatsapp_api_endpoint(mock_provision_sender):
         # Clear overrides
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_db, None)
+
+def test_get_whatsapp_config_with_prefill():
+    mock_user_with_bp = User(id="user_123", email="user@example.com")
+    mock_user_with_bp.business_profile = BusinessProfile(
+        id="biz_123",
+        name="Abarrotes Don Pepe",
+        category="RETAIL",
+        user_id="user_123"
+    )
+    
+    app.dependency_overrides[get_current_user] = lambda: mock_user_with_bp
+    try:
+        client = TestClient(app)
+        response = client.get("/api/v1/integrations/whatsapp/config")
+        assert response.status_code == 200
+        data = response.json()
+        assert "app_id" in data
+        assert "config_id" in data
+        assert data["prefill"]["business_name"] == "Abarrotes Don Pepe"
+        assert data["prefill"]["category"] == "RETAIL"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+def test_get_whatsapp_config_without_business_profile():
+    mock_user_no_bp = User(id="user_456", email="nobody@example.com")
+    mock_user_no_bp.business_profile = None
+    
+    app.dependency_overrides[get_current_user] = lambda: mock_user_no_bp
+    try:
+        client = TestClient(app)
+        response = client.get("/api/v1/integrations/whatsapp/config")
+        assert response.status_code == 200
+        data = response.json()
+        assert "app_id" in data
+        assert "config_id" in data
+        assert data["prefill"] == {}
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

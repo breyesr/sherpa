@@ -21,6 +21,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
   // Meta credentials loaded from backend
   const [appId, setAppId] = useState('');
   const [configId, setConfigId] = useState('');
+  const [prefill, setPrefill] = useState<{ business_name?: string; category?: string }>({});
 
   // Manual configuration fallback for testing/dev
   const [manualMode, setManualMode] = useState(false);
@@ -30,10 +31,13 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
 
   useEffect(() => {
     if (isOpen) {
-      apiClient.get<{ app_id: string; config_id: string }>('/integrations/whatsapp/config')
+      apiClient.get<{ app_id: string; config_id: string; prefill?: { business_name?: string; category?: string } }>('/integrations/whatsapp/config')
         .then(res => {
           setAppId(res.app_id || '');
           setConfigId(res.config_id || '');
+          if (res.prefill) {
+            setPrefill(res.prefill);
+          }
         })
         .catch(err => console.error('Failed to load WhatsApp configuration:', err));
     }
@@ -69,7 +73,16 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
           response_type: 'code',
           override_default_response_type: true,
           extras: {
-            setup: {},
+            setup: {
+              business: {
+                name: prefill.business_name || '',
+                website: 'https://xerpaa.com',
+              },
+              phone: {
+                displayName: prefill.business_name || '',
+                category: prefill.category || 'OTHER',
+              },
+            },
             featureType: 'whatsapp_business_app_onboarding',
             sessionInfoVersion: '3',
             coex: true,

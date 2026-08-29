@@ -316,13 +316,20 @@
 
 ---
 
-## Epic 219: Xerpa-Provisioned WhatsApp Virtual Numbers (1-Click Onboarding) [PINNED 📌]
-**Objective**: Allow non-technical users ("Marco") to activate an AI WhatsApp number in 1 click without going through Meta Business Manager, Facebook Login, or domain verification, by programmatically provisioning virtual Mexican/LatAm numbers via Twilio/Telnyx and binding them to Xerpa's WABA.
+## Epic 220: Zero-Friction Embedded Signup (Auto-fill Meta SDK) [COMPLETED ✅]
+**Objective**: Pre-fill the Meta Embedded Signup popup with business data from Xerpa's DB so users never have to manually type their website or company name. Detailed plan: [`temp/onboarding-optimization-plan.md`](file:///Users/bernardo/projects/sherpa/temp/onboarding-optimization-plan.md).
 
-- [ ] Task 219.1 (BE): **Automated Phone Number Purchasing API**: Integrate Telnyx/Twilio number search and instant rental API for Mexican (+52) local area codes.
-- [ ] Task 219.2 (BE): **Meta WABA Automated Binding**: Call Meta Graph API `POST /{waba_id}/phone_numbers` and `POST /{phone_number_id}/register` automatically upon line purchase.
-- [ ] Task 219.3 (FE): **1-Click WhatsApp Activation Card**: Build a simplified UI card in Settings where users click "Activar Asistente WhatsApp" and receive their dedicated assigned number in 3 seconds.
-- [ ] Task 219.4 (Billing): **Subscription & Number Lifecycle Sync**: Release and recycle virtual numbers upon account cancellation or payment lapse.
+- [x] Task 220.1 (BE): **Prefill Data in Config Endpoint**: Extend `GET /whatsapp/config` to return `prefill` object with `business_name` and `category` from `BusinessProfile`.
+- [x] Task 220.2 (FE): **Inject setup.business in FB.login()**: Populate `extras.setup.business` and `extras.setup.phone` with prefill data and hardcode `website: "https://xerpaa.com"` as fallback. Also set `phone.displayName`.
+
+## Epic 219: Xerpa-Provisioned WhatsApp Virtual Numbers (1-Click Onboarding) [REFINED 📌]
+**Objective**: Allow non-technical users ("Marco") to activate an AI WhatsApp number in 1 click without Facebook Login, by purchasing Twilio numbers and binding them to Xerpa's central WABA. Detailed plan: [`temp/onboarding-optimization-plan.md`](file:///Users/bernardo/projects/sherpa/temp/onboarding-optimization-plan.md).
+
+- [ ] Task 219.1 (BE): **Meta WABA Binding + SMS Verification**: After Twilio purchase, call Meta Graph API to add number to Xerpa's WABA, intercept SMS verification code via Twilio webhook, and auto-complete registration.
+- [ ] Task 219.2 (BE): **Unified 1-Click Provision Endpoint**: `POST /whatsapp/provision-virtual` orchestrating Twilio purchase + Meta binding + webhook subscription in a single call.
+- [ ] Task 219.3 (FE): **Dual-Path WhatsApp Modal**: Redesign Step 1 with two clear options: "⚡ Activar Número Nuevo" (1-click) and "🔗 Usar Mi Número Actual" (Embedded Signup).
+- [ ] Task 219.4 (BE): **Multi-Tenant Webhook Router**: Route incoming Meta webhook messages to the correct business by matching `phone_number_id` against `Integration` records.
+- [ ] Task 219.5 (Billing): **Number Lifecycle & Recycling**: Release Twilio numbers on account cancellation; Celery beat task to recycle numbers inactive >30 days.
 
 
 ## Epic 214: Stripe & PayPal Subscription Integration
