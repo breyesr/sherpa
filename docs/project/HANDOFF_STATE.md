@@ -4,17 +4,16 @@
 `feature/epic-220-embedded-signup-prefill`
 
 ## Accomplishments This Session
-1. **Fixed Meta Embedded Signup WABA Resolution**:
+1. **Fixed & Verified Meta Embedded Signup WABA Resolution**:
    - Replaced invalid `GET /me/client_whatsapp_business_accounts` in `backend/app/api/integrations.py` with standard `GET /debug_token` inspection of `granular_scopes` target IDs and fallback to `/me/businesses` business accounts.
    - Added `sessionInfoRef` in `frontend/components/WhatsAppModal.tsx` to capture Meta Embedded Signup `postMessage` data (`waba_id`, `phone_number_id`) directly in the browser.
-   - Added unit test `test_meta_onboard_with_debug_token` in `test_integrations_api.py`.
-2. **Meta ToS Compliance Alignment**:
-   - Removed hardcoded `website: 'https://xerpaa.com'` fallback from `WhatsAppModal.tsx` to comply with Meta's policy requiring merchant-specific URLs.
-3. **Verification**:
-   - Full backend pytest suite: 64/64 tests passing.
-   - Next.js production build (`npm run build`): 100% clean compilation.
+   - Removed hardcoded `website: 'https://xerpaa.com'` fallback from `WhatsAppModal.tsx` for full Meta ToS compliance.
+   - **Production Verification**: Successfully connected live number `+5218186582756` via Meta Embedded Signup with green `Conectado` status.
+2. **Audited & Synchronized `/docs` Ecosystem**:
+   - Master handoff guide created at [`../HANDOFF_GUIDE.md`](../HANDOFF_GUIDE.md).
+   - All 30 docs across `/docs` audited, updated, and stamped with historical banners where applicable.
 
 ## Next Steps
-- Test live Embedded Signup flow on staging/production to confirm WABA registration succeeds end-to-end.
-- Merge branch into `staging` and deploy to Railway.
+- Send a live WhatsApp test message to `+5218186582756` to confirm bidirectional webhook responses.
+- New team can proceed with **Epic 205** (Trade CRM & Messaging Feedback Actions) in [`BACKLOG.md`](BACKLOG.md).
 

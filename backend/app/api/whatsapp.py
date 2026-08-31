@@ -146,8 +146,8 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
                         from app.services.messaging import MessagingService
                         engine = MessagingService.get_engine(integration)
                         await engine.mark_as_read(message.get("id"))
-                    except Exception as re:
-                        logger.debug(f"WhatsApp mark-as-read failed: {re}")
+                    except Exception as read_err:
+                        logger.debug(f"WhatsApp mark-as-read failed: {read_err}")
 
                     # 4. Match identity
                     from app.services.identity_resolver import IdentityResolver
