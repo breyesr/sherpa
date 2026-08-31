@@ -1,9 +1,14 @@
 # Handoff Log
 
-- **2026-08-31 (Meta Onboard WABA Discovery Fix & ToS Compliance)**: Resolved the `Could not retrieve WhatsApp Business Account from Meta` onboarding error caused by Graph API error `#100 (nonexisting field client_whatsapp_business_accounts on User node)`.
-  - **Backend (`integrations.py`)**: Replaced direct User node call with standard `/debug_token` inspection querying `granular_scopes` to extract the `waba_id` from `target_ids`, added fallback traversal across `/me/businesses`, and added dual token retry for fetching phone numbers.
-  - **Frontend (`WhatsAppModal.tsx`)**: Attached `message` event listener to capture Meta Embedded Signup `postMessage` data (`waba_id`, `phone_number_id`) directly in the browser. Removed hardcoded `website: "https://xerpaa.com"` fallback to strictly comply with Meta ToS.
-  - **Tests**: Added `test_meta_onboard_with_debug_token` in `test_integrations_api.py`. Full pytest suite (64/64 tests) and Next.js production build passing.
+- **2026-08-31 (Meta Onboard WABA Discovery, Webhook Ingestion Fix & Phone Formatting)**: Verified live WhatsApp Embedded Signup onboarding on production with number `+5218186582756` (green `Conectado` status) and resolved inbound webhook processing.
+  - **Backend (`integrations.py`, `whatsapp.py`, `ai_service.py`)**: 
+    - Replaced User node WABA lookup with `/debug_token` granular scopes target ID discovery.
+    - Fixed `UnboundLocalError` in `whatsapp_webhook` by renaming exception variable shadowing `import re`.
+    - Created `app/core/phone_utils.py` formatting Mexican phone numbers into standard `+52 1 [10-digit number]` (e.g. `+52 1 8186582756`).
+    - Fixed `is_real_phone` check in `ai_service.py` so incoming WhatsApp leads are recognized automatically without re-prompting for phone number.
+  - **Frontend (`WhatsAppModal.tsx`)**: Captured Embedded Signup `postMessage` session events and removed hardcoded fallback website to ensure strict Meta ToS compliance.
+  - **Tests**: Added `test_phone_utils.py` and `test_meta_onboard_with_debug_token`. Full pytest suite passing (68/68 tests).
+
 
 - **2026-08-29 (Master Team Handoff & Docs Synchronization Completed)**: Audited the entire `/docs` ecosystem and created the master handoff guide [`docs/HANDOFF_GUIDE.md`](docs/HANDOFF_GUIDE.md) to onboard the new incoming engineering team.
   - **Documentation Audit**: Updated `PRODUCTION_STATUS.md` with recent deployments (Epics 206-220, Meta App Review approval, Coexistence mode), updated `deployment_guide.md` with service topologies and environment variables, updated `ARCHITECTURE.md` with modular sub-routers and messaging engines, and added context banners to legacy V1 documents.

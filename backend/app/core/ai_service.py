@@ -29,6 +29,7 @@ from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
 from app.core.context_assembler import ContextAssembler
 from app.services.agentic_orchestrator import AgenticOrchestrator
+from app.core.phone_utils import clean_phone_digits, format_display_phone
 
 # Setup prompt template environment
 try:
@@ -275,10 +276,16 @@ class AIService:
                 if not client_obj.email or "@" not in client_obj.email:
                     missing_fields.append("email address")
                 
-                # Phone Check: If it's a 'test_' ID or just the identifier, we want a real phone
-                is_real_phone = client_obj.phone and client_obj.phone.isdigit() and len(client_obj.phone) >= 7
+                # Phone Check: If the client has a valid phone or came via WhatsApp, format and mark as known
+                raw_phone = client_obj.phone or (identifier if platform == "whatsapp" else None)
+                clean_phone_p = clean_phone_digits(raw_phone)
+                is_real_phone = len(clean_phone_p) >= 7 and not (clean_phone_p.startswith("test") or clean_phone_p.startswith("fake"))
+                
                 if not is_real_phone:
                     missing_fields.append("phone number")
+                else:
+                    # Apply clean Mexico / International display formatting (+52 1 [phoneNumber])
+                    client_obj.phone = format_display_phone(raw_phone)
 
                 # A user is truly known ONLY if all fields are present and valid
                 is_known = len(missing_fields) == 0 and not is_new
@@ -294,7 +301,7 @@ class AIService:
                                                        .replace("{full_name}", client_obj.name)\
                                                        .replace("{full name}", client_obj.name)
                         
-                        identity_instruction = f"IDENTITY CONFIRMATION: This is a returning client. Greet them by their full name '{client_obj.name}'. Show them their registered info (Email: {client_obj.email}, Phone: {client_obj.phone or identifier}) and ask them to confirm if it is still correct before proceeding to book."
+                        identity_instruction = f"IDENTITY CONFIRMATION: This is a returning client. Greet them by their full name '{client_obj.name}'. Show them their registered info (Email: {client_obj.email}, Phone: {client_obj.phone or format_display_phone(identifier)}) and ask them to confirm if it is still correct before proceeding to book."
                     except Exception as ge:
                         logger.warning("Personalized greeting formatting failed: %s", ge)
                         greeting_context = self.assistant_config.greeting
