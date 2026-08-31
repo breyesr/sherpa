@@ -293,11 +293,11 @@ Tu objetivo actual es informarle al cliente de manera muy amable que por el mome
 Instrucciones:
 - Explica de manera muy amable que por el momento no tenemos cobertura de entrega a domicilio en el Código Postal {zip_val}.
 - {f"Menciona las tiendas físicas sugeridas en su estado para compras locales: {store_info_str}" if store_info_str else "Explica que no tenemos tiendas físicas cercanas ni cobertura en ese estado todavía."}
-- Invita activamente al cliente a que si lo desea, te proporcione sus datos de contacto en un solo mensaje para registrarlo en la lista de espera:
+- Invita activamente al cliente a que si lo desea, te proporcione sus datos de contacto restantes en un solo mensaje para registrarlo en la lista de espera:
   1. Nombre completo
-  2. Teléfono de contacto
-  3. Correo electrónico (email)
-  4. Nombre de su empresa (si aplica)
+  2. Correo electrónico (email)
+  3. Nombre de su empresa (si aplica)
+- NO solicites su número de teléfono bajo ninguna circunstancia, ya que nos estamos comunicando por su número activo ({state.get('phone') or 'WhatsApp'}).
 - Deja claro que le avisaremos en cuanto ampliemos la cobertura a su zona.
 - BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
 - Si el usuario proporciona estos datos, llama a la herramienta `update_prospect_data` con todos los campos correspondientes (`name`, `phone`, `email`, `company`).
@@ -306,7 +306,7 @@ Estado actual de los datos recopilados:
 - Producto de interés: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 - Nombre: {state.get('name') or 'No proporcionado'}
-- Teléfono: {state.get('phone') or 'No proporcionado'}
+- Teléfono: {state.get('phone') or 'Registrado automáticamente'}
 - Email: {state.get('email') or 'No proporcionado'}
 - Dirección de la obra: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
@@ -337,9 +337,9 @@ Tu objetivo actual (Paso 3) es recopilar los datos de contacto restantes del cli
 Instrucciones:
 - Solicita al cliente que te proporcione, en un solo mensaje, sus datos de contacto restantes:
   1. Nombre completo
-  2. Teléfono de contacto
-  3. Correo electrónico (email)
-  4. Nombre de su empresa (si aplica)
+  2. Correo electrónico (email)
+  3. Nombre de su empresa (si aplica)
+- NO solicites su número de teléfono bajo ninguna circunstancia, ya que nos estamos comunicando por su número activo ({state.get('phone') or 'WhatsApp'}).
 - Explica que con estos datos finales procederás a registrar su solicitud para que un asesor lo contacte de inmediato.
 - BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
 - Si el usuario proporciona estos datos, llama a la herramienta `update_prospect_data` con todos los campos correspondientes (`name`, `phone`, `email`, `company`).
@@ -348,7 +348,7 @@ Estado actual de los datos recopilados:
 - Producto de interés: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 - Nombre: {state.get('name') or 'No proporcionado'}
-- Teléfono: {state.get('phone') or 'No proporcionado'}
+- Teléfono: {state.get('phone') or 'Registrado automáticamente'}
 - Email: {state.get('email') or 'No proporcionado'}
 - Dirección de la obra: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
@@ -951,14 +951,18 @@ Estado actual de los datos recopilados:
                     response_content = state.values.get("final_response") or "Tu solicitud ya ha sido registrada y procesada. Un representante se pondrá en contacto contigo pronto."
                     is_completed = True
                 else:
-                    prepopulated = {}
+                    from app.core.phone_utils import format_display_phone
+                    formatted_sender_phone = format_display_phone(sender_phone)
+                    prepopulated = {"phone": formatted_sender_phone}
                     if client and client.name and not client.name.startswith("Prospect "):
                         prepopulated["name"] = client.name
-                        prepopulated["email"] = client.email
-                        prepopulated["phone"] = client.phone or sender_phone
+                        if client.email:
+                            prepopulated["email"] = client.email
                         if client.custom_fields:
-                            prepopulated["company"] = client.custom_fields.get("company")
-                            prepopulated["zip_code"] = client.custom_fields.get("zip_code")
+                            if client.custom_fields.get("company"):
+                                prepopulated["company"] = client.custom_fields.get("company")
+                            if client.custom_fields.get("zip_code"):
+                                prepopulated["zip_code"] = client.custom_fields.get("zip_code")
                         
                         # Fetch first store associated with the client
                         from app.models.trade import store_clients, Store
