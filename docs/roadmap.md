@@ -1,5 +1,7 @@
 # Sherpa MVP Roadmap
 
+> ⚠️ **HISTORICAL SNAPSHOT (March 2026)**: This roadmap covers the original V1 MVP phases. The active prioritized backlog is maintained in [`project/BACKLOG.md`](project/BACKLOG.md).
+
 This roadmap outlines the prioritized path to a scalable, production-ready SaaS. It balances new feature development with the safety and scalability requirements identified in the technical audits.
 
 ## Phase 1: Intelligent & Safe Core (COMPLETED)

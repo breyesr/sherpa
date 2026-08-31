@@ -1,19 +1,20 @@
-# Handoff State: 2026-08-29 (Epic 220 Completed & Onboarding Strategy Evaluated)
+# Handoff State: 2026-08-31 (Meta Onboarding WABA Discovery Fixed & ToS Compliant)
 
 ## Current Branch
-`feature/epic-220-embedded-signup-prefill` (Merged & Pushed to `staging` and `main`)
+`feature/epic-220-embedded-signup-prefill`
 
 ## Accomplishments This Session
-1. **Epic 220 Delivered**:
-   - Backend `GET /integrations/whatsapp/config` extended to return `prefill` (`business_name`, `category`).
-   - Frontend `WhatsAppModal.tsx` passes `setup.business` and fallback `website: "https://xerpaa.com"` to `FB.login()`.
-   - All tests passing (63 backend tests, frontend type check & production build clean).
-   - Merged and deployed to both `staging` and `main`.
-2. **Key Learnings & Evaluation**:
-   - **Meta Embedded Signup Behavior**: When users select an existing incomplete Business Portfolio (e.g. `Shopify Business Manager`), Meta bypasses prefill parameters and requires manual input of missing portfolio data.
-   - **Coexistence vs Virtual Numbers**: Twilio virtual numbers operate 100% in cloud API (no mobile app coexistence), whereas Embedded Signup connects the user's mobile WhatsApp Business app.
-   - **Decision**: Paused further onboarding automation changes to evaluate priorities.
+1. **Fixed Meta Embedded Signup WABA Resolution**:
+   - Replaced invalid `GET /me/client_whatsapp_business_accounts` in `backend/app/api/integrations.py` with standard `GET /debug_token` inspection of `granular_scopes` target IDs and fallback to `/me/businesses` business accounts.
+   - Added `sessionInfoRef` in `frontend/components/WhatsAppModal.tsx` to capture Meta Embedded Signup `postMessage` data (`waba_id`, `phone_number_id`) directly in the browser.
+   - Added unit test `test_meta_onboard_with_debug_token` in `test_integrations_api.py`.
+2. **Meta ToS Compliance Alignment**:
+   - Removed hardcoded `website: 'https://xerpaa.com'` fallback from `WhatsAppModal.tsx` to comply with Meta's policy requiring merchant-specific URLs.
+3. **Verification**:
+   - Full backend pytest suite: 64/64 tests passing.
+   - Next.js production build (`npm run build`): 100% clean compilation.
 
 ## Next Steps
-- System in clean, stable state across `main`, `staging`, and feature branch.
-- Await future directives regarding onboarding flows or new feature priorities.
+- Test live Embedded Signup flow on staging/production to confirm WABA registration succeeds end-to-end.
+- Merge branch into `staging` and deploy to Railway.
+

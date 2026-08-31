@@ -1,5 +1,7 @@
 # Sherpa B2B Pivot: 5-Session Implementation Plan
 
+> ⚠️ **HISTORICAL SNAPSHOT**: This document records the original 5-session B2B pivot strategy. The pivot has been fully executed. For current architecture, consult [`../HANDOFF_GUIDE.md`](../HANDOFF_GUIDE.md).
+
 ## Overview
 This document outlines the step-by-step evolution of Sherpa from a B2C scheduling assistant to a B2B Sales Intelligence platform.
 

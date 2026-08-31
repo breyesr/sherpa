@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, ShieldCheck, CheckCircle2, ChevronRight, MessageSquare, Loader2, Smartphone, AlertTriangle } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 
@@ -21,7 +21,10 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
   // Meta credentials loaded from backend
   const [appId, setAppId] = useState('');
   const [configId, setConfigId] = useState('');
-  const [prefill, setPrefill] = useState<{ business_name?: string; category?: string }>({});
+  const [prefill, setPrefill] = useState<{ business_name?: string; category?: string; website?: string }>({});
+
+  // Capture session info (waba_id, phone_number_id) from Meta Embedded Signup postMessage
+  const sessionInfoRef = useRef<{ waba_id?: string; phone_number_id?: string }>({});
 
   // Manual configuration fallback for testing/dev
   const [manualMode, setManualMode] = useState(false);
@@ -31,7 +34,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
 
   useEffect(() => {
     if (isOpen) {
-      apiClient.get<{ app_id: string; config_id: string; prefill?: { business_name?: string; category?: string } }>('/integrations/whatsapp/config')
+      apiClient.get<{ app_id: string; config_id: string; prefill?: { business_name?: string; category?: string; website?: string } }>('/integrations/whatsapp/config')
         .then(res => {
           setAppId(res.app_id || '');
           setConfigId(res.config_id || '');
@@ -42,6 +45,34 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
         .catch(err => console.error('Failed to load WhatsApp configuration:', err));
     }
   }, [isOpen]);
+
+  // Listen for Meta Embedded Signup sessionInfo postMessage events
+  useEffect(() => {
+    const handleMetaMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== 'https://www.facebook.com' &&
+        event.origin !== 'https://web.facebook.com'
+      ) {
+        return;
+      }
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data && data.type === 'WA_EMBEDDED_SIGNUP') {
+          if (data.event === 'FINISH' && data.data) {
+            sessionInfoRef.current = {
+              waba_id: data.data.waba_id,
+              phone_number_id: data.data.phone_number_id,
+            };
+          }
+        }
+      } catch {
+        // Ignore non-JSON postMessage payloads from other browser extensions
+      }
+    };
+
+    window.addEventListener('message', handleMetaMessage);
+    return () => window.removeEventListener('message', handleMetaMessage);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -76,7 +107,7 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
             setup: {
               business: {
                 name: prefill.business_name || '',
-                website: 'https://xerpaa.com',
+                ...(prefill.website ? { website: prefill.website } : {}),
               },
               phone: {
                 displayName: prefill.business_name || '',
@@ -117,9 +148,12 @@ export default function WhatsAppModal({ isOpen, onClose, onSuccess }: WhatsAppMo
 
   const handleMetaOnboard = async (code: string) => {
     try {
-      const data = await apiClient.post<{ phone_number: string }>('/integrations/whatsapp/meta-onboard', {
-        code
-      });
+      const payload: { code: string; waba_id?: string; phone_number_id?: string } = {
+        code,
+        ...(sessionInfoRef.current.waba_id ? { waba_id: sessionInfoRef.current.waba_id } : {}),
+        ...(sessionInfoRef.current.phone_number_id ? { phone_number_id: sessionInfoRef.current.phone_number_id } : {}),
+      };
+      const data = await apiClient.post<{ phone_number: string }>('/integrations/whatsapp/meta-onboard', payload);
       setAssignedNumber(data.phone_number);
       setStep(5);
     } catch (err: unknown) {

@@ -1,5 +1,7 @@
 # Sprint Plan: March 19 - March 26, 2026
 
+> ⚠️ **HISTORICAL SNAPSHOT**: This sprint plan covers the original V1 MVP hardening sprint. For active sprint planning, consult [`project/BACKLOG.md`](project/BACKLOG.md).
+
 ## Objective
 Finalize UX Hardening and establish a robust multi-tenant infrastructure for MVP scaling.
 

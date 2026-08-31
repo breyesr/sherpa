@@ -29,15 +29,37 @@ The application is deployed on Railway as a Multi-service Project targeting the 
 
 ## 📋 Recent Deployments
 
+### [2026-08-29] Epic 220: Zero-Friction Embedded Signup Auto-Fill
+*   **Backend Auto-Prefill**: `GET /whatsapp/config` now extracts `business_name` and `category` from the authenticated user's `BusinessProfile` and returns a `prefill` dictionary.
+*   **Frontend SDK Integration**: `WhatsAppModal.tsx` passes `setup.business` (`name`, `website: "https://xerpaa.com"`) and `setup.phone` (`displayName`, `category`) directly into `FB.login()` extras, eliminating manual data entry in Meta's popup.
+*   **Meta App Review Status**: `public_profile` granted Advanced Access; Meta Developer App in Live Mode.
+*   **Branch**: `feature/epic-220-embedded-signup-prefill` merged to `staging` → `main`.
+
+### [2026-08-24] WhatsApp Coexistence & Meta Tech Provider Onboarding
+*   **Coexistence Mode**: Passed `extras: { featureType: 'coexistence' }` to `FB.login` in `WhatsAppModal.tsx` so personal WhatsApp Business mobile app users do not lose their chats.
+*   **Webhook Echo Filtering**: Added sender vs. registered business number verification in `whatsapp.py` to suppress infinite AI loops when merchants reply manually from their phones.
+*   **Meta Deregistration on Disconnect**: `provisioner.py` & `integrations.py` trigger `POST /{phone_number_id}/deregister` to safely detach numbers upon disconnection.
+*   **Branch**: `feature/integrations/whatsapp-coexistence` merged to `staging` → `main`.
+
 ### [2026-08-13] Epic 213: Self-Registration Deprecation & Demo Request Flow
-*   **Registration Endpoint**: `POST /auth/register` now returns `400 Bad Request` ("Registration disabled"). Public self-registration is temporarily gated.
-*   **Demo Request Form**: New page at `/auth/request-demo` captures prospective client details (name, business, email, phone, use case).
-*   **Database Migration**: `c77414e45eca` — Created `demo_requests` table with `status` column (pending/contacted/converted/rejected).
-*   **Admin Dashboard**: New "Demo Requests" tab in `/admin` with color-coded status badges and inline status update dropdown via `PATCH /admin/demo-requests/{id}/status`.
+*   **Registration Gating**: `POST /auth/register` returns `400 Bad Request` ("Registration disabled"). Self-registration gated for B2B control.
+*   **Demo Request Intake**: Page at `/auth/request-demo` captures inbound leads (name, business, email, phone, use case).
+*   **Database Model**: Created `demo_requests` table with status workflow (`pending`, `contacted`, `converted`, `rejected`).
+*   **Admin Dashboard**: Dedicated Demo Requests tab in `/admin` with status management via `PATCH /admin/demo-requests/{id}/status`.
 *   **Branch**: `feature/epic-213-demo-flow` merged to `staging` → `main`.
+
+### [2026-08-05 - 2026-08-08] Meta WhatsApp Cloud API Core Migration (Epics 206, 207, 208)
+*   **Core Engine**: Fully asynchronous `MetaCloudEngine` in `meta_cloud_engine.py` targeting Meta Graph API `v22.0`.
+*   **Webhook Security**: HMAC-SHA256 request signature verification (`X-Hub-Signature-256`) middleware using `META_APP_SECRET`.
+*   **24-Hour Compliance Gating**: Outbound messages validate the 24h compliance window via `Conversation.extra_data["whatsapp_24h_window_start"]`, with automated template message fallback.
+*   **Async Dispatch**: Webhooks validate signatures and delegate processing immediately to Celery queues via `apply_async()`.
+*   **Root Domain Redirection**: 301 redirect configured from `xerpaa.com` to `app.xerpaa.com`.
 
 ---
 
 ## 🔒 Security & Verification Configs
-*   **Twilio Webhook Verification**: Active via Twilio `X-Twilio-Signature` headers.
-*   **CORS Configuration**: Allowed origins include local dev targets and Railway subdomains under `*.up.railway.app`.
+*   **Meta Webhook Security**: HMAC-SHA256 signature verification active via `X-Hub-Signature-256` header on `POST /webhook`.
+*   **Twilio Webhook Verification**: Active via Twilio `X-Twilio-Signature` headers (legacy fallback).
+*   **CORS Configuration**: Explicit allowed origins configured in `BACKEND_CORS_ORIGINS` (no wildcards).
+*   **Database Isolation & RAM Guardrails**: Celery uses `NullPool`; API server pool capped at `pool_size=5, max_overflow=10`.
+

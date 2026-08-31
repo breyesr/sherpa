@@ -1,5 +1,7 @@
 # Sherpa Bug Log
 
+> ℹ️ **NOTE**: Active bug tracking and feature work is now managed in [`project/BACKLOG.md`](project/BACKLOG.md) and [`project/HANDOFF_LOG.md`](project/HANDOFF_LOG.md). This log is retained for historical reference.
+
 This document tracks all reported bugs, their investigation status, and resolutions.
 
 ## Active Bugs

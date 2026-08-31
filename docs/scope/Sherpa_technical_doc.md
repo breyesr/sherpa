@@ -1,5 +1,7 @@
 # Sherpa – Technical Development Document
 
+> ℹ️ **DOCUMENT CONTEXT**: This document outlines the foundation for Sherpa's V1 Core & B2C Module (Appointment Scheduling & Messaging). For the active B2B Sales Intelligence architecture and North Star, consult [`docs/project/NORTH_STAR.md`](../project/NORTH_STAR.md) and [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md).
+
 ## 1. System Overview
 
 Sherpa is a SaaS platform designed for service-based businesses to automate client communication, appointment scheduling, and reminders through an AI assistant integrated with WhatsApp, Telegram, and Google Calendar.

@@ -97,3 +97,104 @@ def test_get_whatsapp_config_without_business_profile():
         assert data["prefill"] == {}
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+@patch("httpx.AsyncClient.post")
+@patch("httpx.AsyncClient.get")
+def test_meta_onboard_with_debug_token(mock_get, mock_post):
+    from app.core.database import get_db
+    from app.core.config import settings
+
+    # Setup environment settings for test
+    settings.META_APP_ID = "mock_app_id"
+    settings.META_APP_SECRET = "mock_app_secret"
+    settings.META_SYSTEM_USER_TOKEN = "mock_system_user_token"
+
+    mock_user_with_bp = User(id="user_123", email="user@example.com")
+    mock_user_with_bp.business_profile = BusinessProfile(
+        id="biz_123",
+        name="Abarrotes Don Pepe",
+        category="RETAIL",
+        user_id="user_123"
+    )
+
+    # Mock responses for httpx.get
+    # 1. token exchange response
+    token_response = MagicMock()
+    token_response.status_code = 200
+    token_response.json.return_value = {"access_token": "mock_client_token"}
+
+    # 2. debug_token response
+    debug_response = MagicMock()
+    debug_response.status_code = 200
+    debug_response.json.return_value = {
+        "data": {
+            "granular_scopes": [
+                {
+                    "scope": "whatsapp_business_management",
+                    "target_ids": ["waba_999"]
+                }
+            ]
+        }
+    }
+
+    # 3. phone numbers response
+    phone_response = MagicMock()
+    phone_response.status_code = 200
+    phone_response.json.return_value = {
+        "data": [
+            {
+                "id": "phone_id_888",
+                "display_phone_number": "+52 1 55 1234 5678"
+            }
+        ]
+    }
+
+    async def async_get(url, *args, **kwargs):
+        if "oauth/access_token" in str(url):
+            return token_response
+        elif "debug_token" in str(url):
+            return debug_response
+        elif "phone_numbers" in str(url):
+            return phone_response
+        return MagicMock(status_code=404, json=lambda: {})
+
+    mock_get.side_effect = async_get
+
+    # Mock register/subscribe post calls
+    reg_response = MagicMock()
+    reg_response.status_code = 200
+    reg_response.json.return_value = {"success": True}
+    mock_post.return_value = reg_response
+
+    # Mock DB session
+    mock_session = AsyncMock()
+    mock_bp_scalars = MagicMock()
+    mock_bp_scalars.first.return_value = mock_user_with_bp.business_profile
+    mock_bp_result = MagicMock()
+    mock_bp_result.scalars.return_value = mock_bp_scalars
+
+    mock_int_scalars = MagicMock()
+    mock_int_scalars.first.return_value = None
+    mock_int_result = MagicMock()
+    mock_int_result.scalars.return_value = mock_int_scalars
+
+    mock_session.execute.side_effect = [mock_bp_result, mock_int_result]
+
+    app.dependency_overrides[get_current_user] = lambda: mock_user_with_bp
+    app.dependency_overrides[get_db] = lambda: mock_session
+
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/api/v1/integrations/whatsapp/meta-onboard",
+            json={"code": "mock_auth_code"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["phone_number"] == "+5215512345678"
+        assert data["provider_type"] == "meta_cloud_api"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_db, None)
+

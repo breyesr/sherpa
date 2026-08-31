@@ -332,29 +332,86 @@ async def meta_onboard_whatsapp(
                 
                 client_token = token_res.json().get("access_token")
                 
-                waba_res = await client.get(
-                    f"https://graph.facebook.com/{version}/me/client_whatsapp_business_accounts",
-                    headers={"Authorization": f"Bearer {client_token}"},
-                    timeout=15.0
-                )
-                if waba_res.status_code >= 400 or not waba_res.json().get("data"):
-                    logger.error("Failed to fetch client WABAs: %s", waba_res.text)
-                    raise HTTPException(status_code=400, detail="Could not retrieve WhatsApp Business Account from Meta.")
+                # If waba_id was not passed directly in request payload, discover it
+                if not waba_id:
+                    # Method 1: /debug_token to inspect granular_scopes
+                    app_access_token = f"{settings.META_APP_ID}|{settings.META_APP_SECRET}"
+                    debug_res = await client.get(
+                        f"https://graph.facebook.com/{version}/debug_token",
+                        params={
+                            "input_token": client_token,
+                            "access_token": app_access_token
+                        },
+                        timeout=15.0
+                    )
+                    if debug_res.status_code == 200:
+                        debug_data = debug_res.json().get("data", {})
+                        granular_scopes = debug_data.get("granular_scopes", [])
+                        for scope_item in granular_scopes:
+                            if scope_item.get("scope") in ["whatsapp_business_management", "whatsapp_business_messaging"]:
+                                target_ids = scope_item.get("target_ids", [])
+                                if target_ids:
+                                    waba_id = str(target_ids[0])
+                                    logger.info("Discovered WABA ID %s from debug_token granular_scopes", waba_id)
+                                    break
+                    else:
+                        logger.warning("debug_token call failed: %s", debug_res.text)
+
+                    # Method 2: Fallback via /me/businesses
+                    if not waba_id:
+                        biz_res = await client.get(
+                            f"https://graph.facebook.com/{version}/me/businesses",
+                            headers={"Authorization": f"Bearer {client_token}"},
+                            timeout=15.0
+                        )
+                        if biz_res.status_code == 200:
+                            for biz in biz_res.json().get("data", []):
+                                biz_id = biz.get("id")
+                                for edge in ["client_whatsapp_business_accounts", "owned_whatsapp_business_accounts"]:
+                                    w_res = await client.get(
+                                        f"https://graph.facebook.com/{version}/{biz_id}/{edge}",
+                                        headers={"Authorization": f"Bearer {client_token}"},
+                                        timeout=15.0
+                                    )
+                                    if w_res.status_code == 200 and w_res.json().get("data"):
+                                        waba_id = str(w_res.json()["data"][0]["id"])
+                                        logger.info("Discovered WABA ID %s from business %s %s", waba_id, biz_id, edge)
+                                        break
+                                if waba_id:
+                                    break
+
+                if not waba_id:
+                    logger.error("Could not discover WABA ID from token exchange.")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Could not retrieve WhatsApp Business Account from Meta. Please ensure permissions were granted in the popup."
+                    )
                 
-                waba_id = waba_res.json()["data"][0]["id"]
-                
-                phone_res = await client.get(
-                    f"https://graph.facebook.com/{version}/{waba_id}/phone_numbers",
-                    headers={"Authorization": f"Bearer {client_token}"},
-                    timeout=15.0
-                )
-                if phone_res.status_code >= 400 or not phone_res.json().get("data"):
-                    logger.error("Failed to fetch phone numbers: %s", phone_res.text)
-                    raise HTTPException(status_code=400, detail="Could not retrieve phone numbers from Meta.")
-                
-                phone_data = phone_res.json()["data"][0]
-                phone_number_id = phone_data["id"]
-                display_phone_number = phone_data["display_phone_number"]
+                # Fetch phone numbers for this WABA if phone_number_id or display_phone_number is missing
+                if not phone_number_id or not display_phone_number:
+                    # Try client_token first, then system_user_token
+                    phone_res = await client.get(
+                        f"https://graph.facebook.com/{version}/{waba_id}/phone_numbers",
+                        headers={"Authorization": f"Bearer {client_token}"},
+                        timeout=15.0
+                    )
+                    if (phone_res.status_code >= 400 or not phone_res.json().get("data")) and settings.META_SYSTEM_USER_TOKEN:
+                        phone_res = await client.get(
+                            f"https://graph.facebook.com/{version}/{waba_id}/phone_numbers",
+                            headers={"Authorization": f"Bearer {settings.META_SYSTEM_USER_TOKEN}"},
+                            timeout=15.0
+                        )
+
+                    if phone_res.status_code >= 400 or not phone_res.json().get("data"):
+                        logger.error("Failed to fetch phone numbers for WABA %s: %s", waba_id, phone_res.text)
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Could not retrieve phone numbers for WABA {waba_id} from Meta."
+                        )
+                    
+                    phone_data = phone_res.json()["data"][0]
+                    phone_number_id = str(phone_data["id"])
+                    display_phone_number = phone_data.get("display_phone_number") or phone_data.get("verified_name") or phone_number_id
                 
         except HTTPException:
             raise

@@ -1,5 +1,7 @@
 # User Flows: Sherpa MVP
 
+> ⚠️ **HISTORICAL SNAPSHOT (V1 B2C MVP)**: These user flows describe the original B2C appointment scheduling onboarding. For current B2B Trade Intelligence flows, consult [`HANDOFF_GUIDE.md`](HANDOFF_GUIDE.md) and [`design_system.md`](design_system.md).
+
 ## Flow 1: Registration & Onboarding
 The goal is to move the user from "Unknown" to "Live Dashboard" with minimum friction.
 

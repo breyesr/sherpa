@@ -1,5 +1,14 @@
 # Handoff Log
 
+- **2026-08-31 (Meta Onboard WABA Discovery Fix & ToS Compliance)**: Resolved the `Could not retrieve WhatsApp Business Account from Meta` onboarding error caused by Graph API error `#100 (nonexisting field client_whatsapp_business_accounts on User node)`.
+  - **Backend (`integrations.py`)**: Replaced direct User node call with standard `/debug_token` inspection querying `granular_scopes` to extract the `waba_id` from `target_ids`, added fallback traversal across `/me/businesses`, and added dual token retry for fetching phone numbers.
+  - **Frontend (`WhatsAppModal.tsx`)**: Attached `message` event listener to capture Meta Embedded Signup `postMessage` data (`waba_id`, `phone_number_id`) directly in the browser. Removed hardcoded `website: "https://xerpaa.com"` fallback to strictly comply with Meta ToS.
+  - **Tests**: Added `test_meta_onboard_with_debug_token` in `test_integrations_api.py`. Full pytest suite (64/64 tests) and Next.js production build passing.
+
+- **2026-08-29 (Master Team Handoff & Docs Synchronization Completed)**: Audited the entire `/docs` ecosystem and created the master handoff guide [`docs/HANDOFF_GUIDE.md`](docs/HANDOFF_GUIDE.md) to onboard the new incoming engineering team.
+  - **Documentation Audit**: Updated `PRODUCTION_STATUS.md` with recent deployments (Epics 206-220, Meta App Review approval, Coexistence mode), updated `deployment_guide.md` with service topologies and environment variables, updated `ARCHITECTURE.md` with modular sub-routers and messaging engines, and added context banners to legacy V1 documents.
+  - **Master Handoff Guide**: Authored `docs/HANDOFF_GUIDE.md` covering the full product narrative (B2C roots to B2B Sales Intelligence), the "Marco" persona, complete system architecture, core engine deep-dives (Store Action ledger ingestion, 2-hop SQL CTE GraphRAG, Meta WhatsApp Cloud API), strict RAM and security guardrails, active backlog milestones, 7-day onboarding runbook, and comprehensive documentation index.
+
 - **2026-08-29 (Epic 220: Zero-Friction Embedded Signup Auto-Fill Completed)**: Implemented automatic prefilling of business data and fallback website for Meta's Embedded Signup flow on branch `feature/epic-220-embedded-signup-prefill`.
   - **Backend (`integrations.py`)**: `GET /whatsapp/config` now extracts `business_name` and `category` from the authenticated user's `BusinessProfile` and returns a `prefill` dictionary. Added unit tests in `test_integrations_api.py`.
   - **Frontend (`WhatsAppModal.tsx`)**: Injected `setup.business` (`name`, `website: "https://xerpaa.com"`) and `setup.phone` (`displayName`, `category`) into `FB.login()` extras. Non-technical users no longer need to type website or business names manually into Meta's popup.

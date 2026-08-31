@@ -1,5 +1,7 @@
 # Sherpa – MVP Scope Document
 
+> ℹ️ **DOCUMENT CONTEXT**: This document outlines the historical V1 MVP scope (B2C Services & Scheduling). For the active production B2B Sales Intelligence scope, consult [`docs/project/NORTH_STAR.md`](../project/NORTH_STAR.md) and [`docs/project/BACKLOG.md`](../project/BACKLOG.md).
+
 ## 🎯 Objective
 Deliver a **minimum viable product** that automates appointment scheduling and reminders via **WhatsApp and Telegram**, synchronizes with **Google Calendar**, and provides a simple **web dashboard** for businesses to manage clients and bookings.
 

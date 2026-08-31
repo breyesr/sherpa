@@ -1,5 +1,7 @@
 # Modular Pivot Sprint Plan (Trade Vertical)
 
+> ⚠️ **HISTORICAL SNAPSHOT**: This sprint plan documents the initial B2B Trade pivot execution (Sprints 1–5). For current active work, consult [`BACKLOG.md`](BACKLOG.md).
+
 This document outlines the execution roadmap for transitioning Sherpa into a modular platform, specifically implementing the **Trade** module while preserving the **Basic** scheduler.
 
 ## Sprint 1: Modular Foundation & Data Gateway (COMPLETE)
