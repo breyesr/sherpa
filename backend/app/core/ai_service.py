@@ -25,10 +25,10 @@ from app.models.integration import Integration
 from app.models.messaging import Conversation, Message
 from app.models.business import VerticalType
 from app.core.system_config import ConfigService
-from app.core.security import encrypt_token, decrypt_token
 from app.core.memory import ChatMemory
 from app.core.context_assembler import ContextAssembler
 from app.services.agentic_orchestrator import AgenticOrchestrator
+from app.services.catalog_context import CatalogContextBuilder
 from app.core.phone_utils import clean_phone_digits, format_display_phone
 
 # Setup prompt template environment
@@ -315,11 +315,19 @@ class AIService:
                 biz_tz = ZoneInfo(self.business.timezone or "UTC")
                 local_now = datetime.now(biz_tz)
 
+                # Fetch Structured Catalog Context with Pricing Guardrails
+                catalog_context = await CatalogContextBuilder.get_catalog_context_for_business(
+                    self.db,
+                    self.business.id,
+                    user_message=user_message
+                )
+
                 system_prompt = template.render(
                     assistant=self.assistant_config,
                     business=self.business,
                     client=client_obj,
                     services=services,
+                    catalog_context=catalog_context,
                     client_identifier=identifier,
                     working_hours=wh_str,
                     greeting_context=greeting_context,

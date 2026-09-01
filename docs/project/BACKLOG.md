@@ -437,7 +437,7 @@
     - **When** viewing the behavioral toggles section,
     - **Then** a new checkbox labeled "Disclose Product Pricing" is visible with helper text: *"When enabled, the AI assistant can state catalog prices when asked. When disabled, the assistant will direct users to contact your sales team for pricing."*
     - The toggle's state is read from and saved to `business.assistant_config.allow_price_disclosure`.
-- [ ] Task 220.3 (BE/AI): **Hard Non-Negotiation Guardrail in System Prompts**
+- [x] Task 220.3 (BE/AI): **Hard Non-Negotiation Guardrail in System Prompts**
   - **Acceptance Criteria**:
     - **Given** the `allow_price_disclosure` flag is `true`,
     - **When** a prospect or client asks about the price of a product,
@@ -450,11 +450,14 @@
 ## Epic 221: Intelligent Catalog Context for AI Flows
 **Objective**: Replace the current raw catalog dump in AI system prompts with a structured, token-efficient product knowledge layer that enables the LLM to answer product questions, compare products side-by-side, and make needs-based recommendations across all messaging flows.
 
-- [ ] Task 221.1 (BE): **CatalogContextBuilder Utility**
+- [x] Task 221.1 (BE): **CatalogContextBuilder Utility**
   - **Acceptance Criteria**:
     - **Given** a new utility module `services/catalog_context.py`,
     - **When** called with `(db, business_id, allow_price_disclosure, user_message=None)`,
     - **Then** it returns a formatted Markdown block with structured product specs and conditional pricing.
-- [ ] Task 221.2 (BE/AI): **Integrate CatalogContextBuilder into ProspectQualifier**
-- [ ] Task 221.3 (BE/AI): **Integrate CatalogContextBuilder into AIService Prompts**
-- [ ] Task 221.4 (BE): **Product Data Sheet Attachment Model (Architecture Only)**
+- [x] Task 221.2 (BE/AI): **Integrate CatalogContextBuilder into ProspectQualifier**
+  - Replaced raw product dump with `CatalogContextBuilder.get_catalog_context_for_business`, enabling product Q&A, side-by-side comparisons, and needs-based recommendations while enforcing hard non-negotiation guardrails.
+- [x] Task 221.3 (BE/AI): **Integrate CatalogContextBuilder into AIService Prompts**
+  - Injected structured catalog context and pricing directives into `b2b_sales_brain.j2` and `b2c_scheduler.j2`.
+- [x] Task 221.4 (BE): **Product Data Sheet Attachment Model (Architecture Only)**
+  - Documented PDF/DOCX technical data sheet ingestion pipeline and vector chunking architecture in `docs/architecture/product_data_sheets_design.md`.

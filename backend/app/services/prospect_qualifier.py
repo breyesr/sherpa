@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.models.trade import Store, Product, Category, StoreAction, ActionCategory, ActionStatus, store_clients, PostalCode, Order, OrderItem, OrderStatus, DataSourceType
 from app.models.crm import Client
 from app.models.messaging import Conversation, Message
+from app.services.catalog_context import CatalogContextBuilder
 from datetime import datetime
 
 import logging
@@ -198,17 +199,18 @@ class ProspectQualifier:
             # System Prompt based on phase
             if phase == "intent":
                 system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
-Tu objetivo actual (Paso 1) es saludar al usuario amigablemente y capturar exactamente dos datos iniciales:
-1. Producto de interés (debe coincidir con uno de los productos de nuestro catálogo listado abajo)
+Tu objetivo actual (Paso 1) es saludar al usuario amigablemente, responder sus preguntas sobre el catálogo y capturar exactamente dos datos iniciales:
+1. Producto de interés (debe coincidir con uno de los productos de nuestro catálogo)
 2. Cantidad requerida
 
-Catálogo de productos disponibles:
 {product_list_str}
 
 Instrucciones:
 - Saluda amigablemente si es el primer mensaje.
+- Si el usuario hace preguntas técnicas, pide recomendaciones según sus necesidades o solicita comparar productos, respóndele de manera precisa y objetiva basándote en la información del catálogo.
+- Si el usuario pregunta por precios o descuentos, respeta rigurosamente las reglas de precio y la regla inquebrantable de no-negociación (NUNCA negocies, regatees ni ofrezcas descuentos personalizados).
 - Pregunta explícitamente en qué producto de nuestro catálogo está interesado y la cantidad que desea.
-- Si el usuario menciona el producto y la cantidad, debes llamar inmediatamente a la herramienta `update_prospect_data` con el ID del producto y la cantidad requerida. Esto es obligatorio para poder avanzar de fase.
+- Si el usuario menciona el producto y la cantidad, debes llamar inmediatamente a la herramienta `update_prospect_data` con el ID o nombre del producto y la cantidad requerida. Esto es obligatorio para poder avanzar de fase.
 - Si el usuario solicita una cantidad menor al umbral mayorista del catálogo, NO intentes persuadirlo de comprar al mayoreo ni de subir la cantidad. Registra la cantidad de inmediato llamando a la herramienta `update_prospect_data`. NO menciones que el pedido es menor al volumen de mayoreo ni que será canalizado a una tienda física autorizada todavía.
 - NO pidas nombres, correos, ni direcciones aún. Mantén el foco únicamente en capturar el producto y la cantidad.
 - BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario. Utiliza únicamente los nombres comerciales de los productos.
@@ -904,10 +906,12 @@ Estado actual de los datos recopilados:
                 
             await self.db.commit()
 
-            # 1. Fetch product list
-            stmt = select(Product).join(Category).where(Category.business_id == business_id)
-            products = (await self.db.execute(stmt)).scalars().all()
-            product_list_str = "\n".join([f"- ID: {p.id}, Nombre: {p.name}, Umbral Mayorista: {p.wholesale_threshold or 'Ninguno'}" for p in products])
+            # 1. Fetch structured catalog context with guardrails
+            product_list_str = await CatalogContextBuilder.get_catalog_context_for_business(
+                self.db,
+                business_id,
+                user_message=user_message
+            )
             
             # 2. Run graph with checkpointer
             uri = self._get_pool_uri()

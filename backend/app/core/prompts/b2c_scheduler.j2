@@ -11,6 +11,10 @@ AVAILABLE SERVICES:
   * General Visit (Default)
 {% endfor %}
 
+{% if catalog_context %}
+{{ catalog_context }}
+{% endif %}
+
 CORE OPERATING LOGIC:
 {% if not is_known %}
 MANDATORY FLOW: You are in 'IDENTITY COLLECTION' mode. 

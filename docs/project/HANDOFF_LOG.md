@@ -1,5 +1,13 @@
 # Handoff Log
 
+- **2026-08-31 (Epic 221 Intelligent Catalog Context & Epic 220.3 Non-Negotiation Guardrails)**: Implemented structured product catalog intelligence context builder, relevance pruning for large catalogs (>15 items), side-by-side product comparison & recommendation directives, and hard non-negotiation pricing guardrails across ProspectQualifier and AIService.
+  - **Backend (`services/catalog_context.py`, `services/prospect_qualifier.py`, `core/ai_service.py`)**:
+    - Created `CatalogContextBuilder` utility with clean markdown table formatting, token pruning for large catalogs, and strict pricing guardrail injection.
+    - Updated `ProspectQualifier` (LangGraph state machine) to use `CatalogContextBuilder` for answering technical inquiries, comparing products, and recommending items according to prospect needs.
+    - Updated `AIService` and Jinja2 templates (`b2b_sales_brain.j2`, `b2c_scheduler.j2`) to inject structured catalog context and enforce pricing disclosure rules.
+    - Documented product technical data sheet attachment & vector chunking architecture in `docs/architecture/product_data_sheets_design.md`.
+    - Added unit test suite in `backend/app/tests/test_catalog_context.py` (all tests passing, 75/75 backend test suite passing).
+
 - **2026-08-31 (Epic 219 Extensible Product Catalog Fields & Epic 220 Pricing Toggle)**: Implemented flexible product custom fields and AI pricing disclosure controls across backend models, schemas, migrations, and frontend drawers and settings.
   - **Backend (`models/trade/catalog.py`, `models/business.py`, `schemas/trade.py`, `schemas/business.py`)**:
     - Added `custom_fields` (`JSON`) column to `Product` model with automatic inclusion in semantic summaries and knowledge metadata.
