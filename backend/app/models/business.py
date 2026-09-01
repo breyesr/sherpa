@@ -26,6 +26,10 @@ class BusinessProfile(Base):
     # Store field definitions: [{"key": "pet_name", "label": "Pet Name", "type": "text"}, ...]
     crm_config = Column(JSON, nullable=True, default=list)
 
+    # Global Product Catalog Configuration (Epic 219)
+    # Store product field definitions: [{"key": "material", "label": "Material", "type": "text"}, ...]
+    catalog_config = Column(JSON, nullable=True, default=list)
+
     # Modular Routing Configuration (Epic 14.1)
     # e.g., {"prospects_enabled": true, "distributors_enabled": true, "sales_reps_enabled": true}
     routing_config = Column(JSON, nullable=True, default=dict)
@@ -82,6 +86,10 @@ class Agent(Base):
     enable_lead_capture = Column(Boolean, default=True)
     enable_emergency_phone = Column(Boolean, default=False)
     
+    # Pricing Disclosure Toggle (Epic 220)
+    allow_price_disclosure = Column(Boolean, default=True, nullable=False)
+    
     working_hours = Column(JSON, nullable=True) # e.g., {"mon": ["09:00", "18:00"], ...}
 
     business_profile = relationship("BusinessProfile", back_populates="agents")
+

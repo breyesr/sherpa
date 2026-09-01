@@ -594,6 +594,7 @@ async def update_business_me(
             contact_phone=business_in.contact_phone,
             timezone=business_in.timezone or "UTC",
             crm_config=business_in.crm_config or [],
+            catalog_config=business_in.catalog_config or [],
             vertical_type=v_type,
             routing_config=business_in.routing_config or get_default_routing_config(v_type),
             features_config=business_in.features_config or get_default_features_config(v_type)

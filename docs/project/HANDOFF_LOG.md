@@ -1,5 +1,18 @@
 # Handoff Log
 
+- **2026-08-31 (Epic 219 Extensible Product Catalog Fields & Epic 220 Pricing Toggle)**: Implemented flexible product custom fields and AI pricing disclosure controls across backend models, schemas, migrations, and frontend drawers and settings.
+  - **Backend (`models/trade/catalog.py`, `models/business.py`, `schemas/trade.py`, `schemas/business.py`)**:
+    - Added `custom_fields` (`JSON`) column to `Product` model with automatic inclusion in semantic summaries and knowledge metadata.
+    - Added `catalog_config` (`JSON`) column to `BusinessProfile` model to define dynamic field schemas.
+    - Added `allow_price_disclosure` (`Boolean`, default `True`) column to `Agent` model for AI pricing policy control.
+    - Created Alembic migration `a219b4c89e10_add_product_custom_fields_and_catalog_config.py`.
+    - Added unit tests in `test_catalog_custom_fields.py` (100% passing).
+  - **Frontend (`CatalogDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`)**:
+    - Updated `CatalogDrawer.tsx` to dynamically render custom specification fields based on `business.catalog_config`.
+    - Updated `GeneralSettings.tsx` with a full management card for product custom fields (matching CRM custom fields UX).
+    - Added "Disclose Product Pricing" checkbox toggle to `AssistantSettings.tsx`.
+    - Synchronized `openapi.json` and generated TypeScript definitions (`npm run gen:api`). Full test suite and type checks passing.
+
 - **2026-08-31 (Meta Onboard WABA Discovery, Webhook Ingestion Fix & Phone Formatting)**: Verified live WhatsApp Embedded Signup onboarding on production with number `+5218186582756` (green `Conectado` status) and resolved inbound webhook processing.
   - **Backend (`integrations.py`, `whatsapp.py`, `ai_service.py`)**: 
     - Replaced User node WABA lookup with `/debug_token` granular scopes target ID discovery.

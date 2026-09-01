@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Float, Integer
+from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Float, Integer, JSON
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -54,6 +54,9 @@ class Product(Base):
     external_id = Column(String, nullable=True, index=True)
     wholesale_threshold = Column(Integer, nullable=True)
     
+    # Flexible Custom Fields (Epic 219)
+    custom_fields = Column(JSON, nullable=True, default=dict)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -73,18 +76,25 @@ class Product(Base):
             summary += f" Precio: {self.price}."
         if self.wholesale_threshold is not None:
             summary += f" Umbral mayorista: {self.wholesale_threshold}."
+        if self.custom_fields:
+            for k, v in self.custom_fields.items():
+                if v is not None and v != "":
+                    summary += f" {k}: {v}."
         if self.category:
             summary += f" {self.category.get_semantic_summary()}"
         return summary
 
     def get_knowledge_metadata(self) -> dict:
-        return {
+        meta = {
             "name": self.name,
             "brand": self.brand,
             "sku": self.sku,
             "product_type": self.product_type,
             "wholesale_threshold": self.wholesale_threshold
         }
+        if self.custom_fields:
+            meta["custom_fields"] = self.custom_fields
+        return meta
 
 class PostalCode(Base):
     __tablename__ = "postal_codes"

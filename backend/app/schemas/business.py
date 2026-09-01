@@ -26,6 +26,9 @@ class AgentBase(BaseModel):
     enable_lead_capture: bool = True
     enable_emergency_phone: bool = False
     
+    # Pricing Disclosure Toggle (Epic 220)
+    allow_price_disclosure: bool = True
+    
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AgentCreate(AgentBase):
@@ -47,6 +50,7 @@ class AgentUpdate(BaseModel):
     enable_internal_alert: Optional[bool] = None
     enable_lead_capture: Optional[bool] = None
     enable_emergency_phone: Optional[bool] = None
+    allow_price_disclosure: Optional[bool] = None
     working_hours: Optional[Dict[str, List[str]]] = None
 
 class AgentResponse(AgentBase):
@@ -72,6 +76,7 @@ class BusinessProfileBase(BaseModel):
     timezone: str = "UTC"
     vertical_type: VerticalType = VerticalType.BASIC
     crm_config: Optional[List[Dict]] = []
+    catalog_config: Optional[List[Dict]] = []
     features_config: Optional[Dict] = None
     routing_config: Optional[Dict] = None
 
@@ -85,6 +90,7 @@ class BusinessProfileUpdate(BaseModel):
     timezone: Optional[str] = None
     vertical_type: Optional[VerticalType] = None
     crm_config: Optional[List[Dict]] = None
+    catalog_config: Optional[List[Dict]] = None
     features_config: Optional[Dict] = None
     routing_config: Optional[Dict] = None
 

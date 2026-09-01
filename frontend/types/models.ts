@@ -52,4 +52,11 @@ export interface CRMField {
   options?: string[];
 }
 
+export interface CatalogField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'boolean' | 'date' | 'dropdown' | 'textarea';
+  options?: string[];
+}
+
 export type PostalCode = components['schemas']['PostalCodeResponse'];

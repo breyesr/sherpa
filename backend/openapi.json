@@ -5279,6 +5279,11 @@
             "title": "Enable Emergency Phone",
             "default": false
           },
+          "allow_price_disclosure": {
+            "type": "boolean",
+            "title": "Allow Price Disclosure",
+            "default": true
+          },
           "working_hours": {
             "anyOf": [
               {
@@ -5481,6 +5486,17 @@
               }
             ],
             "title": "Enable Emergency Phone"
+          },
+          "allow_price_disclosure": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Price Disclosure"
           },
           "working_hours": {
             "anyOf": [
@@ -5847,6 +5863,22 @@
             "title": "Crm Config",
             "default": []
           },
+          "catalog_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Config",
+            "default": []
+          },
           "features_config": {
             "anyOf": [
               {
@@ -5963,6 +5995,22 @@
               }
             ],
             "title": "Crm Config",
+            "default": []
+          },
+          "catalog_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Config",
             "default": []
           },
           "features_config": {
@@ -6124,6 +6172,21 @@
               }
             ],
             "title": "Crm Config"
+          },
+          "catalog_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Config"
           },
           "features_config": {
             "anyOf": [
@@ -8018,6 +8081,19 @@
             ],
             "title": "Wholesale Threshold"
           },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields",
+            "default": {}
+          },
           "category_id": {
             "type": "string",
             "title": "Category Id"
@@ -8117,6 +8193,19 @@
               }
             ],
             "title": "Wholesale Threshold"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields",
+            "default": {}
           },
           "id": {
             "type": "string",
@@ -8258,6 +8347,18 @@
               }
             ],
             "title": "Wholesale Threshold"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields"
           }
         },
         "type": "object",

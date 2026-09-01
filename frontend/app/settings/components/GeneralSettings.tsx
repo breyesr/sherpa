@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, User as UserIcon, Lock, Save, Loader2, Plus, Trash2, Database, AlertCircle, RefreshCw, Package } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -35,6 +35,13 @@ interface EditCRMField {
   is_deleted?: boolean;
 }
 
+interface EditCatalogField {
+  key: string;
+  label: string;
+  type: string;
+  is_deleted?: boolean;
+}
+
 interface FeaturesConfig {
   services?: { enabled?: boolean };
   b2b_solutions?: { enabled?: boolean };
@@ -61,6 +68,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     timezone: business?.timezone || 'UTC',
     vertical_type: business?.vertical_type || 'BASIC',
     crm_config: (business?.crm_config as unknown as EditCRMField[]) || [],
+    catalog_config: (business?.catalog_config as unknown as EditCatalogField[]) || [],
     allowed_zip_codes: (((business as Record<string, unknown> | undefined)?.routing_config as Record<string, unknown> | undefined)?.allowed_zip_codes as string[] || []).join(', '),
     routing_config: ((business as Record<string, unknown> | undefined)?.routing_config as Record<string, unknown> | undefined) || {}
   };
@@ -103,12 +111,29 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
     setEditBusiness({ ...editBusiness, crm_config: newConfig });
   };
 
+  const handleAddCatalogField = () => {
+    setEditBusiness({
+      ...editBusiness,
+      catalog_config: [...editBusiness.catalog_config, { key: '', label: '', type: 'text' }]
+    });
+  };
+
+  const handleCatalogFieldChange = (index: number, field: string, value: string) => {
+    const newConfig = [...editBusiness.catalog_config];
+    newConfig[index] = { ...newConfig[index], [field]: value };
+    if (field === 'label' && !newConfig[index].key) {
+      newConfig[index].key = value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }
+    setEditBusiness({ ...editBusiness, catalog_config: newConfig });
+  };
+
   const handleSaveBusiness = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingBusiness(true);
     
     // Filter out soft-deleted fields before saving
     const finalCrmConfig = (editBusiness.crm_config || []).filter((f: EditCRMField) => !f.is_deleted);
+    const finalCatalogConfig = (editBusiness.catalog_config || []).filter((f: EditCatalogField) => !f.is_deleted);
     
     // Parse allowed ZIP codes from comma-separated string
     const cleanZips = editBusiness.allowed_zip_codes
@@ -128,6 +153,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       timezone: editBusiness.timezone,
       vertical_type: editBusiness.vertical_type,
       crm_config: finalCrmConfig,
+      catalog_config: finalCatalogConfig,
       routing_config: finalRoutingConfig
     };
 
@@ -138,10 +164,10 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
       setEditBusiness(prev => ({ 
         ...prev, 
         crm_config: finalCrmConfig,
+        catalog_config: finalCatalogConfig,
         routing_config: finalRoutingConfig,
         allowed_zip_codes: cleanZips.join(', ')
       }));
-      queryClient.invalidateQueries({ queryKey: ['business'] });
     } catch (err: unknown) {
       onMessage({ type: 'error', text: (err as Error).message });
     } finally {
@@ -367,6 +393,119 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
         </div>
       </section>
       )}
+
+      {/* Product Catalog Custom Fields Section (Epic 219) */}
+      <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8">
+        <div className="flex justify-between items-center border-b border-gray-50 pb-6">
+          <div className="flex items-center gap-3 text-xl font-bold text-gray-900">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <Package size={22} />
+            </div>
+            <h2>Product Catalog Custom Fields</h2>
+          </div>
+          <button 
+            type="button"
+            onClick={handleAddCatalogField}
+            className="flex items-center gap-2 text-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-xl font-bold transition-colors"
+          >
+            <Plus size={18} />
+            Add Field
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 font-medium">
+            Define custom specification fields for your product catalog (e.g. Material, Dimensions, Certifications, Origin). These fields appear in the Product Drawer and are used by the AI to answer product questions and make recommendations.
+          </p>
+
+          {editBusiness.catalog_config.length === 0 ? (
+            <div className="py-12 text-center border-2 border-dashed border-gray-100 rounded-2xl">
+              <p className="text-gray-400 font-medium">No product custom fields defined yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {editBusiness.catalog_config.map((field: EditCatalogField, idx: number) => {
+                const isSoftDeleted = field.is_deleted;
+                
+                return (
+                  <div key={idx} className={`flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-4 rounded-2xl border transition-all duration-200 ${isSoftDeleted ? 'border-red-100 bg-red-50/30 opacity-60' : 'border-gray-100'}`}>
+                    <div className="flex-1 w-full space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Label</label>
+                        {isSoftDeleted && (
+                          <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-black uppercase tracking-tighter">To be deleted</span>
+                        )}
+                      </div>
+                      <input 
+                        type="text"
+                        value={field.label}
+                        disabled={isSoftDeleted}
+                        onChange={e => handleCatalogFieldChange(idx, 'label', e.target.value)}
+                        placeholder="e.g. Material or Certifications"
+                        className={`w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all ${isSoftDeleted ? 'line-through text-gray-400' : ''}`}
+                      />
+                    </div>
+                    
+                    <div className="w-full md:w-48 space-y-2">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Type</label>
+                      <select 
+                        value={field.type}
+                        disabled={isSoftDeleted}
+                        onChange={e => handleCatalogFieldChange(idx, 'type', e.target.value)}
+                        className="w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium appearance-none transition-all"
+                      >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Checkbox</option>
+                        <option value="textarea">Textarea</option>
+                      </select>
+                    </div>
+
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newConfig = [...editBusiness.catalog_config];
+                        if (isSoftDeleted) {
+                          delete newConfig[idx].is_deleted;
+                        } else {
+                          newConfig[idx] = { ...newConfig[idx], is_deleted: true };
+                        }
+                        setEditBusiness({ ...editBusiness, catalog_config: newConfig });
+                      }}
+                      className={`p-2.5 transition-colors border rounded-lg ${isSoftDeleted ? 'bg-white text-gray-400 hover:text-indigo-600 border-gray-200' : 'bg-white text-gray-400 hover:text-red-500 border-gray-200'}`}
+                      title={isSoftDeleted ? "Restore field" : "Delete field"}
+                    >
+                      {isSoftDeleted ? <RefreshCw size={18} /> : <Trash2 size={18} />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {editBusiness.catalog_config.some((f: EditCatalogField) => f.is_deleted) && (
+            <div className="flex items-center gap-2 p-4 bg-red-50 rounded-2xl border border-red-100">
+              <AlertCircle size={18} className="text-red-500 shrink-0" />
+              <p className="text-xs text-red-800 font-medium">
+                Fields marked for deletion will be permanently removed after you click &quot;Save&quot;. Existing product values for these fields will be preserved.
+              </p>
+            </div>
+          )}
+
+          {editBusiness.catalog_config.length > 0 && (
+            <div className="flex justify-end pt-4">
+              <button 
+                onClick={handleSaveBusiness}
+                disabled={savingBusiness}
+                className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+              >
+                {savingBusiness ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                Save Product Fields
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Account Section */}
       <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 space-y-8">

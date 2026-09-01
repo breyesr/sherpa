@@ -388,3 +388,73 @@
 - [ ] Task 218.3 (Architecture): **Android & iOS Native Apps Planning (Long Term)**
   - **Acceptance Criteria**:
     - Draft the native app integration architecture (e.g., utilizing Capacitor to wrap the Next.js bundle or React Native integration leveraging existing APIs).
+
+## Epic 219: Extensible Product Catalog Fields
+**Objective**: Allow business admins to define custom product attributes (e.g., Material, Dimensions, Certifications) — mirroring the existing `Client.custom_fields` + `BusinessProfile.crm_config` pattern — so the AI and dashboard can leverage rich, business-specific product data without schema changes.
+
+- [x] Task 219.1 (BE): **Add `custom_fields` to Product Model & `catalog_config` to BusinessProfile**
+  - **Acceptance Criteria**:
+    - **Given** the existing `Client.custom_fields` + `BusinessProfile.crm_config` pattern,
+    - **When** the migration runs,
+    - **Then** `products` table has a new `custom_fields JSON` column (nullable, default `{}`), and `business_profiles` table has a new `catalog_config JSON` column (nullable, default `[]`) that stores the admin-defined field schema.
+    - Update `ProductBase`, `ProductCreate`, `ProductUpdate`, and `ProductResponse` schemas in `schemas/trade.py` to include `custom_fields: Optional[Dict[str, Any]]`.
+    - Update `Product.get_semantic_summary()` and `Product.get_knowledge_metadata()` in `models/trade/catalog.py` to incorporate custom field values.
+- [x] Task 219.2 (BE): **API Endpoints for Catalog Config**
+  - **Acceptance Criteria**:
+    - **Given** a business admin hits `GET /business/me`,
+    - **When** the response is returned,
+    - **Then** `catalog_config` is included in the `BusinessProfileResponse` schema.
+    - **Given** an admin sends `PATCH /business/me` with a `catalog_config` array,
+    - **When** the request is valid,
+    - **Then** the field definitions are persisted and available for the product drawer to render dynamic form inputs.
+- [x] Task 219.3 (FE): **Dynamic Custom Fields in CatalogDrawer**
+  - **Acceptance Criteria**:
+    - **Given** the admin has defined `catalog_config` fields (e.g., Material, Origin, Certifications),
+    - **When** a user opens the Product Drawer (`CatalogDrawer.tsx`) to create or edit a product,
+    - **Then** the drawer renders dynamic input fields matching the defined schema below the standard product fields (name, price, SKU, etc.), with correct input types (`text`, `number`, `select`) and values saved to `Product.custom_fields`.
+    - **Given** no `catalog_config` is defined,
+    - **When** the drawer opens,
+    - **Then** no custom fields section appears (graceful fallback).
+- [x] Task 219.4 (FE): **Catalog Config Editor in Settings**
+  - **Acceptance Criteria**:
+    - **Given** a business admin navigates to Settings,
+    - **When** they view the General Settings tab,
+    - **Then** they can add, edit, and remove custom field definitions (key, label, type) for their product catalog, and save them via `PATCH /business/me`.
+
+## Epic 220: AI Pricing Guardrails & Disclosure Control
+**Objective**: Give business admins a toggle to control whether the AI discloses product prices to prospects/customers, and enforce an unconditional hard guardrail that the AI never negotiates, debates, or modifies pricing under any circumstances.
+
+- [x] Task 220.1 (BE): **Add `allow_price_disclosure` Toggle to Agent Model**
+  - **Acceptance Criteria**:
+    - **Given** an Alembic migration,
+    - **When** the migration runs,
+    - **Then** the `agents` table has a new `allow_price_disclosure Boolean` column (default `True`, non-nullable).
+    - Update the `AgentResponse` / assistant config serialization in `schemas/business.py` to include the new field.
+    - The `PATCH /business/me/assistant` endpoint accepts and persists `allow_price_disclosure`.
+- [x] Task 220.2 (FE): **Price Disclosure Checkbox in AssistantSettings**
+  - **Acceptance Criteria**:
+    - **Given** the admin opens the AI Assistant settings panel (`AssistantSettings.tsx`),
+    - **When** viewing the behavioral toggles section,
+    - **Then** a new checkbox labeled "Disclose Product Pricing" is visible with helper text: *"When enabled, the AI assistant can state catalog prices when asked. When disabled, the assistant will direct users to contact your sales team for pricing."*
+    - The toggle's state is read from and saved to `business.assistant_config.allow_price_disclosure`.
+- [ ] Task 220.3 (BE/AI): **Hard Non-Negotiation Guardrail in System Prompts**
+  - **Acceptance Criteria**:
+    - **Given** the `allow_price_disclosure` flag is `true`,
+    - **When** a prospect or client asks about the price of a product,
+    - **Then** the AI states the catalog price factually but immediately refuses any follow-up negotiation, discount requests, or price modification attempts with a firm but polite boundary.
+    - **Given** the `allow_price_disclosure` flag is `false`,
+    - **When** a prospect or client asks about pricing,
+    - **Then** the AI responds with *"Para información sobre precios, por favor contacta a nuestro equipo de ventas"* and does not reveal any price data.
+    - **Regardless** of the toggle value, the AI must NEVER enter a negotiation thread, offer discounts, suggest alternative pricing, or imply prices are flexible.
+
+## Epic 221: Intelligent Catalog Context for AI Flows
+**Objective**: Replace the current raw catalog dump in AI system prompts with a structured, token-efficient product knowledge layer that enables the LLM to answer product questions, compare products side-by-side, and make needs-based recommendations across all messaging flows.
+
+- [ ] Task 221.1 (BE): **CatalogContextBuilder Utility**
+  - **Acceptance Criteria**:
+    - **Given** a new utility module `services/catalog_context.py`,
+    - **When** called with `(db, business_id, allow_price_disclosure, user_message=None)`,
+    - **Then** it returns a formatted Markdown block with structured product specs and conditional pricing.
+- [ ] Task 221.2 (BE/AI): **Integrate CatalogContextBuilder into ProspectQualifier**
+- [ ] Task 221.3 (BE/AI): **Integrate CatalogContextBuilder into AIService Prompts**
+- [ ] Task 221.4 (BE): **Product Data Sheet Attachment Model (Architecture Only)**

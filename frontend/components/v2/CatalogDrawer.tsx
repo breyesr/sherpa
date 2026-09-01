@@ -13,10 +13,11 @@ import {
   Loader2, 
   AlertCircle,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
-import { Product } from '@/types/models';
+import { Product, CatalogField } from '@/types/models';
 
 interface CatalogDrawerProps {
   isOpen: boolean;
@@ -69,6 +70,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     wholesale_threshold: '' as string | number
   });
 
+  const [customFields, setCustomFields] = useState<Record<string, any>>({});
+
   const [categoryData, setCategoryData] = useState({
     name: '',
     description: '',
@@ -93,6 +96,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
             unit_of_measure: initialData.unit_of_measure || 'unit',
             wholesale_threshold: initialData.wholesale_threshold ?? ''
           });
+          setCustomFields((initialData.custom_fields as Record<string, any>) || {});
         } else {
           // Fetch from API
           const fetchProduct = async () => {
@@ -109,6 +113,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                 unit_of_measure: data.unit_of_measure || 'unit',
                 wholesale_threshold: data.wholesale_threshold ?? ''
               });
+              setCustomFields((data.custom_fields as Record<string, any>) || {});
             } catch (err) {
               console.error(err);
             }
@@ -136,6 +141,10 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     }
   }
 
+  const handleCustomFieldChange = (key: string, value: any) => {
+    setCustomFields(prev => ({ ...prev, [key]: value }));
+  };
+
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -150,7 +159,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
         ...productData,
         wholesale_threshold: productData.wholesale_threshold !== '' && productData.wholesale_threshold !== null
           ? parseInt(productData.wholesale_threshold as any, 10)
-          : null
+          : null,
+        custom_fields: customFields
       };
 
       if (isEditing) {
@@ -203,6 +213,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       unit_of_measure: 'unit',
       wholesale_threshold: ''
     });
+    setCustomFields({});
     setCategoryData({ name: '', description: '', category_type: '' });
   };
 
@@ -386,6 +397,62 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                 />
               </div>
             </div>
+
+            {/* Dynamic Custom Fields Section (Epic 219) */}
+            {business?.catalog_config && (business.catalog_config as unknown as CatalogField[]).length > 0 && (
+              <div className="p-6 bg-gray-50 rounded-[2rem] space-y-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={16} className="text-indigo-500" />
+                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Product Specifications</h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(business.catalog_config as unknown as CatalogField[]).map((field) => (
+                    <div key={field.key} className={`space-y-2 ${field.type === 'textarea' ? 'md:col-span-2' : ''}`}>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{field.label}</label>
+                      {field.type === 'boolean' ? (
+                        <label className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 rounded-xl cursor-pointer group hover:border-indigo-200 transition-all">
+                          <input 
+                            type="checkbox"
+                            checked={!!customFields[field.key]}
+                            onChange={(e) => handleCustomFieldChange(field.key, e.target.checked)}
+                            className="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                          />
+                          <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Enabled</span>
+                        </label>
+                      ) : field.type === 'textarea' ? (
+                        <textarea 
+                          rows={2}
+                          className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold resize-none"
+                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          value={(customFields[field.key] as string) || ''}
+                          onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                        />
+                      ) : field.type === 'dropdown' ? (
+                        <select 
+                          className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold appearance-none"
+                          value={(customFields[field.key] as string) || ''}
+                          onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                        >
+                          <option value="">Select {field.label}...</option>
+                          {field.options?.map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input 
+                          type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
+                          value={(customFields[field.key] !== undefined && customFields[field.key] !== null) ? customFields[field.key] : ''}
+                          onChange={(e) => handleCustomFieldChange(field.key, field.type === 'number' ? (e.target.value ? parseFloat(e.target.value) : '') : e.target.value)}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">

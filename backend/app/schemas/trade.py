@@ -181,6 +181,7 @@ class ProductBase(BaseModel):
     unit_of_measure: Optional[str] = None
     external_id: Optional[str] = None
     wholesale_threshold: Optional[int] = None
+    custom_fields: Optional[Dict[str, Any]] = {}
 
 class ProductCreate(ProductBase):
     category_id: str
@@ -196,6 +197,7 @@ class ProductUpdate(BaseModel):
     unit_of_measure: Optional[str] = None
     external_id: Optional[str] = None
     wholesale_threshold: Optional[int] = None
+    custom_fields: Optional[Dict[str, Any]] = None
 
 class ProductResponse(ProductBase):
     id: str

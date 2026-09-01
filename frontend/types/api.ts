@@ -783,6 +783,11 @@ export interface components {
        * @default false
        */
       enable_emergency_phone?: boolean;
+      /**
+       * Allow Price Disclosure
+       * @default true
+       */
+      allow_price_disclosure?: boolean;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -824,6 +829,8 @@ export interface components {
       enable_lead_capture?: boolean | null;
       /** Enable Emergency Phone */
       enable_emergency_phone?: boolean | null;
+      /** Allow Price Disclosure */
+      allow_price_disclosure?: boolean | null;
       /** Working Hours */
       working_hours?: {
         [key: string]: string[];
@@ -953,6 +960,13 @@ export interface components {
       crm_config?: {
           [key: string]: unknown;
         }[] | null;
+      /**
+       * Catalog Config
+       * @default []
+       */
+      catalog_config?: {
+          [key: string]: unknown;
+        }[] | null;
       /** Features Config */
       features_config?: {
         [key: string]: unknown;
@@ -994,6 +1008,13 @@ export interface components {
        * @default []
        */
       crm_config?: {
+          [key: string]: unknown;
+        }[] | null;
+      /**
+       * Catalog Config
+       * @default []
+       */
+      catalog_config?: {
           [key: string]: unknown;
         }[] | null;
       /** Features Config */
@@ -1042,6 +1063,10 @@ export interface components {
       vertical_type?: components["schemas"]["VerticalType"] | null;
       /** Crm Config */
       crm_config?: {
+          [key: string]: unknown;
+        }[] | null;
+      /** Catalog Config */
+      catalog_config?: {
           [key: string]: unknown;
         }[] | null;
       /** Features Config */
@@ -1687,6 +1712,13 @@ export interface components {
       external_id?: string | null;
       /** Wholesale Threshold */
       wholesale_threshold?: number | null;
+      /**
+       * Custom Fields
+       * @default {}
+       */
+      custom_fields?: {
+        [key: string]: unknown;
+      } | null;
       /** Category Id */
       category_id: string;
     };
@@ -1713,6 +1745,13 @@ export interface components {
       external_id?: string | null;
       /** Wholesale Threshold */
       wholesale_threshold?: number | null;
+      /**
+       * Custom Fields
+       * @default {}
+       */
+      custom_fields?: {
+        [key: string]: unknown;
+      } | null;
       /** Id */
       id: string;
       /** Category Id */
@@ -1750,6 +1789,10 @@ export interface components {
       external_id?: string | null;
       /** Wholesale Threshold */
       wholesale_threshold?: number | null;
+      /** Custom Fields */
+      custom_fields?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ServiceCreate */
     ServiceCreate: {

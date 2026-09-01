@@ -116,6 +116,47 @@
         }
       }
     },
+    "/api/v1/auth/request-demo": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Request Demo",
+        "operationId": "request_demo_api_v1_auth_request_demo_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoRequestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -150,6 +191,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout",
+        "description": "Clear the server-side HttpOnly sherpa_token cookie.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Logout Api V1 Auth Logout Post"
                 }
               }
             }
@@ -573,6 +636,82 @@
               "application/json": {
                 "schema": {
                   "title": "Response Provision Whatsapp Api V1 Integrations Whatsapp Provision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/whatsapp/config": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Get Whatsapp Config",
+        "description": "Get public configuration for Meta WhatsApp onboarding.",
+        "operationId": "get_whatsapp_config_api_v1_integrations_whatsapp_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Whatsapp Config Api V1 Integrations Whatsapp Config Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/whatsapp/meta-onboard": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Meta Onboard Whatsapp",
+        "description": "Onboards a client's WhatsApp Business Account using Meta Cloud API.\nCan be called with:\n  Option A (Embedded Signup Code):\n    - code: str (OAuth authorization code from Meta login)\n  Option B (Manual Input / Sandbox):\n    - phone_number_id: str\n    - waba_id: str\n    - display_phone_number: str",
+        "operationId": "meta_onboard_whatsapp_api_v1_integrations_whatsapp_meta_onboard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Meta Onboard Whatsapp Api V1 Integrations Whatsapp Meta Onboard Post"
                 }
               }
             }
@@ -1594,7 +1733,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1612,7 +1751,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1717,6 +1856,121 @@
         ]
       }
     },
+    "/api/v1/whatsapp/test-send": {
+      "post": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Test Send Message",
+        "description": "Send a test WhatsApp message using the active integration for Meta App Review.",
+        "operationId": "test_send_message_api_v1_whatsapp_test_send_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/whatsapp/templates": {
+      "get": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Get Meta Templates",
+        "description": "Retrieve the list of WhatsApp message templates from Meta Graph API.",
+        "operationId": "get_meta_templates_api_v1_whatsapp_templates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/whatsapp/test-template": {
+      "post": {
+        "tags": [
+          "whatsapp"
+        ],
+        "summary": "Test Create Template",
+        "description": "Create a test template on Meta for App Review verification.",
+        "operationId": "test_create_template_api_v1_whatsapp_test_template_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/telegram/debug/info": {
       "get": {
         "tags": [
@@ -1734,7 +1988,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/telegram/webhook/{webhook_id}": {
@@ -2462,6 +2721,99 @@
         }
       }
     },
+    "/api/v1/admin/demo-requests": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Demo Requests",
+        "description": "List all demo requests (Admin only).",
+        "operationId": "list_demo_requests_api_v1_admin_demo_requests_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemoRequestResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Demo Requests Api V1 Admin Demo Requests Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/demo-requests/{request_id}/status": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Demo Request Status",
+        "description": "Update status of a demo request (Admin only).",
+        "operationId": "update_demo_request_status_api_v1_admin_demo_requests__request_id__status_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoRequestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/data-gateway/me/imports": {
       "get": {
         "tags": [
@@ -2577,7 +2929,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/trade/stores": {
@@ -2954,12 +3311,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/trade/postal-codes/states": {
@@ -2985,12 +3337,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/trade/postal-codes/municipalities": {
@@ -3001,11 +3348,6 @@
         "summary": "List Municipalities",
         "description": "Retrieve all unique municipalities for a given state.",
         "operationId": "list_municipalities_api_v1_trade_postal_codes_municipalities_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "state",
@@ -3053,11 +3395,6 @@
         "summary": "List Zip Codes",
         "description": "Retrieve all zip codes and colonias for a given state and municipality.",
         "operationId": "list_zip_codes_api_v1_trade_postal_codes_zip_codes_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "state",
@@ -3114,11 +3451,6 @@
         "summary": "Lookup Postal Code",
         "description": "Retrieve all matching colonias and geographical mappings for a 5-digit Mexican postal code.",
         "operationId": "lookup_postal_code_api_v1_trade_postal_codes__zip_code__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "zip_code",
@@ -3141,6 +3473,247 @@
                     "$ref": "#/components/schemas/PostalCodeResponse"
                   },
                   "title": "Response Lookup Postal Code Api V1 Trade Postal Codes  Zip Code  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/competitors": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "List Competitors",
+        "description": "List all competitors, optionally filtered by store.",
+        "operationId": "list_competitors_api_v1_trade_competitors_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompetitorResponse"
+                  },
+                  "title": "Response List Competitors Api V1 Trade Competitors Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Create Competitor",
+        "description": "Record a new competitor entry.",
+        "operationId": "create_competitor_api_v1_trade_competitors_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompetitorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/stores/{store_id}/brief": {
+      "get": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Get Strategic Brief",
+        "description": "Generate a strategic pre-visit brief for a specific store using GraphRAG.",
+        "operationId": "get_strategic_brief_api_v1_trade_stores__store_id__brief_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Strategic Brief Api V1 Trade Stores  Store Id  Brief Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/clients/{client_id}/brief": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Generate Visit Brief",
+        "description": "Generate a specialized AI brief for a store visit.",
+        "operationId": "generate_visit_brief_api_v1_trade_clients__client_id__brief_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Generate Visit Brief Api V1 Trade Clients  Client Id  Brief Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trade/clients/{client_id}/qualify": {
+      "post": {
+        "tags": [
+          "trade"
+        ],
+        "summary": "Qualify Lead",
+        "description": "Generate a lead qualification report for a retailer.",
+        "operationId": "qualify_lead_api_v1_trade_clients__client_id__qualify_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Qualify Lead Api V1 Trade Clients  Client Id  Qualify Post"
                 }
               }
             }
@@ -3703,247 +4276,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrderResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/competitors": {
-      "get": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "List Competitors",
-        "description": "List all competitors, optionally filtered by store.",
-        "operationId": "list_competitors_api_v1_trade_competitors_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "store_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "title": "Store Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CompetitorResponse"
-                  },
-                  "title": "Response List Competitors Api V1 Trade Competitors Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Create Competitor",
-        "description": "Record a new competitor entry.",
-        "operationId": "create_competitor_api_v1_trade_competitors_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompetitorCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompetitorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/stores/{store_id}/brief": {
-      "get": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Get Strategic Brief",
-        "description": "Generate a strategic pre-visit brief for a specific store using GraphRAG.",
-        "operationId": "get_strategic_brief_api_v1_trade_stores__store_id__brief_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "store_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Store Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Get Strategic Brief Api V1 Trade Stores  Store Id  Brief Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/clients/{client_id}/brief": {
-      "post": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Generate Visit Brief",
-        "description": "Generate a specialized AI brief for a store visit.",
-        "operationId": "generate_visit_brief_api_v1_trade_clients__client_id__brief_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "client_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Client Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Generate Visit Brief Api V1 Trade Clients  Client Id  Brief Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/trade/clients/{client_id}/qualify": {
-      "post": {
-        "tags": [
-          "trade"
-        ],
-        "summary": "Qualify Lead",
-        "description": "Generate a lead qualification report for a retailer.",
-        "operationId": "qualify_lead_api_v1_trade_clients__client_id__qualify_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "client_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Client Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Qualify Lead Api V1 Trade Clients  Client Id  Qualify Post"
                 }
               }
             }
@@ -4947,6 +5279,11 @@
             "title": "Enable Emergency Phone",
             "default": false
           },
+          "allow_price_disclosure": {
+            "type": "boolean",
+            "title": "Allow Price Disclosure",
+            "default": true
+          },
           "working_hours": {
             "anyOf": [
               {
@@ -5149,6 +5486,17 @@
               }
             ],
             "title": "Enable Emergency Phone"
+          },
+          "allow_price_disclosure": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Price Disclosure"
           },
           "working_hours": {
             "anyOf": [
@@ -5515,6 +5863,22 @@
             "title": "Crm Config",
             "default": []
           },
+          "catalog_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Config",
+            "default": []
+          },
           "features_config": {
             "anyOf": [
               {
@@ -5631,6 +5995,22 @@
               }
             ],
             "title": "Crm Config",
+            "default": []
+          },
+          "catalog_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Config",
             "default": []
           },
           "features_config": {
@@ -5792,6 +6172,21 @@
               }
             ],
             "title": "Crm Config"
+          },
+          "catalog_config": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Config"
           },
           "features_config": {
             "anyOf": [
@@ -6970,6 +7365,90 @@
         ],
         "title": "DataSourceType"
       },
+      "DemoRequestCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "business_name": {
+            "type": "string",
+            "title": "Business Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "phone_number": {
+            "type": "string",
+            "title": "Phone Number"
+          },
+          "primary_use_case": {
+            "type": "string",
+            "title": "Primary Use Case"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "business_name",
+          "email",
+          "phone_number",
+          "primary_use_case"
+        ],
+        "title": "DemoRequestCreate"
+      },
+      "DemoRequestResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "business_name": {
+            "type": "string",
+            "title": "Business Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "phone_number": {
+            "type": "string",
+            "title": "Phone Number"
+          },
+          "primary_use_case": {
+            "type": "string",
+            "title": "Primary Use Case"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "business_name",
+          "email",
+          "phone_number",
+          "primary_use_case",
+          "status",
+          "created_at"
+        ],
+        "title": "DemoRequestResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -7602,6 +8081,19 @@
             ],
             "title": "Wholesale Threshold"
           },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields",
+            "default": {}
+          },
           "category_id": {
             "type": "string",
             "title": "Category Id"
@@ -7701,6 +8193,19 @@
               }
             ],
             "title": "Wholesale Threshold"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields",
+            "default": {}
           },
           "id": {
             "type": "string",
@@ -7842,6 +8347,18 @@
               }
             ],
             "title": "Wholesale Threshold"
+          },
+          "custom_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Fields"
           }
         },
         "type": "object",
@@ -9801,6 +10318,74 @@
           "message"
         ],
         "title": "TestChatRequest"
+      },
+      "TestSendRequest": {
+        "properties": {
+          "to_number": {
+            "type": "string",
+            "title": "To Number"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "template_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Name"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          }
+        },
+        "type": "object",
+        "required": [
+          "to_number",
+          "message"
+        ],
+        "title": "TestSendRequest"
+      },
+      "TestTemplateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "body_text": {
+            "type": "string",
+            "title": "Body Text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "es_MX"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "category",
+          "body_text"
+        ],
+        "title": "TestTemplateRequest"
       },
       "Token": {
         "properties": {
