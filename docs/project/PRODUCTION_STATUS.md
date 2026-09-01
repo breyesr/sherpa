@@ -29,6 +29,13 @@ The application is deployed on Railway as a Multi-service Project targeting the 
 
 ## 📋 Recent Deployments
 
+### [2026-08-31] Epics 219, 220, 221: Extensible Product Catalog & Catalog Intelligence Engine
+*   **Extensible Product Attributes (Epic 219)**: Added `custom_fields` (`JSON`) on `Product` and `catalog_config` (`JSON`) on `BusinessProfile`. Realigned the product drawer UX to match the B2C Service "Additional Information" pattern (`+ Add Attribute` inline creation for `text`, `number`, `boolean`, `date`, `dropdown`, `textarea`, `multiselect`), with a dedicated `ManageCatalogAttributesDrawer` modal and product detail specs card.
+*   **AI Pricing Disclosure Control & Hard Non-Negotiation (Epic 220)**: Added `allow_price_disclosure` (`Boolean`) to `Agent` and exposed a universal toggle in **Settings → AI Assistant**. Enforced an unbreakable non-negotiation guardrail in system prompts (factual prices only, zero haggling or discount debates).
+*   **Intelligent Catalog Context (Epic 221)**: Created `CatalogContextBuilder` with token-efficient Markdown formatting, relevance pruning for large catalogs (>15 SKUs), and explicit directives for product Q&A, side-by-side comparison, and needs-based recommendations integrated into `ProspectQualifier` and `AIService`.
+*   **Technical Data Sheets Design**: Documented future PDF/DOCX ingestion and pgvector chunking architecture in `docs/architecture/product_data_sheets_design.md`.
+*   **Branch**: Merged to `staging` → `main` (`438182a`).
+
 ### [2026-08-29] Epic 220: Zero-Friction Embedded Signup Auto-Fill
 *   **Backend Auto-Prefill**: `GET /whatsapp/config` now extracts `business_name` and `category` from the authenticated user's `BusinessProfile` and returns a `prefill` dictionary.
 *   **Frontend SDK Integration**: `WhatsAppModal.tsx` passes `setup.business` (`name`, `website: "https://xerpaa.com"`) and `setup.phone` (`displayName`, `category`) directly into `FB.login()` extras, eliminating manual data entry in Meta's popup.
