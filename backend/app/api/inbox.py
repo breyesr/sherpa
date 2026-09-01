@@ -34,7 +34,7 @@ async def list_conversations(
         select(Conversation)
         .where(Conversation.business_id == business.id)
         .options(selectinload(Conversation.client))
-        .order_by(desc(Conversation.last_message_at))
+        .order_by(desc(Conversation.last_message_at).nulls_last(), desc(Conversation.created_at))
     )
     convs = result.scalars().all()
     return [ConversationResponse.from_orm(c) for c in convs]

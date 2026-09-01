@@ -67,18 +67,28 @@ class AIService:
                 if client:
                     client.updated_at = datetime.utcnow()
                     await self.db.commit()
-            is_new = False
+            requested_role = (metadata.get("role") or metadata.get("flow")) if metadata else None
+            target_role = "sales_rep" if requested_role in ("sales_rep", "representative", "agent") else ("distributor" if requested_role in ("distributor", "distributor_retailer", "retailer") else "customer")
+
             if not client:
                 is_new = True
-                # CRITICAL: Do not use metadata to guess the name. 
-                # The name MUST come from the user message as per the flowchart.
-                name = "Unknown Client"
+                name = metadata.get("name") if (metadata and metadata.get("name") and "Unknown" not in metadata.get("name")) else "Unknown Client"
                 platform = metadata.get("platform") if metadata else None
                 is_telegram = platform == "telegram"
-                client = Client(business_id=self.business.id, name=name, phone=normalized_id if not is_telegram else None, telegram_id=normalized_id if is_telegram else None, whatsapp_id=normalized_id if not is_telegram else None)
+                client = Client(
+                    business_id=self.business.id,
+                    name=name,
+                    role=target_role,
+                    phone=normalized_id if not is_telegram else None,
+                    telegram_id=normalized_id if is_telegram else None,
+                    whatsapp_id=normalized_id if not is_telegram else None
+                )
                 self.db.add(client)
                 await self.db.commit()
                 await self.db.refresh(client)
+            elif requested_role and client.role != target_role and "sandbox" in identifier:
+                client.role = target_role
+                await self.db.commit()
             return client, is_new
         except Exception as e:
             logger.debug("_get_client failed for %s: %s", identifier, e, exc_info=True)
@@ -211,7 +221,7 @@ class AIService:
             # 4. B2B Orchestration Stage (ONLY for TRADE vertical)
             if self.business.vertical_type == VerticalType.TRADE:
                 b2b_response, b2b_reasoning = await self.orchestrator.get_response(
-                    self.business.id, client_obj.id, user_message, normalized_id
+                    self.business.id, client_obj.id, user_message, normalized_id, business_obj=self.business
                 )
 
                 ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=b2b_response, reasoning_trace=b2b_reasoning)
@@ -349,7 +359,10 @@ class AIService:
                 logger.critical("Generation Stage Failed: %s", e)
                 return "I'm having trouble thinking right now. My AI provider might be busy or misconfigured. Please try again later."
 
-            # 5. Response Hand-off
+            # 5. Output Guardrail & Response Hand-off
+            from app.services.output_guardrail import OutputGuardrail
+            response_text = OutputGuardrail.sanitize_response(response_text)
+
             # Persist AI response to DB
             ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text, reasoning_trace=b2b_reasoning)
             self.db.add(ai_msg_obj)
@@ -422,7 +435,9 @@ class AIService:
                 timeout=30.0
             )
 
-            return response.choices[0].message.content or "No response generated."
+            raw_content = response.choices[0].message.content or "No response generated."
+            from app.services.output_guardrail import OutputGuardrail
+            return OutputGuardrail.sanitize_response(raw_content)
 
         except Exception as e:
             logger.critical("Specialized Response Failed: %s", e, exc_info=True)
@@ -650,6 +665,12 @@ class AIService:
             
             client_obj = await self._check_client_direct(identifier)
             
+            # Identity Verification Hard Lock (Task 222.1)
+            placeholders = ["TG_", "WA_", "New Client", "Unknown Client", "Unknown"]
+            is_placeholder_name = not client_obj or not client_obj.name or any(client_obj.name.startswith(p) for p in placeholders)
+            if is_placeholder_name:
+                return "Cannot book appointment: Client identity incomplete. You MUST ask for and register the client's full name using 'update_client_identity' before booking."
+            
             # Fetch Store/Customer names for Google Calendar if provided
             location_str = ""
             if store_id:
@@ -810,16 +831,30 @@ class AIService:
             if not client_obj.custom_fields:
                 client_obj.custom_fields = {}
             
+            # Reserved system keys that cannot be modified via AI metadata
+            RESERVED_KEYS = {
+                "id", "business_id", "role", "is_admin", "is_super_admin",
+                "password", "password_hash", "token", "status", "permissions",
+                "telegram_id_hash", "whatsapp_id_hash", "created_at", "updated_at"
+            }
+            
             # Merge new metadata into existing custom_fields
             updated_fields = dict(client_obj.custom_fields)
+            sanitized_keys = []
             for key, value in metadata.items():
-                # Sanitize keys
                 clean_key = str(key).lower().replace(" ", "_")
+                if clean_key in RESERVED_KEYS:
+                    logger.warning(f"Blocked attempt to set reserved metadata key '{clean_key}' for client {identifier}")
+                    continue
                 updated_fields[clean_key] = value
+                sanitized_keys.append(clean_key)
             
+            if not sanitized_keys:
+                return "No permissible metadata fields to update."
+
             client_obj.custom_fields = updated_fields
             await self.db.commit()
-            return f"SUCCESS: Client information updated: {', '.join(metadata.keys())}."
+            return f"SUCCESS: Client information updated: {', '.join(sanitized_keys)}."
         except Exception as e:
             logger.error("Error in _update_client_metadata_tool: %s", e)
             return "Failed to save client information."

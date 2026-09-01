@@ -748,6 +748,8 @@ export interface components {
       logic_template?: string;
       /** Custom Steps */
       custom_steps?: string | null;
+      /** Custom Instructions */
+      custom_instructions?: string | null;
       /**
        * Require Reason
        * @default true
@@ -815,6 +817,8 @@ export interface components {
       logic_template?: string | null;
       /** Custom Steps */
       custom_steps?: string | null;
+      /** Custom Instructions */
+      custom_instructions?: string | null;
       /** Require Reason */
       require_reason?: boolean | null;
       /** Confirm Details */

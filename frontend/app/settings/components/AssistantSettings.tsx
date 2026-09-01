@@ -29,6 +29,7 @@ export default function AssistantSettings({ business, user, token, onMessage, on
     personalized_greeting: business?.assistant_config?.personalized_greeting || '', 
     logic_template: business?.assistant_config?.logic_template || 'standard',
     custom_steps: business?.assistant_config?.custom_steps || '',
+    custom_instructions: (business?.assistant_config as any)?.custom_instructions || '',
     require_reason: business?.assistant_config?.require_reason ?? true,
     confirm_details: business?.assistant_config?.confirm_details ?? true,
     strict_guardrails: business?.assistant_config?.strict_guardrails ?? true,
@@ -164,6 +165,25 @@ export default function AssistantSettings({ business, user, token, onMessage, on
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[80px] font-medium"
                 placeholder="Hello! How can I help you today?"
               />
+            </div>
+
+            <div className="col-span-1 md:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Custom Instructions</label>
+                <span className={`text-xs font-medium ${(editAssistant.custom_instructions?.length || 0) > 1000 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  {editAssistant.custom_instructions?.length || 0}/1000
+                </span>
+              </div>
+              <textarea 
+                value={editAssistant.custom_instructions}
+                maxLength={1000}
+                onChange={e => setEditAssistant({...editAssistant, custom_instructions: e.target.value})}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[90px] font-medium"
+                placeholder="E.g., Always respond in Spanish, Recommend our Premium package first, Ask clients if they want a reminder 24h before."
+              />
+              <p className="text-xs text-gray-400">
+                These instructions guide your assistant's behavior and tone, but cannot override core safety rules or identity verification.
+              </p>
             </div>
             
             {isSuperAdmin && (
