@@ -55,7 +55,7 @@ export interface CRMField {
 export interface CatalogField {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'boolean' | 'date' | 'dropdown' | 'textarea';
+  type: 'text' | 'number' | 'boolean' | 'date' | 'dropdown' | 'textarea' | 'multiselect';
   options?: string[];
 }
 

@@ -345,6 +345,20 @@ export default function ProductDetailPage() {
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">External ID</span>
                 <span className="text-lg font-mono font-bold text-gray-700 mt-1 block">{product.external_id || '-'}</span>
               </div>
+
+              {/* Dynamic Custom Fields */}
+              {product.custom_fields && Object.entries(product.custom_fields as Record<string, any>).map(([key, val]) => {
+                if (val === undefined || val === null || val === '') return null;
+                const formattedKey = key.replace(/_/g, ' ');
+                const displayVal = typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val);
+                
+                return (
+                  <div key={key}>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block capitalize">{formattedKey}</span>
+                    <span className="text-lg font-bold text-gray-700 mt-1 block">{displayVal}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {product.description && (

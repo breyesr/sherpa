@@ -14,10 +14,14 @@ import {
   AlertCircle,
   Plus,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Settings,
+  CheckCircle,
+  X
 } from 'lucide-react';
 
 import { Product, CatalogField } from '@/types/models';
+import ManageCatalogAttributesDrawer from './ManageCatalogAttributesDrawer';
 
 interface CatalogDrawerProps {
   isOpen: boolean;
@@ -33,6 +37,17 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
   const [mode, setMode] = useState<'product' | 'category'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Manage attributes drawer state
+  const [isManageAttributesOpen, setIsManageAttributesOpen] = useState(false);
+
+  // Custom Attribute Creation States
+  const [isAddingField, setIsAddingField] = useState(false);
+  const [newFieldName, setNewFieldName] = useState('');
+  const [newFieldType, setNewFieldType] = useState<'text' | 'number' | 'boolean' | 'date' | 'dropdown' | 'textarea' | 'multiselect'>('text');
+  const [newFieldOptions, setNewFieldOptions] = useState('');
+  const [isSavingNewField, setIsSavingNewField] = useState(false);
+  const [newFieldErr, setNewFieldErr] = useState('');
 
   // Fetch Business Profile
   const { data: business } = useQuery({
@@ -123,6 +138,11 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       } else {
         resetForms();
       }
+      setIsAddingField(false);
+      setNewFieldName('');
+      setNewFieldType('text');
+      setNewFieldOptions('');
+      setNewFieldErr('');
     }
   }, [isOpen, initialMode, productId, initialData]);
 
@@ -143,6 +163,61 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
 
   const handleCustomFieldChange = (key: string, value: any) => {
     setCustomFields(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveNewField = async () => {
+    if (!business) return;
+    if (!newFieldName.trim()) {
+      setNewFieldErr('Field name is required');
+      return;
+    }
+    const cleanKey = newFieldName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/__+/g, '_');
+    if (!cleanKey || cleanKey === '_') {
+      setNewFieldErr('Invalid field name');
+      return;
+    }
+
+    const existingAttributes = (business.catalog_config as unknown as CatalogField[]) || [];
+    const isDuplicate = existingAttributes.some((f: CatalogField) => f.key === cleanKey);
+    if (isDuplicate) {
+      setNewFieldErr(`An attribute with key "${cleanKey}" already exists`);
+      return;
+    }
+
+    setIsSavingNewField(true);
+    setNewFieldErr('');
+
+    const newField: CatalogField = {
+      key: cleanKey,
+      label: newFieldName.trim(),
+      type: newFieldType
+    };
+
+    if (newFieldType === 'dropdown' || newFieldType === 'multiselect') {
+      const optionsArray = newFieldOptions.split(',').map(o => o.trim()).filter(Boolean);
+      if (optionsArray.length === 0) {
+        setNewFieldErr('Options are required for this field type');
+        setIsSavingNewField(false);
+        return;
+      }
+      newField.options = optionsArray;
+    }
+
+    const newAttributes = [...existingAttributes, newField];
+
+    try {
+      await apiClient.patch<any>('/business/me', { catalog_config: newAttributes });
+
+      await queryClient.invalidateQueries({ queryKey: ['business'] });
+      setIsAddingField(false);
+      setNewFieldName('');
+      setNewFieldType('text');
+      setNewFieldOptions('');
+    } catch (err: unknown) {
+      setNewFieldErr(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setIsSavingNewField(false);
+    }
   };
 
   const handleProductSubmit = async (e: React.FormEvent) => {
@@ -236,6 +311,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
   );
 
   return (
+    <>
     <Drawer 
       isOpen={isOpen} 
       onClose={onClose} 
@@ -398,17 +474,136 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
               </div>
             </div>
 
-            {/* Dynamic Custom Fields Section (Epic 219) */}
-            {business?.catalog_config && (business.catalog_config as unknown as CatalogField[]).length > 0 && (
-              <div className="p-6 bg-gray-50 rounded-[2rem] space-y-6">
-                <div className="flex items-center gap-2 mb-2">
+            {/* Dynamic Custom Fields Section - Additional Information (B2C Service Pattern) */}
+            <div className="p-6 bg-gray-50 rounded-[2rem] space-y-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
                   <Sparkles size={16} className="text-indigo-500" />
-                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Product Specifications</h4>
+                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Additional Information</h4>
                 </div>
+                {!isAddingField && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingField(true)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-all px-3 py-1.5 rounded-xl hover:bg-indigo-50 border border-dashed border-indigo-200 hover:border-indigo-300"
+                  >
+                    <Plus size={14} />
+                    Add Attribute
+                  </button>
+                )}
+              </div>
 
+              {/* Inline Form to add a new custom field */}
+              {isAddingField && (
+                <div className="p-4 bg-white border border-gray-200 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-3 duration-200 shadow-sm">
+                  <div className="flex justify-between items-center">
+                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">New Custom Attribute</h5>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setIsAddingField(false);
+                        setNewFieldName('');
+                        setNewFieldType('text');
+                        setNewFieldOptions('');
+                        setNewFieldErr('');
+                      }}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  
+                  {newFieldErr && (
+                    <div className="text-xs font-medium text-red-500 bg-red-50 border border-red-100 p-2.5 rounded-xl flex items-center gap-1.5">
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span>{newFieldErr}</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Attribute Name</label>
+                      <input 
+                        type="text"
+                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-xs font-medium"
+                        placeholder="e.g. Material or Certifications"
+                        value={newFieldName}
+                        onChange={(e) => setNewFieldName(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Attribute Type</label>
+                      <select 
+                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-xs font-medium"
+                        value={newFieldType}
+                        onChange={(e) => setNewFieldType(e.target.value as any)}
+                      >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Checkbox</option>
+                        <option value="date">Date</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="textarea">Text Area</option>
+                        <option value="multiselect">Multi-select</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(newFieldType === 'dropdown' || newFieldType === 'multiselect') && (
+                    <div className="space-y-1 mt-2">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Options (comma-separated)</label>
+                      <input 
+                        type="text"
+                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-xs font-medium"
+                        placeholder="e.g. Option 1, Option 2, Option 3"
+                        value={newFieldOptions}
+                        onChange={(e) => setNewFieldOptions(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingField(false);
+                        setNewFieldName('');
+                        setNewFieldType('text');
+                        setNewFieldOptions('');
+                        setNewFieldErr('');
+                      }}
+                      className="px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl text-xs font-bold hover:bg-gray-100 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSavingNewField}
+                      onClick={handleSaveNewField}
+                      className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10 flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isSavingNewField ? (
+                        <>
+                          <Loader2 className="animate-spin" size={12} />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={12} />
+                          Save Attribute
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Attributes List */}
+              {business?.catalog_config && (business.catalog_config as unknown as CatalogField[]).length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {(business.catalog_config as unknown as CatalogField[]).map((field) => (
-                    <div key={field.key} className={`space-y-2 ${field.type === 'textarea' ? 'md:col-span-2' : ''}`}>
+                    <div key={field.key} className={`space-y-2 ${field.type === 'textarea' || field.type === 'multiselect' ? 'md:col-span-2' : ''}`}>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{field.label}</label>
                       {field.type === 'boolean' ? (
                         <label className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 rounded-xl cursor-pointer group hover:border-indigo-200 transition-all">
@@ -420,6 +615,13 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                           />
                           <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Enabled</span>
                         </label>
+                      ) : field.type === 'date' ? (
+                        <input 
+                          type="date"
+                          className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
+                          value={(customFields[field.key] as string) || ''}
+                          onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                        />
                       ) : field.type === 'textarea' ? (
                         <textarea 
                           rows={2}
@@ -439,9 +641,36 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
+                      ) : field.type === 'multiselect' ? (
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          {field.options?.map((opt: string) => {
+                            const currentSelection = Array.isArray(customFields[field.key]) ? customFields[field.key] : [];
+                            const isChecked = currentSelection.includes(opt);
+                            return (
+                              <label key={opt} className="flex items-center gap-2 cursor-pointer p-2.5 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 transition-all">
+                                <input 
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    let newArr = [...currentSelection];
+                                    if (checked) {
+                                      newArr.push(opt);
+                                    } else {
+                                      newArr = newArr.filter((val: string) => val !== opt);
+                                    }
+                                    handleCustomFieldChange(field.key, newArr);
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                                />
+                                <span className="text-xs font-bold text-gray-700">{opt}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       ) : (
                         <input 
-                          type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                          type={field.type === 'number' ? 'number' : 'text'}
                           placeholder={`Enter ${field.label.toLowerCase()}`}
                           className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
                           value={(customFields[field.key] !== undefined && customFields[field.key] !== null) ? customFields[field.key] : ''}
@@ -451,8 +680,21 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                     </div>
                   ))}
                 </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic">No custom attributes defined yet. Click &quot;+ Add Attribute&quot; to add specifications.</p>
+              )}
+
+              <div className="pt-4 border-t border-gray-100 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsManageAttributesOpen(true)}
+                  className="px-4 py-2 bg-white border border-gray-200 text-gray-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                >
+                  <Settings size={14} />
+                  Manage Attributes
+                </button>
               </div>
-            )}
+            </div>
           </div>
         ) : (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
@@ -505,5 +747,13 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
         )}
       </div>
     </Drawer>
+
+    <ManageCatalogAttributesDrawer
+      isOpen={isManageAttributesOpen}
+      onClose={() => setIsManageAttributesOpen(false)}
+      business={business}
+      token={token}
+    />
+    </>
   );
 }
