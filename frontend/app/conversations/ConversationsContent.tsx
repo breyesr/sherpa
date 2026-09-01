@@ -175,11 +175,19 @@ export default function ConversationsContent({ initialConversations, token }: Co
                 
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => setDevMode(!devMode)}
+                    onClick={() => {
+                      const next = !devMode;
+                      setDevMode(next);
+                      if (next) {
+                        toast.info("Audit Mode Enabled: Viewing behind-the-scenes AI reasoning logic");
+                      } else {
+                        toast.info("Audit Mode Disabled");
+                      }
+                    }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                       devMode 
-                      ? 'bg-purple-50 text-purple-600 border border-purple-100' 
-                      : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-400/30' 
+                      : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
                     }`}
                   >
                     <MessageSquare size={14} className={devMode ? 'animate-pulse' : ''} />
@@ -225,13 +233,13 @@ export default function ConversationsContent({ initialConversations, token }: Co
                         {m.content}
                       </div>
 
-                      {devMode && m.role === 'assistant' && m.reasoning_trace && (
+                      {devMode && m.role === 'assistant' && (
                         <div className="mt-2 p-3 bg-purple-50 border border-purple-100 rounded-xl text-[10px] font-mono text-purple-700 leading-tight">
                           <div className="flex items-center gap-1 font-black mb-1 text-[9px] uppercase tracking-widest">
                             <MessageSquare size={10} />
-                            Brain Logic
+                            Brain Logic / Audit Trace
                           </div>
-                          {m.reasoning_trace}
+                          {m.reasoning_trace || "Direct model response (No operational tool execution required)"}
                         </div>
                       )}
 

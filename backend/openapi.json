@@ -5223,6 +5223,17 @@
             ],
             "title": "Custom Steps"
           },
+          "custom_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Instructions"
+          },
           "require_reason": {
             "anyOf": [
               {
@@ -5409,6 +5420,17 @@
               }
             ],
             "title": "Custom Steps"
+          },
+          "custom_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Instructions"
           },
           "require_reason": {
             "anyOf": [

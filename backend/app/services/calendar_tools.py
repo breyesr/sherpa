@@ -168,6 +168,15 @@ class CalendarToolKit:
             client_obj = await self._get_client(client_identifier)
             if not client_obj: return {"success": False, "error": "Client not found"}
 
+            # Identity Verification Hard Lock (Task 222.1)
+            placeholders = ["TG_", "WA_", "New Client", "Unknown Client", "Unknown"]
+            is_placeholder_name = not client_obj.name or any(client_obj.name.startswith(p) for p in placeholders)
+            if is_placeholder_name:
+                return {
+                    "success": False,
+                    "error": "Cannot book appointment: Client identity incomplete. Please ask for and register the client's name first."
+                }
+
             location_str = ""
             if store_id:
                 from app.models.trade import Store

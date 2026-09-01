@@ -16,6 +16,7 @@ class AgentBase(BaseModel):
     personalized_greeting: str = "Hola {name}, ¿en qué puedo ayudarte hoy?"
     logic_template: str = "standard"
     custom_steps: Optional[str] = None
+    custom_instructions: Optional[str] = None
     require_reason: Optional[bool] = True
     confirm_details: Optional[bool] = True
     strict_guardrails: Optional[bool] = True
@@ -43,6 +44,7 @@ class AgentUpdate(BaseModel):
     personalized_greeting: Optional[str] = None
     logic_template: Optional[str] = None
     custom_steps: Optional[str] = None
+    custom_instructions: Optional[str] = None
     require_reason: Optional[bool] = None
     confirm_details: Optional[bool] = None
     strict_guardrails: Optional[bool] = None

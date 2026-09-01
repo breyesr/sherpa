@@ -1,25 +1,16 @@
-# Handoff State: 2026-08-31 (Epic 219, Epic 220, and Epic 221 Completed)
+# Handoff State: 2026-09-01 (Epic 222 Completed)
 
 ## Current Branch
-`main` (Production) / `staging`
+`feature/backend/ai-safety-defense-in-depth` (ready for staging merge)
 
 ## Accomplishments This Session
-1. **Epic 219 (Extensible Product Catalog Fields & B2C UX Alignment)**:
-   - Added `custom_fields` (`JSON`) to [`Product`](backend/app/models/trade/catalog.py) and `catalog_config` (`JSON`) to [`BusinessProfile`](backend/app/models/business.py).
-   - Realigned the custom fields UX in [`CatalogDrawer.tsx`](frontend/components/v2/CatalogDrawer.tsx) to match the B2C Service "Additional Information" pattern (`+ Add Attribute` inline creation, support for `text`, `number`, `boolean`, `date`, `dropdown`, `textarea`, `multiselect`).
-   - Created [`ManageCatalogAttributesDrawer.tsx`](frontend/components/v2/ManageCatalogAttributesDrawer.tsx) for editing display labels or deleting custom attributes.
-   - Displayed custom attributes on [`products/[id]/page.tsx`](frontend/app/trade/products/[id]/page.tsx).
-2. **Epic 220 (AI Pricing Guardrails & Disclosure Control)**:
-   - Added `allow_price_disclosure` (`Boolean`, default `True`) to [`Agent`](backend/app/models/business.py).
-   - Added "Disclose Product Pricing" checkbox toggle to [`AssistantSettings.tsx`](frontend/app/settings/components/AssistantSettings.tsx).
-   - Implemented hard non-negotiation pricing guardrail (Task 220.3) in system prompts and context builder.
-3. **Epic 221 (Intelligent Catalog Context for AI Flows)**:
-   - Created [`CatalogContextBuilder`](backend/app/services/catalog_context.py) with structured markdown formatting, relevance-based token pruning for large catalogs (>15 items), and explicit directives for product Q&A, side-by-side comparison, and needs-based recommendations.
-   - Integrated `CatalogContextBuilder` into [`ProspectQualifier`](backend/app/services/prospect_qualifier.py) LangGraph qualification engine.
-   - Integrated `CatalogContextBuilder` into [`AIService`](backend/app/core/ai_service.py) and Jinja2 templates ([`b2b_sales_brain.j2`](backend/app/core/prompts/b2b_sales_brain.j2), [`b2c_scheduler.j2`](backend/app/core/prompts/b2c_scheduler.j2)).
-   - Documented technical data sheet ingestion and vector chunking design in [`docs/architecture/product_data_sheets_design.md`](docs/architecture/product_data_sheets_design.md).
-   - Added unit test suite in [`backend/app/tests/test_catalog_context.py`](backend/app/tests/test_catalog_context.py) (3/3 passing, full test suite 75/75 passing).
+1. **Epic 222 (Defense-in-Depth AI Safety & Per-Business Custom Instructions)**:
+   - **Phase 1 (Tool Hard Locks)**: Enforced identity verification on `create_appointment` to eliminate anonymous booking loopholes, sanitized metadata keys against reserved fields in `update_client_metadata`, and required `store_id` in `log_field_report`.
+   - **Phase 2 (Prompt Safety Fence)**: Added 9 immutable, testable directives into [`base_ai.j2`](backend/app/core/prompts/base_ai.j2) with explicit authority framing.
+   - **Phase 3 (Custom Instructions & Validator)**: Added `custom_instructions` column (`Text`, nullable) to [`Agent`](backend/app/models/business.py) with Alembic migration `dbef3b554f4f`. Built [`InstructionValidator`](backend/app/services/instruction_validator.py) for save-time regex and length validation. Added full `<textarea>` UI with character counter and safety disclaimer in [`AssistantSettings.tsx`](frontend/app/settings/components/AssistantSettings.tsx).
+   - **Phase 4 (Output Guardrail & Testing)**: Implemented [`OutputGuardrail`](backend/app/services/output_guardrail.py) for response bounds and traceback leak prevention. Added automated test suites ([`test_tool_hard_locks.py`](backend/app/tests/test_tool_hard_locks.py), [`test_safety_fence.py`](backend/app/tests/test_safety_fence.py), [`test_instruction_validator.py`](backend/app/tests/test_instruction_validator.py), [`test_output_guardrail.py`](backend/app/tests/test_output_guardrail.py)).
+   - **Phase 5 (Sandbox & Multi-Flow Integration Fix)**: Connected `AgenticOrchestrator` and `ProspectQualifier` to inherit live in-memory sandbox overrides from `test_chat`. Refined safety fence authority framing and greeting rules so that custom business voice/style instructions are actively applied across all interactions (including greetings and inquiries) without triggering safety override suppressions.
 
 ## Deployment Status
-- Merged into `staging` and fast-forward merged to `main` (`8393c91`).
-- Railway auto-deploy triggered for production services (`sherpa`, `worker`, `web`).
+- Feature branch: `feature/backend/ai-safety-defense-in-depth`
+- All tests green (92/92 backend unit tests, Next.js build clean).
