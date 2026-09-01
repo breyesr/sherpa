@@ -69,6 +69,11 @@ class TradeToolKit:
 
     async def log_field_report(self, business_id: str, text: str, store_id: str = None) -> Dict[str, Any]:
         """Trigger background ingestion for a field report."""
+        if not store_id:
+            return {
+                "success": False,
+                "error": "Cannot log field report: store_id is required to attach the report to an account. Please resolve the store first."
+            }
         try:
             # Add context if store_id is known
             context_text = text

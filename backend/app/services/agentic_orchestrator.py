@@ -54,19 +54,23 @@ class AgenticOrchestrator:
         """Get psycopg compatible URI."""
         return settings.SQLALCHEMY_DATABASE_URI.replace("postgresql+asyncpg://", "postgresql://")
 
-    async def _setup_graph(self, business_id: str, client_id: str, chat_id: str, active_store_id: str = None, checkpointer=None):
+    async def _setup_graph(self, business_id: str, client_id: str, chat_id: str, active_store_id: str = None, checkpointer=None, business_obj: BusinessProfile = None):
         """Build the LangGraph state machine."""
         logger.info(f"Setting up graph for business {business_id}...")
         
-        from sqlalchemy.orm import selectinload
-        # Fetch Business and Assistant
-        res_b = await self.db.execute(
-            select(BusinessProfile)
-            .where(BusinessProfile.id == business_id)
-            .options(selectinload(BusinessProfile.agents))
-        )
-        business = res_b.scalars().first()
-        assistant = business.agents[0] if business.agents else None
+        if business_obj:
+            business = business_obj
+            assistant = business.assistant_config
+        else:
+            from sqlalchemy.orm import selectinload
+            # Fetch Business and Assistant
+            res_b = await self.db.execute(
+                select(BusinessProfile)
+                .where(BusinessProfile.id == business_id)
+                .options(selectinload(BusinessProfile.agents))
+            )
+            business = res_b.scalars().first()
+            assistant = business.assistant_config if business else None
         
         # Fetch Client
         from app.models.crm import Client
@@ -110,6 +114,11 @@ class AgenticOrchestrator:
             Use this when the representative shares new information.
             """
             sid = store_id or active_store_id
+            if not sid:
+                return {
+                    "success": False,
+                    "error": "Cannot log field report: No target store/account identified. Please call 'resolve_entities' first or ask the representative to specify the store name."
+                }
             return await self.trade_toolkit.log_field_report(business_id, text, sid)
 
         calendar_toolkit = CalendarToolKit(business, self.db)
@@ -245,7 +254,7 @@ class AgenticOrchestrator:
 
         return workflow.compile(checkpointer=checkpointer)
 
-    async def get_response(self, business_id: str, client_id: str, user_message: str, chat_id: str) -> str:
+    async def get_response(self, business_id: str, client_id: str, user_message: str, chat_id: str, business_obj: BusinessProfile = None) -> Tuple[str, List[str]]:
         """Main entry point to run the agent with ReAct and Persistence."""
         try:
             # 1. Load context from Redis
@@ -267,7 +276,7 @@ class AgenticOrchestrator:
                 await checkpointer.setup()
                 
                 # 2. Setup the Graph
-                app = await self._setup_graph(business_id, client_id, chat_id, active_store_id, checkpointer)
+                app = await self._setup_graph(business_id, client_id, chat_id, active_store_id, checkpointer, business_obj=business_obj)
                 
                 # 3. Configure Thread for persistence
                 config = {"configurable": {"thread_id": chat_id}}
@@ -329,7 +338,8 @@ class AgenticOrchestrator:
                             logger.info(f"Context shift detected in LangGraph. Updating Redis to {new_sid}")
                             await self.memory.update_metadata(chat_id, {"active_store_id": new_sid})
 
-            return response_text, " | ".join(reasoning_trace)
+            reasoning_str = " | ".join(reasoning_trace) if reasoning_trace else "Respuesta conversacional directa (sin llamadas a herramientas)."
+            return response_text, reasoning_str
         except Exception as e:
             logger.error(f"AgenticOrchestrator failed: {e}")
             traceback.print_exc()

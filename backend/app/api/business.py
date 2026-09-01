@@ -461,7 +461,8 @@ async def test_chat(
         response, _ = await qualifier.get_response(
             business_id=business.id,
             sender_phone=test_phone,
-            user_message=payload.message
+            user_message=payload.message,
+            business_obj=business
         )
     elif simulate_role == "distributor_retailer":
         from sqlalchemy.orm import selectinload
@@ -642,6 +643,12 @@ async def update_assistant_me(
         await db.flush()
         await db.refresh(business, attribute_names=["agents"])
     
+    if agent_in.custom_instructions is not None:
+        from app.services.instruction_validator import InstructionValidator
+        is_valid, err_msg = InstructionValidator.validate_instructions(agent_in.custom_instructions)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=err_msg)
+            
     update_data = agent_in.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(business.assistant_config, field, value)

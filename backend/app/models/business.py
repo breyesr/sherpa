@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Enum, Integer
+from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Enum, Integer, Text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from uuid_extensions import uuid7str
@@ -74,6 +74,7 @@ class Agent(Base):
     personalized_greeting = Column(String, nullable=False, default="Hola {name}, ¿en qué puedo ayudarte hoy?")
     logic_template = Column(String, nullable=False, default="standard") # standard, custom_steps
     custom_steps = Column(String, nullable=True) # JSON or markdown string of steps
+    custom_instructions = Column(Text, nullable=True) # Custom advisory instructions from business owner
     
     # Behavioral Toggles (Instruction Assembler)
     require_reason = Column(Boolean, default=True)

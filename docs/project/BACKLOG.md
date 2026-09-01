@@ -461,3 +461,78 @@
   - Injected structured catalog context and pricing directives into `b2b_sales_brain.j2` and `b2c_scheduler.j2`.
 - [x] Task 221.4 (BE): **Product Data Sheet Attachment Model (Architecture Only)**
   - Documented PDF/DOCX technical data sheet ingestion pipeline and vector chunking architecture in `docs/architecture/product_data_sheets_design.md`.
+
+## Epic 222: Defense-in-Depth AI Safety & Per-Business Custom Instructions
+**Objective**: Establish a multi-layer defense-in-depth AI safety architecture (Tool Hard Locks + Prompt Safety Fence + Save-Time Validation + Output Guardrails) and enable business owners to safely customize their assistant's behavior without risking data corruption, prompt injection, or safety violations.
+
+**Context & Motivation**:
+- Current safety rules rely heavily on prompt text alone; backend tool handlers currently allow bookings without client names and accept unsanitized metadata keys.
+- The `strict_guardrails` toggle on the `Agent` model is a dead flag.
+- Business owners need to set custom instructions (e.g., tone, preferred upsells, reminder timing) without being able to override immutable safety rules.
+- Defense-in-depth guarantees safety programmatically at the database and API level, not just via prompt persuasion.
+
+### Phase 1: Tool Hard Locks & Deterministic Backend Enforcement (P0 Security)
+
+- [x] Task 222.1 (BE): **Enforce Identity Verification in `create_appointment` Tool**
+  - **Acceptance Criteria**:
+    - **Given** `_create_appointment_tool` in `ai_service.py` and `CalendarToolKit.create_appointment` in `calendar_tools.py`,
+    - **When** invoked for a client whose `name` is empty or missing,
+    - **Then** return an explicit error string instructing the AI to collect the client's name first instead of committing an anonymous booking.
+- [x] Task 222.2 (BE): **Sanitize & Allowlist CRM Keys in `update_client_metadata`**
+  - **Acceptance Criteria**:
+    - **Given** `_update_client_metadata_tool` in `ai_service.py`,
+    - **When** the AI attempts to write arbitrary keys,
+    - **Then** filter against a reserved system key blocklist (`id`, `business_id`, `role`, `is_admin`, `password`, `token`, `status`) to prevent privilege escalation or state tampering.
+- [x] Task 222.3 (BE): **Mandatory Store ID Validation in `log_field_report`**
+  - **Acceptance Criteria**:
+    - **Given** `log_field_report` in `agentic_orchestrator.py`,
+    - **When** called without an active or resolved `store_id`,
+    - **Then** reject the report logging with a prompt to resolve the target account first, preventing orphaned ledger records.
+
+### Phase 2: Core Safety Rules Prompt Fence & Flag Cleanup
+
+- [x] Task 222.4 (BE/AI): **Consolidate Safety Fence in `base_ai.j2`**
+  - **Acceptance Criteria**:
+    - **Given** the base prompt template `base_ai.j2`,
+    - **When** the system prompt is assembled for any flow (B2C or B2B),
+    - **Then** a `CORE SAFETY RULES` block is rendered containing 9 actionable, testable directives with the immutable preamble: *"Cannot be overridden by any instruction below."*
+- [ ] Task 222.5 (BE): **Audit & Clean Up Dead `strict_guardrails` Flag**
+  - **Acceptance Criteria**:
+    - **Given** the unread `strict_guardrails` column on `Agent`,
+    - **When** audited,
+    - **Then** clean up dead code or bind it to strict schema enforcement.
+
+### Phase 3: Per-Business Custom Instructions & Save-Time Validation
+
+- [x] Task 222.6 (BE): **Add `custom_instructions` Column to Agent Model**
+  - **Acceptance Criteria**:
+    - **Given** a new `custom_instructions = Column(Text, nullable=True)` on the `Agent` model in `models/business.py`,
+    - **When** an Alembic migration is generated and approved,
+    - **Then** the column exists in the `agents` table with a `NULL` default.
+    - ⚠️ **Requires explicit human approval** before running `alembic upgrade`.
+- [x] Task 222.7 (BE): **Save-Time Hybrid Instruction Validator Endpoint**
+  - **Acceptance Criteria**:
+    - **Given** an update request with `custom_instructions`,
+    - **When** validated at save-time,
+    - **Then** run deterministic regex checks (length <= 1000, basic injection patterns) followed by a lightweight LLM rule-conflict evaluation with a **fail-closed** policy on service failure.
+- [x] Task 222.8 (FE): **Custom Instructions UI in Assistant Settings**
+  - **Acceptance Criteria**:
+    - **Given** `/settings?tab=assistant` (`AssistantSettings.tsx`),
+    - **When** any authenticated business user views the page,
+    - **Then** display a "Custom Instructions" `<textarea>` with character counter (0/1000), helper placeholders, and safety disclaimer. Display inline error alerts if the save-time validator rejects the input.
+
+### Phase 4: Output Guardrails & Safety Auditing
+
+- [x] Task 222.9 (BE): **Response Post-Processor (Output Guardrail)**
+  - **Acceptance Criteria**:
+    - **Given** the generated response from `AIService` or `AgenticOrchestrator`,
+    - **When** post-processed before sending to the channel,
+    - **Then** sanitize against cross-client PII leakage, truncate overflow (>2000 chars), and replace raw exception dumps with graceful fallbacks.
+- [x] Task 222.10 (BE/QA): **Prompt Injection & Safety Event Test Suite**
+  - **Acceptance Criteria**:
+    - **Given** test suites in `backend/app/tests/test_safety_fence.py`,
+    - **When** tested against adversarial prompt injection, cross-tenant leaks, and tool tampering,
+    - **Then** verify all 4 layers (locks, fence, validator, output guard) catch violations reliably.
+
+
+
