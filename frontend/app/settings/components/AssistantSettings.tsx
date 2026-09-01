@@ -312,27 +312,27 @@ export default function AssistantSettings({ business, user, token, onMessage, on
                     </label>
                   </div>
                 </div>
-
-                {/* Pricing & Catalog Disclosure Policy (Epic 220) */}
-                <div className="space-y-4 col-span-1 md:col-span-2 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mt-2">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Pricing & Catalog Policy</h3>
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input 
-                      type="checkbox"
-                      checked={editAssistant.allow_price_disclosure}
-                      onChange={e => setEditAssistant({...editAssistant, allow_price_disclosure: e.target.checked})}
-                      className="w-5 h-5 mt-0.5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Disclose Product Pricing</span>
-                      <span className="text-xs text-gray-500 font-medium mt-0.5">
-                        When enabled, the AI assistant can state catalog prices when asked. When disabled, the assistant will direct users to contact your sales team for pricing. (Note: The assistant will never negotiate or debate prices).
-                      </span>
-                    </div>
-                  </label>
-                </div>
               </>
             )}
+
+            {/* Pricing & Catalog Disclosure Policy (Epic 220) - Visible to all businesses */}
+            <div className="space-y-4 col-span-1 md:col-span-2 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mt-2">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Pricing & Catalog Policy</h3>
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox"
+                  checked={editAssistant.allow_price_disclosure}
+                  onChange={e => setEditAssistant({...editAssistant, allow_price_disclosure: e.target.checked})}
+                  className="w-5 h-5 mt-0.5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600 transition-colors">Disclose Product Pricing</span>
+                  <span className="text-xs text-gray-500 font-medium mt-0.5">
+                    When enabled, the AI assistant can state catalog prices when asked. When disabled, the assistant will direct users to contact your sales team for pricing. (Note: The assistant will never negotiate or debate prices).
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
           <div className="flex justify-end pt-4">
             <button 
