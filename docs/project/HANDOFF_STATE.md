@@ -1,7 +1,7 @@
 # Handoff State: 2026-08-31 (Epic 219, Epic 220, and Epic 221 Completed)
 
 ## Current Branch
-`feature/ai/epic-221-catalog-intelligence`
+`main` (Production) / `staging`
 
 ## Accomplishments This Session
 1. **Epic 219 (Extensible Product Catalog Fields & B2C UX Alignment)**:
@@ -20,5 +20,6 @@
    - Documented technical data sheet ingestion and vector chunking design in [`docs/architecture/product_data_sheets_design.md`](docs/architecture/product_data_sheets_design.md).
    - Added unit test suite in [`backend/app/tests/test_catalog_context.py`](backend/app/tests/test_catalog_context.py) (3/3 passing, full test suite 75/75 passing).
 
-## Next Steps
-- Review with user and merge `feature/ai/epic-221-catalog-intelligence` into `staging`.
+## Deployment Status
+- Merged into `staging` and fast-forward merged to `main` (`8393c91`).
+- Railway auto-deploy triggered for production services (`sherpa`, `worker`, `web`).
