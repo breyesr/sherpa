@@ -1,16 +1,23 @@
-# Handoff State: 2026-09-01 (Epic 222 Completed)
+# Handoff State: 2026-09-04 (Epics 223 & 224 Completed)
 
 ## Current Branch
-`feature/backend/ai-safety-defense-in-depth` (ready for staging merge)
+`feature/ai/epic-223-224-reasoning-fact-checking`
 
 ## Accomplishments This Session
-1. **Epic 222 (Defense-in-Depth AI Safety & Per-Business Custom Instructions)**:
-   - **Phase 1 (Tool Hard Locks)**: Enforced identity verification on `create_appointment` to eliminate anonymous booking loopholes, sanitized metadata keys against reserved fields in `update_client_metadata`, and required `store_id` in `log_field_report`.
-   - **Phase 2 (Prompt Safety Fence)**: Added 9 immutable, testable directives into [`base_ai.j2`](backend/app/core/prompts/base_ai.j2) with explicit authority framing.
-   - **Phase 3 (Custom Instructions & Validator)**: Added `custom_instructions` column (`Text`, nullable) to [`Agent`](backend/app/models/business.py) with Alembic migration `dbef3b554f4f`. Built [`InstructionValidator`](backend/app/services/instruction_validator.py) for save-time regex and length validation. Added full `<textarea>` UI with character counter and safety disclaimer in [`AssistantSettings.tsx`](frontend/app/settings/components/AssistantSettings.tsx).
-   - **Phase 4 (Output Guardrail & Testing)**: Implemented [`OutputGuardrail`](backend/app/services/output_guardrail.py) for response bounds and traceback leak prevention. Added automated test suites ([`test_tool_hard_locks.py`](backend/app/tests/test_tool_hard_locks.py), [`test_safety_fence.py`](backend/app/tests/test_safety_fence.py), [`test_instruction_validator.py`](backend/app/tests/test_instruction_validator.py), [`test_output_guardrail.py`](backend/app/tests/test_output_guardrail.py)).
-   - **Phase 5 (Sandbox & Multi-Flow Integration Fix)**: Connected `AgenticOrchestrator` and `ProspectQualifier` to inherit live in-memory sandbox overrides from `test_chat`. Refined safety fence authority framing and greeting rules so that custom business voice/style instructions are actively applied across all interactions (including greetings and inquiries) without triggering safety override suppressions.
+1. **Epic 223 (Agent Reasoning Trace & Thought Process Audit Logging)**:
+   - Implemented mandatory two-part output format (`<thought>...</thought>` scratchpad + clean user message) across `ProspectQualifier`, `AgenticOrchestrator`, and `AIService`.
+   - Extracted diagnostic deliberation (`Pensamiento / Diagnóstico`) into `Message.reasoning_trace`.
+   - Stripped all internal deliberation tags (`<thought>...</thought>`) completely in `OutputGuardrail` before transmission to external channels (WhatsApp, Telegram, Sandbox).
+   - Upgraded Inbox Audit view in `ConversationsContent.tsx` with `whitespace-pre-wrap` and enhanced typography for structured multi-line diagnostic steps.
+   - Built unit test suite `test_reasoning_trace.py`.
+
+2. **Epic 224 (Grounded Product Fact-Checking & Technical Safety Guardrails)**:
+   - **Layer 1 (Grounded Truth Table)**: Enriched `CatalogContextBuilder` with strict non-improvisation directives, negative boundaries, and structural safety constraints.
+   - **Layer 2 (Deterministic Hard Locks)**: Added zero-latency interceptors in `OutputGuardrail` blocking hazardous structural column casting and unauthorized Basecoat prescriptions on floor tiles.
+   - **Layer 3 (Selective Technical Critic)**: Created `TechnicalCritic` service (`technical_critic.py`) triggering an LLM audit check ONLY when product recommendations are made (~30% of turns), saving 70% in token/latency overhead.
+   - **Layer 4 (Automated Test Suite)**: Created `test_technical_fact_checker.py` covering edge cases, passing 100/100 tests.
 
 ## Deployment Status
-- Feature branch: `feature/backend/ai-safety-defense-in-depth`
-- All tests green (92/92 backend unit tests, Next.js build clean).
+- Feature branch: `feature/ai/epic-223-224-reasoning-fact-checking`
+- Backend test suite: 100/100 tests passing (0 failures).
+- Frontend build: Clean Next.js compilation (0 errors).

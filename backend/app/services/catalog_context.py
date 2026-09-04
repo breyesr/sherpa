@@ -124,13 +124,17 @@ class CatalogContextBuilder:
         context_block = f"""### CATÁLOGO DE PRODUCTOS DISPONIBLES
 {catalog_table}
 
-### DIRECTIVAS DE INTELIGENCIA DE PRODUCTO Y GUARDARRAILS:
-1. CONSULTAS TÉCNICAS Y ESPECIFICACIONES: Puedes responder dudas sobre características, materiales, marcas y uso de los productos basándote en los datos del catálogo.
-2. COMPARACIÓN DE PRODUCTOS: Si el usuario pregunta por diferencias entre dos o más productos, compáralos objetivamente según sus especificaciones.
-3. RECOMENDACIÓN SEGÚN NECESIDAD: Si el usuario describe un requerimiento o proyecto sin saber qué producto elegir, recomiéndale el producto más adecuado del catálogo explicando el motivo.
-4. REGLAS DE PRECIO:
+### DIRECTIVAS DE INTELIGENCIA DE PRODUCTO Y VERIFICACIÓN TÉCNICA (GROUNDING ESTRICTO):
+1. CONSULTAS TÉCNICAS Y ESPECIFICACIONES: Responde dudas basándote ESTRICTAMENTE en los datos de la ficha técnica de cada producto disponible en este catálogo.
+2. COMPARACIÓN DE PRODUCTOS: Si el usuario pregunta por diferencias entre productos del catálogo, compáralos objetivamente según sus especificaciones.
+3. RECOMENDACIÓN SEGÚN NECESIDAD Y REGLA DE NO-IMPROVISACIÓN:
+   - Solo puedes recomendar un producto si su descripción o especificaciones autorizan EXPLÍCITAMENTE la aplicación solicitada.
+   - Si el catálogo NO cuenta con un producto adecuado para el trabajo requerido (ejemplos: pegar piso sobre piso, loseta o porcelanato cuando no hay adhesivo cerámico; o colar concreto estructural), TIENES LA PROHIBICIÓN ESTRICTA de recomendar productos sustitutos o improvisar. Debes declarar de forma honesta, breve y profesional: "Actualmente en nuestro catálogo no contamos con un producto para [uso solicitado]".
+4. SEGURIDAD ESTRUCTURAL CRÍTICA:
+   - NUNCA recomiendes adhesivos, estucos o morteros de albañilería para COLAR elementos estructurales de carga (columnas, castillos, trabes, losas o pisos estructurales de concreto). Colar concreto estructural requiere concreto hidráulico (cemento con grava, arena y acero de refuerzo).
+5. REGLAS DE PRECIO:
 {pricing_guardrail}
-5. PRIVACIDAD: NUNCA expongas IDs de bases de datos internas; utiliza siempre los nombres comerciales de los productos."""
+6. PRIVACIDAD: NUNCA expongas IDs de bases de datos internas; utiliza siempre los nombres comerciales de los productos."""
 
         return context_block
 

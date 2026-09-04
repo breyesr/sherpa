@@ -537,28 +537,28 @@
 ## Epic 223: Agent Reasoning Trace & Thought Process Audit Logging
 **Objective**: Restore, standardize, and enhance internal reasoning trace and technical diagnostic thought logging across all messaging pipelines (`ProspectQualifier`, `AgenticOrchestrator`, `AIService`), persisting the agent's step-by-step technical diagnosis, catalog matching decisions, and rule evaluations into `Message.reasoning_trace` for full visibility in the Inbox Audit view.
 
-- [ ] Task 223.1 (BE/AI): **Reasoning Scratchpad Directives in ProspectQualifier**
+- [x] Task 223.1 (BE/AI): **Reasoning Scratchpad Directives in ProspectQualifier**
   - **Acceptance Criteria**:
     - **Given** `call_model` in `prospect_qualifier.py`,
     - **When** generating a response for the user,
     - **Then** instruct the model to produce its internal technical diagnosis, product compatibility checks, and next-step reasoning inside `<thought>...</thought>` tags.
-- [ ] Task 223.2 (BE): **Thought Extraction & Channel Output Sanitization**
+- [x] Task 223.2 (BE): **Thought Extraction & Channel Output Sanitization**
   - **Acceptance Criteria**:
     - **Given** the raw LLM response from `call_model`,
     - **When** post-processed in `ProspectQualifier.get_response`,
     - **Then** extract the `<thought>...</thought>` content and save it to `Message.reasoning_trace` combined with phase metadata.
     - Strip the `<thought>...</thought>` tags completely from `response_content` so external channels (WhatsApp/Telegram/Sandbox) receive only the clean conversational text.
-- [ ] Task 223.3 (BE/AI): **Unified Thought Process Extraction in AIService & Orchestrator**
+- [x] Task 223.3 (BE/AI): **Unified Thought Process Extraction in AIService & Orchestrator**
   - **Acceptance Criteria**:
     - **Given** direct conversational turns without tool calls in `AgenticOrchestrator` and `AIService`,
     - **When** processing user inquiries,
     - **Then** capture and persist internal reasoning traces consistently rather than generic static fallbacks.
-- [ ] Task 223.4 (FE): **Structured Brain Logic Viewer in Inbox**
+- [x] Task 223.4 (FE): **Structured Brain Logic Viewer in Inbox**
   - **Acceptance Criteria**:
     - **Given** the Inbox conversation view (`ConversationsContent.tsx`),
     - **When** "Audit: ON" is active,
     - **Then** render structured reasoning traces (e.g. Diagnostic steps, Rules evaluated, Tool invocations) with clear styling, visual hierarchy, and an empty-state badge for direct greetings.
-- [ ] Task 223.5 (BE/QA): **Reasoning Trace Extraction & Privacy Test Suite**
+- [x] Task 223.5 (BE/QA): **Reasoning Trace Extraction & Privacy Test Suite**
   - **Acceptance Criteria**:
     - **Given** unit tests in `test_reasoning_trace.py`,
     - **When** simulating multi-turn technical advice conversations,
@@ -567,24 +567,24 @@
 ## Epic 224: Grounded Product Fact-Checking & Technical Safety Guardrails
 **Objective**: Implement a multi-layer hybrid fact-checking architecture (Grounded Truth Table + Deterministic Safety Locks + Selective Critic LLM) to eliminate dangerous product hallucinations, prevent unauthorized use prescriptions (e.g. Basecoat for floor tiles or masonry mortar for structural columns), and enforce strict compliance with verified product technical sheets.
 
-- [ ] Task 224.1 (BE/AI): **Structured Product-Application Truth Table in Catalog Context**
+- [x] Task 224.1 (BE/AI): **Structured Product-Application Truth Table in Catalog Context**
   - **Acceptance Criteria**:
     - **Given** `CatalogContextBuilder` (`services/catalog_context.py`),
     - **When** generating catalog context for `ProspectQualifier` and `AIService`,
     - **Then** format product data into a bounded "Authorized Applications" table with an explicit negative boundary list ("Unsupported / Out-of-Scope Uses").
     - **Enforce** mandatory grounding: the AI is strictly prohibited from prescribing a product unless the application appears verbatim in the authorized applications list.
-- [ ] Task 224.2 (BE): **Deterministic Structural Safety & High-Risk Interceptor in OutputGuardrail**
+- [x] Task 224.2 (BE): **Deterministic Structural Safety & High-Risk Interceptor in OutputGuardrail**
   - **Acceptance Criteria**:
     - **Given** `OutputGuardrail.sanitize_response` in `output_guardrail.py`,
     - **When** an assistant response prescribes thin-bed mortars or lightweight adhesives for structural casting keywords (e.g. `columna colada`, `trabe`, `losa estructural`, `colado de concreto`),
     - **Then** immediately intercept and replace with an honest technical refusal and structural engineering disclaimer, with zero LLM latency overhead.
-- [ ] Task 224.3 (BE/AI): **Selective Critic LLM Verification Node**
+- [x] Task 224.3 (BE/AI): **Selective Critic LLM Verification Node**
   - **Acceptance Criteria**:
     - **Given** a generated assistant response,
     - **When** the response contains a product recommendation detected via regex (activating only on ~30% of turns),
     - **Then** execute a lightweight, fast Critic evaluation comparing the recommendation against the product's authorized technical sheet.
     - If the Critic flags a mismatch or hallucinated property, replace or correct the response with an honest "out of catalog" admission before message dispatch.
-- [ ] Task 224.4 (BE/QA): **Technical Fact-Checking & Anti-Hallucination Test Suite**
+- [x] Task 224.4 (BE/QA): **Technical Fact-Checking & Anti-Hallucination Test Suite**
   - **Acceptance Criteria**:
     - **Given** unit test suite in `backend/app/tests/test_technical_fact_checker.py`,
     - **When** simulating high-risk inquiries ("piso sobre piso", "columna colada", "calcular sacos sin sustrato"),

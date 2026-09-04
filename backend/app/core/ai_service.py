@@ -357,14 +357,20 @@ class AIService:
                 response_text = await self._get_llm_response(system_prompt, user_message, identifier, history)
             except Exception as e:
                 logger.critical("Generation Stage Failed: %s", e)
-                return "I'm having trouble thinking right now. My AI provider might be busy or misconfigured. Please try again later."
+            # Extract internal thought deliberation
+            extracted_thought = None
+            thought_match = re.search(r"<thought>(.*?)</thought>", response_text, re.DOTALL | re.IGNORECASE)
+            if thought_match:
+                extracted_thought = thought_match.group(1).strip()
+                response_text = re.sub(r"<thought>.*?</thought>", "", response_text, flags=re.DOTALL | re.IGNORECASE).strip()
 
             # 5. Output Guardrail & Response Hand-off
             from app.services.output_guardrail import OutputGuardrail
             response_text = OutputGuardrail.sanitize_response(response_text)
 
             # Persist AI response to DB
-            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text, reasoning_trace=b2b_reasoning)
+            final_reasoning = b2b_reasoning or (f"Pensamiento / Diagnóstico:\n{extracted_thought}" if extracted_thought else "Respuesta directa de asistencia.")
+            ai_msg_obj = Message(conversation_id=conv.id, role="assistant", content=response_text, reasoning_trace=final_reasoning)
             self.db.add(ai_msg_obj)
             conv.last_message_at = datetime.utcnow()
             await self.db.commit()
