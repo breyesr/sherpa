@@ -5,6 +5,7 @@ Routes inbound messages through the LangGraph-based multi-agent pipeline for sto
 
 import os
 import json
+import re
 import traceback
 import asyncio
 from typing import Dict, Any, List, Optional, Union, Tuple
@@ -324,7 +325,13 @@ class AgenticOrchestrator:
                             reasoning_trace.append(f"Pensamiento: Necesito usar {tc['name']} con {tc['args']}")
                     
                     if msg.content:
-                        response_text = msg.content
+                        thought_match = re.search(r"<thought>(.*?)</thought>", msg.content, re.DOTALL | re.IGNORECASE)
+                        if thought_match:
+                            extracted_t = thought_match.group(1).strip()
+                            reasoning_trace.insert(0, f"Pensamiento / Diagnóstico:\n{extracted_t}")
+                            response_text = re.sub(r"<thought>.*?</thought>", "", msg.content, flags=re.DOTALL | re.IGNORECASE).strip()
+                        else:
+                            response_text = msg.content
                 elif isinstance(msg, ToolMessage):
                     reasoning_trace.append(f"Resultado de herramienta [{msg.name}]: {msg.content[:200]}...")
 

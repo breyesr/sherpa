@@ -1,5 +1,16 @@
 # Handoff Log
 
+- **2026-09-04 (Epics 223 & 224: Reasoning Trace Audit & Grounded Fact-Checking Guardrails)**: Implemented end-to-end thought process capture for Inbox audit visibility, and built the 4-layer hybrid technical fact-checking architecture eliminating product hallucinations and structural safety hazards.
+  - **Backend (`services/prospect_qualifier.py`, `services/catalog_context.py`, `services/output_guardrail.py`, `services/technical_critic.py`, `services/agentic_orchestrator.py`, `core/ai_service.py`)**:
+    - **Epic 223**: Mandated two-part response structure (`<thought>...</thought>` scratchpad + clean user message) across `ProspectQualifier`, `AgenticOrchestrator`, and `AIService`. Extracted thought deliberation into `Message.reasoning_trace` while stripping deliberation tags completely before outbound transmission.
+    - **Epic 224 Layer 1**: Upgraded `CatalogContextBuilder` with grounded truth tables, strict non-improvisation directives, and negative application boundaries.
+    - **Epic 224 Layer 2**: Built deterministic 0ms safety interceptors in `OutputGuardrail` blocking structural casting prescriptions with thin-bed mortars/adhesives, and unauthorized Basecoat prescriptions on floor tiles.
+    - **Epic 224 Layer 3**: Created `TechnicalCritic` service running selective LLM audits only when product recommendations are detected (~30% of turns).
+    - **Epic 224 Task 224.5**: Hardened all prompt templates, `TechnicalCritic`, and `OutputGuardrail` against hypothetical forcing and "choose the closest product" prompts, while strictly decoupling commercial closing (no quantity questions when products are rejected).
+    - **Test Suite**: Created `test_reasoning_trace.py` and `test_technical_fact_checker.py`. Test suite expanded from 92 to 102 tests (100% passing).
+  - **Frontend (`ConversationsContent.tsx`)**:
+    - Upgraded Inbox Brain Logic / Audit Trace view with `whitespace-pre-wrap` and enhanced typography for structured multi-line diagnostic steps. Clean build (`npm run build`).
+
 - **2026-09-01 (Epic 222 Defense-in-Depth AI Safety, Custom Instructions & Multi-Engine Integration)**: Implemented 4-layer defense-in-depth safety architecture, per-business custom instructions on Agent model, save-time regex and length validation, output guardrails, and unified multi-flow sandbox injection.
   - **Backend**:
     - Added `custom_instructions` (`Text`, nullable) to `Agent` model with Alembic migration `dbef3b554f4f`.
