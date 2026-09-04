@@ -67,3 +67,31 @@ def test_technical_critic_trigger_detection():
     assert TechnicalCritic.is_recommendation("Hola, ¿en qué dirección se encuentra la obra?") is False
     assert TechnicalCritic.is_recommendation("Por favor indícame tu código postal de 5 dígitos.") is False
     assert TechnicalCritic.is_recommendation("¿Cuántos sacos necesitas?") is False
+
+
+def test_guardrail_intercepts_constructor_for_cement_boards():
+    """Verify that masonry mortar is strictly blocked from cement board / panel adhesion."""
+    coerced_response = (
+        "Para pegar placas de cemento sobre un muro de block exterior, el Cement Bond Constructor "
+        "sería la mejor opción ya que está diseñado para la adhesión de placas."
+    )
+    sanitized = OutputGuardrail.sanitize_response(coerced_response)
+    assert "Aviso Técnico" in sanitized
+    assert "NO está formulado ni certificado para adherir placas o paneles de cemento" in sanitized
+
+
+def test_catalog_context_anti_hypothetical_and_commercial_decoupling():
+    """Verify that anti-hypothetical forcing and commercial decoupling directives are injected."""
+    prod = Product(
+        name="Cement Bond Constructor",
+        brand="Cemenquin",
+        description="Mortero de albañilería.",
+        wholesale_threshold=50,
+        price=150.0,
+    )
+    context = CatalogContextBuilder.build_catalog_context([prod], allow_price_disclosure=True)
+
+    assert "PROHIBICIÓN ESTRICTA DE PREGUNTAS HIPOTÉTICAS O \"EL MÁS CERCANO\"" in context
+    assert "DESACOPLAMIENTO COMERCIAL ANTE NEGATIVAS" in context
+    assert "TIENES LA PROHIBICIÓN ESTRICTA de preguntar cantidades" in context
+

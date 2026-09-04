@@ -34,6 +34,12 @@ FLOOR_TILING_BASECOAT_PATTERN = re.compile(
     re.IGNORECASE
 )
 
+# Pattern for unauthorized masonry mortar on cement boards / lightweight panels (Task 224.5)
+MASONRY_MORTAR_FOR_BOARDS_PATTERN = re.compile(
+    r"\b(constructor|cement\s*bond\s*constructor)\b.*?\b(placas?\s+de\s+cemento|paneles?\s+de\s+cemento|durock|permabase)\b|\b(placas?\s+de\s+cemento|paneles?\s+de\s+cemento|durock|permabase)\b.*?\b(constructor|cement\s*bond\s*constructor)\b",
+    re.IGNORECASE
+)
+
 MAX_OUTPUT_LENGTH = 3000
 
 
@@ -85,6 +91,16 @@ class OutputGuardrail:
                 "de yeso, fibrocemento y poliestireno en sistemas ligeros y fachadas (EIFS); NO es apto para "
                 "pegar piso sobre piso, azulejos ni pisos cerámicos. Actualmente no contamos con un adhesivo "
                 "para piso sobre piso en este catálogo. Te sugerimos consultar con un distribuidor autorizado."
+            )
+
+        # 5. Deterministic Catalog Hard Lock: Masonry Mortar for Cement Boards (Task 224.5)
+        if MASONRY_MORTAR_FOR_BOARDS_PATTERN.search(text):
+            logger.warning("Output guardrail intercepted Constructor prescription for cement boards.")
+            return (
+                "Aviso Técnico: El producto Cement Bond Constructor es un mortero formulado exclusivamente "
+                "para el junteo y pegado de piezas de mampostería (block, ladrillo y tabique). NO está formulado "
+                "ni certificado para adherir placas o paneles de cemento en muros. Actualmente no contamos con un "
+                "producto para esa aplicación en este catálogo. Te sugerimos consultar a un especialista."
             )
 
         return text

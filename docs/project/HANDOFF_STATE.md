@@ -15,9 +15,10 @@
    - **Layer 1 (Grounded Truth Table)**: Enriched `CatalogContextBuilder` with strict non-improvisation directives, negative boundaries, and structural safety constraints.
    - **Layer 2 (Deterministic Hard Locks)**: Added zero-latency interceptors in `OutputGuardrail` blocking hazardous structural column casting and unauthorized Basecoat prescriptions on floor tiles.
    - **Layer 3 (Selective Technical Critic)**: Created `TechnicalCritic` service (`technical_critic.py`) triggering an LLM audit check ONLY when product recommendations are made (~30% of turns), saving 70% in token/latency overhead.
-   - **Layer 4 (Automated Test Suite)**: Created `test_technical_fact_checker.py` covering edge cases, passing 100/100 tests.
+   - **Layer 4 (Automated Test Suite)**: Created `test_technical_fact_checker.py` covering edge cases, passing 102/102 tests.
+   - **Task 224.5 (Anti-Coercion & Hypothetical Forcing Hardening)**: Hardened `CatalogContextBuilder`, `ProspectQualifier`, `TechnicalCritic`, and `OutputGuardrail` against persuasion tactics (e.g. "si tuvieras que elegir entre A, B y C... cuál es el más cercano"). Enforced strict commercial decoupling (prohibits quantity inquiries when recommending against products).
 
 ## Deployment Status
 - Feature branch: `feature/ai/epic-223-224-reasoning-fact-checking`
-- Backend test suite: 100/100 tests passing (0 failures).
+- Backend test suite: 102/102 tests passing (0 failures).
 - Frontend build: Clean Next.js compilation (0 errors).

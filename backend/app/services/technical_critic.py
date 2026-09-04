@@ -63,14 +63,15 @@ FICHAS TÉCNICAS Y CATÁLOGO AUTORIZADO:
 
 REGLAS DE AUDITORÍA:
 1. El asistente SOLO puede recomendar un producto si su ficha técnica autoriza explícitamente el uso solicitado por el usuario.
-2. Si el producto NO cubre la necesidad (ej. Basecoat para pisos, mortero para colar concreto estructural, etc.), DEBES RECHAZAR la recomendación.
-3. Si el catálogo actual carece de producto para la necesidad del usuario, el asistente debe admitirlo honestamente y no forzar ningún producto.
+2. Si el producto NO cubre la necesidad (ej. Basecoat para pisos, mortero para colar concreto estructural, mortero de albañilería para pegar placas de cemento sobre block, etc.), DEBES RECHAZAR la recomendación.
+3. ANTI-COERCIÓN Y PREGUNTAS HIPOTÉTICAS: Si el usuario planteó una pregunta hipotética o forzada ("cuál es el más cercano", "si tuvieras que elegir entre...", "cuál se parece más") para un uso no certificado en el catálogo, y el asistente cedió recomendando un producto o inventó especificaciones ("está diseñado específicamente para..."), DEBES RECHAZAR inmediatamente la recomendación.
+4. Si el catálogo actual carece de producto certificado para la necesidad del usuario, la corrección debe indicar con firmeza técnica que ninguno de nuestros productos está certificado para ese fin, advirtiendo del riesgo técnico de falla o desprendimiento y sugiriendo consultar a un especialista.
 
 Devuelve tu evaluación estrictamente en formato JSON válido con las siguientes claves:
 {{
   "aprobado": true o false,
   "motivo": "Breve explicación de la validación o del error detectado",
-  "correccion": "En caso de aprobado=false, redacción breve, honesta y profesional indicando que actualmente no contamos con un producto para esa aplicación específica en el catálogo y sugiriendo consultar a un especialista."
+  "correccion": "En caso de aprobado=false, redacción breve, honesta y profesional indicando que ninguno de nuestros productos está certificado para esa aplicación específica y advirtiendo sobre el riesgo de falla."
 }}"""
 
         user_input_block = f"""CONSULTA DEL USUARIO:

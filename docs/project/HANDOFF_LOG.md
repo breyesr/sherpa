@@ -6,7 +6,8 @@
     - **Epic 224 Layer 1**: Upgraded `CatalogContextBuilder` with grounded truth tables, strict non-improvisation directives, and negative application boundaries.
     - **Epic 224 Layer 2**: Built deterministic 0ms safety interceptors in `OutputGuardrail` blocking structural casting prescriptions with thin-bed mortars/adhesives, and unauthorized Basecoat prescriptions on floor tiles.
     - **Epic 224 Layer 3**: Created `TechnicalCritic` service running selective LLM audits only when product recommendations are detected (~30% of turns).
-    - **Test Suite**: Created `test_reasoning_trace.py` and `test_technical_fact_checker.py`. Test suite expanded from 92 to 100 tests (100% passing).
+    - **Epic 224 Task 224.5**: Hardened all prompt templates, `TechnicalCritic`, and `OutputGuardrail` against hypothetical forcing and "choose the closest product" prompts, while strictly decoupling commercial closing (no quantity questions when products are rejected).
+    - **Test Suite**: Created `test_reasoning_trace.py` and `test_technical_fact_checker.py`. Test suite expanded from 92 to 102 tests (100% passing).
   - **Frontend (`ConversationsContent.tsx`)**:
     - Upgraded Inbox Brain Logic / Audit Trace view with `whitespace-pre-wrap` and enhanced typography for structured multi-line diagnostic steps. Clean build (`npm run build`).
 
