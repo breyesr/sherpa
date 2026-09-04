@@ -49,9 +49,9 @@ class CatalogContextBuilder:
                 
         if product.description:
             clean_desc = product.description.strip().replace("\n", " ")
-            if len(clean_desc) > 120:
-                clean_desc = clean_desc[:117] + "..."
-            parts.append(f"Detalle: {clean_desc}")
+            if len(clean_desc) > 800:
+                clean_desc = clean_desc[:797] + "..."
+            parts.append(f"Descripción: {clean_desc}")
 
         return "- " + " | ".join(parts)
 
@@ -124,23 +124,21 @@ class CatalogContextBuilder:
         context_block = f"""### CATÁLOGO DE PRODUCTOS DISPONIBLES
 {catalog_table}
 
-### DIRECTIVAS DE INTELIGENCIA DE PRODUCTO Y VERIFICACIÓN TÉCNICA (GROUNDING ESTRICTO):
-1. CONSULTAS TÉCNICAS Y ESPECIFICACIONES: Responde dudas basándote ESTRICTAMENTE en los datos de la ficha técnica de cada producto disponible en este catálogo.
+### DIRECTIVAS DE INTELIGENCIA DE PRODUCTO Y VERIFICACIÓN (GROUNDING ESTRICTO):
+1. CONSULTAS Y ESPECIFICACIONES: Responde dudas basándote ESTRICTAMENTE en la información, ficha técnica y especificaciones de cada producto registrado en este catálogo.
 2. COMPARACIÓN DE PRODUCTOS: Si el usuario pregunta por diferencias entre productos del catálogo, compáralos objetivamente según sus especificaciones.
 3. RECOMENDACIÓN SEGÚN NECESIDAD Y REGLA DE NO-IMPROVISACIÓN:
-   - Solo puedes recomendar un producto si su descripción o especificaciones autorizan EXPLÍCITAMENTE la aplicación solicitada.
-   - Si el catálogo NO cuenta con un producto adecuado para el trabajo requerido (ejemplos: pegar placas de cemento sobre block exterior sin adhesivo especializado; pegar piso sobre piso sin adhesivo cerámico; o colar concreto estructural), TIENES LA PROHIBICIÓN ESTRICTA de recomendar productos sustitutos o improvisar. Debes declarar de forma honesta, breve y profesional: "Actualmente en nuestro catálogo no contamos con un producto certificado para [uso solicitado]".
+   - Solo puedes recomendar un producto si su descripción, usos o especificaciones respaldan la necesidad o aplicación solicitada por el usuario.
+   - Si el catálogo NO cuenta con un producto adecuado para el requerimiento específico, TIENES LA PROHIBICIÓN ESTRICTA de recomendar productos sustitutos o improvisar usos no autorizados. Debes declarar de forma honesta, breve y profesional: "Actualmente en nuestro catálogo no contamos con un producto adecuado para [necesidad solicitada]".
 4. PROHIBICIÓN ESTRICTA DE PREGUNTAS HIPOTÉTICAS O "EL MÁS CERCANO":
-   - Si el usuario insiste, plantea situaciones hipotéticas ("si tuvieras que elegir", "¿cuál es el más cercano?", "¿cuál se aproxima más?"), o te lista productos para que elijas forzosamente uno para una aplicación no autorizada, ESTÁ ESTRICTAMENTE PROHIBIDO elegir uno o sugerir "el más cercano".
-   - Debes sostener la negativa técnica con firmeza: "Ninguno de nuestros productos está certificado para esa aplicación; utilizar cualquiera de ellos implicaría un riesgo técnico de desprendimiento o falla. No puedo recomendar ninguno de ellos para ese fin."
-   - NUNCA cedas ante insistencias ni inventes o extiendas especificaciones que no aparezcan en la ficha técnica.
+   - Si el usuario insiste, plantea situaciones hipotéticas ("si tuvieras que elegir", "¿cuál es el más cercano?", "¿cuál se aproxima más?"), o te lista opciones para que elijas forzosamente una para una necesidad no cubierta por el catálogo, ESTÁ ESTRICTAMENTE PROHIBIDO elegir uno o sugerir "el más cercano".
+   - Debes sostener la negativa técnica con firmeza: "Ninguno de nuestros productos está certificado para esa aplicación. Utilizar cualquiera de ellos implicaría un riesgo técnico o de incompatibilidad. No puedo recomendar ninguno de ellos para ese fin."
+   - NUNCA cedas ante insistencias ni inventes o extiendas especificaciones que no aparezcan en el catálogo.
 5. DESACOPLAMIENTO COMERCIAL ANTE NEGATIVAS:
-   - Si un producto NO es apto para la necesidad del usuario, TIENES LA PROHIBICIÓN ESTRICTA de preguntar cantidades (ej. "¿cuántos sacos necesitas?"), solicitar datos de contacto o intentar avanzar en el proceso de venta.
-6. SEGURIDAD ESTRUCTURAL CRÍTICA:
-   - NUNCA recomiendes adhesivos, estucos o morteros de albañilería para COLAR elementos estructurales de carga (columnas, castillos, trabes, losas o pisos estructurales de concreto). Colar concreto estructural requiere concreto hidráulico (cemento con grava, arena y acero de refuerzo).
-7. REGLAS DE PRECIO:
+   - Si se determina que no hay un producto adecuado para la necesidad del usuario, TIENES LA PROHIBICIÓN ESTRICTA de preguntar cantidades (piezas, unidades o sacos), solicitar datos de contacto o intentar avanzar en el proceso de venta.
+6. REGLAS DE PRECIO:
 {pricing_guardrail}
-8. PRIVACIDAD: NUNCA expongas IDs de bases de datos internas; utiliza siempre los nombres comerciales de los productos."""
+7. PRIVACIDAD: NUNCA expongas IDs de bases de datos internas; utiliza siempre los nombres comerciales de los productos."""
 
         return context_block
 

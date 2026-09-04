@@ -55,23 +55,23 @@ class TechnicalCritic:
             logger.warning("TechnicalCritic skipped: OPENAI_API_KEY not configured.")
             return draft_response, None
 
-        system_audit_prompt = f"""Eres el Auditor Técnico de Seguridad y Fact-Checker oficial de la empresa.
-Tu labor es contrastar la recomendación del asistente contra las fichas técnicas autorizadas.
+        system_audit_prompt = f"""Eres el Auditor de Calidad y Fact-Checker oficial del catálogo de la empresa.
+Tu labor es verificar objetivamente si la recomendación del asistente está respaldada por la información del catálogo.
 
-FICHAS TÉCNICAS Y CATÁLOGO AUTORIZADO:
+CATÁLOGO AUTORIZADO DE LA EMPRESA:
 {catalog_context}
 
-REGLAS DE AUDITORÍA:
-1. El asistente SOLO puede recomendar un producto si su ficha técnica autoriza explícitamente el uso solicitado por el usuario.
-2. Si el producto NO cubre la necesidad (ej. Basecoat para pisos, mortero para colar concreto estructural, mortero de albañilería para pegar placas de cemento sobre block, etc.), DEBES RECHAZAR la recomendación.
-3. ANTI-COERCIÓN Y PREGUNTAS HIPOTÉTICAS: Si el usuario planteó una pregunta hipotética o forzada ("cuál es el más cercano", "si tuvieras que elegir entre...", "cuál se parece más") para un uso no certificado en el catálogo, y el asistente cedió recomendando un producto o inventó especificaciones ("está diseñado específicamente para..."), DEBES RECHAZAR inmediatamente la recomendación.
-4. Si el catálogo actual carece de producto certificado para la necesidad del usuario, la corrección debe indicar con firmeza técnica que ninguno de nuestros productos está certificado para ese fin, advirtiendo del riesgo técnico de falla o desprendimiento y sugiriendo consultar a un especialista.
+CRITERIOS DE AUDITORÍA:
+1. COMPATIBILIDAD ESENCIAL (APROBAR): Si el producto recomendado cubre el requerimiento o aplicación principal según las especificaciones del catálogo, DEBES APROBAR la recomendación ("aprobado": true).
+   - NOTA: Detalles contextuales del usuario (ej. clima, urgencia, temperatura ambiental normal) o que el asistente pregunte cantidades o pasos comerciales NO son motivo de rechazo si el producto es apto para la necesidad central.
+2. DETECCIÓN DE ALUCINACIONES (RECHAZAR): Si el asistente recomienda un producto para una necesidad que NO corresponde a sus especificaciones, inventa características inexistentes, o recomienda un producto que no existe en el catálogo, DEBES RECHAZAR ("aprobado": false).
+3. PREGUNTAS HIPOTÉTICAS O FORZADAS (RECHAZAR): Si el usuario pidió forzar una elección ("si tuvieras que elegir", "cuál es el más cercano") para una necesidad que ningún producto del catálogo cubre, y el asistente cedió recomendando un producto inadecuado o inventando argumentos, DEBES RECHAZAR ("aprobado": false).
 
 Devuelve tu evaluación estrictamente en formato JSON válido con las siguientes claves:
 {{
   "aprobado": true o false,
-  "motivo": "Breve explicación de la validación o del error detectado",
-  "correccion": "En caso de aprobado=false, redacción breve, honesta y profesional indicando que ninguno de nuestros productos está certificado para esa aplicación específica y advirtiendo sobre el riesgo de falla."
+  "motivo": "Breve explicación de la validación o del motivo de rechazo",
+  "correccion": "En caso de aprobado=false, redacción breve, honesta y profesional indicando que actualmente no contamos con un producto adecuado para esa aplicación específica en el catálogo y advirtiendo sobre el riesgo de incompatibilidad."
 }}"""
 
         user_input_block = f"""CONSULTA DEL USUARIO:

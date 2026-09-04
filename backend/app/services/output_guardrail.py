@@ -18,28 +18,6 @@ SYSTEM_LEAK_PATTERNS = [
     re.compile(r"CORE\s+SAFETY\s+RULES\s+\(Mandatory", re.IGNORECASE),
 ]
 
-# Patterns for hazardous structural casting prescriptions (Task 224.2)
-STRUCTURAL_CASTING_PATTERNS = [
-    re.compile(r"\b(colar|colado|colados|vaciado|fundir|fundici[oó]n)\b.*?\b(columna|columnas|trabe|trabes|losa|losas|castillo|castillos|zapata|zapatas)\b", re.IGNORECASE),
-    re.compile(r"\b(columna|columnas|trabe|trabes|losa|losas|castillo|castillos|zapata|zapatas)\b.*?\b(colar|colado|colados|vaciado|fundir)\b", re.IGNORECASE),
-]
-
-MORTAR_OR_ADHESIVE_PATTERNS = [
-    re.compile(r"\b(cement\s*bond|mortero|basecoat|adhesivo|pega\s*block|constructor|estuco)\b", re.IGNORECASE)
-]
-
-# Pattern for unauthorized Basecoat on floor tiles (Task 224.2)
-FLOOR_TILING_BASECOAT_PATTERN = re.compile(
-    r"\b(basecoat|cement\s*bond\s*basecoat)\b.*?\b(piso\s*sobre\s*piso|pegar\s*piso|azulejo|porcelanato|loseta)\b|\b(piso\s*sobre\s*piso|pegar\s*piso|azulejo|porcelanato|loseta)\b.*?\b(basecoat|cement\s*bond\s*basecoat)\b",
-    re.IGNORECASE
-)
-
-# Pattern for unauthorized masonry mortar on cement boards / lightweight panels (Task 224.5)
-MASONRY_MORTAR_FOR_BOARDS_PATTERN = re.compile(
-    r"\b(constructor|cement\s*bond\s*constructor)\b.*?\b(placas?\s+de\s+cemento|paneles?\s+de\s+cemento|durock|permabase)\b|\b(placas?\s+de\s+cemento|paneles?\s+de\s+cemento|durock|permabase)\b.*?\b(constructor|cement\s*bond\s*constructor)\b",
-    re.IGNORECASE
-)
-
 MAX_OUTPUT_LENGTH = 3000
 
 
@@ -47,7 +25,12 @@ class OutputGuardrail:
     @classmethod
     def sanitize_response(cls, response_text: Optional[str]) -> str:
         """
-        Sanitizes and bounds AI model outputs.
+        Sanitizes and bounds AI model outputs across all verticals and businesses.
+        Universal guardrails:
+        1. Strips internal scratchpad / deliberation (<thought>...</thought>)
+        2. Strips prompt framing artifacts (User Message:, etc.)
+        3. Bounds extreme length overflow
+        4. Blocks system / traceback / database leaks
         """
         if not response_text or not response_text.strip():
             return "I apologize, but I am unable to formulate a response at this moment."
@@ -69,38 +52,5 @@ class OutputGuardrail:
             if pattern.search(text):
                 logger.error(f"Output guardrail detected system leak matching: {pattern.pattern}")
                 return "I apologize, but I encountered an internal error processing that request. Please try again or ask for human assistance."
-
-        # 3. Deterministic Safety Hard Lock: Structural Casting Protection (Task 224.2)
-        is_structural_casting = any(p.search(text) for p in STRUCTURAL_CASTING_PATTERNS)
-        prescribes_mortar = any(p.search(text) for p in MORTAR_OR_ADHESIVE_PATTERNS)
-        if is_structural_casting and prescribes_mortar:
-            logger.warning("Output guardrail intercepted hazardous structural casting prescription.")
-            return (
-                "Aviso Técnico de Seguridad Estructural: Para colar elementos estructurales de carga "
-                "(columnas, castillos, trabes, losas o zapatas) se requiere concreto hidráulico estructural "
-                "(cemento con grava, arena, agua y armado de acero). Los morteros adhesivos, recubrimientos "
-                "y estucos de capa delgada NO están diseñados para soportar cargas estructurales ni para colados. "
-                "Te sugerimos consultar con un ingeniero civil o calculista estructurista para tu proyecto."
-            )
-
-        # 4. Deterministic Catalog Hard Lock: Basecoat on Floor Tiles (Task 224.2)
-        if FLOOR_TILING_BASECOAT_PATTERN.search(text):
-            logger.warning("Output guardrail intercepted Basecoat prescription for floor tiles.")
-            return (
-                "Aviso Técnico: El producto Cement Bond Basecoat es un adhesivo y recubrimiento para paneles "
-                "de yeso, fibrocemento y poliestireno en sistemas ligeros y fachadas (EIFS); NO es apto para "
-                "pegar piso sobre piso, azulejos ni pisos cerámicos. Actualmente no contamos con un adhesivo "
-                "para piso sobre piso en este catálogo. Te sugerimos consultar con un distribuidor autorizado."
-            )
-
-        # 5. Deterministic Catalog Hard Lock: Masonry Mortar for Cement Boards (Task 224.5)
-        if MASONRY_MORTAR_FOR_BOARDS_PATTERN.search(text):
-            logger.warning("Output guardrail intercepted Constructor prescription for cement boards.")
-            return (
-                "Aviso Técnico: El producto Cement Bond Constructor es un mortero formulado exclusivamente "
-                "para el junteo y pegado de piezas de mampostería (block, ladrillo y tabique). NO está formulado "
-                "ni certificado para adherir placas o paneles de cemento en muros. Actualmente no contamos con un "
-                "producto para esa aplicación en este catálogo. Te sugerimos consultar a un especialista."
-            )
 
         return text
