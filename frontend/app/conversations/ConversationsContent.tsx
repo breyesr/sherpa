@@ -234,9 +234,9 @@ export default function ConversationsContent({ initialConversations, token }: Co
                       </div>
 
                       {devMode && m.role === 'assistant' && (
-                        <div className="mt-2 p-3 bg-purple-50 border border-purple-100 rounded-xl text-[10px] font-mono text-purple-700 leading-tight">
-                          <div className="flex items-center gap-1 font-black mb-1 text-[9px] uppercase tracking-widest">
-                            <MessageSquare size={10} />
+                        <div className="mt-2 p-3.5 bg-purple-50 border border-purple-200/80 rounded-2xl text-[11px] font-mono text-purple-900 leading-relaxed whitespace-pre-wrap shadow-sm">
+                          <div className="flex items-center gap-1.5 font-black mb-1.5 text-[9px] uppercase tracking-widest text-purple-700">
+                            <MessageSquare size={11} className="text-purple-600" />
                             Brain Logic / Audit Trace
                           </div>
                           {m.reasoning_trace || "Direct model response (No operational tool execution required)"}

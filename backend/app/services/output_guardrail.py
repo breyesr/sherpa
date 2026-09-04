@@ -25,12 +25,22 @@ class OutputGuardrail:
     @classmethod
     def sanitize_response(cls, response_text: Optional[str]) -> str:
         """
-        Sanitizes and bounds AI model outputs.
+        Sanitizes and bounds AI model outputs across all verticals and businesses.
+        Universal guardrails:
+        1. Strips internal scratchpad / deliberation (<thought>...</thought>)
+        2. Strips prompt framing artifacts (User Message:, etc.)
+        3. Bounds extreme length overflow
+        4. Blocks system / traceback / database leaks
         """
         if not response_text or not response_text.strip():
             return "I apologize, but I am unable to formulate a response at this moment."
 
         text = response_text.strip()
+
+        # 0. Strip internal deliberation / thought tags and structural prefixes
+        text = re.sub(r"<thought>.*?</thought>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+        text = re.sub(r"<thought>.*$", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+        text = re.sub(r"^(?:Part\s*2\s*\(User\s*Message\):?|Parte\s*2\s*\(Mensaje\s*al\s*usuario\):?|User\s*Message:?|Mensaje\s*al\s*usuario:?)\s*", "", text, flags=re.IGNORECASE).strip()
 
         # 1. Truncate extreme overflow
         if len(text) > MAX_OUTPUT_LENGTH:
