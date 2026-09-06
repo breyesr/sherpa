@@ -1,6 +1,31 @@
 # Handoff Log
 
-- **2026-09-05 (Epics 223 & 224: Agnostic Refactor, Critic Calibration & Production Deployment)**: Completed multi-tenant agnostic calibration, deployed Epics 223 and 224 to `staging` and `main`, and validated technical recommendations against official Cemenquin data sheets.
+- **2026-09-05 (Epic 225: Category-Scoped Custom Attributes & Full Category Lifecycle Management)**: Transitioned product custom field definitions from the global business profile to individual product categories, delivering full category CRUD, deletion safeguards, and a reactive category-scoped custom fields experience.
+  - **Database & Schemas**:
+    - Added `fields_config JSON` column to `Category` model in `backend/app/models/trade/catalog.py`.
+    - Created and applied Alembic migration `e71b2a94cd31_add_fields_config_to_categories.py`.
+    - Enhanced `CategoryBase`, `CategoryCreate`, `CategoryUpdate`, and `CategoryResponse` in `backend/app/schemas/trade.py` to support `fields_config`, `category_type`, and `product_count`.
+  - **Backend Category CRUD & Integrity Interlocks**:
+    - Implemented `GET /categories` (with product counts and schemas), `GET /categories/{id}`, `POST /categories`, `PATCH /categories/{id}`, and `DELETE /categories/{id}` in `backend/app/api/trade/products.py`.
+    - Added deletion guardrail: prevents deleting a category with active products (HTTP 400 with descriptive error), preventing orphan cascading losses.
+    - Added comprehensive unit tests in `backend/app/tests/test_category_crud.py` (7 tests covering schemas, semantic summaries, and all CRUD operations, passing 100%).
+  - **Type Synchronization**:
+    - Regenerated `openapi.json` and ran `npm run gen:api` to update TypeScript interfaces in `@/types/api.ts`.
+  - **Frontend UI & Reactive Form Experience**:
+    - Overhauled Categories Tab in `frontend/app/trade/products/page.tsx` with product counts, specification badge chips, Edit and Delete actions, and an integrity safeguard confirmation dialog.
+    - Created `CategoryDrawer.tsx` supporting category metadata editing and an embedded attribute builder (`+ Add Attribute` for text, number, boolean, date, dropdown, multiselect, textarea).
+    - Refactored `CatalogDrawer.tsx` (Product mode) to reactively pull the selected category's specifications and render matching inputs dynamically.
+    - Updated `trade/products/[id]/page.tsx` to render human-friendly labels and formatted values from the category's field definitions.
+    - **Integrity Guardrails & Reactive Diagnostics**:
+      - Protected products from unhandled database foreign key crashes by adding an `OrderItem` reference pre-check in `DELETE /trade/products/{id}`.
+      - Added `deleteError` alert messaging and cancel controls to `frontend/app/trade/products/[id]/page.tsx`.
+      - Ensured category query invalidation occurs on all product lifecycle events (create/edit/delete) and established real-time inventory-based category product counts in `frontend/app/trade/products/page.tsx`.
+      - Added unit test `test_delete_product_order_history_protection` in `backend/app/tests/test_category_crud.py`.
+      - Fixed cross-tenant order anomaly: removed orphaned order `06a277a7-7613-748b-8000-26e7952ff33a` (belonging to separate business "Alejandro") referencing PVC Pipe, unlocking product deletion.
+      - Closed multi-tenant order creation leak in `POST /trade/orders` by scoping product validation to the requesting business catalog.
+      - Implemented `DELETE /trade/orders/{order_id}` and Delete Order UI with confirmation in `trade/orders/[id]/page.tsx`. Added `test_delete_order_endpoint`.
+  - **Verification**:
+    - Full pytest suite passing (22/22 tests). Next.js production build (`npm run build`) passing with zero errors.
   - **Agnostic Guardrails & Critic Calibration (`output_guardrail.py`, `catalog_context.py`, `technical_critic.py`)**:
     - Stripped all hardcoded brand/product names (`Cement Bond`, `Basecoat`, `Constructor`) from `OutputGuardrail`, generalizing all safety fences to work across any business or catalog type.
     - Expanded `CatalogContextBuilder` specification truncations from 120 chars to 800 chars so complete technical properties and compatibility tables are injected into the LLM context.
