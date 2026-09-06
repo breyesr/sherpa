@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
@@ -15,18 +15,24 @@ import {
   List as ListIcon, 
   ChevronRight, 
   Edit2, 
-  LayoutGrid as CategoryIcon
+  LayoutGrid as CategoryIcon,
+  Trash2,
+  Layers,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { components } from '@/types/api';
 
 type ProductResponse = components['schemas']['ProductResponse'];
 type CategoryResponse = components['schemas']['CategoryResponse'];
 import CatalogDrawer from '@/components/v2/CatalogDrawer';
+import CategoryDrawer from '@/components/v2/CategoryDrawer';
 
 function ProductsPageContent() {
   const token = useAuthStore((state) => state.token);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const activeTab = searchParams.get('tab') === 'categories' ? 'categories' : 'products';
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -35,6 +41,13 @@ function ProductsPageContent() {
     isOpen: false,
     mode: 'product'
   });
+  const [categoryDrawer, setCategoryDrawer] = useState<{ isOpen: boolean; category: CategoryResponse | null }>({
+    isOpen: false,
+    category: null
+  });
+  const [categoryToDelete, setCategoryToDelete] = useState<CategoryResponse | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingCat, setDeletingCat] = useState(false);
 
   // Fetch Products
   const { data: products = [], isLoading: loadingProducts } = useQuery<ProductResponse[]>({
@@ -82,6 +95,14 @@ function ProductsPageContent() {
     return map;
   }, [categories]);
 
+  // Real-time product count per category based on active product inventory
+  const getCategoryProductCount = (category: CategoryResponse) => {
+    if (products && products.length > 0) {
+      return products.filter(p => p.category_id === category.id).length;
+    }
+    return (category as any).product_count ?? 0;
+  };
+
   // Search and Category Filter operations wrapped in useMemo to prevent keyboard lag
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -117,7 +138,7 @@ function ProductsPageContent() {
         </div>
         <div className="flex flex-wrap gap-4">
           <button 
-            onClick={() => setCatalogDrawer({ isOpen: true, mode: 'category' })}
+            onClick={() => setCategoryDrawer({ isOpen: true, category: null })}
             className="flex items-center gap-2 bg-white text-gray-900 px-6 py-4 rounded-2xl text-sm font-bold border border-gray-200 shadow-sm hover:bg-gray-50 transition-all active:scale-95"
           >
             <Plus size={16} />
@@ -361,37 +382,201 @@ function ProductsPageContent() {
             <p className="text-gray-500 mt-2">Create your first product category to get started.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-            <div className="divide-y divide-gray-50">
-              <div className="hidden md:flex items-center justify-between p-8 bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                <div className="flex-1">Category Name</div>
-                <div className="w-64">Type / Classification</div>
-                <div className="w-64">Description</div>
-              </div>
-              {categories.map((cat) => (
-                <div key={cat.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all">
-                  <div className="flex items-center gap-6 flex-1">
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-                      <Tag size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black text-gray-900">
-                        {cat.name}
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="w-64 text-sm font-bold text-gray-600 uppercase tracking-wider">
-                    {(cat as any).category_type || 'General'}
-                  </div>
-                  <div className="w-64 text-sm font-medium text-gray-500">
-                    {cat.description || 'No description provided.'}
-                  </div>
+          <div className="space-y-4">
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+              <div className="divide-y divide-gray-50">
+                <div className="hidden md:flex items-center justify-between p-8 bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  <div className="flex-1">Category & Details</div>
+                  <div className="w-48 text-center">Products</div>
+                  <div className="w-80">Product Attributes Template</div>
+                  <div className="w-32 text-right">Actions</div>
                 </div>
-              ))}
+                {categories.map((cat) => {
+                  const fields = Array.isArray(cat.fields_config) ? (cat.fields_config as any[]) : [];
+                  const pCount = getCategoryProductCount(cat);
+
+                  return (
+                    <div key={cat.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all gap-6">
+                      {/* Name, Type & Description */}
+                      <div className="flex items-start gap-5 flex-1">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0 mt-0.5">
+                          <Tag size={20} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-black text-gray-900">
+                              {cat.name}
+                            </h3>
+                            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-2xs font-bold uppercase tracking-wider">
+                              {(cat as any).category_type || 'General'}
+                            </span>
+                          </div>
+                          {cat.description && (
+                            <p className="text-sm font-medium text-gray-500 mt-1 line-clamp-2">
+                              {cat.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Products Count */}
+                      <div className="w-48 text-center">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold">
+                          <Package size={14} className="text-gray-400" />
+                          {pCount} {pCount === 1 ? 'Product' : 'Products'}
+                        </span>
+                      </div>
+
+                      {/* Custom Specifications Chips */}
+                      <div className="w-80">
+                        {fields.length === 0 ? (
+                          <span className="text-xs text-gray-400 font-medium italic">
+                            No custom attributes
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                            {fields.map((f: any, idx: number) => (
+                              <span 
+                                key={f.key || idx} 
+                                className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-2xs font-bold flex items-center gap-1"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                {f.label || f.key}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Edit & Delete Actions */}
+                      <div className="w-32 flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCategoryDrawer({ isOpen: true, category: cat })}
+                          className="p-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition-all"
+                          title="Edit Category & Attributes"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCategoryToDelete(cat);
+                            setDeleteError('');
+                          }}
+                          className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-all"
+                          title="Delete Category"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )
       )}
+
+      {/* Delete Category Confirmation Modal */}
+      {categoryToDelete && (() => {
+        const catToDeleteProductCount = getCategoryProductCount(categoryToDelete);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-150">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                  catToDeleteProductCount > 0 
+                    ? 'bg-amber-50 text-amber-600' 
+                    : 'bg-red-50 text-red-600'
+                }`}>
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-gray-900">
+                    {catToDeleteProductCount > 0 
+                      ? 'Cannot Delete Category' 
+                      : 'Delete Category'}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Category: <span className="font-bold text-gray-700">{categoryToDelete.name}</span>
+                  </p>
+                </div>
+              </div>
+
+              {deleteError && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-xs font-medium">
+                  {deleteError}
+                </div>
+              )}
+
+              {catToDeleteProductCount > 0 ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 font-medium leading-relaxed">
+                    This category currently contains <strong className="text-gray-900 font-bold">{catToDeleteProductCount} product(s)</strong>. To protect catalog integrity, you must reassign or delete these products before this category can be removed.
+                  </p>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setCategoryToDelete(null)}
+                      className="px-6 py-3 bg-gray-900 text-white rounded-2xl text-sm font-bold hover:bg-black transition-all"
+                    >
+                      Understood
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <p className="text-sm text-gray-600 font-medium leading-relaxed">
+                    Are you sure you want to delete this category? All category configurations and specifications will be permanently removed.
+                  </p>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setCategoryToDelete(null)}
+                      disabled={deletingCat}
+                      className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deletingCat}
+                      onClick={async () => {
+                        setDeletingCat(true);
+                        setDeleteError('');
+                        try {
+                          await apiClient.delete(`/trade/categories/${categoryToDelete.id}`);
+                          await queryClient.invalidateQueries({ queryKey: ['categories'] });
+                          await queryClient.invalidateQueries({ queryKey: ['products'] });
+                          setCategoryToDelete(null);
+                        } catch (err: unknown) {
+                          setDeleteError(err instanceof Error ? err.message : 'Failed to delete category');
+                        } finally {
+                          setDeletingCat(false);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                    >
+                      {deletingCat ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      Delete Category
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Category Create/Edit Drawer */}
+      <CategoryDrawer
+        isOpen={categoryDrawer.isOpen}
+        onClose={() => setCategoryDrawer({ isOpen: false, category: null })}
+        token={token}
+        category={categoryDrawer.category}
+      />
 
       {/* Catalog Creation Drawer */}
       <CatalogDrawer 

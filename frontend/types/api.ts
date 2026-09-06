@@ -187,12 +187,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -491,14 +491,31 @@ export interface paths {
   "/api/v1/trade/categories": {
     /**
      * List Categories
-     * @description List all product categories.
+     * @description List all product categories with product counts and custom field schemas.
      */
     get: operations["list_categories_api_v1_trade_categories_get"];
     /**
      * Create Category
-     * @description Create a new category.
+     * @description Create a new category with dynamic custom fields schema.
      */
     post: operations["create_category_api_v1_trade_categories_post"];
+  };
+  "/api/v1/trade/categories/{category_id}": {
+    /**
+     * Get Category
+     * @description Get a single category with its fields_config and product count.
+     */
+    get: operations["get_category_api_v1_trade_categories__category_id__get"];
+    /**
+     * Delete Category
+     * @description Delete a category. Rejects deletion if products are currently assigned to it.
+     */
+    delete: operations["delete_category_api_v1_trade_categories__category_id__delete"];
+    /**
+     * Update Category
+     * @description Update category metadata or fields_config schema.
+     */
+    patch: operations["update_category_api_v1_trade_categories__category_id__patch"];
   };
   "/api/v1/trade/products": {
     /**
@@ -554,6 +571,11 @@ export interface paths {
      * @description Get detail of a single order by ID.
      */
     get: operations["get_order_api_v1_trade_orders__order_id__get"];
+    /**
+     * Delete Order
+     * @description Delete an order and all its linked order items.
+     */
+    delete: operations["delete_order_api_v1_trade_orders__order_id__delete"];
     /**
      * Update Order
      * @description Update order metadata or status.
@@ -1088,6 +1110,17 @@ export interface components {
       name: string;
       /** Description */
       description?: string | null;
+      /** Category Type */
+      category_type?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /**
+       * Fields Config
+       * @default []
+       */
+      fields_config?: {
+          [key: string]: unknown;
+        }[] | null;
     };
     /** CategoryResponse */
     CategoryResponse: {
@@ -1095,20 +1128,45 @@ export interface components {
       name: string;
       /** Description */
       description?: string | null;
+      /** Category Type */
+      category_type?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /**
+       * Fields Config
+       * @default []
+       */
+      fields_config?: {
+          [key: string]: unknown;
+        }[] | null;
       /** Id */
       id: string;
       /** Business Id */
       business_id: string;
+      /** Created At */
+      created_at?: string | null;
+      /** Updated At */
+      updated_at?: string | null;
       /**
-       * Created At
-       * Format: date-time
+       * Product Count
+       * @default 0
        */
-      created_at: string;
-      /**
-       * Updated At
-       * Format: date-time
-       */
-      updated_at: string;
+      product_count?: number | null;
+    };
+    /** CategoryUpdate */
+    CategoryUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Category Type */
+      category_type?: string | null;
+      /** External Id */
+      external_id?: string | null;
+      /** Fields Config */
+      fields_config?: {
+          [key: string]: unknown;
+        }[] | null;
     };
     /** ClientCreate */
     ClientCreate: {
@@ -3348,7 +3406,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
     responses: {
       /** @description Successful Response */
       200: {
@@ -4360,7 +4418,7 @@ export interface operations {
   };
   /**
    * List Categories
-   * @description List all product categories.
+   * @description List all product categories with product counts and custom field schemas.
    */
   list_categories_api_v1_trade_categories_get: {
     responses: {
@@ -4374,12 +4432,92 @@ export interface operations {
   };
   /**
    * Create Category
-   * @description Create a new category.
+   * @description Create a new category with dynamic custom fields schema.
    */
   create_category_api_v1_trade_categories_post: {
     requestBody: {
       content: {
         "application/json": components["schemas"]["CategoryCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CategoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Category
+   * @description Get a single category with its fields_config and product count.
+   */
+  get_category_api_v1_trade_categories__category_id__get: {
+    parameters: {
+      path: {
+        category_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CategoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Category
+   * @description Delete a category. Rejects deletion if products are currently assigned to it.
+   */
+  delete_category_api_v1_trade_categories__category_id__delete: {
+    parameters: {
+      path: {
+        category_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Category
+   * @description Update category metadata or fields_config schema.
+   */
+  update_category_api_v1_trade_categories__category_id__patch: {
+    parameters: {
+      path: {
+        category_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CategoryUpdate"];
       };
     };
     responses: {
@@ -4606,6 +4744,31 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["OrderResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Delete Order
+   * @description Delete an order and all its linked order items.
+   */
+  delete_order_api_v1_trade_orders__order_id__delete: {
+    parameters: {
+      path: {
+        order_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

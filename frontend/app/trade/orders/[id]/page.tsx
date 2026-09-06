@@ -22,7 +22,8 @@ import {
   CreditCard,
   Package,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { components } from '@/types/api';
 
@@ -37,6 +38,8 @@ export default function OrderDetailPage() {
   const queryClient = useQueryClient();
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Fetch Order Details
   const { data: order, isLoading: loadingOrder, error: orderError } = useQuery<OrderResponse>({
@@ -105,6 +108,26 @@ export default function OrderDetailPage() {
       setErrorMessage(err instanceof Error ? err.message : 'Error updating order status');
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+
+    setDeleteLoading(true);
+    setErrorMessage('');
+    try {
+      await apiClient.delete(`/trade/orders/${id}`);
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      router.push('/trade/orders');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error deleting order');
+      setDeleteLoading(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -187,17 +210,42 @@ export default function OrderDetailPage() {
           </p>
         </div>
         
-        {/* Cancel Action if applicable */}
-        {order.status !== 'cancelled' && order.status !== 'delivered' && (
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          {order.status !== 'cancelled' && order.status !== 'delivered' && (
+            <button
+              onClick={() => handleStatusChange('cancelled')}
+              disabled={!!updatingStatus || deleteLoading}
+              className="flex items-center gap-2 bg-white text-amber-600 px-5 py-3 border border-amber-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-amber-50 transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+            >
+              {updatingStatus === 'cancelled' ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
+              Cancel Order
+            </button>
+          )}
+
+          {confirmDelete && (
+            <button
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleteLoading}
+              className="px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-black uppercase tracking-widest border border-gray-200 transition-all active:scale-95 shadow-sm"
+            >
+              Keep Order
+            </button>
+          )}
+
           <button
-            onClick={() => handleStatusChange('cancelled')}
-            disabled={!!updatingStatus}
-            className="flex items-center gap-2 bg-white text-red-600 px-5 py-3 border border-red-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+            onClick={handleDeleteOrder}
+            disabled={deleteLoading}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 border shadow-sm ${
+              confirmDelete
+                ? 'bg-red-600 text-white border-red-600 animate-pulse hover:bg-red-700'
+                : 'bg-white text-red-600 border-red-100 hover:bg-red-50'
+            }`}
           >
-            {updatingStatus === 'cancelled' ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
-            Cancel Order
+            {deleteLoading ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+            {confirmDelete ? 'Confirm Delete' : 'Delete Order'}
           </button>
-        )}
+        </div>
       </div>
 
       {errorMessage && (
