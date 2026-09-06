@@ -1,5 +1,16 @@
 # Handoff Log
 
+- **2026-09-05 (Epics 223 & 224: Agnostic Refactor, Critic Calibration & Production Deployment)**: Completed multi-tenant agnostic calibration, deployed Epics 223 and 224 to `staging` and `main`, and validated technical recommendations against official Cemenquin data sheets.
+  - **Agnostic Guardrails & Critic Calibration (`output_guardrail.py`, `catalog_context.py`, `technical_critic.py`)**:
+    - Stripped all hardcoded brand/product names (`Cement Bond`, `Basecoat`, `Constructor`) from `OutputGuardrail`, generalizing all safety fences to work across any business or catalog type.
+    - Expanded `CatalogContextBuilder` specification truncations from 120 chars to 800 chars so complete technical properties and compatibility tables are injected into the LLM context.
+    - Calibrated `TechnicalCritic` to prevent false rejections of valid dual-use products (e.g. products serving both adhesion and basecoat/encamisado functions).
+  - **Deployment & Testing**:
+    - Merged `feature/ai/epic-223-224-reasoning-fact-checking` into `staging` and `main` (`04c7c41`). Pushed to origin.
+    - Full backend test suite passing (100/100 tests). Clean frontend Next.js compilation.
+  - **Live Sheet Verification (`temp/Cemenquin/mejorado/`)**:
+    - Verified live user inquiry regarding polystyrene mold adhesion and coating: Assistant recommended `Cement Bond Malla Integrada`, accurately matched against official data sheet for polystyrene adhesion, integrated reinforcement, and basecoat functions without separate mesh.
+
 - **2026-09-04 (Epics 223 & 224: Reasoning Trace Audit & Grounded Fact-Checking Guardrails)**: Implemented end-to-end thought process capture for Inbox audit visibility, and built the 4-layer hybrid technical fact-checking architecture eliminating product hallucinations and structural safety hazards.
   - **Backend (`services/prospect_qualifier.py`, `services/catalog_context.py`, `services/output_guardrail.py`, `services/technical_critic.py`, `services/agentic_orchestrator.py`, `core/ai_service.py`)**:
     - **Epic 223**: Mandated two-part response structure (`<thought>...</thought>` scratchpad + clean user message) across `ProspectQualifier`, `AgenticOrchestrator`, and `AIService`. Extracted thought deliberation into `Message.reasoning_trace` while stripping deliberation tags completely before outbound transmission.
