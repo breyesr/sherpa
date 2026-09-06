@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.api.auth import get_current_user, require_feature, require_any_feature
 from app.models.user import User
-from app.models.trade import Store, Order, OrderItem, Product
+from app.models.trade import Store, Order, OrderItem, Product, Category
 from app.schemas.trade import OrderResponse, OrderCreate, OrderUpdate
 
 router = APIRouter()
@@ -83,11 +83,15 @@ async def create_order(
     
     total_amount = 0.0
     for item_in in order_in.items:
-        # Verify product exists
-        prod_res = await db.execute(select(Product).where(Product.id == item_in.product_id))
+        # Verify product exists and belongs to the business catalog
+        prod_res = await db.execute(
+            select(Product)
+            .join(Category, Product.category_id == Category.id)
+            .where(Product.id == item_in.product_id, Category.business_id == business.id)
+        )
         product = prod_res.scalars().first()
         if not product:
-            raise HTTPException(status_code=400, detail=f"Product {item_in.product_id} not found")
+            raise HTTPException(status_code=400, detail=f"Product {item_in.product_id} not found in this business catalog")
             
         order_item = OrderItem(
             product_id=item_in.product_id,
@@ -158,3 +162,28 @@ async def update_order(
         select(Order).where(Order.id == order.id).options(selectinload(Order.items))
     )
     return res_final.scalars().first()
+
+@router.delete("/orders/{order_id}", dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions"]))])
+async def delete_order(
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Delete an order and all its linked order items."""
+    import app.api.trade as trade
+    from sqlalchemy import delete as sqldelete
+    business = await trade.get_business(db, current_user.id)
+    query = select(Order).where(
+        Order.id == order_id, 
+        Order.business_id == business.id
+    )
+    result = await db.execute(query)
+    order = result.scalars().first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+        
+    await db.execute(sqldelete(OrderItem).where(OrderItem.order_id == order_id))
+    await db.delete(order)
+    await db.commit()
+    return {"status": "success", "message": f"Order '{order_id}' deleted successfully"}
+

@@ -596,4 +596,71 @@
     - **Then** the agent must strictly refuse to recommend any product as "the closest", warning of technical/structural failure risks.
     - **Enforce** commercial decoupling: when refusing a recommendation, the agent is strictly prohibited from asking for quantities or attempting sales qualification.
 
+## Epic 225: Category-Scoped Custom Attributes & Complete Category Lifecycle (CRUD)
+**Objective**: Transition product custom field definitions from the global business profile to individual product categories, enabling category-specific specifications (e.g., volume/ABV for beverages, weight/flavor for snacks) and delivering complete Category CRUD with deletion safeguards and reactive product form rendering.
+
+### Phase 1: Database Schema & Category Model
+- [x] Task 225.1 (BE): **Add `fields_config` to Category Model & Alembic Migration**
+  - **Acceptance Criteria**:
+    - **Given** `Category` model in `backend/app/models/trade/catalog.py`,
+    - **When** the model is updated and Alembic migration is generated,
+    - **Then** `categories` table has `fields_config JSON` (nullable=True, default=list).
+    - ⚠️ **Requires explicit human approval** before running `alembic upgrade`.
+
+- [x] Task 225.2 (BE): **Update Category Schemas in `schemas/trade.py`**
+  - **Acceptance Criteria**:
+    - **Given** `CategoryBase`, `CategoryCreate`, `CategoryUpdate`, and `CategoryResponse`,
+    - **When** serializing categories,
+    - **Then** include `fields_config: Optional[List[Dict[str, Any]]]`, `category_type: Optional[str]`, and `product_count: Optional[int]`.
+
+### Phase 2: Category CRUD API & Integrity Interlocks
+- [x] Task 225.3 (BE): **Implement Complete Category CRUD Endpoints**
+  - **Acceptance Criteria**:
+    - **Given** `/api/v1/trade/categories`,
+    - **When** calling `GET /categories`, `GET /categories/{id}`, `POST /categories`, `PATCH /categories/{id}`, and `DELETE /categories/{id}`,
+    - **Then** all operations succeed with tenant isolation (`business_id`).
+    - **Guardrail**: If `DELETE /categories/{id}` is called on a category with linked products, return HTTP 400 Bad Request stating products must be reassigned or deleted first.
+
+- [x] Task 225.4 (BE/QA): **Category CRUD & Field Configuration Test Suite**
+  - **Acceptance Criteria**:
+    - **Given** `backend/app/tests/test_category_crud.py`,
+    - **When** testing category creation with custom field schemas, updating attributes, and attempting deletion with/without products,
+    - **Then** all assertions pass with 100% reliability.
+
+### Phase 3: Frontend Category Management UI & Attribute Builder
+- [x] Task 225.5 (FE): **Category Management View on Products Page**
+  - **Acceptance Criteria**:
+    - **Given** `/trade/products?tab=categories`,
+    - **When** rendering the category list,
+    - **Then** display category name, type, product count, and defined attribute chips.
+    - Provide **Edit** and **Delete** actions for each category with confirmation dialogs.
+
+- [x] Task 225.6 (FE): **Unified Category Drawer & Attribute Builder**
+  - **Acceptance Criteria**:
+    - **Given** the Category Create/Edit Drawer,
+    - **When** managing a category,
+    - **Then** allow updating name/type/description and dynamically adding, editing, or removing attribute fields (`text`, `number`, `boolean`, `date`, `dropdown`, `multiselect`) for that specific category.
+
+### Phase 4: Reactive Product Form & Dynamic Custom Fields UX
+- [x] Task 225.7 (FE): **Category-Reactive Form in `CatalogDrawer.tsx`**
+  - **Acceptance Criteria**:
+    - **Given** creating or editing a product in `CatalogDrawer.tsx`,
+    - **When** the user selects or switches the Category dropdown,
+    - **Then** dynamically render the custom field inputs defined in that category's `fields_config`.
+    - Persist values into `product.custom_fields`.
+
+- [x] Task 225.8 (FE): **Formatted Specification Display on Product Detail**
+  - **Acceptance Criteria**:
+    - **Given** `/trade/products/[id]`,
+    - **When** viewing the product detail card,
+    - **Then** render custom field values mapped to the category's human-friendly labels and units.
+
+### Phase 5: OpenAPI Schema Sync & Type Generation
+- [x] Task 225.9 (Sync): **Update `openapi.json` & TypeScript Client Types**
+  - **Acceptance Criteria**:
+    - **Given** backend endpoint and schema changes,
+    - **When** generating the OpenAPI schema and running `npm run gen:api`,
+    - **Then** `frontend/types/api.ts` is in 100% type sync with no compilation errors.
+
+
 

@@ -16,6 +16,9 @@ class Category(Base):
     category_type = Column(String, nullable=True, index=True) # e.g., 'Beverage', 'Snack'
     external_id = Column(String, nullable=True, index=True)
     
+    # Dynamic Field Schema for Category-Scoped Specifications (Epic 225)
+    fields_config = Column(JSON, nullable=True, default=list)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -28,14 +31,21 @@ class Category(Base):
             summary += f" Tipo: {self.category_type}."
         if self.description:
             summary += f" Descripción: {self.description}."
+        if self.fields_config:
+            field_labels = [f.get("label", f.get("key")) for f in self.fields_config if isinstance(f, dict)]
+            if field_labels:
+                summary += f" Especificaciones disponibles: {', '.join(field_labels)}."
         return summary
 
     def get_knowledge_metadata(self) -> dict:
-        return {
+        meta = {
             "name": self.name,
             "category_type": self.category_type,
             "external_id": self.external_id
         }
+        if self.fields_config:
+            meta["fields_config"] = self.fields_config
+        return meta
 
 class Product(Base):
     __tablename__ = "products"

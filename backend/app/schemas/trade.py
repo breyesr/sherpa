@@ -158,15 +158,26 @@ class StoreResponse(StoreBase):
 class CategoryBase(BaseModel):
     name: str
     description: Optional[str] = None
+    category_type: Optional[str] = None
+    external_id: Optional[str] = None
+    fields_config: Optional[List[Dict[str, Any]]] = []
 
 class CategoryCreate(CategoryBase):
     pass
 
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category_type: Optional[str] = None
+    external_id: Optional[str] = None
+    fields_config: Optional[List[Dict[str, Any]]] = None
+
 class CategoryResponse(CategoryBase):
     id: str
     business_id: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    product_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

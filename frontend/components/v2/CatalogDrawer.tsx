@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 import { Product, CatalogField } from '@/types/models';
-import ManageCatalogAttributesDrawer from './ManageCatalogAttributesDrawer';
+import CategoryDrawer from './CategoryDrawer';
 
 interface CatalogDrawerProps {
   isOpen: boolean;
@@ -38,8 +38,8 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Manage attributes drawer state
-  const [isManageAttributesOpen, setIsManageAttributesOpen] = useState(false);
+  // Manage category drawer state
+  const [isManageCategoryOpen, setIsManageCategoryOpen] = useState(false);
 
   // Custom Attribute Creation States
   const [isAddingField, setIsAddingField] = useState(false);
@@ -161,26 +161,42 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     }
   }
 
+  const selectedCategoryObj = categories.find(c => c.id === productData.category_id);
+  const activeFields: CatalogField[] = Array.isArray(selectedCategoryObj?.fields_config)
+    ? (selectedCategoryObj.fields_config as unknown as CatalogField[])
+    : [];
+
   const handleCustomFieldChange = (key: string, value: any) => {
     setCustomFields(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSaveNewField = async () => {
-    if (!business) return;
+    if (!productData.category_id) {
+      setNewFieldErr('Please select a category first');
+      return;
+    }
     if (!newFieldName.trim()) {
       setNewFieldErr('Field name is required');
       return;
     }
-    const cleanKey = newFieldName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/__+/g, '_');
-    if (!cleanKey || cleanKey === '_') {
+    const cleanKey = newFieldName
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/__+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    if (!cleanKey) {
       setNewFieldErr('Invalid field name');
       return;
     }
 
-    const existingAttributes = (business.catalog_config as unknown as CatalogField[]) || [];
+    const existingAttributes = activeFields;
     const isDuplicate = existingAttributes.some((f: CatalogField) => f.key === cleanKey);
     if (isDuplicate) {
-      setNewFieldErr(`An attribute with key "${cleanKey}" already exists`);
+      setNewFieldErr(`An attribute with key "${cleanKey}" already exists in this category`);
       return;
     }
 
@@ -206,9 +222,10 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
     const newAttributes = [...existingAttributes, newField];
 
     try {
-      await apiClient.patch<any>('/business/me', { catalog_config: newAttributes });
+      await apiClient.patch<any>(`/trade/categories/${productData.category_id}`, { fields_config: newAttributes });
 
-      await queryClient.invalidateQueries({ queryKey: ['business'] });
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      await fetchCategories();
       setIsAddingField(false);
       setNewFieldName('');
       setNewFieldType('text');
@@ -245,6 +262,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       }
 
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       if (isEditing) {
         queryClient.invalidateQueries({ queryKey: ['product', productId] });
       }
@@ -474,14 +492,16 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
               </div>
             </div>
 
-            {/* Dynamic Custom Fields Section - Additional Information (B2C Service Pattern) */}
+            {/* Dynamic Custom Fields Section - Category-Scoped Specifications */}
             <div className="p-6 bg-gray-50 rounded-[2rem] space-y-6">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Sparkles size={16} className="text-indigo-500" />
-                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Additional Information</h4>
+                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                    {selectedCategoryObj ? `${selectedCategoryObj.name} Attributes` : 'Product Attributes'}
+                  </h4>
                 </div>
-                {!isAddingField && (
+                {!isAddingField && productData.category_id && (
                   <button
                     type="button"
                     onClick={() => setIsAddingField(true)}
@@ -600,11 +620,20 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
               )}
 
               {/* Attributes List */}
-              {business?.catalog_config && (business.catalog_config as unknown as CatalogField[]).length > 0 ? (
+              {!productData.category_id ? (
+                <div className="py-6 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+                  <Tag size={20} className="mx-auto text-gray-300 mb-1" />
+                  <p className="text-xs font-bold text-gray-500">Select a category above to view specifications</p>
+                  <p className="text-2xs text-gray-400 mt-0.5">Attributes are configured and scoped specifically per category.</p>
+                </div>
+              ) : activeFields && activeFields.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(business.catalog_config as unknown as CatalogField[]).map((field) => (
+                  {activeFields.map((field) => (
                     <div key={field.key} className={`space-y-2 ${field.type === 'textarea' || field.type === 'multiselect' ? 'md:col-span-2' : ''}`}>
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{field.label}</label>
+                      <div className="flex items-center justify-between ml-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{field.label}</label>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase bg-gray-100 px-1.5 py-0.5 rounded">{field.type}</span>
+                      </div>
                       {field.type === 'boolean' ? (
                         <label className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 rounded-xl cursor-pointer group hover:border-indigo-200 transition-all">
                           <input 
@@ -661,7 +690,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                                     }
                                     handleCustomFieldChange(field.key, newArr);
                                   }}
-                                  className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                                  className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                 />
                                 <span className="text-xs font-bold text-gray-700">{opt}</span>
                               </label>
@@ -681,19 +710,25 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 italic">No custom attributes defined yet. Click &quot;+ Add Attribute&quot; to add specifications.</p>
+                <div className="py-6 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+                  <Sparkles size={20} className="mx-auto text-gray-300 mb-1" />
+                  <p className="text-xs font-bold text-gray-500">No specifications defined for {selectedCategoryObj?.name || 'this category'}</p>
+                  <p className="text-2xs text-gray-400 mt-0.5">Click &quot;+ Add Attribute&quot; above to add fields to this category.</p>
+                </div>
               )}
 
-              <div className="pt-4 border-t border-gray-100 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsManageAttributesOpen(true)}
-                  className="px-4 py-2 bg-white border border-gray-200 text-gray-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
-                >
-                  <Settings size={14} />
-                  Manage Attributes
-                </button>
-              </div>
+              {selectedCategoryObj && (
+                <div className="pt-4 border-t border-gray-100 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsManageCategoryOpen(true)}
+                    className="px-4 py-2 bg-white border border-gray-200 text-gray-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <Settings size={14} />
+                    Manage {selectedCategoryObj.name} Attributes
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -711,10 +746,10 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category Type / Vertical</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category Type / Classification</label>
               <input 
                 type="text"
-                placeholder="e.g. FMCG, Pharma"
+                placeholder="Optional category type or classification"
                 className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-gray-900"
                 value={categoryData.category_type}
                 onChange={e => setCategoryData({...categoryData, category_type: e.target.value})}
@@ -748,12 +783,17 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
       </div>
     </Drawer>
 
-    <ManageCatalogAttributesDrawer
-      isOpen={isManageAttributesOpen}
-      onClose={() => setIsManageAttributesOpen(false)}
-      business={business}
-      token={token}
-    />
+    {isManageCategoryOpen && selectedCategoryObj && (
+      <CategoryDrawer
+        isOpen={isManageCategoryOpen}
+        onClose={() => {
+          setIsManageCategoryOpen(false);
+          fetchCategories();
+        }}
+        token={token}
+        category={selectedCategoryObj}
+      />
+    )}
     </>
   );
 }

@@ -39,6 +39,7 @@ export default function ProductDetailPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Fetch Product details
   const { data: product, isLoading: loadingProduct, error: productError } = useQuery<ProductResponse>({
@@ -89,11 +90,26 @@ export default function ProductDetailPage() {
   });
 
   // Category map for fast lookup
-  const categoryName = useMemo(() => {
-    if (!product || categories.length === 0) return 'Beverage';
-    const cat = categories.find(c => c.id === product.category_id);
-    return cat ? cat.name : 'Beverage';
+  const productCategory = useMemo(() => {
+    if (!product || categories.length === 0) return null;
+    return categories.find(c => c.id === product.category_id) || null;
   }, [product, categories]);
+
+  const categoryName = useMemo(() => {
+    return productCategory ? productCategory.name : 'Category';
+  }, [productCategory]);
+
+  const categoryFieldsMap = useMemo(() => {
+    const map: Record<string, { label: string; type: string }> = {};
+    if (productCategory && Array.isArray(productCategory.fields_config)) {
+      (productCategory.fields_config as any[]).forEach(f => {
+        if (f && f.key) {
+          map[f.key] = { label: f.label || f.key, type: f.type || 'text' };
+        }
+      });
+    }
+    return map;
+  }, [productCategory]);
 
   // Store map for fast lookup
   const storeMap = useMemo(() => {
@@ -170,6 +186,15 @@ export default function ProductDetailPage() {
   }, [orderHistory, stockingStores]);
 
   const handleDelete = async () => {
+    setDeleteError(null);
+
+    // Business guardrail: products with historical order lines cannot be deleted directly
+    if (orderHistory.length > 0) {
+      setDeleteError(`Cannot delete "${product?.name || 'this product'}": It is referenced in ${orderHistory.length} historical order(s). Products with sales history cannot be deleted to preserve order audit integrity.`);
+      setConfirmDelete(false);
+      return;
+    }
+
     if (!confirmDelete) {
       setConfirmDelete(true);
       return;
@@ -179,10 +204,12 @@ export default function ProductDetailPage() {
     try {
       await apiClient.delete<any>(`/trade/products/${id}`);
       
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
       router.push('/trade/products');
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete product';
+      setDeleteError(message);
       setDeleteLoading(false);
       setConfirmDelete(false);
     }
@@ -233,6 +260,15 @@ export default function ProductDetailPage() {
             <Edit2 size={14} />
             Edit Product
           </button>
+          {confirmDelete && (
+            <button
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleteLoading}
+              className="px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-black uppercase tracking-widest border border-gray-200 transition-all active:scale-95"
+            >
+              Cancel
+            </button>
+          )}
           <button 
             onClick={handleDelete}
             disabled={deleteLoading}
@@ -251,6 +287,21 @@ export default function ProductDetailPage() {
           </button>
         </div>
       </div>
+
+      {deleteError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-red-700 text-sm font-medium animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className="shrink-0 text-red-500" />
+            <span>{deleteError}</span>
+          </div>
+          <button 
+            onClick={() => setDeleteError(null)}
+            className="text-xs font-bold text-red-600 hover:text-red-800 underline shrink-0 ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Header Profile */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -346,15 +397,20 @@ export default function ProductDetailPage() {
                 <span className="text-lg font-mono font-bold text-gray-700 mt-1 block">{product.external_id || '-'}</span>
               </div>
 
-              {/* Dynamic Custom Fields */}
+              {/* Dynamic Category-Scoped Custom Fields */}
               {product.custom_fields && Object.entries(product.custom_fields as Record<string, any>).map(([key, val]) => {
                 if (val === undefined || val === null || val === '') return null;
-                const formattedKey = key.replace(/_/g, ' ');
-                const displayVal = typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val);
+                const fieldMeta = categoryFieldsMap[key];
+                const label = fieldMeta ? fieldMeta.label : key.replace(/_/g, ' ');
+                const displayVal = typeof val === 'boolean' 
+                  ? (val ? 'Yes' : 'No') 
+                  : Array.isArray(val) 
+                    ? val.join(', ') 
+                    : String(val);
                 
                 return (
                   <div key={key}>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block capitalize">{formattedKey}</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block capitalize">{label}</span>
                     <span className="text-lg font-bold text-gray-700 mt-1 block">{displayVal}</span>
                   </div>
                 );
