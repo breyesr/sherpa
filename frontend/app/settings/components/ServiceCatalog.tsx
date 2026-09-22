@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Loader2, Scissors, Clock, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Briefcase, Clock, DollarSign } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -79,7 +79,7 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
         {services.length === 0 && (
           <div className="py-24 bg-white rounded-3xl border-2 border-dashed border-gray-100 text-center">
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Scissors size={40} className="text-gray-300" />
+              <Briefcase size={40} className="text-gray-300" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">No services found</h2>
             <p className="text-gray-500 mb-8 max-w-sm mx-auto">Add your first service to start booking client appointments.</p>
@@ -99,7 +99,7 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
                 <div>
                   <div className="flex justify-between items-start">
                     <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center border shadow-sm">
-                      <Scissors size={18} />
+                      <Briefcase size={18} />
                     </div>
                     
                     <button 

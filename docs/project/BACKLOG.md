@@ -587,7 +587,7 @@
 - [x] Task 224.4 (BE/QA): **Technical Fact-Checking & Anti-Hallucination Test Suite**
   - **Acceptance Criteria**:
     - **Given** unit test suite in `backend/app/tests/test_technical_fact_checker.py`,
-    - **When** simulating high-risk inquiries ("piso sobre piso", "columna colada", "calcular sacos sin sustrato"),
+    - **When** simulating high-risk inquiries (unsupported applications, uncertified use cases, quantity guessing without specifications),
     - **Then** verify that unauthorized recommendations are completely blocked and converted into honest, safe responses across 100% of test cases.
 - [x] Task 224.5 (BE/AI): **Anti-Coercion & Hypothetical Forcing Hardening**
   - **Acceptance Criteria**:
@@ -597,7 +597,7 @@
     - **Enforce** commercial decoupling: when refusing a recommendation, the agent is strictly prohibited from asking for quantities or attempting sales qualification.
 
 ## Epic 225: Category-Scoped Custom Attributes & Complete Category Lifecycle (CRUD)
-**Objective**: Transition product custom field definitions from the global business profile to individual product categories, enabling category-specific specifications (e.g., volume/ABV for beverages, weight/flavor for snacks) and delivering complete Category CRUD with deletion safeguards and reactive product form rendering.
+**Objective**: Transition product custom field definitions from the global business profile to individual product categories, enabling category-specific specifications (e.g., weight, dimensions, material, or custom specifications) and delivering complete Category CRUD with deletion safeguards and reactive product form rendering.
 
 ### Phase 1: Database Schema & Category Model
 - [x] Task 225.1 (BE): **Add `fields_config` to Category Model & Alembic Migration**
@@ -662,5 +662,159 @@
     - **When** generating the OpenAPI schema and running `npm run gen:api`,
     - **Then** `frontend/types/api.ts` is in 100% type sync with no compilation errors.
 
+## Epic 226: Industry Agnosticism — Purge All Hardcoded Vertical & Client References
+**Objective**: Eliminate every hardcoded industry-specific (construction, pet clinic, beverage, hair salon) and client-specific (Cemenquin, Coca Cola, Nespresso) reference from production runtime. Xerpa must be fully vertical-agnostic — capable of serving construction materials, pet products, food & beverage, pharma, beauty, or any B2B trade client without leaking assumptions from legacy pilots.
 
+**Audit Reference**: Full codebase audit conducted 2026-09-18. 38 findings across 25+ files.
 
+### Phase 1: Backend LLM Prompts & Core Services (P0 — Highest Impact)
+*These directly shape what the AI says to every client in real-time conversations.*
+
+- [x] Task 226.1 (BE): **Purge "obra" (construction site) from Prospect Qualifier**
+  - **File**: `backend/app/services/prospect_qualifier.py`
+  - **Acceptance Criteria**:
+    - All `"ubicación de la obra"` / `"dirección de la obra"` (lines 231, 243, 265, 315, 326, 334, 355) → `"dirección de entrega"` / `"ubicación de entrega"`.
+    - `f"{comp} (Obra {channel_name})"` (line 707) → `f"{comp} (Lead {channel_name})"`.
+    - `"en la obra {loc}"` (line 779) → `"en la dirección {loc}"`.
+
+- [x] Task 226.2 (BE): **Remove "sacos" from Universal Catalog Guardrail**
+  - **File**: `backend/app/services/catalog_context.py` (line 138)
+  - **Acceptance Criteria**: `"(piezas, unidades o sacos)"` → `"(piezas, paquetes o unidades)"`.
+
+- [x] Task 226.3 (BE): **Neutralize Jinja2 Prompt Template Examples**
+  - **Files**: `intent_classifier.j2`, `base_ai.j2`, `visit_briefer.j2`
+  - **Acceptance Criteria**:
+    - `"plumbing"` → `"our new catalog"` · `"Ferretería Central"` → `"Distribuidora Central"`.
+    - `"(e.g., Pet Name)"` → `"(e.g., Business Name, Preferred Contact)"`.
+    - `"(ej: Mayoreo Total)"` → `"(ej: los competidores principales del cliente)"`.
+
+### Phase 2: Frontend UI Placeholders, Defaults & Icons
+
+- [x] Task 226.4 (FE): **Fix Fallback Category & Metric Defaults**
+  - `products/page.tsx`: `|| 'Beverage'` → `|| 'General'`.
+  - `actions/page.tsx`: `|| 'exchanges'` → `|| 'units'`.
+
+- [x] Task 226.5 (FE): **Neutralize Construction-Specific UI Text**
+  - `stores/[id]/page.tsx`: `"Prospect / Construction Site"` → `"Prospect / Account Name"` · plumbing playbook → neutral.
+  - `actions/page.tsx`: `"sacos, frentes, exchanges"` → `"units, boxes, displays"` · Spanish asset text → generic English.
+
+- [x] Task 226.6 (FE): **Remove Brand Name Placeholders**
+  - `AddProductModal.tsx`: `"Coca Cola 500ml"` → `"Product Name 500ml"`.
+  - `CatalogDrawer.tsx`: `"Nespresso"` → `"Brand Name"` · `"Premium Arabica"` → `"Product Name"` · `"BEV-AR-500"` → `"PRD-001"`.
+
+- [x] Task 226.7 (FE): **Neutralize Category & Attribute Placeholders**
+  - `CatalogDrawer.tsx`, `CategoryDrawer.tsx`, `AddCategoryModal.tsx`, `AddProductModal.tsx`: Replace beverage-specific examples (`"Beverages, Dairy"`, `"Alcohol %, Flavor"`) with neutral ones (`"Standard, Premium"`, `"Weight, Dimensions, Material"`).
+
+- [x] Task 226.8 (FE): **Remove Pet Clinic & Salon Legacy Placeholders**
+  - `ClientDrawer.tsx`, `GeneralSettings.tsx`: `"Pet Name"` → `"Preferred Contact Method"`.
+  - `AssistantSettings.tsx`: `"pet's name"` → `"operational requirements"`.
+  - `ServiceDrawer.tsx`: `"Premium Haircut"` → `"Standard Service"` · `"Requires Washing"` → `"Requires Setup"`.
+
+- [x] Task 226.9 (FE): **Neutralize Onboarding & Settings Defaults**
+  - `onboarding/page.tsx`: `"Acme Health"` → `"Acme Corp"` · `"Wellness Clinic"` → `"Distribution & Trade"`.
+  - `GeneralSettings.tsx`: `"Beauty, Health"` → `"Retail, Distribution"` · `"CDMX"` → `"all locations"`.
+
+- [x] Task 226.10 (FE): **Replace Scissors Icon with Industry-Neutral Icon**
+  - `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, `admin/page.tsx`: `Scissors` → `Briefcase` or `ClipboardList`.
+
+- [x] Task 226.11 (FE): **Neutralize AI Dossier Mock Text**
+  - `retailers/[id]/page.tsx`: `"expanding the beverage category"` → neutral intelligence summary.
+
+### Phase 3: Documentation, Seed Data & Test Fixtures (Low Risk)
+
+- [x] Task 226.12 (Docs): **Update Documentation Vertical References**
+  - `docs/design_system.md`, `docs/project/NORTH_STAR.md`, `docs/architecture/product_data_sheets_design.md`: Replace construction/hardware examples with generic B2B terms.
+
+- [x] Task 226.13 (BE): **Rename & Isolate Demo Seed Script**
+  - `seed_cemenquin.py` → `seed_demo_construction.py` with header comment.
+
+- [ ] Task 226.14 (QA): **Generalize Test Fixtures on Next Touch**
+  - *(Ongoing, non-blocking)* — When test files are next modified, replace construction-specific fixtures with neutral ones.
+
+## Epic 227: Ingestion-Time Product Summarization
+**Objective**: Eliminate raw product data dumps from LLM contexts by generating a structured `ai_summary` at ingestion time via a one-shot LLM extraction. This reduces catalog context from ~40K chars to ~3K chars for a typical 8-product business, fixing LLM confusion, Critic inconsistency, and unnecessary token cost — while preserving all raw data untouched for the business user.
+
+**Design Reference**: `temp/design_product_summarization.md`
+**Depends On**: Epic 221 (CatalogContextBuilder — completed), Epic 226 Phase 1 (agnostic prompts — should be done first or in parallel).
+
+### Phase 1: Schema & Core Task
+
+- [x] Task 227.1 (BE): **Add `ai_summary` Column to Product Model & Migration**
+  - **File**: `backend/app/models/trade/catalog.py`
+  - **Acceptance Criteria**:
+    - **Given** the `Product` model, **When** updated, **Then** a new `ai_summary = Column(Text, nullable=True)` column exists.
+    - Alembic migration generated and **human-approved** before running `alembic upgrade`.
+    - Existing products continue to work with `ai_summary = NULL` (no regression).
+
+- [x] Task 227.2 (BE): **Implement `generate_product_summary` Celery Task**
+  - **File**: `backend/app/tasks/knowledge.py`
+  - **Acceptance Criteria**:
+    - **Given** `generate_product_summary.delay(product_id)` is called,
+    - **When** the task executes, **Then** it:
+      1. Loads Product + Category from DB.
+      2. Assembles raw text: name + brand + category + description + custom_fields.
+      3. Caps input at 6,000 tokens.
+      4. Calls `gpt-4o-mini` with the industry-agnostic extraction prompt (6 structured fields).
+      5. Saves result to `product.ai_summary`.
+      6. Logs success/failure.
+    - **Guardrails**: Idempotent (safe to re-run, overwrites previous). Failure-safe (`ai_summary` stays `NULL` on error, no regression). Sequential processing within existing Celery worker concurrency.
+
+- [x] Task 227.3 (BE): **Extraction Prompt Template**
+  - **File**: `backend/app/core/prompts/product_summary.j2` (new) or inline in task
+  - **Acceptance Criteria**:
+    - Prompt is fully industry-agnostic per AGENTS.md "Industry Agnosticism" rules.
+    - Extracts 6 fields: USOS PRINCIPALES, CARACTERÍSTICAS CLAVE, TIPO DE PRODUCTO, PRESENTACIÓN, RENDIMIENTO/DURACIÓN, VENTAJAS CLAVE.
+    - Output is ~200-300 chars per product, structured and consistent.
+    - Prompt includes `"No especificado"` fallback for missing fields. No invented data.
+
+### Phase 2: API Integration & Trigger Wiring
+
+- [x] Task 227.4 (BE): **Dispatch Summary Task on Product Create/Update**
+  - **File**: `backend/app/api/trade/products.py`
+  - **Acceptance Criteria**:
+    - **Given** `POST /products` (create), **When** `db.commit()` succeeds, **Then** `generate_product_summary.delay(product.id)` is dispatched.
+    - **Given** `PATCH /products/{id}` (update), **When** `description` or `custom_fields` changed and `db.commit()` succeeds, **Then** task is dispatched.
+    - **Given** only `price` or `name` changed (no content change), **Then** task is NOT dispatched.
+
+- [x] Task 227.5 (BE): **Update CatalogContextBuilder to Prefer `ai_summary`**
+  - **File**: `backend/app/services/catalog_context.py`
+  - **Acceptance Criteria**:
+    - **Given** `format_product_line()`, **When** `product.ai_summary` is not `NULL`, **Then** use `ai_summary` instead of raw `description` + `custom_fields`.
+    - **When** `product.ai_summary` is `NULL`, **Then** fall back to current raw data behavior (no regression).
+    - Net context size for 8 summarized products ≤ ~3,000 chars.
+
+### Phase 3: Backfill & Validation
+
+- [x] Task 227.6 (BE): **Backfill Script for Existing Products**
+  - **File**: `backend/scripts/data_ops/backfill_product_summaries.py` (new)
+  - **Acceptance Criteria**:
+    - Script queries all products where `ai_summary IS NULL`.
+    - Optionally filters by `business_id`.
+    - Dispatches `generate_product_summary.delay(product.id)` for each.
+    - Can be triggered from admin endpoint or run as a one-time management command.
+
+- [x] Task 227.7 (BE/QA): **Unit Tests for Summary Task & Context Builder**
+  - **Acceptance Criteria**:
+    - Test: `generate_product_summary` produces valid structured output for a sample product.
+    - Test: `format_product_line` uses `ai_summary` when present, falls back to raw data when `NULL`.
+    - Test: Token cap enforced — input >6K tokens is truncated, not rejected.
+    - Test: LLM failure leaves `ai_summary` as `NULL` with no side effects.
+
+### Phase 4: Critic Evaluation (Post-Deployment)
+
+- [ ] Task 227.8 (AI): **Evaluate Critic Removal Feasibility**
+  - *(Decision deferred to post-implementation testing)*
+  - **Acceptance Criteria**:
+    - **Given** compact catalog context is live for 1-2 weeks, **When** Critic rejection rate is measured, **Then**:
+      - If false rejections drop to near-zero → recommend removing Critic (saves 1 LLM call per recommendation turn).
+      - If false rejections persist → keep Critic as-is (Option A, conservative).
+    - Document findings and decision in `temp/design_product_summarization.md`.
+
+### Cost Impact (Reference)
+| Metric | Before | After |
+|--------|--------|-------|
+| Catalog context per turn (8 products) | ~10,000 tokens | ~800 tokens |
+| 5-turn conversation | ~50,000 tokens | ~4,000 tokens |
+| Token reduction | — | **~92%** |
+| One-time summarization (8 products) | — | ~$0.003 |
+| One-time summarization (100 products) | — | ~$0.04 |

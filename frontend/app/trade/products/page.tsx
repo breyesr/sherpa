@@ -298,7 +298,7 @@ function ProductsPageContent() {
                     <div className="relative z-10 flex items-center justify-between md:justify-end gap-12 mt-6 md:mt-0 w-full md:w-auto">
                       <div className="w-48 pointer-events-none flex items-center">
                         <span className="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold">
-                          {categoryMap[product.category_id] || 'Beverage'}
+                          {categoryMap[product.category_id] || 'General'}
                         </span>
                       </div>
                       <div className="w-32 md:text-right font-black text-gray-900 text-lg pointer-events-none">
@@ -332,7 +332,7 @@ function ProductsPageContent() {
                         <Package size={24} />
                       </div>
                       <span className="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider">
-                        {categoryMap[product.category_id] || 'Beverage'}
+                        {categoryMap[product.category_id] || 'General'}
                       </span>
                     </div>
                     

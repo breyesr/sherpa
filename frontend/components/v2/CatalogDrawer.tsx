@@ -378,7 +378,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                   <input 
                     required
                     type="text"
-                    placeholder="e.g. Premium Arabica 500g"
+                    placeholder="e.g. Premium Product"
                     className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-gray-900"
                     value={productData.name}
                     onChange={e => setProductData({...productData, name: e.target.value})}
@@ -445,7 +445,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">SKU / Code</label>
                   <input 
                     type="text"
-                    placeholder="BEV-AR-500"
+                    placeholder="PRD-001"
                     className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold font-mono"
                     value={productData.sku}
                     onChange={e => setProductData({...productData, sku: e.target.value})}
@@ -456,7 +456,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Brand</label>
                     <input 
                       type="text"
-                      placeholder="e.g. Nespresso"
+                      placeholder="e.g. Brand Name"
                       className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
                       value={productData.brand}
                       onChange={e => setProductData({...productData, brand: e.target.value})}
@@ -738,7 +738,7 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
               <input 
                 required
                 type="text"
-                placeholder="e.g. Beverages, Perishables"
+                placeholder="e.g. Standard, Premium, Accessories"
                 className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-gray-900"
                 value={categoryData.name}
                 onChange={e => setCategoryData({...categoryData, name: e.target.value})}

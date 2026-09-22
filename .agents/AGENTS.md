@@ -89,6 +89,14 @@ These 5 techniques together reduced Railway billing from **$10/mo → $1.50/mo**
 - **Frontend types**: Do not use `: any` type annotations. Import types from `@/types/api.ts` or define local interfaces.
 - **Logging**: Use Python's `logging` module, never `print()`, for any operational or debug output in backend code.
 
+## Industry Agnosticism (DO NOT REGRESS)
+Xerpa is a **multi-vertical platform**. It must serve construction, pet care, food & beverage, beauty, pharma, or any B2B trade client without leaking assumptions from any specific industry. Violations of this rule create client-facing bugs.
+- **No hardcoded industry terms in prompts**: LLM prompts (`.j2` templates, inline system prompts in services) must NEVER reference a specific vertical (e.g., "construcción", "obra", "plumbing", "pet name", "salon"). Use generic B2B trade terms: "dirección de entrega" not "dirección de la obra", "paquetes/unidades" not "sacos".
+- **No hardcoded brand names**: Placeholders and examples must use neutral names (e.g., `"e.g. Product Name"`, `"e.g. Brand Name"`, `"e.g. PRD-001"`). Never use real brands (Coca Cola, Nespresso, Cemenquin) or industry-specific examples (Ferretería, Wellness Clinic).
+- **No hardcoded category/type fallbacks**: UI fallback values must be neutral (`"General"`, `"Uncategorized"`, `"units"`). Never default to a specific vertical like `"Beverage"` or `"exchanges"`.
+- **No industry-specific icons**: Icons must represent the abstract concept (e.g., `Briefcase` for services), not a specific industry (e.g., `Scissors` for salon). Only use industry-specific icons if the business dynamically configures them.
+- **Seed scripts & test fixtures**: Demo seed scripts must be clearly labeled by vertical (e.g., `seed_demo_construction.py`). Test fixtures should use neutral product names when possible. Neither should be importable by production code paths.
+
 ## Roles & Responsibilities
 - **Product Manager**: Owns the task breakdown (Epics/Features) and enforces MVP exclusions. Owns docs/project/BACKLOG.md and MVP scope enforcement.
 - **ScaleMaster**: Lead architect synthesizing all scale audits into `docs/scope/Sherpa_scalability_report.md.`.

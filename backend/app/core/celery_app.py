@@ -43,6 +43,7 @@ celery_app.conf.update(
         "process_sales_rep_message": {"queue": "slow_queue"},
         "process_distributor_message": {"queue": "slow_queue"},
         "process_prospect_message": {"queue": "slow_queue"},
+        "generate_product_summary": {"queue": "slow_queue"},
         "app.tasks.data_gateway.process_data_import": {"queue": "slow_queue"},
     },
     

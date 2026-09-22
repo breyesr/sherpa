@@ -94,7 +94,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
                 <input 
                   required
                   type="text"
-                  placeholder="e.g. Coca Cola 500ml"
+                  placeholder="e.g. Product Name 500ml"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pl-10"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
@@ -146,7 +146,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
               <div className="relative">
                 <input 
                   type="text"
-                  placeholder="e.g. BEV-001"
+                  placeholder="e.g. PRD-001"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-sm pl-10"
                   value={formData.sku}
                   onChange={e => setFormData({...formData, sku: e.target.value})}

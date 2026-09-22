@@ -6,12 +6,12 @@ To empower B2B sales representatives with a "Digital Brain" that handles the fri
 ---
 
 ## 🧑‍💻 The "Marco" Experience (The Goal)
-Imagine a Sales Rep named **Marco** distributing construction materials:
+Imagine a Sales Rep named **Marco** in B2B trade distribution:
 
-1.  **Seamless Ingestion:** After a visit to "Hardware Store XYZ," Marco sends a WhatsApp voice note: *"Carlos (the owner) is worried about Competitor ABC's prices on finishes. He's interested in our new plumbing line but needs a 5% discount."*
-2.  **Autonomous Structure:** The system parses this, updates Carlos's contact info, logs the "Competitor Risk," creates a "Lead" for the plumbing line, and schedules a follow-up.
-3.  **Contextual Briefing:** A week later, before walking into "Hardware Store ABC," Marco texts: *"Status?"*
-4.  **Strategic Insight:** The system replies: *"Store ABC is your top regional account. Note: Your nearby client XYZ is feeling price pressure from this store. Suggest a volume deal for ABC on finishes to keep them dominant while maintaining your margin."*
+1.  **Seamless Ingestion:** After a visit to "Distribuidora Central," Marco sends a WhatsApp voice note: *"Carlos (the owner) is worried about Competitor ABC's prices on key products. He's interested in our new product line but needs a 5% discount."*
+2.  **Autonomous Structure:** The system parses this, updates Carlos's contact info, logs the "Competitor Risk," creates a "Lead" for the product line, and schedules a follow-up.
+3.  **Contextual Briefing:** A week later, before walking into "Distribuidora Regional," Marco texts: *"Status?"*
+4.  **Strategic Insight:** The system replies: *"Distribuidora Regional is your top regional account. Note: Your nearby client Distribuidora Central is feeling price pressure from this store. Suggest a volume deal for Regional on core lines to keep them dominant while maintaining your margin."*
 
 ---
 

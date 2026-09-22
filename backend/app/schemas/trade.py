@@ -213,6 +213,7 @@ class ProductUpdate(BaseModel):
 class ProductResponse(ProductBase):
     id: str
     category_id: str
+    ai_summary: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

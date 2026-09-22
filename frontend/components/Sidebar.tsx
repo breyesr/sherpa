@@ -19,7 +19,7 @@ import {
   Tag,
   Package,
   ArrowLeftRight,
-  Scissors,
+  Briefcase,
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
@@ -121,7 +121,7 @@ function SidebarContent() {
               </div>
               <SidebarLink href="/crm" icon={Users} name="Clients" active={pathname === '/crm'} />
               {showServices && (
-                <SidebarLink href="/services" icon={Scissors} name="Services" active={pathname === '/services'} />
+                <SidebarLink href="/services" icon={Briefcase} name="Services" active={pathname === '/services'} />
               )}
             </div>
           </div>

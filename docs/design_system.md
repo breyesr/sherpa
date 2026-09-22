@@ -62,25 +62,25 @@ For desktop administrators, a **two-column split screen** is the ideal layout pa
 |                                      |                                      |
 |  [Phase 1: Classification]           |  [LIVE MOBILE PREVIEW]               |
 |  Category                            |  +--------------------------------+  |
-|  +--------------------+------------+ |  | < Store: Cemenquin Centro      |  |
+|  +--------------------+------------+ |  | < Store: Distribuidora Central |  |
 |  | * COMMERCIAL (Sales) | MARKETING| |  |                                |  |
 |  +--------------------+------------+ |  | [M] COMMERCIAL ACTION          |  |
 |                                      |  |--------------------------------|  |
-|  Objective                           |  | Title: Replenish Arabica SKU   |  |
+|  Objective                           |  | Title: Replenish Core SKU      |  |
 |  +---------------------------------+ |  |                                |  |
 |  | Search or select objective... v | |  | Objective: Inventory Velocity  |  |
 |  +---------------------------------+ |  |                                |  |
-|                                      |  | Target: 150 sacos              |  |
+|                                      |  | Target: 150 units              |  |
 |  [Phase 2: Action Definition]        |  |                                |  |
 |  Main Action Title                   |  | Description: Please check back |  |
 |  +---------------------------------+ |  | stock and reload the main rack.|  |
-|  | Replenish Arabica SKU           | |  +--------------------------------+  |
+|  | Replenish Core SKU               | |  +--------------------------------+  |
 |  +---------------------------------+ |                                      |
 |                                      |                                      |
 |  [Phase 3: Quantitative Target]      |                                      |
 |  Metric Unit         Metric Goal     |                                      |
 |  +-----------------+ +-------------+ |                                      |
-|  | sacos           | | 150         | |                                      |
+|  | units           | | 150         | |                                      |
 |  +-----------------+ +-------------+ |                                      |
 |                                      |                                      |
 |  +---------------------------------+ |                                      |
