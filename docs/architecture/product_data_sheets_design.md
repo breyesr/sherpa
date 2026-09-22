@@ -77,9 +77,9 @@ erDiagram
 ## 3. Retrieval & Inference Integration
 
 When a user asks:
-> *"¿Cuál es la resistencia a la compresión a los 28 días del Cemento Extra Forte?"*
+> *"¿Cuál es la especificación técnica o de rendimiento del Producto Premium 500?"*
 
-1. **Entity Extraction**: Identify product mention (`Cemento Extra Forte`).
+1. **Entity Extraction**: Identify product mention (`Producto Premium 500`).
 2. **Targeted Vector Search**:
    ```sql
    SELECT content_chunk, cosine_distance(embedding, :query_vector) AS dist

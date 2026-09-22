@@ -587,7 +587,7 @@
 - [x] Task 224.4 (BE/QA): **Technical Fact-Checking & Anti-Hallucination Test Suite**
   - **Acceptance Criteria**:
     - **Given** unit test suite in `backend/app/tests/test_technical_fact_checker.py`,
-    - **When** simulating high-risk inquiries ("piso sobre piso", "columna colada", "calcular sacos sin sustrato"),
+    - **When** simulating high-risk inquiries (unsupported applications, uncertified use cases, quantity guessing without specifications),
     - **Then** verify that unauthorized recommendations are completely blocked and converted into honest, safe responses across 100% of test cases.
 - [x] Task 224.5 (BE/AI): **Anti-Coercion & Hypothetical Forcing Hardening**
   - **Acceptance Criteria**:
@@ -597,7 +597,7 @@
     - **Enforce** commercial decoupling: when refusing a recommendation, the agent is strictly prohibited from asking for quantities or attempting sales qualification.
 
 ## Epic 225: Category-Scoped Custom Attributes & Complete Category Lifecycle (CRUD)
-**Objective**: Transition product custom field definitions from the global business profile to individual product categories, enabling category-specific specifications (e.g., volume/ABV for beverages, weight/flavor for snacks) and delivering complete Category CRUD with deletion safeguards and reactive product form rendering.
+**Objective**: Transition product custom field definitions from the global business profile to individual product categories, enabling category-specific specifications (e.g., weight, dimensions, material, or custom specifications) and delivering complete Category CRUD with deletion safeguards and reactive product form rendering.
 
 ### Phase 1: Database Schema & Category Model
 - [x] Task 225.1 (BE): **Add `fields_config` to Category Model & Alembic Migration**
@@ -670,18 +670,18 @@
 ### Phase 1: Backend LLM Prompts & Core Services (P0 — Highest Impact)
 *These directly shape what the AI says to every client in real-time conversations.*
 
-- [ ] Task 226.1 (BE): **Purge "obra" (construction site) from Prospect Qualifier**
+- [x] Task 226.1 (BE): **Purge "obra" (construction site) from Prospect Qualifier**
   - **File**: `backend/app/services/prospect_qualifier.py`
   - **Acceptance Criteria**:
     - All `"ubicación de la obra"` / `"dirección de la obra"` (lines 231, 243, 265, 315, 326, 334, 355) → `"dirección de entrega"` / `"ubicación de entrega"`.
     - `f"{comp} (Obra {channel_name})"` (line 707) → `f"{comp} (Lead {channel_name})"`.
     - `"en la obra {loc}"` (line 779) → `"en la dirección {loc}"`.
 
-- [ ] Task 226.2 (BE): **Remove "sacos" from Universal Catalog Guardrail**
+- [x] Task 226.2 (BE): **Remove "sacos" from Universal Catalog Guardrail**
   - **File**: `backend/app/services/catalog_context.py` (line 138)
   - **Acceptance Criteria**: `"(piezas, unidades o sacos)"` → `"(piezas, paquetes o unidades)"`.
 
-- [ ] Task 226.3 (BE): **Neutralize Jinja2 Prompt Template Examples**
+- [x] Task 226.3 (BE): **Neutralize Jinja2 Prompt Template Examples**
   - **Files**: `intent_classifier.j2`, `base_ai.j2`, `visit_briefer.j2`
   - **Acceptance Criteria**:
     - `"plumbing"` → `"our new catalog"` · `"Ferretería Central"` → `"Distribuidora Central"`.
@@ -690,42 +690,42 @@
 
 ### Phase 2: Frontend UI Placeholders, Defaults & Icons
 
-- [ ] Task 226.4 (FE): **Fix Fallback Category & Metric Defaults**
+- [x] Task 226.4 (FE): **Fix Fallback Category & Metric Defaults**
   - `products/page.tsx`: `|| 'Beverage'` → `|| 'General'`.
   - `actions/page.tsx`: `|| 'exchanges'` → `|| 'units'`.
 
-- [ ] Task 226.5 (FE): **Neutralize Construction-Specific UI Text**
+- [x] Task 226.5 (FE): **Neutralize Construction-Specific UI Text**
   - `stores/[id]/page.tsx`: `"Prospect / Construction Site"` → `"Prospect / Account Name"` · plumbing playbook → neutral.
   - `actions/page.tsx`: `"sacos, frentes, exchanges"` → `"units, boxes, displays"` · Spanish asset text → generic English.
 
-- [ ] Task 226.6 (FE): **Remove Brand Name Placeholders**
+- [x] Task 226.6 (FE): **Remove Brand Name Placeholders**
   - `AddProductModal.tsx`: `"Coca Cola 500ml"` → `"Product Name 500ml"`.
   - `CatalogDrawer.tsx`: `"Nespresso"` → `"Brand Name"` · `"Premium Arabica"` → `"Product Name"` · `"BEV-AR-500"` → `"PRD-001"`.
 
-- [ ] Task 226.7 (FE): **Neutralize Category & Attribute Placeholders**
+- [x] Task 226.7 (FE): **Neutralize Category & Attribute Placeholders**
   - `CatalogDrawer.tsx`, `CategoryDrawer.tsx`, `AddCategoryModal.tsx`, `AddProductModal.tsx`: Replace beverage-specific examples (`"Beverages, Dairy"`, `"Alcohol %, Flavor"`) with neutral ones (`"Standard, Premium"`, `"Weight, Dimensions, Material"`).
 
-- [ ] Task 226.8 (FE): **Remove Pet Clinic & Salon Legacy Placeholders**
+- [x] Task 226.8 (FE): **Remove Pet Clinic & Salon Legacy Placeholders**
   - `ClientDrawer.tsx`, `GeneralSettings.tsx`: `"Pet Name"` → `"Preferred Contact Method"`.
   - `AssistantSettings.tsx`: `"pet's name"` → `"operational requirements"`.
   - `ServiceDrawer.tsx`: `"Premium Haircut"` → `"Standard Service"` · `"Requires Washing"` → `"Requires Setup"`.
 
-- [ ] Task 226.9 (FE): **Neutralize Onboarding & Settings Defaults**
+- [x] Task 226.9 (FE): **Neutralize Onboarding & Settings Defaults**
   - `onboarding/page.tsx`: `"Acme Health"` → `"Acme Corp"` · `"Wellness Clinic"` → `"Distribution & Trade"`.
   - `GeneralSettings.tsx`: `"Beauty, Health"` → `"Retail, Distribution"` · `"CDMX"` → `"all locations"`.
 
-- [ ] Task 226.10 (FE): **Replace Scissors Icon with Industry-Neutral Icon**
+- [x] Task 226.10 (FE): **Replace Scissors Icon with Industry-Neutral Icon**
   - `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, `admin/page.tsx`: `Scissors` → `Briefcase` or `ClipboardList`.
 
-- [ ] Task 226.11 (FE): **Neutralize AI Dossier Mock Text**
+- [x] Task 226.11 (FE): **Neutralize AI Dossier Mock Text**
   - `retailers/[id]/page.tsx`: `"expanding the beverage category"` → neutral intelligence summary.
 
 ### Phase 3: Documentation, Seed Data & Test Fixtures (Low Risk)
 
-- [ ] Task 226.12 (Docs): **Update Documentation Vertical References**
+- [x] Task 226.12 (Docs): **Update Documentation Vertical References**
   - `docs/design_system.md`, `docs/project/NORTH_STAR.md`, `docs/architecture/product_data_sheets_design.md`: Replace construction/hardware examples with generic B2B terms.
 
-- [ ] Task 226.13 (BE): **Rename & Isolate Demo Seed Script**
+- [x] Task 226.13 (BE): **Rename & Isolate Demo Seed Script**
   - `seed_cemenquin.py` → `seed_demo_construction.py` with header comment.
 
 - [ ] Task 226.14 (QA): **Generalize Test Fixtures on Next Touch**
