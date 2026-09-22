@@ -69,3 +69,44 @@ def test_build_catalog_context_guardrails():
     assert "Precio: $" not in context_disallowed
     assert "POLÍTICA DE PRECIOS (CONFIDENCIAL)" in context_disallowed
     assert "NO estás autorizado a proporcionar precios" in context_disallowed
+
+
+def test_format_product_line_prefers_ai_summary():
+    cat = Category(name="Herramientas")
+    prod = Product(
+        name="Taladro Percutor 750W",
+        brand="TechPower",
+        unit_of_measure="unit",
+        wholesale_threshold=5,
+        price=1200.00,
+        custom_fields={"potencia": "750W", "mandril": "13mm"},
+        description="Taladro de alta potencia para mampostería y madera.",
+        ai_summary="1. USOS PRINCIPALES: Perforación en mampostería y madera. | 2. CARACTERÍSTICAS: Motor 750W."
+    )
+    prod.category = cat
+
+    line = CatalogContextBuilder.format_product_line(prod, allow_price_disclosure=True)
+    assert "**Taladro Percutor 750W**" in line
+    assert "Resumen Técnico: 1. USOS PRINCIPALES: Perforación en mampostería y madera. | 2. CARACTERÍSTICAS: Motor 750W." in line
+    assert "Descripción:" not in line
+    assert "Especificaciones:" not in line
+
+
+def test_format_product_line_falls_back_when_ai_summary_is_none():
+    cat = Category(name="Herramientas")
+    prod = Product(
+        name="Taladro Percutor 750W",
+        brand="TechPower",
+        unit_of_measure="unit",
+        price=1200.00,
+        custom_fields={"potencia": "750W"},
+        description="Taladro de alta potencia para mampostería.",
+        ai_summary=None
+    )
+    prod.category = cat
+
+    line = CatalogContextBuilder.format_product_line(prod, allow_price_disclosure=True)
+    assert "Resumen Técnico:" not in line
+    assert "Descripción: Taladro de alta potencia para mampostería." in line
+    assert "Potencia: 750W" in line
+

@@ -1,16 +1,27 @@
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.embeddings import EmbeddingService
-from app.models.trade import Store, StoreNote, Competitor, CustomerNote
+from app.models.trade import Store, StoreNote, Competitor, CustomerNote, Product, Category
 from app.models.knowledge import KnowledgeCorpus
 from app.models.crm import Client
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 import asyncio
 import logging
+import os
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import litellm
+from app.core.system_config import ConfigService
 
 logger = logging.getLogger(__name__)
 
-from sqlalchemy.orm import selectinload
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROMPTS_DIR = os.path.join(BASE_DIR, "core", "prompts")
+
+summary_prompt_env = Environment(
+    loader=FileSystemLoader(PROMPTS_DIR),
+    autoescape=select_autoescape()
+)
 
 async def _write_to_dlq(task_name: str, entity_type: str, entity_id: str, business_id: str, error_message: str, retry_count: int):
     from app.models.dlq import VectorizationDLQ
@@ -254,3 +265,82 @@ def update_account_intelligence_task(self, store_id: str, business_id: str):
     except Exception as exc:
         logger.error(f"Retrying update_account_intelligence_task for {store_id} due to: {exc}")
         raise self.retry(exc=exc)
+
+async def _generate_product_summary_logic(product_id: str):
+    """Internal logic to extract structured AI summary for a single product."""
+    async with SessionLocal() as db:
+        try:
+            stmt = select(Product).options(selectinload(Product.category)).where(Product.id == product_id)
+            res = await db.execute(stmt)
+            product = res.scalars().first()
+            if not product:
+                logger.warning(f"Product {product_id} not found for summarization")
+                return
+
+            # Format custom fields text
+            custom_fields_lines = []
+            if product.custom_fields and isinstance(product.custom_fields, dict):
+                for k, v in product.custom_fields.items():
+                    if v is not None and v != "":
+                        custom_fields_lines.append(f"- {k}: {v}")
+            custom_fields_text = "\n".join(custom_fields_lines)
+
+            # Cap description to prevent token overflow (~20,000 chars)
+            max_desc_chars = 20000
+            desc = product.description or ""
+            if len(desc) > max_desc_chars:
+                desc = desc[:max_desc_chars] + "... [truncado]"
+
+            # Render prompt
+            template = summary_prompt_env.get_template("product_summary.j2")
+            prompt_content = template.render(
+                name=product.name,
+                brand=product.brand,
+                category_name=product.category.name if product.category else None,
+                description=desc,
+                custom_fields_text=custom_fields_text
+            )
+
+            # Resolve API Key
+            api_key = await ConfigService.get(db, "OPENAI_API_KEY")
+            if not api_key:
+                api_key = os.environ.get("OPENAI_API_KEY")
+
+            response = await litellm.acompletion(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt_content}],
+                api_key=api_key,
+                max_tokens=600,
+                temperature=0.2,
+                timeout=30,
+            )
+
+            raw_summary = response.choices[0].message.content
+            if raw_summary:
+                product.ai_summary = raw_summary.strip()
+                await db.commit()
+                logger.info(f"Successfully generated ai_summary for product {product_id} ({product.name})")
+            else:
+                logger.warning(f"Empty summary returned for product {product_id}")
+
+        except Exception as e:
+            logger.error(f"Error generating product summary for {product_id}: {e}")
+            await db.rollback()
+            raise e
+
+@celery_app.task(
+    bind=True,
+    name="generate_product_summary",
+    max_retries=3,
+    default_retry_delay=30,
+    autoretry_for=(Exception,),
+    retry_backoff=True
+)
+def generate_product_summary(self, product_id: str):
+    """Celery task to handle ingestion-time product summarization."""
+    try:
+        return asyncio.run(_generate_product_summary_logic(product_id))
+    except Exception as exc:
+        logger.error(f"Retrying generate_product_summary for {product_id} due to: {exc}")
+        raise self.retry(exc=exc)
+

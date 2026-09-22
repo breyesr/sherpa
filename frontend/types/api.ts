@@ -187,12 +187,12 @@ export interface paths {
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    get: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
     /**
      * Debug Twilio
      * @description Simple endpoint to verify Twilio is actually reaching the server.
      */
-    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_post"];
+    post: operations["debug_twilio_api_v1_whatsapp_debug_twilio_get"];
   };
   "/api/v1/whatsapp/webhook/twilio": {
     /**
@@ -1818,6 +1818,8 @@ export interface components {
       id: string;
       /** Category Id */
       category_id: string;
+      /** Ai Summary */
+      ai_summary?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -3406,7 +3408,7 @@ export interface operations {
    * Debug Twilio
    * @description Simple endpoint to verify Twilio is actually reaching the server.
    */
-  debug_twilio_api_v1_whatsapp_debug_twilio_post: {
+  debug_twilio_api_v1_whatsapp_debug_twilio_get: {
     responses: {
       /** @description Successful Response */
       200: {

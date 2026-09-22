@@ -1,4 +1,5 @@
 from typing import Any, List
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -13,6 +14,8 @@ from app.schemas.trade import (
     CategoryResponse, CategoryCreate, CategoryUpdate,
     ProductResponse, ProductCreate, ProductUpdate
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -221,6 +224,13 @@ async def create_product(
     db.add(product)
     await db.commit()
     await db.refresh(product)
+
+    try:
+        from app.tasks.knowledge import generate_product_summary
+        generate_product_summary.delay(product.id)
+    except Exception as e:
+        logger.error(f"Failed to dispatch generate_product_summary for product {product.id}: {e}")
+
     return product
 
 @router.get("/products/{product_id}", response_model=ProductResponse, dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])
@@ -269,11 +279,20 @@ async def update_product(
         if not cat_res.scalars().first():
             raise HTTPException(status_code=400, detail="Invalid category ID")
             
+    content_fields_changed = any(f in update_data for f in ["description", "custom_fields"])
     for field, value in update_data.items():
         setattr(product, field, value)
         
     await db.commit()
     await db.refresh(product)
+
+    if content_fields_changed:
+        try:
+            from app.tasks.knowledge import generate_product_summary
+            generate_product_summary.delay(product.id)
+        except Exception as e:
+            logger.error(f"Failed to dispatch generate_product_summary for product {product.id}: {e}")
+
     return product
 
 @router.delete("/products/{product_id}", dependencies=[Depends(require_any_feature(["campaign_flow", "b2b_solutions", "products"]))])

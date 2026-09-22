@@ -36,22 +36,27 @@ class CatalogContextBuilder:
         if allow_price_disclosure and product.price is not None and product.price > 0:
             parts.append(f"Precio: ${product.price:.2f}")
             
-        # Custom specification fields
-        if product.custom_fields and isinstance(product.custom_fields, dict):
-            specs = []
-            for k, v in product.custom_fields.items():
-                if v is not None and v != "":
-                    label = k.replace("_", " ").capitalize()
-                    val_str = "Sí" if v is True else "No" if v is False else str(v)
-                    specs.append(f"{label}: {val_str}")
-            if specs:
-                parts.append(f"Especificaciones: [{', '.join(specs)}]")
-                
-        if product.description:
-            clean_desc = product.description.strip().replace("\n", " ")
-            if len(clean_desc) > 800:
-                clean_desc = clean_desc[:797] + "..."
-            parts.append(f"Descripción: {clean_desc}")
+        # Ingestion-Time Summary (Epic 227)
+        if product.ai_summary:
+            clean_summary = product.ai_summary.strip().replace("\n", " ")
+            parts.append(f"Resumen Técnico: {clean_summary}")
+        else:
+            # Custom specification fields
+            if product.custom_fields and isinstance(product.custom_fields, dict):
+                specs = []
+                for k, v in product.custom_fields.items():
+                    if v is not None and v != "":
+                        label = k.replace("_", " ").capitalize()
+                        val_str = "Sí" if v is True else "No" if v is False else str(v)
+                        specs.append(f"{label}: {val_str}")
+                if specs:
+                    parts.append(f"Especificaciones: [{', '.join(specs)}]")
+                    
+            if product.description:
+                clean_desc = product.description.strip().replace("\n", " ")
+                if len(clean_desc) > 800:
+                    clean_desc = clean_desc[:797] + "..."
+                parts.append(f"Descripción: {clean_desc}")
 
         return "- " + " | ".join(parts)
 
