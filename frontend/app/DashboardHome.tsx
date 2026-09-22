@@ -12,7 +12,7 @@ import {
   User as UserIcon,
   AlertCircle,
   CheckCircle2,
-  Scissors,
+  Briefcase,
   ArrowUpRight,
   DollarSign,
   CheckCircle,
@@ -526,7 +526,7 @@ export default function DashboardHome({ initialBusiness, initialStats, token }: 
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               {apt.service && (
                                 <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-blue-100">
-                                  <Scissors size={10} /> {apt.service.name}
+                                  <Briefcase size={10} /> {apt.service.name}
                                 </span>
                               )}
                               <span className="text-xs text-gray-400 font-medium italic truncate max-w-[150px]">

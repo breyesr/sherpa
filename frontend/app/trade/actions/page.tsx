@@ -654,7 +654,7 @@ export default function ActionsStrategyDesk() {
                         <div>
                           <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block">Result</span>
                           <span className="text-base font-black text-gray-900">
-                            {action.result_value} <span className="text-2xs font-bold text-gray-400 uppercase">{action.result_unit || 'exchanges'}</span>
+                            {action.result_value} <span className="text-2xs font-bold text-gray-400 uppercase">{action.result_unit || 'units'}</span>
                           </span>
                         </div>
                       ) : (
@@ -1091,7 +1091,7 @@ export default function ActionsStrategyDesk() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest block ml-1 mb-2">
-                      Result Value ({selectedAction.result_unit || 'exchanges'})
+                      Result Value ({selectedAction.result_unit || 'units'})
                     </label>
                     <input
                       required
@@ -1248,7 +1248,7 @@ export default function ActionsStrategyDesk() {
                 <input
                   required
                   type="text"
-                  placeholder="e.g. sacos, frentes, exchanges"
+                  placeholder="e.g. units, boxes, displays"
                   className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   value={templateFormData.default_unit}
                   onChange={e => setTemplateFormData({...templateFormData, default_unit: e.target.value})}
@@ -1263,7 +1263,7 @@ export default function ActionsStrategyDesk() {
                 required
                 type="text"
                 maxLength={50}
-                placeholder="e.g. Despliegue de Activo Permanente"
+                placeholder="e.g. Permanent Asset Deployment"
                 className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 value={templateFormData.name}
                 onChange={e => setTemplateFormData({...templateFormData, name: e.target.value})}
@@ -1275,7 +1275,7 @@ export default function ActionsStrategyDesk() {
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Description / Guidelines</label>
               <textarea
                 rows={3}
-                placeholder="e.g. Proveer un activo de la marca condicionado a un acuerdo de exclusividad..."
+                placeholder="e.g. Deploy branded merchandising asset tied to exclusivity terms..."
                 className="w-full p-4 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-900 resize-none text-sm"
                 value={templateFormData.description}
                 onChange={e => setTemplateFormData({...templateFormData, description: e.target.value})}

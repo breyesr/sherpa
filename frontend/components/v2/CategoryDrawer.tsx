@@ -221,7 +221,7 @@ export default function CategoryDrawer({
             <input 
               type="text"
               required
-              placeholder="e.g. Beverages, Snacks, Cleaning Supplies"
+              placeholder="e.g. Standard, Premium, Accessories"
               className="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-gray-900"
               value={name}
               onChange={e => setName(e.target.value)}
@@ -318,7 +318,7 @@ export default function CategoryDrawer({
                   <input 
                     type="text"
                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-xs font-medium"
-                    placeholder="e.g. Volume (ml), Alcohol %, Flavor"
+                    placeholder="e.g. Weight, Dimensions, Material"
                     value={newFieldName}
                     onChange={(e) => setNewFieldName(e.target.value)}
                   />

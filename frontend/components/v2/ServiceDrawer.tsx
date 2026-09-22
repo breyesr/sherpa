@@ -247,7 +247,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
               required
               type="text" 
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
-              placeholder="e.g. Premium Haircut"
+              placeholder="e.g. Standard Service"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -336,7 +336,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
                     <input 
                       type="text"
                       className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-xs font-medium"
-                      placeholder="e.g. Requires Washing"
+                      placeholder="e.g. Requires Setup"
                       value={newFieldName}
                       onChange={(e) => setNewFieldName(e.target.value)}
                     />

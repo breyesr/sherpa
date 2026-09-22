@@ -61,7 +61,7 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess, token }: 
               <input 
                 required
                 type="text"
-                placeholder="e.g. Beverages, Dairy"
+                placeholder="e.g. Standard, Premium"
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}

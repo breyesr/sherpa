@@ -223,7 +223,7 @@ export default function AssistantSettings({ business, user, token, onMessage, on
                       value={editAssistant.custom_steps}
                       onChange={e => setEditAssistant({...editAssistant, custom_steps: e.target.value})}
                       className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all min-h-[120px] font-medium"
-                      placeholder="e.g. 1. Greet the user. 2. Ask for their pet's name..."
+                      placeholder="e.g. 1. Greet the user. 2. Ask for their operational requirements..."
                     />
                   </div>
                 )}
