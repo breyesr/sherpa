@@ -801,3 +801,11 @@
 
 
 
+
+## [2026-09-22] - Industry Agnosticism Audit & Epic Planning
+- **Design Doc Remediation**: Made `temp/design_product_summarization.md` fully industry-agnostic — replaced construction-specific extraction prompt, added multi-vertical example outputs (construction, pet food, hair salon), removed Cemenquin brand references.
+- **Full Codebase Audit**: Deployed 3 parallel research subagents to scan backend, frontend, and prompts/docs. Identified **38 hardcoded references across 25+ files** traced to 4 legacy pilots (Cemenquin/construction, pet clinic, beverage/CPG, hair salon).
+- **AGENTS.md Guardrail**: Added permanent "Industry Agnosticism (DO NOT REGRESS)" rule section with 5 enforcement bullets — covers prompts, brand names, fallback defaults, icons, and seed data.
+- **Epic 226 (BACKLOG)**: Created 14-task epic "Industry Agnosticism — Purge All Hardcoded Vertical & Client References" across 3 phases (P0 backend → frontend UI → docs/tests).
+- **Epic 227 (BACKLOG)**: Created 8-task epic "Ingestion-Time Product Summarization" covering schema migration, Celery task, API wiring, backfill, and Critic evaluation — linked to design doc and dependent on Epic 226 Phase 1.
+- **Learnings**: Legacy pilot data leaves deep traces — construction terms embedded in 9 locations of a single service file (`prospect_qualifier.py`), pet clinic artifacts in the root AI template (`base_ai.j2`), and beverage defaults in fallback UI logic. The "DO NOT REGRESS" pattern in AGENTS.md is effective for preventing future violations.
