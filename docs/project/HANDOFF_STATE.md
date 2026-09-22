@@ -1,36 +1,41 @@
-# Handoff State: 2026-09-22 (Epic 226: Industry Agnosticism Completed)
+# Handoff State: 2026-09-22 (Epic 227: Ingestion-Time Product Summarization Completed)
 
 ## Current Branch & Git Status
-- Working branch: `feature/trade/epic-226-industry-agnosticism`
-- Clean working directory (all phases committed cleanly, all backend tests passing 109/109, Next.js build succeeding 30/30 pages).
+- Working branch: `feature/trade/epic-227-product-summarization` (branched from `feature/trade/epic-226-industry-agnosticism`)
+- Clean working directory (implementation committed in `cdb2dc8`, all backend tests passing 114/114, Next.js build succeeding 30/30 pages).
 
 ## What Was Done
-1. **Epic 226 Phase 1 (Backend LLM Prompts & Core Services)**:
-   - Task 226.1: Purged 9 occurrences of `"obra"` from `prospect_qualifier.py` prompts, changed lead naming from `(Obra {channel_name})` to `(Lead {channel_name})`, and neutralized action note templates.
-   - Task 226.2: Replaced `"sacos"` with `"paquetes"` in universal catalog guardrail in `catalog_context.py`.
-   - Task 226.3: Neutralized examples in Jinja2 prompt templates: `intent_classifier.j2` (plumbing/Ferretería -> new catalog/Distribuidora Central), `base_ai.j2` (Pet Name -> Business Name, Preferred Contact), `visit_briefer.j2` (Mayoreo Total -> competitor example).
-2. **Epic 226 Phase 2 (Frontend UI Placeholders, Defaults & Icons)**:
-   - Task 226.4: Replaced category badge fallback `'Beverage'` with `'General'` in `products/page.tsx` and `'exchanges'` with `'units'` in `actions/page.tsx`.
-   - Task 226.5: Changed `"Prospect / Construction Site"` to `"Prospect / Account Name"` and neutralized plumbing playbook in `stores/[id]/page.tsx`; replaced `"sacos, frentes, exchanges"` and Spanish asset strings in `actions/page.tsx`.
-   - Tasks 226.6 & 226.7: Neutralized brand names (`Coca Cola`, `Nespresso`), SKUs (`BEV-001`), and category/attribute placeholders in `AddProductModal.tsx`, `AddCategoryModal.tsx`, `CatalogDrawer.tsx`, and `CategoryDrawer.tsx`.
-   - Task 226.8 & 226.9: Replaced `"Pet Name"`, `"pet's name"`, `"Premium Haircut"`, `"Requires Washing"`, `"Wellness Clinic"`, `"Acme Health"`, and `"CDMX"` in `ClientDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`, `ServiceDrawer.tsx`, and `onboarding/page.tsx`.
-   - Task 226.10: Replaced legacy `Scissors` icon with `Briefcase` across `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, and `admin/page.tsx`.
-   - Task 226.11: Neutralized beverage reference in AI Dossier in `retailers/[id]/page.tsx`.
-3. **Epic 226 Phase 3 (Docs & Demo Seed Script Isolation)**:
-   - Task 226.12: Updated `docs/design_system.md`, `docs/project/NORTH_STAR.md`, `docs/architecture/product_data_sheets_design.md`, and `docs/project/BACKLOG.md` to remove vertical-specific assumptions.
-   - Task 226.13: Renamed `seed_cemenquin.py` -> `seed_demo_construction.py` and added clear docstring header isolating it as a demo seed fixture.
-4. **Verification**:
-   - Backend test suite: 109 passed, 0 failed.
-   - Next.js production build: 30/30 pages compiled with zero errors.
+1. **Task 227.1: Schema & Migration**:
+   - Added `ai_summary = Column(Text, nullable=True)` to [`Product`](file:///Users/bernardo/projects/sherpa/backend/app/models/trade/catalog.py).
+   - Generated and sanitized Alembic migration [`6955244d7aa3_add_ai_summary_to_products.py`](file:///Users/bernardo/projects/sherpa/backend/migrations/versions/6955244d7aa3_add_ai_summary_to_products.py) (purged accidental drops of foreign LangGraph checkpoint tables).
+   - Applied migration cleanly via `alembic upgrade head` with human confirmation.
+2. **Task 227.2: Celery Task**:
+   - Implemented `_generate_product_summary_logic` and `generate_product_summary` in [`backend/app/tasks/knowledge.py`](file:///Users/bernardo/projects/sherpa/backend/app/tasks/knowledge.py).
+   - Routed to `slow_queue` with low concurrency, idempotent DB session handling, token capping (6k tokens), and error resilience (`ai_summary` stays `None` on failure).
+3. **Task 227.3: Prompt Template**:
+   - Created [`backend/app/core/prompts/product_summary.j2`](file:///Users/bernardo/projects/sherpa/backend/app/core/prompts/product_summary.j2) extracting 6 structured fields (USOS PRINCIPALES, CARACTERÍSTICAS CLAVE, TIPO DE PRODUCTO, PRESENTACIÓN, RENDIMIENTO/DURACIÓN, VENTAJAS CLAVE) with industry-agnostic formatting and `No especificado` fallback.
+4. **Task 227.4: API Dispatch**:
+   - Wired `create_product` and `update_product` in [`backend/app/api/trade/products.py`](file:///Users/bernardo/projects/sherpa/backend/app/api/trade/products.py) to trigger summarization after commit.
+   - Guarded update trigger to execute only when `description` or `custom_fields` change (skipping price/name-only edits).
+5. **Task 227.5: Context Builder**:
+   - Updated `CatalogContextBuilder.format_product_line` in [`backend/app/services/catalog_context.py`](file:///Users/bernardo/projects/sherpa/backend/app/services/catalog_context.py) to prioritize `ai_summary` over raw descriptions/custom fields with zero-regression fallback.
+6. **Task 227.6: Backfill Script**:
+   - Created CLI utility [`backend/scripts/data_ops/backfill_product_summaries.py`](file:///Users/bernardo/projects/sherpa/backend/scripts/data_ops/backfill_product_summaries.py) supporting `--business-id`, `--sync`, and `--force`.
+7. **Task 227.7: Unit Tests**:
+   - Added unit tests in [`backend/app/tests/test_catalog_context.py`](file:///Users/bernardo/projects/sherpa/backend/app/tests/test_catalog_context.py) and created [`backend/app/tests/test_product_summarization.py`](file:///Users/bernardo/projects/sherpa/backend/app/tests/test_product_summarization.py).
+8. **Contract Synchronization**:
+   - Updated `ProductResponse` schema in [`backend/app/schemas/trade.py`](file:///Users/bernardo/projects/sherpa/backend/app/schemas/trade.py).
+   - Regenerated `backend/openapi.json`.
+   - Synced frontend types via `npm run gen:api` in `frontend/types/api.ts`.
+   - Verified with full test runs: 114 passed backend tests, 30/30 Next.js pages compiled cleanly.
 
 ## Exact Next Steps
-1. **Epic 227: Ingestion-Time Product Summarization**
-   - Phase 1: Task 227.1 (`ai_summary` column on Product model + Alembic migration) and Task 227.2 (`summarize_product_catalog` Celery task using LiteLLM/OpenAI).
-   - Phase 2: API wiring on product CRUD + backfill script.
-   - Phase 3: Integration into `CatalogContextBuilder` and Critic evaluation prompt.
-2. If ready, merge `feature/trade/epic-226-industry-agnosticism` into staging after user approval.
+1. Task 227.8: Critic evaluation (deferred to post-deployment monitoring per backlog).
+2. Request human approval to merge `feature/trade/epic-227-product-summarization` into `staging`.
 
 ## Key Artifacts
-- Full audit report: `~/.gemini/antigravity-cli/brain/15964725-fa18-47a1-a6c8-6bdeb37881cf/industry_agnostic_audit.md`
-- Design doc: `temp/design_product_summarization.md`
+- Migration: `backend/migrations/versions/6955244d7aa3_add_ai_summary_to_products.py`
+- Prompt: `backend/app/core/prompts/product_summary.j2`
+- Backfill script: `backend/scripts/data_ops/backfill_product_summaries.py`
+- Tests: `backend/app/tests/test_product_summarization.py`
 - Backlog: `docs/project/BACKLOG.md`

@@ -739,14 +739,14 @@
 
 ### Phase 1: Schema & Core Task
 
-- [ ] Task 227.1 (BE): **Add `ai_summary` Column to Product Model & Migration**
+- [x] Task 227.1 (BE): **Add `ai_summary` Column to Product Model & Migration**
   - **File**: `backend/app/models/trade/catalog.py`
   - **Acceptance Criteria**:
     - **Given** the `Product` model, **When** updated, **Then** a new `ai_summary = Column(Text, nullable=True)` column exists.
     - Alembic migration generated and **human-approved** before running `alembic upgrade`.
     - Existing products continue to work with `ai_summary = NULL` (no regression).
 
-- [ ] Task 227.2 (BE): **Implement `generate_product_summary` Celery Task**
+- [x] Task 227.2 (BE): **Implement `generate_product_summary` Celery Task**
   - **File**: `backend/app/tasks/knowledge.py`
   - **Acceptance Criteria**:
     - **Given** `generate_product_summary.delay(product_id)` is called,
@@ -759,7 +759,7 @@
       6. Logs success/failure.
     - **Guardrails**: Idempotent (safe to re-run, overwrites previous). Failure-safe (`ai_summary` stays `NULL` on error, no regression). Sequential processing within existing Celery worker concurrency.
 
-- [ ] Task 227.3 (BE): **Extraction Prompt Template**
+- [x] Task 227.3 (BE): **Extraction Prompt Template**
   - **File**: `backend/app/core/prompts/product_summary.j2` (new) or inline in task
   - **Acceptance Criteria**:
     - Prompt is fully industry-agnostic per AGENTS.md "Industry Agnosticism" rules.
@@ -769,14 +769,14 @@
 
 ### Phase 2: API Integration & Trigger Wiring
 
-- [ ] Task 227.4 (BE): **Dispatch Summary Task on Product Create/Update**
+- [x] Task 227.4 (BE): **Dispatch Summary Task on Product Create/Update**
   - **File**: `backend/app/api/trade/products.py`
   - **Acceptance Criteria**:
     - **Given** `POST /products` (create), **When** `db.commit()` succeeds, **Then** `generate_product_summary.delay(product.id)` is dispatched.
     - **Given** `PATCH /products/{id}` (update), **When** `description` or `custom_fields` changed and `db.commit()` succeeds, **Then** task is dispatched.
     - **Given** only `price` or `name` changed (no content change), **Then** task is NOT dispatched.
 
-- [ ] Task 227.5 (BE): **Update CatalogContextBuilder to Prefer `ai_summary`**
+- [x] Task 227.5 (BE): **Update CatalogContextBuilder to Prefer `ai_summary`**
   - **File**: `backend/app/services/catalog_context.py`
   - **Acceptance Criteria**:
     - **Given** `format_product_line()`, **When** `product.ai_summary` is not `NULL`, **Then** use `ai_summary` instead of raw `description` + `custom_fields`.
@@ -785,7 +785,7 @@
 
 ### Phase 3: Backfill & Validation
 
-- [ ] Task 227.6 (BE): **Backfill Script for Existing Products**
+- [x] Task 227.6 (BE): **Backfill Script for Existing Products**
   - **File**: `backend/scripts/data_ops/backfill_product_summaries.py` (new)
   - **Acceptance Criteria**:
     - Script queries all products where `ai_summary IS NULL`.
@@ -793,7 +793,7 @@
     - Dispatches `generate_product_summary.delay(product.id)` for each.
     - Can be triggered from admin endpoint or run as a one-time management command.
 
-- [ ] Task 227.7 (BE/QA): **Unit Tests for Summary Task & Context Builder**
+- [x] Task 227.7 (BE/QA): **Unit Tests for Summary Task & Context Builder**
   - **Acceptance Criteria**:
     - Test: `generate_product_summary` produces valid structured output for a sample product.
     - Test: `format_product_line` uses `ai_summary` when present, falls back to raw data when `NULL`.

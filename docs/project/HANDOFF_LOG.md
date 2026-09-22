@@ -1,5 +1,36 @@
 # Handoff Log
 
+- **2026-09-22 (Epic 227: Ingestion-Time Product Summarization)**: Implemented ingestion-time product summarization to eliminate raw catalog data dumps from LLM contexts. Generates a compact ~250-char structured `ai_summary` per product, reducing context token overhead by ~92% while preserving raw user data.
+  - **Database & Schema**:
+    - Added `ai_summary = Column(Text, nullable=True)` to `Product` model in `backend/app/models/trade/catalog.py`.
+    - Generated, sanitized, and applied Alembic migration `6955244d7aa3_add_ai_summary_to_products.py` with human approval.
+    - Updated `ProductResponse` schema in `backend/app/schemas/trade.py`.
+  - **Asynchronous Summarization Task**:
+    - Created `_generate_product_summary_logic` and `generate_product_summary` Celery task in `backend/app/tasks/knowledge.py`.
+    - Configured low concurrency slow-queue routing (`backend/app/core/celery_app.py`), 6,000-token input capping, and non-blocking failure resilience.
+    - Created structured Jinja prompt `backend/app/core/prompts/product_summary.j2` extracting 6 key dimensions: USOS PRINCIPALES, CARACTERÍSTICAS CLAVE, TIPO DE PRODUCTO, PRESENTACIÓN, RENDIMIENTO/DURACIÓN, VENTAJAS CLAVE.
+  - **API Lifecycle Dispatch**:
+    - Wired task triggers into `POST /products` and `PATCH /products/{id}` in `backend/app/api/trade/products.py` (firing only when `description` or `custom_fields` change, omitting price/name-only updates).
+  - **Context Builder Integration & Backfill Utility**:
+    - Updated `CatalogContextBuilder.format_product_line` in `backend/app/services/catalog_context.py` to prefer `ai_summary` when present with zero-regression fallback.
+    - Built CLI batch backfill tool `backend/scripts/data_ops/backfill_product_summaries.py` supporting `--business-id`, `--sync`, and `--force`.
+  - **Verification & Contracts**:
+    - Added comprehensive unit tests in `backend/app/tests/test_catalog_context.py` and `backend/app/tests/test_product_summarization.py`. Full test suite passing (114/114).
+    - Regenerated `backend/openapi.json` and synchronized `frontend/types/api.ts` (`npm run gen:api`). Verified clean production build with 30/30 pages.
+
+- **2026-09-22 (Epic 226: Industry Agnosticism — Purge All Hardcoded Vertical & Client References)**: Purged all domain-specific biases across backend prompts, services, frontend UI, placeholders, and documentation, ensuring complete neutrality across any B2B vertical.
+  - **Backend Services & Prompts**:
+    - Purged `"obra"` assumptions from `prospect_qualifier.py` prompts, lead auto-generation tags, and action templates.
+    - Neutralized prompt templates (`intent_classifier.j2`, `base_ai.j2`, `visit_briefer.j2`) replacing vertical examples with generic B2B scenarios.
+    - Replaced hardcoded packaging assumptions (`"sacos"`) with universal `"paquetes"` in `catalog_context.py`.
+  - **Frontend UI & Components**:
+    - Neutralized fallbacks and placeholders across `products/page.tsx`, `actions/page.tsx`, `stores/[id]/page.tsx`, `AddProductModal.tsx`, `CatalogDrawer.tsx`, `CategoryDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`, `ServiceDrawer.tsx`, and `onboarding/page.tsx`.
+    - Swapped vertical icons (e.g. `Scissors`) for abstract equivalents (`Briefcase`) in `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, and `admin/page.tsx`.
+  - **Docs & Fixtures**:
+    - Updated `docs/design_system.md`, `docs/project/NORTH_STAR.md`, and `docs/architecture/product_data_sheets_design.md`.
+    - Renamed and isolated demo seed script `seed_cemenquin.py` -> `seed_demo_construction.py`.
+    - Enforced industry agnosticism non-negotiables in `.agents/AGENTS.md`.
+
 - **2026-09-05 (Epic 225: Category-Scoped Custom Attributes & Full Category Lifecycle Management)**: Transitioned product custom field definitions from the global business profile to individual product categories, delivering full category CRUD, deletion safeguards, and a reactive category-scoped custom fields experience.
   - **Database & Schemas**:
     - Added `fields_config JSON` column to `Category` model in `backend/app/models/trade/catalog.py`.
