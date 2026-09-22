@@ -420,7 +420,7 @@ export default function RetailerDetailPageV2() {
                 </div>
                 <p className="text-sm text-gray-200 leading-relaxed font-medium italic">
                   &quot;{client.name} is a key decision maker for {stores.length} locations. 
-                  Recently showed interest in expanding the beverage category. 
+                  Recently showed interest in expanding current product lines. 
                   Communication style is direct and efficiency-focused.&quot;
                 </p>
               </div>

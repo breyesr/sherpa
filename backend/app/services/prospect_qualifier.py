@@ -228,7 +228,7 @@ Estado actual:
                 
                 if not has_zip:
                     system_prompt = f"""Eres el Asistente de Calificación de Clientes para la campaña de prospección de la empresa.
-Tu objetivo actual es solicitar amigablemente al cliente su dirección de entrega (ubicación de la obra) y su Código Postal de 5 dígitos para validar la cobertura de entrega y continuar con el proceso.
+Tu objetivo actual es solicitar amigablemente al cliente su dirección de entrega y su Código Postal de 5 dígitos para validar la cobertura de entrega y continuar con el proceso.
 
 Instrucciones:
 - Solicita de forma amigable y en un tono servicial la dirección de entrega y el Código Postal de 5 dígitos.
@@ -240,7 +240,7 @@ Instrucciones:
 Estado actual de los datos recopilados:
 - Producto de interés: {prod_name}
 - Cantidad: {qty}
-- Dirección de la obra: {state.get('location') or 'No proporcionada'}
+- Dirección de entrega: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
 """
                 else:
@@ -262,7 +262,7 @@ Estado actual de los datos recopilados:
 - Cantidad: {qty}
 - Nombre: {state.get('name') or 'No proporcionado'}
 - Email: {state.get('email') or 'No proporcionado'}
-- Dirección de la obra: {state.get('location') or 'No proporcionada'}
+- Dirección de entrega: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
 - Empresa: {state.get('company') or 'No proporcionada'}
 """
@@ -312,7 +312,7 @@ Estado actual de los datos recopilados:
 - Nombre: {state.get('name') or 'No proporcionado'}
 - Teléfono: {state.get('phone') or 'Registrado automáticamente'}
 - Email: {state.get('email') or 'No proporcionado'}
-- Dirección de la obra: {state.get('location') or 'No proporcionada'}
+- Dirección de entrega: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
 - Empresa: {state.get('company') or 'No proporcionada'}
 """
@@ -323,7 +323,7 @@ Estado actual de los datos recopilados:
 Tu objetivo actual (Paso 3) es solicitar al cliente la ubicación de entrega (dirección y Código Postal) para validar la cobertura de envío.
 
 Instrucciones:
-- Pregunta amigablemente al cliente dónde desea que se realice la entrega (dirección de la obra y Código Postal de 5 dígitos).
+- Pregunta amigablemente al cliente dónde desea que se realice la entrega (dirección de entrega y Código Postal de 5 dígitos).
 - NO solicites su nombre completo, teléfono, email ni empresa todavía. Enfócate únicamente en obtener la dirección de entrega y el Código Postal.
 - BAJO NINGUNA CIRCUNSTANCIA expongas o menciones identificadores internos o IDs de bases de datos de los productos al usuario.
 - Si el usuario te proporciona la dirección y el CP, llama a la herramienta `update_prospect_data` con los campos `location` y `zip_code`. Si el usuario de forma proactiva también proporciona su nombre, teléfono, correo o empresa, inclúyelos en la llamada a la herramienta.
@@ -331,7 +331,7 @@ Instrucciones:
 Estado actual:
 - Producto: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
-- Dirección de la obra: {state.get('location') or 'No proporcionada'}
+- Dirección de entrega: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
 """
                 else:
@@ -352,7 +352,7 @@ Estado actual de los datos recopilados:
 - Producto de interés: {prod_name}
 - Cantidad: {state.get('quantity') or 'No proporcionada'}
 - Nombre: {state.get('name') or 'No proporcionado'}
-- Dirección de la obra: {state.get('location') or 'No proporcionada'}
+- Dirección de entrega: {state.get('location') or 'No proporcionada'}
 - Código Postal: {state.get('zip_code') or 'No proporcionado'}
 - Empresa: {state.get('company') or 'No proporcionada'}
 """
@@ -704,7 +704,7 @@ ADDITIONAL BUSINESS INSTRUCTIONS (Tone, Voice & Style Guidelines for User Messag
                 # 2. Create Store (as prospect)
                 store = Store(
                     business_id=biz_id,
-                    name=f"{comp} (Referencia Minorista)" if is_retail else (f"{comp} (Obra {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})"),
+                    name=f"{comp} (Referencia Minorista)" if is_retail else (f"{comp} (Lead {channel_name})" if not is_waitlist else f"{comp} (Lista Espera CP {zip_val})"),
                     street_address=loc,
                     colonia=pc_colonia,
                     municipality=pc_municipality,
@@ -776,7 +776,7 @@ ADDITIONAL BUSINESS INSTRUCTIONS (Tone, Voice & Style Guidelines for User Messag
                     "requested_quantity": qty,
                     "matched_store_id": state.get("matched_store_id"),
                     "status": "waitlist" if is_waitlist else "qualified",
-                    "notes": f"Referencia minorista {name_val} interesada en comprar {qty} unidades de {product.name} en la sucursal {matched_store_name}." if is_retail else (f"Lead mayorista {name_val} interesada en comprar {qty} unidades de {product.name} en la obra {loc} (CP {zip_val})." if not is_waitlist else f"Lista de Espera: Coche de entrega sin cobertura en CP {zip_val}. Lead mayorista interesado en {qty} unidades de {product.name}.")
+                    "notes": f"Referencia minorista {name_val} interesada en comprar {qty} unidades de {product.name} en la sucursal {matched_store_name}." if is_retail else (f"Lead mayorista {name_val} interesada en comprar {qty} unidades de {product.name} en la dirección {loc} (CP {zip_val})." if not is_waitlist else f"Lista de Espera: Coche de entrega sin cobertura en CP {zip_val}. Lead mayorista interesado en {qty} unidades de {product.name}.")
                 }
             )
             self.db.add(action)

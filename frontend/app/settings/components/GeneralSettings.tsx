@@ -202,7 +202,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
                 value={editBusiness.category}
                 onChange={e => setEditBusiness({...editBusiness, category: e.target.value})}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
-                placeholder="e.g. Beauty, Health"
+                placeholder="e.g. Retail, Distribution"
               />
             </div>
             <div className="space-y-2">
@@ -237,7 +237,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium h-24 text-sm resize-none"
               placeholder="e.g. 03330, 04210, 04510"
             />
-            <p className="text-[10px] text-gray-400 italic">Enter the 5-digit postal codes this business profile distributes to. Leave empty to allow CDMX locations by default.</p>
+            <p className="text-[10px] text-gray-400 italic">Enter the 5-digit postal codes this business profile distributes to. Leave empty to allow all locations by default.</p>
           </div>
           <div className="flex justify-end pt-4">
             <button 
@@ -299,7 +299,7 @@ export default function GeneralSettings({ business, user, token, onMessage, onDi
                         value={field.label}
                         disabled={isSoftDeleted}
                         onChange={e => handleFieldChange(idx, 'label', e.target.value)}
-                        placeholder="e.g. Pet Name"
+                        placeholder="e.g. Preferred Contact"
                         className={`w-full p-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all ${isSoftDeleted ? 'line-through text-gray-400' : ''}`}
                       />
                     </div>

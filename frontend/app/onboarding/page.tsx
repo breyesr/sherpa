@@ -124,7 +124,7 @@ export default function OnboardingPage() {
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="e.g. Acme Health"
+                  placeholder="e.g. Acme Corp"
                 />
               </div>
               <div className="space-y-1">
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="e.g. Wellness Clinic"
+                  placeholder="e.g. Distribution & Trade"
                 />
               </div>
               <div className="space-y-1">

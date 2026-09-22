@@ -66,6 +66,9 @@ class Product(Base):
     
     # Flexible Custom Fields (Epic 219)
     custom_fields = Column(JSON, nullable=True, default=dict)
+
+    # Ingestion-Time LLM Summary (Epic 227)
+    ai_summary = Column(Text, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

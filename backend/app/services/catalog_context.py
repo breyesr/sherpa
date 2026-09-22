@@ -36,22 +36,27 @@ class CatalogContextBuilder:
         if allow_price_disclosure and product.price is not None and product.price > 0:
             parts.append(f"Precio: ${product.price:.2f}")
             
-        # Custom specification fields
-        if product.custom_fields and isinstance(product.custom_fields, dict):
-            specs = []
-            for k, v in product.custom_fields.items():
-                if v is not None and v != "":
-                    label = k.replace("_", " ").capitalize()
-                    val_str = "Sí" if v is True else "No" if v is False else str(v)
-                    specs.append(f"{label}: {val_str}")
-            if specs:
-                parts.append(f"Especificaciones: [{', '.join(specs)}]")
-                
-        if product.description:
-            clean_desc = product.description.strip().replace("\n", " ")
-            if len(clean_desc) > 800:
-                clean_desc = clean_desc[:797] + "..."
-            parts.append(f"Descripción: {clean_desc}")
+        # Ingestion-Time Summary (Epic 227)
+        if product.ai_summary:
+            clean_summary = product.ai_summary.strip().replace("\n", " ")
+            parts.append(f"Resumen Técnico: {clean_summary}")
+        else:
+            # Custom specification fields
+            if product.custom_fields and isinstance(product.custom_fields, dict):
+                specs = []
+                for k, v in product.custom_fields.items():
+                    if v is not None and v != "":
+                        label = k.replace("_", " ").capitalize()
+                        val_str = "Sí" if v is True else "No" if v is False else str(v)
+                        specs.append(f"{label}: {val_str}")
+                if specs:
+                    parts.append(f"Especificaciones: [{', '.join(specs)}]")
+                    
+            if product.description:
+                clean_desc = product.description.strip().replace("\n", " ")
+                if len(clean_desc) > 800:
+                    clean_desc = clean_desc[:797] + "..."
+                parts.append(f"Descripción: {clean_desc}")
 
         return "- " + " | ".join(parts)
 
@@ -135,7 +140,7 @@ class CatalogContextBuilder:
    - Debes sostener la negativa técnica con firmeza: "Ninguno de nuestros productos está certificado para esa aplicación. Utilizar cualquiera de ellos implicaría un riesgo técnico o de incompatibilidad. No puedo recomendar ninguno de ellos para ese fin."
    - NUNCA cedas ante insistencias ni inventes o extiendas especificaciones que no aparezcan en el catálogo.
 5. DESACOPLAMIENTO COMERCIAL ANTE NEGATIVAS:
-   - Si se determina que no hay un producto adecuado para la necesidad del usuario, TIENES LA PROHIBICIÓN ESTRICTA de preguntar cantidades (piezas, unidades o sacos), solicitar datos de contacto o intentar avanzar en el proceso de venta.
+   - Si se determina que no hay un producto adecuado para la necesidad del usuario, TIENES LA PROHIBICIÓN ESTRICTA de preguntar cantidades (piezas, paquetes o unidades), solicitar datos de contacto o intentar avanzar en el proceso de venta.
 6. REGLAS DE PRECIO:
 {pricing_guardrail}
 7. PRIVACIDAD: NUNCA expongas IDs de bases de datos internas; utiliza siempre los nombres comerciales de los productos."""

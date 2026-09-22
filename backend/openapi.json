@@ -1733,7 +1733,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1751,7 +1751,7 @@
         ],
         "summary": "Debug Twilio",
         "description": "Simple endpoint to verify Twilio is actually reaching the server.",
-        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_post",
+        "operationId": "debug_twilio_api_v1_whatsapp_debug_twilio_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8597,6 +8597,17 @@
           "category_id": {
             "type": "string",
             "title": "Category Id"
+          },
+          "ai_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary"
           },
           "created_at": {
             "type": "string",

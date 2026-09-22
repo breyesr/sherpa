@@ -1,5 +1,36 @@
 # Handoff Log
 
+- **2026-09-22 (Epic 227: Ingestion-Time Product Summarization)**: Implemented ingestion-time product summarization to eliminate raw catalog data dumps from LLM contexts. Generates a compact ~250-char structured `ai_summary` per product, reducing context token overhead by ~92% while preserving raw user data.
+  - **Database & Schema**:
+    - Added `ai_summary = Column(Text, nullable=True)` to `Product` model in `backend/app/models/trade/catalog.py`.
+    - Generated, sanitized, and applied Alembic migration `6955244d7aa3_add_ai_summary_to_products.py` with human approval.
+    - Updated `ProductResponse` schema in `backend/app/schemas/trade.py`.
+  - **Asynchronous Summarization Task**:
+    - Created `_generate_product_summary_logic` and `generate_product_summary` Celery task in `backend/app/tasks/knowledge.py`.
+    - Configured low concurrency slow-queue routing (`backend/app/core/celery_app.py`), 6,000-token input capping, and non-blocking failure resilience.
+    - Created structured Jinja prompt `backend/app/core/prompts/product_summary.j2` extracting 6 key dimensions: USOS PRINCIPALES, CARACTERÍSTICAS CLAVE, TIPO DE PRODUCTO, PRESENTACIÓN, RENDIMIENTO/DURACIÓN, VENTAJAS CLAVE.
+  - **API Lifecycle Dispatch**:
+    - Wired task triggers into `POST /products` and `PATCH /products/{id}` in `backend/app/api/trade/products.py` (firing only when `description` or `custom_fields` change, omitting price/name-only updates).
+  - **Context Builder Integration & Backfill Utility**:
+    - Updated `CatalogContextBuilder.format_product_line` in `backend/app/services/catalog_context.py` to prefer `ai_summary` when present with zero-regression fallback.
+    - Built CLI batch backfill tool `backend/scripts/data_ops/backfill_product_summaries.py` supporting `--business-id`, `--sync`, and `--force`.
+  - **Verification & Contracts**:
+    - Added comprehensive unit tests in `backend/app/tests/test_catalog_context.py` and `backend/app/tests/test_product_summarization.py`. Full test suite passing (114/114).
+    - Regenerated `backend/openapi.json` and synchronized `frontend/types/api.ts` (`npm run gen:api`). Verified clean production build with 30/30 pages.
+
+- **2026-09-22 (Epic 226: Industry Agnosticism — Purge All Hardcoded Vertical & Client References)**: Purged all domain-specific biases across backend prompts, services, frontend UI, placeholders, and documentation, ensuring complete neutrality across any B2B vertical.
+  - **Backend Services & Prompts**:
+    - Purged `"obra"` assumptions from `prospect_qualifier.py` prompts, lead auto-generation tags, and action templates.
+    - Neutralized prompt templates (`intent_classifier.j2`, `base_ai.j2`, `visit_briefer.j2`) replacing vertical examples with generic B2B scenarios.
+    - Replaced hardcoded packaging assumptions (`"sacos"`) with universal `"paquetes"` in `catalog_context.py`.
+  - **Frontend UI & Components**:
+    - Neutralized fallbacks and placeholders across `products/page.tsx`, `actions/page.tsx`, `stores/[id]/page.tsx`, `AddProductModal.tsx`, `CatalogDrawer.tsx`, `CategoryDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`, `ServiceDrawer.tsx`, and `onboarding/page.tsx`.
+    - Swapped vertical icons (e.g. `Scissors`) for abstract equivalents (`Briefcase`) in `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, and `admin/page.tsx`.
+  - **Docs & Fixtures**:
+    - Updated `docs/design_system.md`, `docs/project/NORTH_STAR.md`, and `docs/architecture/product_data_sheets_design.md`.
+    - Renamed and isolated demo seed script `seed_cemenquin.py` -> `seed_demo_construction.py`.
+    - Enforced industry agnosticism non-negotiables in `.agents/AGENTS.md`.
+
 - **2026-09-05 (Epic 225: Category-Scoped Custom Attributes & Full Category Lifecycle Management)**: Transitioned product custom field definitions from the global business profile to individual product categories, delivering full category CRUD, deletion safeguards, and a reactive category-scoped custom fields experience.
   - **Database & Schemas**:
     - Added `fields_config JSON` column to `Category` model in `backend/app/models/trade/catalog.py`.
@@ -800,4 +831,32 @@
 
 
 
+
+
+## [2026-09-22] - Industry Agnosticism Audit & Epic Planning
+- **Design Doc Remediation**: Made `temp/design_product_summarization.md` fully industry-agnostic — replaced construction-specific extraction prompt, added multi-vertical example outputs (construction, pet food, hair salon), removed Cemenquin brand references.
+- **Full Codebase Audit**: Deployed 3 parallel research subagents to scan backend, frontend, and prompts/docs. Identified **38 hardcoded references across 25+ files** traced to 4 legacy pilots (Cemenquin/construction, pet clinic, beverage/CPG, hair salon).
+- **AGENTS.md Guardrail**: Added permanent "Industry Agnosticism (DO NOT REGRESS)" rule section with 5 enforcement bullets — covers prompts, brand names, fallback defaults, icons, and seed data.
+- **Epic 226 (BACKLOG)**: Created 14-task epic "Industry Agnosticism — Purge All Hardcoded Vertical & Client References" across 3 phases (P0 backend → frontend UI → docs/tests).
+- **Epic 227 (BACKLOG)**: Created 8-task epic "Ingestion-Time Product Summarization" covering schema migration, Celery task, API wiring, backfill, and Critic evaluation — linked to design doc and dependent on Epic 226 Phase 1.
+- **Learnings**: Legacy pilot data leaves deep traces — construction terms embedded in 9 locations of a single service file (`prospect_qualifier.py`), pet clinic artifacts in the root AI template (`base_ai.j2`), and beverage defaults in fallback UI logic. The "DO NOT REGRESS" pattern in AGENTS.md is effective for preventing future violations.
+
+## [2026-09-22] - Epic 226: Industry Agnosticism Execution Complete
+- **Phase 1 (Backend LLM Prompts & Core Services)**:
+  - Task 226.1: Purged 9 `"obra"` occurrences in `prospect_qualifier.py`, converted lead store names to `(Lead {channel_name})`, and neutralized notes to `"en la dirección {loc}"`.
+  - Task 226.2: Replaced `"sacos"` with `"paquetes"` in `catalog_context.py` universal guardrail.
+  - Task 226.3: Neutralized Jinja2 prompt template examples in `intent_classifier.j2` (plumbing/Ferretería $\to$ new catalog/Distribuidora Central), `base_ai.j2` (Pet Name $\to$ Business Name, Preferred Contact), and `visit_briefer.j2` (competitor example).
+- **Phase 2 (Frontend UI Placeholders, Defaults & Icons)**:
+  - Task 226.4: Changed badge fallback from `'Beverage'` to `'General'` in `products/page.tsx` and result unit from `'exchanges'` to `'units'` in `actions/page.tsx`.
+  - Task 226.5: Changed `"Prospect / Construction Site"` to `"Prospect / Account Name"` and neutralized plumbing playbook in `stores/[id]/page.tsx`; updated `actions/page.tsx` UOM and asset placeholders.
+  - Tasks 226.6 & 226.7: Neutralized brand names (`Coca Cola`, `Nespresso`), SKUs (`BEV-001`), and category/attribute placeholders in `AddProductModal.tsx`, `AddCategoryModal.tsx`, `CatalogDrawer.tsx`, and `CategoryDrawer.tsx`.
+  - Tasks 226.8 & 226.9: Replaced pet clinic, haircut, clinic, and regional CDMX defaults across `ClientDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`, `ServiceDrawer.tsx`, and `onboarding/page.tsx`.
+  - Task 226.10: Replaced `Scissors` icon with `Briefcase` across `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, and `admin/page.tsx`.
+  - Task 226.11: Neutralized beverage reference in AI Dossier in `retailers/[id]/page.tsx`.
+- **Phase 3 (Documentation & Demo Seed Script Isolation)**:
+  - Task 226.12: Updated `docs/design_system.md`, `docs/project/NORTH_STAR.md`, `docs/architecture/product_data_sheets_design.md`, and `docs/project/BACKLOG.md` to remove vertical-specific assumptions.
+  - Task 226.13: Renamed `seed_cemenquin.py` $\to$ `seed_demo_construction.py` and added explicit isolation docstring header.
+- **Verification**:
+  - Full backend pytest suite: 109 passed, 0 failed.
+  - Frontend production build: 30/30 pages compiled with zero errors.
 

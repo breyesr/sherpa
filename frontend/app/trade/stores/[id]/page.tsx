@@ -601,7 +601,7 @@ export default function StoreDetailPageV2() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          <th className="py-4 px-2">Prospect / Construction Site</th>
+                          <th className="py-4 px-2">Prospect / Account Name</th>
                           <th className="py-4 px-2">Referred Date</th>
                           <th className="py-4 px-2">Contact Details</th>
                           <th className="py-4 px-2">Requested Product</th>
@@ -685,7 +685,7 @@ export default function StoreDetailPageV2() {
                   <span className="text-sm font-bold">Current Playbook</span>
                 </div>
                 <p className="text-sm text-gray-300 leading-relaxed font-medium">
-                  "Upsell new plumbing line. Focus on the anniversary threat identified in the last visit."
+                  "Upsell key product line based on recent engagement trends."
                 </p>
               </div>
 

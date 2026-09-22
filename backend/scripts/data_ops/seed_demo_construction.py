@@ -1,3 +1,11 @@
+"""
+DEMO SEED SCRIPT (Construction Vertical Reference)
+==================================================
+This script seeds demo fixtures for a construction materials pilot.
+It is intended solely for development, demonstration, and manual testing.
+Do NOT import this module into production runtime paths.
+"""
+
 import asyncio
 import os
 import sys

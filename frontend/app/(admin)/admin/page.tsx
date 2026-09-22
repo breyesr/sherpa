@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check, Package, Scissors, Play } from 'lucide-react';
+import { ShieldCheck, Save, Key, Globe, Brain, Info, Users, Trash2, Edit2, UserPlus, MessageSquare, Calendar, Store, Sparkles, Fingerprint, Lock, X, Check, Package, Briefcase, Play } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import { components } from '@/types/api';
 
@@ -890,7 +890,7 @@ export default function AdminSettingsPage() {
                         }`}
                       >
                         <div className={`p-2 rounded-lg ${(userForm.features_config as any)?.services?.enabled ?? true ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                          <Scissors className="w-4 h-4" />
+                          <Briefcase className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
