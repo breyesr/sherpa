@@ -1,29 +1,36 @@
-# Handoff State: 2026-09-22 (Industry Agnosticism Audit & Epic Planning)
+# Handoff State: 2026-09-22 (Epic 226: Industry Agnosticism Completed)
 
 ## Current Branch & Git Status
-- Working branch: Not on a feature branch — this was an audit/planning session.
-- No code changes to backend or frontend source files (only docs and design docs modified).
-- Files modified this session:
-  - `temp/design_product_summarization.md` — Made extraction prompt industry-agnostic
-  - `.agents/AGENTS.md` — Added "Industry Agnosticism (DO NOT REGRESS)" rule section
-  - `docs/project/BACKLOG.md` — Added Epic 226 + Epic 227
+- Working branch: `feature/trade/epic-226-industry-agnosticism`
+- Clean working directory (all phases committed cleanly, all backend tests passing 109/109, Next.js build succeeding 30/30 pages).
 
 ## What Was Done
-1. **Design Doc Fix**: Updated `temp/design_product_summarization.md` to remove all construction-specific language (prompt, examples, brand references). Added multi-industry example outputs (construction, pet food, hair salon).
-2. **Full Codebase Audit**: Ran 3 parallel research subagents scanning backend, frontend, and prompts/docs for hardcoded industry/client references. Found **38 findings across 25+ files** traced to 4 legacy pilots (Cemenquin/construction, pet clinic, beverage/CPG, hair salon).
-3. **AGENTS.md Rule**: Added permanent "Industry Agnosticism (DO NOT REGRESS)" section with 5 bullet rules to prevent future regressions.
-4. **Epic 226**: Created 14-task epic "Industry Agnosticism — Purge All Hardcoded Vertical & Client References" with 3 phases (P0 backend prompts → frontend UI → docs/tests).
-5. **Epic 227**: Created 8-task epic "Ingestion-Time Product Summarization" covering the full design from `temp/design_product_summarization.md` (schema → Celery task → API wiring → backfill → Critic evaluation).
+1. **Epic 226 Phase 1 (Backend LLM Prompts & Core Services)**:
+   - Task 226.1: Purged 9 occurrences of `"obra"` from `prospect_qualifier.py` prompts, changed lead naming from `(Obra {channel_name})` to `(Lead {channel_name})`, and neutralized action note templates.
+   - Task 226.2: Replaced `"sacos"` with `"paquetes"` in universal catalog guardrail in `catalog_context.py`.
+   - Task 226.3: Neutralized examples in Jinja2 prompt templates: `intent_classifier.j2` (plumbing/Ferretería -> new catalog/Distribuidora Central), `base_ai.j2` (Pet Name -> Business Name, Preferred Contact), `visit_briefer.j2` (Mayoreo Total -> competitor example).
+2. **Epic 226 Phase 2 (Frontend UI Placeholders, Defaults & Icons)**:
+   - Task 226.4: Replaced category badge fallback `'Beverage'` with `'General'` in `products/page.tsx` and `'exchanges'` with `'units'` in `actions/page.tsx`.
+   - Task 226.5: Changed `"Prospect / Construction Site"` to `"Prospect / Account Name"` and neutralized plumbing playbook in `stores/[id]/page.tsx`; replaced `"sacos, frentes, exchanges"` and Spanish asset strings in `actions/page.tsx`.
+   - Tasks 226.6 & 226.7: Neutralized brand names (`Coca Cola`, `Nespresso`), SKUs (`BEV-001`), and category/attribute placeholders in `AddProductModal.tsx`, `AddCategoryModal.tsx`, `CatalogDrawer.tsx`, and `CategoryDrawer.tsx`.
+   - Task 226.8 & 226.9: Replaced `"Pet Name"`, `"pet's name"`, `"Premium Haircut"`, `"Requires Washing"`, `"Wellness Clinic"`, `"Acme Health"`, and `"CDMX"` in `ClientDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`, `ServiceDrawer.tsx`, and `onboarding/page.tsx`.
+   - Task 226.10: Replaced legacy `Scissors` icon with `Briefcase` across `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, and `admin/page.tsx`.
+   - Task 226.11: Neutralized beverage reference in AI Dossier in `retailers/[id]/page.tsx`.
+3. **Epic 226 Phase 3 (Docs & Demo Seed Script Isolation)**:
+   - Task 226.12: Updated `docs/design_system.md`, `docs/project/NORTH_STAR.md`, `docs/architecture/product_data_sheets_design.md`, and `docs/project/BACKLOG.md` to remove vertical-specific assumptions.
+   - Task 226.13: Renamed `seed_cemenquin.py` -> `seed_demo_construction.py` and added clear docstring header isolating it as a demo seed fixture.
+4. **Verification**:
+   - Backend test suite: 109 passed, 0 failed.
+   - Next.js production build: 30/30 pages compiled with zero errors.
 
 ## Exact Next Steps
-1. **Start Epic 226 Phase 1** (3 tasks, 5 files, ~15 edits — all backend):
-   - Task 226.1: `prospect_qualifier.py` — Replace 9 `"obra"` occurrences + 2 entity creation fixes
-   - Task 226.2: `catalog_context.py` — Replace `"sacos"` with `"paquetes"`
-   - Task 226.3: `intent_classifier.j2`, `base_ai.j2`, `visit_briefer.j2` — Fix 4 prompt examples
-   - All 3 tasks are independent and can run in parallel.
-2. **Then Epic 226 Phase 2** (8 tasks, 12 frontend files, ~25 edits).
-3. **Then Epic 227** (depends on 226 Phase 1 being done for agnostic prompts).
+1. **Epic 227: Ingestion-Time Product Summarization**
+   - Phase 1: Task 227.1 (`ai_summary` column on Product model + Alembic migration) and Task 227.2 (`summarize_product_catalog` Celery task using LiteLLM/OpenAI).
+   - Phase 2: API wiring on product CRUD + backfill script.
+   - Phase 3: Integration into `CatalogContextBuilder` and Critic evaluation prompt.
+2. If ready, merge `feature/trade/epic-226-industry-agnosticism` into staging after user approval.
 
 ## Key Artifacts
 - Full audit report: `~/.gemini/antigravity-cli/brain/15964725-fa18-47a1-a6c8-6bdeb37881cf/industry_agnostic_audit.md`
 - Design doc: `temp/design_product_summarization.md`
+- Backlog: `docs/project/BACKLOG.md`

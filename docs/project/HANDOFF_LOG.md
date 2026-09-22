@@ -809,3 +809,23 @@
 - **Epic 226 (BACKLOG)**: Created 14-task epic "Industry Agnosticism — Purge All Hardcoded Vertical & Client References" across 3 phases (P0 backend → frontend UI → docs/tests).
 - **Epic 227 (BACKLOG)**: Created 8-task epic "Ingestion-Time Product Summarization" covering schema migration, Celery task, API wiring, backfill, and Critic evaluation — linked to design doc and dependent on Epic 226 Phase 1.
 - **Learnings**: Legacy pilot data leaves deep traces — construction terms embedded in 9 locations of a single service file (`prospect_qualifier.py`), pet clinic artifacts in the root AI template (`base_ai.j2`), and beverage defaults in fallback UI logic. The "DO NOT REGRESS" pattern in AGENTS.md is effective for preventing future violations.
+
+## [2026-09-22] - Epic 226: Industry Agnosticism Execution Complete
+- **Phase 1 (Backend LLM Prompts & Core Services)**:
+  - Task 226.1: Purged 9 `"obra"` occurrences in `prospect_qualifier.py`, converted lead store names to `(Lead {channel_name})`, and neutralized notes to `"en la dirección {loc}"`.
+  - Task 226.2: Replaced `"sacos"` with `"paquetes"` in `catalog_context.py` universal guardrail.
+  - Task 226.3: Neutralized Jinja2 prompt template examples in `intent_classifier.j2` (plumbing/Ferretería $\to$ new catalog/Distribuidora Central), `base_ai.j2` (Pet Name $\to$ Business Name, Preferred Contact), and `visit_briefer.j2` (competitor example).
+- **Phase 2 (Frontend UI Placeholders, Defaults & Icons)**:
+  - Task 226.4: Changed badge fallback from `'Beverage'` to `'General'` in `products/page.tsx` and result unit from `'exchanges'` to `'units'` in `actions/page.tsx`.
+  - Task 226.5: Changed `"Prospect / Construction Site"` to `"Prospect / Account Name"` and neutralized plumbing playbook in `stores/[id]/page.tsx`; updated `actions/page.tsx` UOM and asset placeholders.
+  - Tasks 226.6 & 226.7: Neutralized brand names (`Coca Cola`, `Nespresso`), SKUs (`BEV-001`), and category/attribute placeholders in `AddProductModal.tsx`, `AddCategoryModal.tsx`, `CatalogDrawer.tsx`, and `CategoryDrawer.tsx`.
+  - Tasks 226.8 & 226.9: Replaced pet clinic, haircut, clinic, and regional CDMX defaults across `ClientDrawer.tsx`, `GeneralSettings.tsx`, `AssistantSettings.tsx`, `ServiceDrawer.tsx`, and `onboarding/page.tsx`.
+  - Task 226.10: Replaced `Scissors` icon with `Briefcase` across `Sidebar.tsx`, `DashboardHome.tsx`, `ServiceCatalog.tsx`, and `admin/page.tsx`.
+  - Task 226.11: Neutralized beverage reference in AI Dossier in `retailers/[id]/page.tsx`.
+- **Phase 3 (Documentation & Demo Seed Script Isolation)**:
+  - Task 226.12: Updated `docs/design_system.md`, `docs/project/NORTH_STAR.md`, `docs/architecture/product_data_sheets_design.md`, and `docs/project/BACKLOG.md` to remove vertical-specific assumptions.
+  - Task 226.13: Renamed `seed_cemenquin.py` $\to$ `seed_demo_construction.py` and added explicit isolation docstring header.
+- **Verification**:
+  - Full backend pytest suite: 109 passed, 0 failed.
+  - Frontend production build: 30/30 pages compiled with zero errors.
+
