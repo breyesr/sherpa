@@ -8,16 +8,28 @@ import { components } from '@/types/api';
 import { CatalogField } from '@/types/models';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+import { useQuery } from '@tanstack/react-query';
+import { useDrawer } from '@/lib/store/DrawerManager';
+import { useAuthStore } from '@/store/authStore';
 import Drawer from './Drawer';
 
-interface ManageCatalogAttributesDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  business: BusinessProfileResponse | undefined;
-  token: string | null;
-}
+export default function ManageCatalogAttributesDrawer() {
+  const { isOpen, close: onClose } = useDrawer('manageCatalogAttributes');
+  const token = useAuthStore((state) => state.token);
+  
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      try {
+        return await apiClient.get<BusinessProfileResponse>('/business/me');
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!token,
+  });
 
-export default function ManageCatalogAttributesDrawer({ isOpen, onClose, business, token }: ManageCatalogAttributesDrawerProps) {
   const queryClient = useQueryClient();
   const [fields, setFields] = useState<CatalogField[]>([]);
   const [loading, setLoading] = useState(false);

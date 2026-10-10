@@ -25,8 +25,7 @@ import { components } from '@/types/api';
 
 type ProductResponse = components['schemas']['ProductResponse'];
 type CategoryResponse = components['schemas']['CategoryResponse'];
-import CatalogDrawer from '@/components/v2/CatalogDrawer';
-import CategoryDrawer from '@/components/v2/CategoryDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 function ProductsPageContent() {
   const token = useAuthStore((state) => state.token);
@@ -37,14 +36,7 @@ function ProductsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [catalogDrawer, setCatalogDrawer] = useState<{isOpen: boolean, mode: 'product' | 'category'}>({
-    isOpen: false,
-    mode: 'product'
-  });
-  const [categoryDrawer, setCategoryDrawer] = useState<{ isOpen: boolean; category: CategoryResponse | null }>({
-    isOpen: false,
-    category: null
-  });
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryResponse | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [deletingCat, setDeletingCat] = useState(false);
@@ -138,14 +130,14 @@ function ProductsPageContent() {
         </div>
         <div className="flex flex-wrap gap-4">
           <button 
-            onClick={() => setCategoryDrawer({ isOpen: true, category: null })}
+            onClick={() => openDrawer('category')}
             className="flex items-center gap-2 bg-white text-gray-900 px-6 py-4 rounded-2xl text-sm font-bold border border-gray-200 shadow-sm hover:bg-gray-50 transition-all active:scale-95"
           >
             <Plus size={16} />
             Add Category
           </button>
           <button 
-            onClick={() => setCatalogDrawer({ isOpen: true, mode: 'product' })}
+            onClick={() => openDrawer('catalog', { initialMode: 'product' })}
             className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
           >
             <Plus size={16} />
@@ -452,7 +444,7 @@ function ProductsPageContent() {
                       <div className="w-32 flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setCategoryDrawer({ isOpen: true, category: cat })}
+                          onClick={() => openDrawer('category', { category: cat })}
                           className="p-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition-all"
                           title="Edit Category & Attributes"
                         >
@@ -570,21 +562,6 @@ function ProductsPageContent() {
         );
       })()}
 
-      {/* Category Create/Edit Drawer */}
-      <CategoryDrawer
-        isOpen={categoryDrawer.isOpen}
-        onClose={() => setCategoryDrawer({ isOpen: false, category: null })}
-        token={token}
-        category={categoryDrawer.category}
-      />
-
-      {/* Catalog Creation Drawer */}
-      <CatalogDrawer 
-        isOpen={catalogDrawer.isOpen}
-        onClose={() => setCatalogDrawer(prev => ({ ...prev, isOpen: false }))}
-        token={token}
-        initialMode={catalogDrawer.mode}
-      />
     </div>
   );
 }

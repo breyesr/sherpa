@@ -70,6 +70,7 @@ class AIService:
             requested_role = (metadata.get("role") or metadata.get("flow")) if metadata else None
             target_role = "sales_rep" if requested_role in ("sales_rep", "representative", "agent") else ("distributor" if requested_role in ("distributor", "distributor_retailer", "retailer") else "customer")
 
+            is_new = False
             if not client:
                 is_new = True
                 name = metadata.get("name") if (metadata and metadata.get("name") and "Unknown" not in metadata.get("name")) else "Unknown Client"

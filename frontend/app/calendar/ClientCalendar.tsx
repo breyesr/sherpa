@@ -15,7 +15,7 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-import AddAppointmentModal from '@/components/AddAppointmentModal';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 import RescheduleAppointmentModal from '@/components/RescheduleAppointmentModal';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,7 +41,6 @@ interface ClientCalendarProps {
 }
 
 export default function ClientCalendar({ initialAppointments, initialBusySlots, token, timezone }: ClientCalendarProps) {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentResponse | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -211,7 +210,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
             Refresh Sync
           </button>
           <button 
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => useDrawerStore.getState().openDrawer('appointment')}
             className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg active:scale-95"
           >
             <Plus size={18} />
@@ -451,7 +450,7 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
           </p>
           {activeTab === 'upcoming' && (
             <button 
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => useDrawerStore.getState().openDrawer('appointment')}
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all"
             >
               <Plus size={20} />
@@ -460,17 +459,6 @@ export default function ClientCalendar({ initialAppointments, initialBusySlots, 
           )}
         </div>
       )}
-
-      <AddAppointmentModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['appointments'] });
-          queryClient.invalidateQueries({ queryKey: ['busy_slots'] });
-          router.refresh();
-        }}
-        token={token || ''}
-      />
 
       <RescheduleAppointmentModal 
         isOpen={isRescheduleModalOpen}

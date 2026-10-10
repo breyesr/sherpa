@@ -3,6 +3,7 @@ import "./globals.css";
 import DashboardLayout from "@/components/DashboardLayout";
 import Providers from "@/components/Providers";
 import { Toaster } from 'sonner';
+import DrawerHost from "@/components/v2/DrawerHost";
 
 export const metadata: Metadata = {
   title: "Xerpa",
@@ -21,6 +22,7 @@ export default function RootLayout({
           <DashboardLayout>
             {children}
           </DashboardLayout>
+          <DrawerHost />
           <Toaster position="top-right" richColors />
         </Providers>
       </body>

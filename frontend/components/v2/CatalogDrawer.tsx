@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { useDrawer } from '@/lib/store/DrawerManager';
+import { useAuthStore } from '@/store/authStore';
 import Drawer from './Drawer';
 import { 
   Package, 
@@ -21,27 +23,20 @@ import {
 } from 'lucide-react';
 
 import { Product, CatalogField } from '@/types/models';
-import CategoryDrawer from './CategoryDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 
-interface CatalogDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  token: string | null;
-  initialMode?: 'product' | 'category';
-  productId?: string | null;
-  initialData?: Partial<Product>;
-}
+export default function CatalogDrawer() {
+  const { isOpen, payload, close: onClose } = useDrawer('catalog');
+  const initialMode = payload?.initialMode || 'product';
+  const productId = payload?.productId;
+  const initialData = payload?.initialData;
 
-export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'product', productId, initialData }: CatalogDrawerProps) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'product' | 'category'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Manage category drawer state
-  const [isManageCategoryOpen, setIsManageCategoryOpen] = useState(false);
-
-  // Custom Attribute Creation States
+  const token = useAuthStore((state) => state.token);  // Custom Attribute Creation States
   const [isAddingField, setIsAddingField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldType, setNewFieldType] = useState<'text' | 'number' | 'boolean' | 'date' | 'dropdown' | 'textarea' | 'multiselect'>('text');
@@ -329,7 +324,6 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
   );
 
   return (
-    <>
     <Drawer 
       isOpen={isOpen} 
       onClose={onClose} 
@@ -721,7 +715,10 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
                 <div className="pt-4 border-t border-gray-100 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setIsManageCategoryOpen(true)}
+                    onClick={() => {
+                      const { openDrawer } = useDrawerStore.getState();
+                      openDrawer('category', { category: selectedCategoryObj });
+                    }}
                     className="px-4 py-2 bg-white border border-gray-200 text-gray-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
                   >
                     <Settings size={14} />
@@ -782,18 +779,5 @@ export default function CatalogDrawer({ isOpen, onClose, token, initialMode = 'p
         )}
       </div>
     </Drawer>
-
-    {isManageCategoryOpen && selectedCategoryObj && (
-      <CategoryDrawer
-        isOpen={isManageCategoryOpen}
-        onClose={() => {
-          setIsManageCategoryOpen(false);
-          fetchCategories();
-        }}
-        token={token}
-        category={selectedCategoryObj}
-      />
-    )}
-    </>
   );
 }

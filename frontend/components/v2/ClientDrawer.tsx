@@ -10,8 +10,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import SafeDate from '../SafeDate';
 import { Client, Business, ClientDetail, CRMField, Store, Order, CustomerNote } from '@/types/models';
+import { useTerminology } from '@/hooks/useTerminology';
 import Drawer from './Drawer';
-import ManageFieldsDrawer from './ManageFieldsDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
+
 interface ClientDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,6 +25,7 @@ interface ClientDrawerProps {
 
 export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client, business }: ClientDrawerProps) {
   const queryClient = useQueryClient();
+  const { t } = useTerminology();
   const {
     register,
     handleSubmit,
@@ -51,7 +54,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'trade'
-  const [isManageFieldsOpen, setIsManageFieldsOpen] = useState(false);
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // Custom Field Creation States
   const [isAddingField, setIsAddingField] = useState(false);
@@ -281,7 +284,6 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
   );
 
   return (
-    <>
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
@@ -661,7 +663,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
               <div className="pt-4 mt-4 border-t border-gray-100 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setIsManageFieldsOpen(true)}
+                  onClick={() => openDrawer('manageFields')}
                   className="px-4 py-2 bg-white border border-gray-200 text-gray-600 hover:text-blue-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
                 >
                   <Settings size={14} />
@@ -699,7 +701,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                       </Link>
                     ))}
                     {(!tradeContext?.stores || tradeContext.stores.length === 0) && (
-                      <p className="text-xs text-gray-400 italic">No stores linked to this client.</p>
+                      <p className="text-xs text-gray-400 italic">{`No ${t('STORES', 'Accounts').toLowerCase()} linked to this client.`}</p>
                     )}
                   </div>
                 </div>
@@ -823,13 +825,5 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
         )}
       </div>
     </Drawer>
-    
-    <ManageFieldsDrawer
-      isOpen={isManageFieldsOpen}
-      onClose={() => setIsManageFieldsOpen(false)}
-      business={business}
-      token={token}
-    />
-    </>
   );
 }

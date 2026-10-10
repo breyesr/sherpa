@@ -371,7 +371,7 @@ function ProspectOrdersContent() {
                             </button>
                           )}
                           <Link 
-                            href={`/trade/orders/${order.id}`}
+                            href={`/trade/operations/orders/${order.id}`}
                             onClick={(e) => e.stopPropagation()}
                             className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all relative z-10"
                           >

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { useDrawer } from '@/lib/store/DrawerManager';
 import Drawer from './Drawer';
 import { 
   Trash2, 
@@ -18,19 +19,9 @@ import { CatalogField } from '@/types/models';
 
 type CategoryResponse = components['schemas']['CategoryResponse'];
 
-interface CategoryDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  token: string | null;
-  category?: CategoryResponse | null;
-}
-
-export default function CategoryDrawer({
-  isOpen,
-  onClose,
-  token,
-  category
-}: CategoryDrawerProps) {
+export default function CategoryDrawer() {
+  const { isOpen, payload, close: onClose } = useDrawer('category');
+  const category = payload?.category;
   const queryClient = useQueryClient();
   const isEditing = !!category;
 

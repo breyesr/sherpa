@@ -7,16 +7,28 @@ import { useQueryClient } from '@tanstack/react-query';
 import { components } from '@/types/api';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
+import { useQuery } from '@tanstack/react-query';
+import { useDrawer } from '@/lib/store/DrawerManager';
+import { useAuthStore } from '@/store/authStore';
 import Drawer from './Drawer';
 
-interface ManageFieldsDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  business: BusinessProfileResponse;
-  token: string | null;
-}
+export default function ManageFieldsDrawer() {
+  const { isOpen, close: onClose } = useDrawer('manageFields');
+  const token = useAuthStore((state) => state.token);
+  
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      if (!token) return null;
+      try {
+        return await apiClient.get<BusinessProfileResponse>('/business/me');
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!token,
+  });
 
-export default function ManageFieldsDrawer({ isOpen, onClose, business, token }: ManageFieldsDrawerProps) {
   const queryClient = useQueryClient();
   const [fields, setFields] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

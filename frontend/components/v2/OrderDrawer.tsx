@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
-import { Store, Product, Client } from '@/types/models';
+import { Store, Product } from '@/types/models';
+import { useDrawer } from '@/lib/store/DrawerManager';
 import Drawer from './Drawer';
 import { 
   ShoppingBag, 
@@ -21,15 +22,12 @@ import {
   Package,
   ArrowRight
 } from 'lucide-react';
+import { useTerminology } from '@/hooks/useTerminology';
 
-interface OrderDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  token: string | null;
-  preselectedStoreId?: string;
-}
-
-export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId }: OrderDrawerProps) {
+export default function OrderDrawer() {
+  const { t } = useTerminology();
+  const { isOpen, payload, close: onClose } = useDrawer('order');
+  const preselectedStoreId = payload?.preselectedStoreId;
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -42,6 +40,21 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
     notes: '',
     payment_method: 'Cash'
   });
+
+  // Reset state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setHeaderData({
+        store_id: preselectedStoreId || '',
+        client_id: '',
+        notes: '',
+        payment_method: 'Cash'
+      });
+      setLineItems([]);
+      setError('');
+    }
+  }, [isOpen, preselectedStoreId]);
 
   interface OrderLineItem extends Product {
     quantity: number;
@@ -200,7 +213,7 @@ export default function OrderDrawer({ isOpen, onClose, token, preselectedStoreId
                   onChange={e => setHeaderData({...headerData, store_id: e.target.value})}
                   disabled={!!preselectedStoreId}
                 >
-                  <option value="">Select a store...</option>
+                  <option value="">{`Select an ${t('STORE', 'Account').toLowerCase()}...`}</option>
                   {stores.map((s: Store) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 <StoreIcon size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />

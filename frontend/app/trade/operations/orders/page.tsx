@@ -25,13 +25,13 @@ import { components } from '@/types/api';
 
 type OrderResponse = components['schemas']['OrderResponse'];
 type StoreResponse = components['schemas']['StoreResponse'];
-import OrderDrawer from '@/components/v2/OrderDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 export default function OrdersPage() {
   const token = useAuthStore((state) => state.token);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // Fetch Orders
   const { data: orders = [], isLoading: loadingOrders } = useQuery<OrderResponse[]>({
@@ -130,7 +130,7 @@ export default function OrdersPage() {
           </p>
         </div>
         <button 
-          onClick={() => setIsOrderDrawerOpen(true)}
+          onClick={() => openDrawer('order')}
           className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95 shrink-0"
         >
           <Plus size={16} />
@@ -240,7 +240,7 @@ export default function OrdersPage() {
               return (
                 <div key={order.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
                   <Link 
-                    href={`/trade/orders/${order.id}`}
+                    href={`/trade/operations/orders/${order.id}`}
                     className="absolute inset-0 z-0"
                   />
                   
@@ -303,12 +303,6 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Create Order Drawer */}
-      <OrderDrawer 
-        isOpen={isOrderDrawerOpen}
-        onClose={() => setIsOrderDrawerOpen(false)}
-        token={token}
-      />
     </div>
   );
 }

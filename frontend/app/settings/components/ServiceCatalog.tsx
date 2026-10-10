@@ -1,26 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Loader2, Briefcase, Clock, DollarSign } from 'lucide-react';
+import { useEffect } from 'react';
+import { Plus, Edit2, Briefcase, Clock } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { components } from '@/types/api';
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
-import ServiceDrawer from '@/components/v2/ServiceDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 type ServiceResponse = components['schemas']['ServiceResponse'];
 
 interface ServiceCatalogProps {
   token: string | null;
-  onMessage: (message: { type: string, text: string }) => void;
   onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function ServiceCatalog({ token, onMessage, onDirtyChange }: ServiceCatalogProps) {
-  const queryClient = useQueryClient();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<ServiceResponse | null>(null);
+export default function ServiceCatalog({ token, onDirtyChange }: ServiceCatalogProps) {
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // We can just keep onDirtyChange as false since it's managed via drawer now
   useEffect(() => {
@@ -44,18 +41,11 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
   });
 
   const startAdd = () => {
-    setSelectedService(null);
-    setIsDrawerOpen(true);
+    openDrawer('service');
   };
 
   const startEdit = (service: ServiceResponse) => {
-    setSelectedService(service);
-    setIsDrawerOpen(true);
-  };
-
-  const handleDrawerSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['services'] });
-    onMessage({ type: 'success', text: `Service operation completed successfully!` });
+    openDrawer('service', { service });
   };
 
   if (isLoading) return <div className="p-8 text-center animate-pulse text-gray-400 font-medium">Loading catalog...</div>;
@@ -132,14 +122,6 @@ export default function ServiceCatalog({ token, onMessage, onDirtyChange }: Serv
         )}
       </div>
 
-      <ServiceDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        onSuccess={handleDrawerSuccess}
-        token={token}
-        business={business}
-        service={selectedService}
-      />
     </div>
   );
 }

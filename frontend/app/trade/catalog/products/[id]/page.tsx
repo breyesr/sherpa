@@ -29,14 +29,14 @@ type ProductResponse = components['schemas']['ProductResponse'];
 type StoreResponse = components['schemas']['StoreResponse'];
 type OrderResponse = components['schemas']['OrderResponse'];
 type CategoryResponse = components['schemas']['CategoryResponse'];
-import CatalogDrawer from '@/components/v2/CatalogDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 export default function ProductDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -254,7 +254,7 @@ export default function ProductDetailPage() {
 
         <div className="flex gap-3">
           <button 
-            onClick={() => setIsEditOpen(true)}
+            onClick={() => openDrawer('catalog', { productId: id, initialData: product })}
             className="flex items-center gap-2 bg-white text-gray-700 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border border-gray-200 shadow-sm hover:bg-gray-50 transition-all active:scale-95"
           >
             <Edit2 size={14} />
@@ -504,7 +504,7 @@ export default function ProductDetailPage() {
                 {orderHistory.map(order => (
                   <div key={order.id} className="p-4 bg-gray-50 rounded-2xl hover:bg-gray-100/70 transition-colors border border-gray-100 relative group">
                     <Link 
-                      href={`/trade/orders/${order.id}`}
+                      href={`/trade/operations/orders/${order.id}`}
                       className="absolute inset-0 z-0"
                     />
                     <div className="relative z-10 flex justify-between items-start mb-2">
@@ -547,14 +547,6 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Edit Drawer */}
-      <CatalogDrawer 
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        token={token}
-        productId={product.id}
-        initialData={product}
-      />
     </div>
   );
 }

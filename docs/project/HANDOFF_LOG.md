@@ -860,3 +860,14 @@
   - Full backend pytest suite: 109 passed, 0 failed.
   - Frontend production build: 30/30 pages compiled with zero errors.
 
+
+
+## [2026-10-07T20:09:56.026755] Day 1 UX Refactoring
+- Task: Consolidated /trade IA, implemented DrawerManager (Zustand), enforced B2B terminology via dictionary, and mapped staging branch to PRD database.
+- Learnings: Local Docker daemon was unavailable; pivoted to run npm install locally and connect to Railway PRD directly via .env.
+
+- 2026-10-07 20:30 UTC: Repaired local Postgres schema via surgical_rebuild.py due to alembic desync. Seeded local DB with Cemenquin demo data and test admin user. Verified successful local authentication to prevent PRD database fees.
+
+## [2026-10-10T20:52] Day 1 UX Refactoring — Drawer Migration Complete
+- Task: Completed drawer migration batches 2-3 (all v2 drawers on DrawerManager/DrawerHost), replaced AddAppointmentModal with AppointmentDrawer, localized Store/Account labels via useTerminology, added global Esc-to-close, fixed ESLint hook deps, fixed ai_service `is_new` UnboundLocalError, cleared 3 tsc errors (services page onMessage, products/[id] param type, AppointmentDrawer icon prop).
+- Learnings: Deleting files while `next dev` runs corrupts Webpack cache (wipe `.next`). Global drawers cannot call page-level callbacks; success feedback must live in the drawer or a global toast store.

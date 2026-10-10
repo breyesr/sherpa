@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { useDrawer } from '@/lib/store/DrawerManager';
 import Drawer from './Drawer';
 import { 
   User, 
@@ -16,18 +17,11 @@ import {
   CheckCircle,
   Sparkles
 } from 'lucide-react';
-import { Client } from '@/types/models';
 
-interface ContactDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  token: string | null;
-  clientId?: string | null; // If provided, we are in Edit Mode
-  initialData?: Partial<Client>; // Data passed from list view for instant population
-  isProspect?: boolean;
-}
-
-export default function ContactDrawer({ isOpen, onClose, token, clientId, initialData, isProspect = false }: ContactDrawerProps) {
+export default function ContactDrawer() {
+  const { isOpen, payload, close: onClose } = useDrawer('contact');
+  // clientId provided => Edit Mode; initialData => instant population from list view
+  const { clientId, initialData, isProspect = false } = payload ?? {};
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -113,7 +107,7 @@ export default function ContactDrawer({ isOpen, onClose, token, clientId, initia
       };
       fetchClient();
     }
-  }, [isOpen, clientId, token]);
+  }, [isOpen, clientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

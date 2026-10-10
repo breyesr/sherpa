@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { useDrawer } from '@/lib/store/DrawerManager';
 import Drawer from './Drawer';
 import { 
   MessageSquare, 
@@ -15,14 +16,9 @@ import {
   Mic
 } from 'lucide-react';
 
-interface FieldNoteDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  storeId: string;
-  token: string | null;
-}
-
-export default function FieldNoteDrawer({ isOpen, onClose, storeId, token }: FieldNoteDrawerProps) {
+export default function FieldNoteDrawer() {
+  const { isOpen, payload, close: onClose } = useDrawer('fieldNote');
+  const storeId = payload?.storeId ?? '';
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +34,23 @@ export default function FieldNoteDrawer({ isOpen, onClose, storeId, token }: Fie
     competitor_name: '',
     competitor_presence: 'low'
   });
+
+  // Reset state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        note_type: 'General',
+        note: '',
+        risks: '',
+        opportunities: '',
+        is_actionable: false,
+        execution_level: 'medium',
+        competitor_name: '',
+        competitor_presence: 'low'
+      });
+      setError('');
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

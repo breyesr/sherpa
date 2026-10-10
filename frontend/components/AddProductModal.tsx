@@ -42,7 +42,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, token }: A
       }
     }
     fetchCategories();
-  }, [isOpen, token]);
+  }, [isOpen, token, formData.category_id]);
 
   if (!isOpen) return null;
 

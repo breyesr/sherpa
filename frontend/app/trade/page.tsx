@@ -15,9 +15,8 @@ import {
   LayoutGrid,
   ClipboardList
 } from 'lucide-react';
-import AccountDrawer from '@/components/v2/AccountDrawer';
-import CatalogDrawer from '@/components/v2/CatalogDrawer';
-import OrderDrawer from '@/components/v2/OrderDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
+import { useTerminology } from '@/hooks/useTerminology';
 import { components } from '@/types/api';
 
 type StoreResponse = components['schemas']['StoreResponse'];
@@ -27,14 +26,9 @@ type ProductResponse = components['schemas']['ProductResponse'];
 export default function TradeHubPage() {
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
+  const { t } = useTerminology();
 
-  // Drawer/Modal States
-  const [isAddStoreOpen, setIsAddStoreOpen] = useState(false);
-  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
-  const [catalogDrawer, setCatalogDrawer] = useState<{isOpen: boolean, mode: 'product' | 'category'}>({
-    isOpen: false,
-    mode: 'product'
-  });
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // Fetch Stores
   const { data: stores = [] } = useQuery<StoreResponse[]>({
@@ -72,7 +66,7 @@ export default function TradeHubPage() {
   });
 
   const stats = [
-    { name: 'Total Stores', value: stores.length.toString(), icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-50', link: '/trade/stores' },
+    { name: `Total ${t('STORES', 'Accounts')}`, value: stores.length.toString(), icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-50', link: '/trade/entities/stores' },
     { name: 'Active Products', value: products.length.toString(), icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50', link: '#' },
     { name: 'Pending Orders', value: '0', icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50', link: '#' },
     { name: 'Trade Retailers', value: '...', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50', link: '/trade/retailers' },
@@ -90,7 +84,7 @@ export default function TradeHubPage() {
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => setIsOrderDrawerOpen(true)}
+            onClick={() => openDrawer('order')}
             className="flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-all active:scale-95"
           >
             <ShoppingCart size={18} />
@@ -103,13 +97,13 @@ export default function TradeHubPage() {
             </button>
             <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
               <button 
-                onClick={() => setCatalogDrawer({ isOpen: true, mode: 'category' })}
+                onClick={() => useDrawerStore.getState().openDrawer('catalog', { initialMode: 'category' })}
                 className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
               >
                 <Plus size={14} /> New Category
               </button>
               <button 
-                onClick={() => setCatalogDrawer({ isOpen: true, mode: 'product' })}
+                onClick={() => useDrawerStore.getState().openDrawer('catalog', { initialMode: 'product' })}
                 className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
               >
                 <Plus size={14} /> New Product
@@ -117,11 +111,11 @@ export default function TradeHubPage() {
             </div>
           </div>
           <button 
-            onClick={() => setIsAddStoreOpen(true)}
+            onClick={() => useDrawerStore.getState().openDrawer('account')}
             className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
           >
             <Plus size={18} />
-            Add Store
+            {`Add ${t('STORE', 'Account')}`}
           </button>
         </div>
       </div>
@@ -153,7 +147,7 @@ export default function TradeHubPage() {
                 <TrendingUp size={24} className="text-blue-500" />
                 Recent Observations
               </h3>
-              <Link href="/trade/stores" className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full">View All Stores</Link>
+              <Link href="/trade/stores" className="text-blue-600 text-sm font-bold hover:underline bg-blue-50 px-4 py-1.5 rounded-full">{`View All ${t('STORES', 'Accounts')}`}</Link>
             </div>
 
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -187,7 +181,7 @@ export default function TradeHubPage() {
           <div className="flex justify-between items-center border-b border-gray-50 pb-4">
             <h3 className="font-bold text-xl text-gray-900">Categories</h3>
             <button 
-              onClick={() => setCatalogDrawer({ isOpen: true, mode: 'category' })}
+              onClick={() => useDrawerStore.getState().openDrawer('catalog', { initialMode: 'category' })}
               className="text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest"
             >
               Add New
@@ -216,7 +210,7 @@ export default function TradeHubPage() {
           
           <div className="pt-4 border-t border-gray-50">
             <button 
-              onClick={() => setCatalogDrawer({ isOpen: true, mode: 'product' })}
+              onClick={() => useDrawerStore.getState().openDrawer('catalog', { initialMode: 'product' })}
               className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-2xl text-sm font-black flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all"
             >
               <Package size={18} /> Add New Product
@@ -225,24 +219,6 @@ export default function TradeHubPage() {
         </div>
       </div>
 
-      <AccountDrawer 
-        isOpen={isAddStoreOpen}
-        onClose={() => setIsAddStoreOpen(false)}
-        token={token}
-      />
-
-      <CatalogDrawer 
-        isOpen={catalogDrawer.isOpen}
-        onClose={() => setCatalogDrawer({ ...catalogDrawer, isOpen: false })}
-        token={token}
-        initialMode={catalogDrawer.mode}
-      />
-
-      <OrderDrawer 
-        isOpen={isOrderDrawerOpen}
-        onClose={() => setIsOrderDrawerOpen(false)}
-        token={token}
-      />
     </div>
   );
 }

@@ -147,26 +147,26 @@ function SidebarContent() {
             {isB2BHubOpen && (
               <div className="pl-9 space-y-1">
                 <Link 
-                  href="/trade/stores"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/stores') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  href="/trade/entities/stores"
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/entities/stores') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   Active Accounts
                 </Link>
                 <Link 
-                  href="/trade/retailers"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/retailers') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  href="/trade/entities/retailers"
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/entities/retailers') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   Contacts
                 </Link>
                 <Link 
-                  href="/trade/orders"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/orders') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  href="/trade/operations/orders"
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/operations/orders') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   Orders
                 </Link>
                 <Link 
-                  href="/trade/actions"
-                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/actions') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                  href="/trade/operations/actions"
+                  className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/operations/actions') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   Actions
                 </Link>
@@ -210,14 +210,14 @@ function SidebarContent() {
                     {isWholesaleOpen && (
                       <div className="pl-6 space-y-1 border-l border-slate-100 ml-2">
                         <Link 
-                          href="/trade/prospects/accounts?segment=wholesale"
-                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                          href="/trade/entities/prospects/accounts?segment=wholesale"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/entities/prospects/accounts' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                           Prospects
                         </Link>
                         <Link 
-                          href="/trade/prospects/orders?segment=wholesale"
-                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/orders' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                          href="/trade/entities/prospects/orders?segment=wholesale"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/entities/prospects/orders' && (searchParams.get('segment') || 'wholesale') === 'wholesale' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                           Orders
                         </Link>
@@ -240,14 +240,14 @@ function SidebarContent() {
                     {isRetailOpen && (
                       <div className="pl-6 space-y-1 border-l border-slate-100 ml-2">
                         <Link 
-                          href="/trade/prospects/accounts?segment=retail"
-                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                          href="/trade/entities/prospects/accounts?segment=retail"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/entities/prospects/accounts' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                           Prospects
                         </Link>
                         <Link 
-                          href="/trade/prospects/orders?segment=retail"
-                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/prospects/orders' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                          href="/trade/entities/prospects/orders?segment=retail"
+                          className={`block text-xs font-medium py-1 transition-all ${pathname === '/trade/entities/prospects/orders' && searchParams.get('segment') === 'retail' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                           Orders
                         </Link>
@@ -261,10 +261,10 @@ function SidebarContent() {
             {!showB2BSolutions && (
               <div className="space-y-1 pt-2 border-t border-slate-100">
                 <SidebarLink 
-                  href="/trade/stores" 
+                  href="/trade/entities/stores" 
                   icon={MapPin} 
                   name="Point of Sale" 
-                  active={pathname.startsWith('/trade/stores')} 
+                  active={pathname.startsWith('/trade/entities/stores')} 
                 />
               </div>
             )}
@@ -292,14 +292,14 @@ function SidebarContent() {
               {isProductsCatalogOpen && (
                 <div className="pl-9 space-y-1">
                   <Link 
-                    href="/trade/products?tab=categories"
-                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                    href="/trade/catalog/products?tab=categories"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/catalog/products') && activeTab === 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                   >
                     Categories
                   </Link>
                   <Link 
-                    href="/trade/products?tab=products"
-                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                    href="/trade/catalog/products?tab=products"
+                    className={`block text-xs font-medium py-1.5 transition-all ${pathname.startsWith('/trade/catalog/products') && activeTab !== 'categories' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
                   >
                     Products
                   </Link>

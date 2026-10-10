@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { useDrawer } from '@/lib/store/DrawerManager';
 import Drawer from './Drawer';
 import { 
   Store as StoreIcon, 
@@ -32,19 +33,17 @@ interface FeaturesConfig {
   };
 }
 
-interface AccountDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  token: string | null;
-  storeId?: string | null; // If provided, we are in Edit Mode
-  initialData?: StoreModel | null; // Data passed from list view for instant population
-  isProspect?: boolean;
-}
+import { useAuthStore } from '@/store/authStore';
 
-export default function AccountDrawer({ isOpen, onClose, token, storeId, initialData, isProspect = false }: AccountDrawerProps) {
+export default function AccountDrawer() {
+  const { isOpen, payload, close: onClose } = useDrawer('account');
+  const storeId = payload?.storeId;
+  const initialData = payload?.initialData;
+  const isProspect = payload?.isProspect || false;
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const token = useAuthStore(s => s.token);
   
   const isEditing = !!storeId;
 
@@ -226,7 +225,7 @@ export default function AccountDrawer({ isOpen, onClose, token, storeId, initial
       };
       fetchStore();
     }
-  }, [isOpen, storeId, token, addressStates.length, reset, getValues, initialSnapshot]);
+  }, [isOpen, storeId, token, addressStates, addressStates.length, reset, getValues, initialSnapshot]);
 
   // Autocomplete geographic fields on ZIP Code change (Manual Address Mode)
   useEffect(() => {

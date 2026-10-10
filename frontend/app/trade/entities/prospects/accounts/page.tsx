@@ -19,7 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Store } from '@/types/models';
-import AccountDrawer from '@/components/v2/AccountDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 function ProspectStoresContent() {
   const token = useAuthStore((state) => state.token);
@@ -28,11 +28,7 @@ function ProspectStoresContent() {
   const segment = searchParams.get('segment') || 'wholesale';
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [accountDrawer, setAccountDrawer] = useState<{isOpen: boolean, storeId: string | null, initialData?: Store | null}>({
-    isOpen: false,
-    storeId: null,
-    initialData: null
-  });
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // Fetch Prospect Stores
   const { data: stores = [], isLoading } = useQuery<Store[]>({
@@ -77,7 +73,7 @@ function ProspectStoresContent() {
           </p>
         </div>
         <button 
-          onClick={() => setAccountDrawer({ isOpen: true, storeId: null })}
+          onClick={() => openDrawer('account', { isProspect: true })}
           className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
         >
           <Plus size={18} />
@@ -219,7 +215,7 @@ function ProspectStoresContent() {
                        onClick={(e) => {
                          e.preventDefault();
                          e.stopPropagation();
-                         setAccountDrawer({ isOpen: true, storeId: store.id, initialData: store });
+                         openDrawer('account', { storeId: store.id, initialData: store, isProspect: true });
                        }}
                        className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative z-20"
                      >
@@ -288,7 +284,7 @@ function ProspectStoresContent() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setAccountDrawer({ isOpen: true, storeId: store.id, initialData: store });
+                        openDrawer('account', { storeId: store.id, initialData: store, isProspect: true });
                       }}
                       className="p-2 text-gray-300 hover:text-blue-600 transition-colors"
                     >
@@ -390,17 +386,6 @@ function ProspectStoresContent() {
       </div>
       )}
 
-      <AccountDrawer 
-        isOpen={accountDrawer.isOpen}
-        onClose={() => {
-          setAccountDrawer({ ...accountDrawer, isOpen: false });
-          queryClient.invalidateQueries({ queryKey: ['stores'] });
-        }}
-        token={token}
-        storeId={accountDrawer.storeId}
-        initialData={accountDrawer.initialData}
-        isProspect={true}
-      />
     </div>
   );
 }

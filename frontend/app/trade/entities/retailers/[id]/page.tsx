@@ -36,6 +36,7 @@ import {
   CustomerNote as CustomerNoteModel, 
   ClientDetail as ClientDetailModel 
 } from '@/types/models';
+import { useTerminology } from '@/hooks/useTerminology';
 
 type TabType = 'overview' | 'stores' | 'orders' | 'timeline';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
@@ -48,6 +49,7 @@ export default function RetailerDetailPageV2() {
   const { id } = useParams();
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
+  const { t } = useTerminology();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [activeNoteSubTab, setActiveNoteSubTab] = useState<NoteSubTab>('all');
 
@@ -81,7 +83,7 @@ export default function RetailerDetailPageV2() {
 
   const tabs = [
     { id: 'overview', label: 'Intelligence', icon: Sparkles },
-    { id: 'stores', label: 'Stores', icon: StoreIcon },
+    { id: 'stores', label: t('STORES', 'Accounts'), icon: StoreIcon },
     { id: 'orders', label: 'Order History', icon: ShoppingBag },
     { id: 'timeline', label: 'Field Reports', icon: Activity },
   ];
@@ -237,9 +239,9 @@ export default function RetailerDetailPageV2() {
             {activeTab === 'stores' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-black text-gray-900">Stores</h3>
+                  <h3 className="text-xl font-black text-gray-900">{t('STORES', 'Accounts')}</h3>
                   <button className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95">
-                    <Plus size={16} /> Link Store
+                    <Plus size={16} /> {`Link ${t('STORE', 'Account')}`}
                   </button>
                 </div>
                 

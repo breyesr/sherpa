@@ -46,8 +46,8 @@ interface FeaturesConfig {
   b2b_solutions?: { enabled?: boolean };
   products?: { enabled?: boolean };
 }
-import FieldNoteDrawer from '@/components/v2/FieldNoteDrawer';
-import OrderDrawer from '@/components/v2/OrderDrawer';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
+import { useTerminology } from '@/hooks/useTerminology';
 
 type TabType = 'details' | 'products' | 'orders' | 'notes' | 'referrals';
 type NoteSubTab = 'all' | 'commercial' | 'marketing' | 'intel';
@@ -56,10 +56,10 @@ export default function StoreDetailPageV2() {
   const { id } = useParams();
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
+  const { t } = useTerminology();
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [activeNoteSubTab, setActiveNoteSubTab] = useState<NoteSubTab>('all');
-  const [isNoteDrawerOpen, setIsNoteDrawerOpen] = useState(false);
-  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // Fetch Store Detail
   const { data: store, isLoading, isFetched } = useQuery<StoreResponse>({
@@ -369,7 +369,7 @@ export default function StoreDetailPageV2() {
                                 </div>
                                 <div>
                                   <p className="font-black text-gray-900">{rival.name}</p>
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Store Rival</p>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{`${t('STORE', 'Account')} Rival`}</p>
                                 </div>
                               </div>
                               <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
@@ -466,7 +466,7 @@ export default function StoreDetailPageV2() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-black text-gray-900">Order History</h3>
                   <button 
-                    onClick={() => setIsOrderDrawerOpen(true)}
+                    onClick={() => openDrawer('order', { preselectedStoreId: id as string })}
                     className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95"
                   >
                     <Plus size={16} /> New Order
@@ -509,7 +509,7 @@ export default function StoreDetailPageV2() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-black text-gray-900">Field Observations</h3>
                   <button 
-                    onClick={() => setIsNoteDrawerOpen(true)}
+                    onClick={() => openDrawer('fieldNote', { storeId: id as string })}
                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95"
                   >
                     <Plus size={16} /> New Entry
@@ -726,20 +726,6 @@ export default function StoreDetailPageV2() {
         )}
       </div>
 
-      {/* Drawers */}
-      <FieldNoteDrawer 
-        isOpen={isNoteDrawerOpen}
-        onClose={() => setIsNoteDrawerOpen(false)}
-        storeId={id as string}
-        token={token}
-      />
-
-      <OrderDrawer 
-        isOpen={isOrderDrawerOpen}
-        onClose={() => setIsOrderDrawerOpen(false)}
-        preselectedStoreId={id as string}
-        token={token}
-      />
     </div>
   );
 }

@@ -3,26 +3,32 @@
 import { useState, useEffect } from 'react';
 import { Trash2, AlertCircle, CheckCircle, Plus, X, Settings, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useDrawer, useDrawerStore } from '@/lib/store/DrawerManager';
+import { useAuthStore } from '@/store/authStore';
 import { components } from '@/types/api';
 import { CRMField } from '@/types/models';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 import Drawer from './Drawer';
-import ManageAttributesDrawer from './ManageAttributesDrawer';
-
 type ServiceResponse = components['schemas']['ServiceResponse'];
 
-interface ServiceDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  token: string | null;
-  business: BusinessProfileResponse | undefined;
-  service?: ServiceResponse | null;
-}
-
-export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, business, service }: ServiceDrawerProps) {
+export default function ServiceDrawer() {
+  const { isOpen, payload, close: onClose } = useDrawer('service');
+  const service = payload?.service;
+  const token = useAuthStore((state) => state.token);
+  
+  const { data: business } = useQuery({
+    queryKey: ['business'],
+    queryFn: async () => {
+      try {
+        return await apiClient.get<BusinessProfileResponse>('/business/me');
+      } catch {
+        return { vertical_type: 'BASIC' } as BusinessProfileResponse;
+      }
+    },
+    enabled: !!token,
+  });
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -34,7 +40,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   
-  const [isManageAttributesOpen, setIsManageAttributesOpen] = useState(false);
+  const openDrawer = useDrawerStore((s) => s.openDrawer);
 
   // Custom Attribute States
   const [isAddingField, setIsAddingField] = useState(false);
@@ -158,7 +164,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
         await apiClient.post<any>(path, payload);
       }
 
-      onSuccess();
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -176,7 +182,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
     try {
       await apiClient.delete<any>(`/services/${service.id}`);
 
-      onSuccess();
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -223,7 +229,6 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
   const businessAttributes = featuresConfig?.services?.attributes || [];
 
   return (
-    <>
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
@@ -496,7 +501,7 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
             <div className="pt-4 mt-4 border-t border-gray-100 flex justify-end">
               <button
                 type="button"
-                onClick={() => setIsManageAttributesOpen(true)}
+                onClick={() => openDrawer('manageAttributes')}
                 className="px-4 py-2 bg-white border border-gray-200 text-gray-600 hover:text-blue-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
               >
                 <Settings size={14} />
@@ -507,13 +512,5 @@ export default function ServiceDrawer({ isOpen, onClose, onSuccess, token, busin
         </form>
       </div>
     </Drawer>
-
-    <ManageAttributesDrawer
-      isOpen={isManageAttributesOpen}
-      onClose={() => setIsManageAttributesOpen(false)}
-      business={business}
-      token={token}
-    />
-    </>
   );
 }
