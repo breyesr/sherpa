@@ -140,6 +140,31 @@
 
 ---
 
+## Epic 227: Day 1 UX Refactor — Drawer System Hardening (🔴 ACTIVE — `feature/day1-ux-refactoring`)
+**Objective**: Finish the strictly UX/UI refactor. Drawer migration to `DrawerManager` + `DrawerHost` is complete (commit `a7ba796`); these tasks close remaining gaps.
+
+- [ ] Task 227.1 (FE): **OrderDrawer Reset-on-Open**
+  - **Given** the OrderDrawer was previously opened for Store A,
+  - **When** it is reopened without `preselectedStoreId`,
+  - **Then** the form (incl. `headerData.store_id`, line items) must reset to empty defaults.
+- [ ] Task 227.2 (FE): **Drawer z-index by Stack Position**
+  - **Given** nested drawers (e.g., ClientDrawer -> ManageFieldsDrawer),
+  - **When** a child drawer opens,
+  - **Then** `Drawer.tsx` must derive z-index (panel + backdrop) from stack index so the child always renders above its parent.
+- [ ] Task 227.3 (FE): **Global Toast Notification System**
+  - **Context**: Drawers are global (mounted in `DrawerHost`) and cannot call page-level callbacks. `/services` lost its success toast in `a7ba796`.
+  - **Given** any drawer or page completes a mutation,
+  - **When** it succeeds or fails,
+  - **Then** a global toast (Zustand store + single `ToastHost` in `app/layout.tsx`) must display a short success/error message and auto-dismiss (~3s).
+  - **And** all v2 drawers must call it on success and error paths; remove ad-hoc per-page toast state.
+- [ ] Task 227.4 (FE): **Dashboard Terminology Mapping**
+  - **Then** all hardcoded entity labels on the Dashboard must resolve via `useTerminology`.
+- [ ] Task 227.5 (FE): **Drawer Form Reset on Route Change (Review)**
+  - **Context**: Drawers persist across navigation; decide whether to close all drawers on route change or keep state, and implement consistently.
+
+---
+
+
 ## Epic 206: Meta WhatsApp Cloud API — Core Engine & Webhook Security (P0/P1)
 **Objective**: Build the core integration engine with Meta WhatsApp Cloud API and secure incoming webhook endpoints using signature validation.
 **Reference**: [meta_migration_plan.md](file:///Users/bernardo/projects/sherpa/temp/meta_migration_plan.md)
