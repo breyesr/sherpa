@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
 import { useDrawer } from '@/lib/store/DrawerManager';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 import Drawer from './Drawer';
 import { 
   User, 
@@ -139,9 +140,12 @@ export default function ContactDrawer() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       if (clientId) queryClient.invalidateQueries({ queryKey: ['client-detail', clientId] });
       
+      toast.success(isEditing ? 'Contact updated successfully' : 'Contact created successfully');
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to save contact');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

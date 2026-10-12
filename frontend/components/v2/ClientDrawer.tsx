@@ -13,6 +13,7 @@ import { Client, Business, ClientDetail, CRMField, Store, Order, CustomerNote } 
 import { useTerminology } from '@/hooks/useTerminology';
 import Drawer from './Drawer';
 import { useDrawerStore } from '@/lib/store/DrawerManager';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 
 interface ClientDrawerProps {
   isOpen: boolean;
@@ -161,12 +162,15 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
 
       // Success
       await queryClient.invalidateQueries({ queryKey: ['business'] });
+      toast.success('Field saved successfully');
       setIsAddingField(false);
       setNewFieldName('');
       setNewFieldType('text');
       setNewFieldOptions('');
-    } catch (err) {
-      setNewFieldErr((err as Error).message);
+    } catch (err: unknown) {
+      const msg = errorMessage(err, 'Failed to save field');
+      setNewFieldErr(msg);
+      toast.error(msg);
     } finally {
       setIsSavingNewField(false);
     }
@@ -211,10 +215,13 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
         await apiClient.post<Client>(path, payload);
       }
 
+      toast.success(client ? 'Client updated successfully' : 'Client created successfully');
       onSuccess();
       onClose();
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: unknown) {
+      const msg = errorMessage(err, 'Failed to save client');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -229,10 +236,13 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
       const updatedFields = { ...client.custom_fields, needs_review: false };
       await apiClient.patch<Client>(`/crm/clients/${client.id}`, { custom_fields: updatedFields });
 
+      toast.success('Alert resolved successfully');
       onSuccess();
       onClose();
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: unknown) {
+      const msg = errorMessage(err, 'Failed to resolve alert');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setResolving(false);
     }
@@ -247,10 +257,13 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
     try {
       await apiClient.delete<void>(`/crm/clients/${client.id}`);
 
+      toast.success('Client deleted successfully');
       onSuccess();
       onClose();
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: unknown) {
+      const msg = errorMessage(err, 'Failed to delete client');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setDeleting(false);
     }
@@ -688,7 +701,7 @@ export default function ClientDrawer({ isOpen, onClose, onSuccess, token, client
                     {tradeContext?.stores?.map((store: Store) => (
                       <Link 
                         key={store.id} 
-                        href={`/trade/stores/${store.id}`}
+                        href={`/trade/entities/stores/${store.id}`}
                         className="p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50 transition-all group"
                       >
                         <div className="flex justify-between items-start">

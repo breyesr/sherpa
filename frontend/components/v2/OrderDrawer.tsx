@@ -23,6 +23,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useTerminology } from '@/hooks/useTerminology';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 
 export default function OrderDrawer() {
   const { t } = useTerminology();
@@ -44,14 +45,7 @@ export default function OrderDrawer() {
   // Reset state when drawer opens
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
-      setHeaderData({
-        store_id: preselectedStoreId || '',
-        client_id: '',
-        notes: '',
-        payment_method: 'Cash'
-      });
-      setLineItems([]);
+      resetDrawer();
       setError('');
     }
   }, [isOpen, preselectedStoreId]);
@@ -132,10 +126,13 @@ export default function OrderDrawer() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       if (headerData.store_id) queryClient.invalidateQueries({ queryKey: ['store', headerData.store_id] });
       
+      toast.success('Order placed successfully');
       onClose();
       resetDrawer();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to place order');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

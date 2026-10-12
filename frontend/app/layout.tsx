@@ -4,6 +4,10 @@ import DashboardLayout from "@/components/DashboardLayout";
 import Providers from "@/components/Providers";
 import { Toaster } from 'sonner';
 import DrawerHost from "@/components/v2/DrawerHost";
+import ToastHost from "@/components/v2/ToastHost";
+import { cookies } from "next/headers";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Xerpa",
@@ -15,14 +19,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = cookies();
+  const initialToken = cookieStore.get('sherpa_token')?.value || null;
+
   return (
     <html lang="en">
       <body>
         <Providers>
-          <DashboardLayout>
+          <DashboardLayout initialToken={initialToken}>
             {children}
           </DashboardLayout>
           <DrawerHost />
+          <ToastHost />
           <Toaster position="top-right" richColors />
         </Providers>
       </body>

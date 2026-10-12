@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
 import { 
-  ShieldAlert, 
   CheckCircle, 
   Clock, 
   XCircle, 
@@ -13,35 +12,31 @@ import {
   Settings, 
   User, 
   Calendar, 
-  TrendingUp, 
   ListTodo, 
-  PlusCircle, 
   Edit3, 
   Trash2, 
-  Loader2, 
-  AlertCircle,
-  FileText,
-  DollarSign,
-  Activity,
-  Layers,
-  ChevronRight,
-  UserCheck,
-  Award
+  DollarSign, 
+  ChevronRight, 
+  Award 
 } from 'lucide-react';
 import { components } from '@/types/api';
 import { User as UserModel } from '@/types/models';
+import { BrandButton, BrandBadge, BrandCard } from '@/components/ui/brand';
+import { 
+  AssignActionDrawer, 
+  ActionResolutionDrawer, 
+  ActionTemplateDrawer,
+  ActionFormData,
+  ResolutionFormData,
+  TemplateFormData,
+  StoreActionObjective,
+  DEFAULT_OBJECTIVES,
+  DEFAULT_OBJECTIVE_MAP
+} from './ActionDrawers';
 
 type StoreActionResponse = components['schemas']['StoreActionResponse'];
 type ActionTemplateResponse = components['schemas']['ActionTemplateResponse'];
 type StoreResponse = components['schemas']['StoreResponse'];
-
-interface StoreActionObjective {
-  name: string;
-  label: string;
-  category: string;
-}
-
-import Drawer from '@/components/v2/Drawer';
 
 export default function ActionsStrategyDesk() {
   const token = useAuthStore((state) => state.token);
@@ -49,7 +44,7 @@ export default function ActionsStrategyDesk() {
   
   // Navigation / Tab states
   const [activeView, setActiveView] = useState<'desk' | 'catalog'>('desk');
-  const [deskStatusFilter, setDeskStatusFilter] = useState<string>('pending'); // default show active pending tasks
+  const [deskStatusFilter, setDeskStatusFilter] = useState<string>('pending');
 
   // Drawer / Form states
   const [isActionFormOpen, setIsActionFormOpen] = useState(false);
@@ -63,7 +58,7 @@ export default function ActionsStrategyDesk() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch Current User (for authorization / default assignment checks)
+  // Fetch Current User
   const { data: currentUser } = useQuery<UserModel>({
     queryKey: ['me'],
     queryFn: async () => {
@@ -86,7 +81,6 @@ export default function ActionsStrategyDesk() {
     },
     enabled: !!token && isAdmin,
   });
-
 
   // Fetch Actions
   const { data: actions = [], isLoading: loadingActions } = useQuery<StoreActionResponse[]>({
@@ -129,10 +123,10 @@ export default function ActionsStrategyDesk() {
   // -------------------------------------------------------------
   
   // Create Store Action State
-  const [actionFormData, setActionFormData] = useState({
+  const [actionFormData, setActionFormData] = useState<ActionFormData>({
     store_id: '',
     template_id: '',
-    category: 'COMMERCIAL' as 'COMMERCIAL' | 'MARKETING',
+    category: 'COMMERCIAL',
     objective: 'THREAT_RESPONSE',
     assigned_to_id: '',
     due_date: '',
@@ -141,7 +135,7 @@ export default function ActionsStrategyDesk() {
     description: '',
     result_unit: '',
     target_value: '',
-    details: {} as Record<string, unknown>
+    details: {}
   });
 
   // Assignees are store contacts (Clients)
@@ -151,7 +145,7 @@ export default function ActionsStrategyDesk() {
   }, [stores, actionFormData.store_id]);
 
   // Resolution State (Strict completion requirements)
-  const [resolutionData, setResolutionData] = useState({
+  const [resolutionData, setResolutionData] = useState<ResolutionFormData>({
     status: 'completed',
     resolution_notes: '',
     result_value: '',
@@ -159,7 +153,7 @@ export default function ActionsStrategyDesk() {
   });
 
   // Create Template State
-  const [templateFormData, setTemplateFormData] = useState({
+  const [templateFormData, setTemplateFormData] = useState<TemplateFormData>({
     name: '',
     category: 'COMMERCIAL',
     objective: 'THREAT_RESPONSE',
@@ -195,44 +189,13 @@ export default function ActionsStrategyDesk() {
   // -------------------------------------------------------------
 
   const handleCategoryChange = (cat: 'COMMERCIAL' | 'MARKETING') => {
-    const list = objectives.length > 0 ? objectives : [
-      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "COMMERCIAL" },
-      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "MARKETING" },
-      { name: "SHARE_OF_SHELF", label: "Shelf Presence Check", category: "MARKETING" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "COMMERCIAL" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "MARKETING" },
-      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Prevent Stockouts", category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "MARKETING" },
-      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
-      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
-      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
-    ];
+    const list = objectives.length > 0 ? objectives : DEFAULT_OBJECTIVES;
     const match = list.find(o => o.category === cat);
     setActionFormData(prev => ({
       ...prev,
       category: cat,
       objective: match ? match.name : ''
     }));
-  };
-
-  const handleTemplateChange = (tplId: string) => {
-    const selectedTpl = templates.find(t => t.id === tplId);
-    if (selectedTpl) {
-      setActionFormData(prev => ({
-        ...prev,
-        template_id: tplId,
-        category: selectedTpl.category as 'COMMERCIAL' | 'MARKETING',
-        result_unit: selectedTpl.default_unit,
-        title: selectedTpl.name,
-        description: selectedTpl.description || ''
-      }));
-    } else {
-      setActionFormData(prev => ({
-        ...prev,
-        template_id: '',
-      }));
-    }
   };
 
   const handleCreateAction = async (e: React.FormEvent) => {
@@ -409,27 +372,16 @@ export default function ActionsStrategyDesk() {
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case 'proposed':
-        return { label: 'Proposed', color: 'bg-purple-50 text-purple-700 border-purple-100', icon: Clock };
+        return { label: 'Proposed', variant: 'accent' as const, icon: Clock };
       case 'pending':
-        return { label: 'Pending', color: 'bg-amber-50 text-amber-700 border-amber-100', icon: Clock };
+        return { label: 'Pending', variant: 'attention' as const, icon: Clock };
       case 'completed':
-        return { label: 'Completed', color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle };
+        return { label: 'Completed', variant: 'confirmed' as const, icon: CheckCircle };
       case 'cancelled':
-        return { label: 'Cancelled', color: 'bg-red-50 text-red-700 border-red-100', icon: XCircle };
+        return { label: 'Cancelled', variant: 'alert' as const, icon: XCircle };
       default:
-        return { label: 'Unknown', color: 'bg-gray-50 text-gray-700 border-gray-100', icon: Clock };
+        return { label: 'Unknown', variant: 'neutral' as const, icon: Clock };
     }
-  };
-
-  const defaultObjectiveMap: Record<string, string> = {
-    THREAT_RESPONSE: 'Competitive Response',
-    SHARE_OF_SHELF: 'Shelf Presence Check',
-    NEW_PRODUCT_INTRODUCTION: 'Launch New Product',
-    INVENTORY_VELOCITY_OOS_PREVENTION: 'Prevent Stockouts',
-    PERFECT_STORE_ASSORTMENT_COMPLIANCE: 'Store Standards Check',
-    SEASONAL_EVENT_ACTIVATION: 'Seasonal Promotion',
-    TRADE_LOYALTY_VOLUME_PUSHING: 'Drive Larger Orders',
-    POSM_MAINTENANCE_ASSET_PURITY: 'Maintain Promo Materials'
   };
 
   const objectiveMap = {
@@ -437,23 +389,11 @@ export default function ActionsStrategyDesk() {
       acc[obj.name] = obj.label;
       return acc;
     }, {}),
-    ...defaultObjectiveMap
+    ...DEFAULT_OBJECTIVE_MAP
   };
 
   const filteredObjectives = useMemo(() => {
-    const activeList = objectives.length > 0 ? objectives : [
-      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "COMMERCIAL" },
-      { name: "THREAT_RESPONSE", label: "Competitive Response", category: "MARKETING" },
-      { name: "SHARE_OF_SHELF", label: "Shelf Presence Check", category: "MARKETING" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "COMMERCIAL" },
-      { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "MARKETING" },
-      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Prevent Stockouts", category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "COMMERCIAL" },
-      { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "MARKETING" },
-      { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
-      { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
-      { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
-    ];
+    const activeList = objectives.length > 0 ? objectives : DEFAULT_OBJECTIVES;
     return activeList.filter((o: StoreActionObjective) => o.category === actionFormData.category);
   }, [objectives, actionFormData.category]);
 
@@ -463,29 +403,29 @@ export default function ActionsStrategyDesk() {
       {/* Header and Mode Selector */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-black text-deep tracking-tight">
             Strategy Desk
           </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
-            Promote proposed insights, assign reps, track due dates, and enforce elastic execution results.
+          <p className="text-slate mt-2 font-medium text-base max-w-2xl">
+            Promote proposed insights, assign reps, track due dates, and enforce execution results.
           </p>
         </div>
         
         {/* Top Level Action Buttons */}
-        <div className="flex gap-4 shrink-0">
-          <div className="p-1 bg-gray-100 rounded-2xl flex">
+        <div className="flex gap-3 shrink-0">
+          <div className="p-1 bg-canvas border border-utility rounded-xl flex">
             <button
               onClick={() => setActiveView('desk')}
-              className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                activeView === 'desk' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'
+              className={`px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                activeView === 'desk' ? 'bg-deep text-white shadow-sm' : 'text-slate hover:text-deep'
               }`}
             >
               Strategy Desk
             </button>
             <button
               onClick={() => setActiveView('catalog')}
-              className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                activeView === 'catalog' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'
+              className={`px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                activeView === 'catalog' ? 'bg-deep text-white shadow-sm' : 'text-slate hover:text-deep'
               }`}
             >
               Action Catalog
@@ -493,61 +433,69 @@ export default function ActionsStrategyDesk() {
           </div>
           
           {activeView === 'desk' ? (
-            <button 
+            <BrandButton 
+              variant="primary"
               onClick={() => setIsActionFormOpen(true)}
-              className="flex items-center gap-2 bg-gray-900 text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
             >
               <Plus size={16} />
               Assign Action
-            </button>
+            </BrandButton>
           ) : (
-            <button 
+            <BrandButton 
+              variant="primary"
               onClick={() => {
                 setSelectedTemplate(null);
-                setTemplateFormData({ name: '', category: 'COMMERCIAL', objective: 'THREAT_RESPONSE', default_unit: '', description: '', target_value: '', impact_level: 'MEDIUM' });
+                setTemplateFormData({ 
+                  name: '', 
+                  category: 'COMMERCIAL', 
+                  objective: 'THREAT_RESPONSE', 
+                  default_unit: '', 
+                  description: '', 
+                  target_value: '', 
+                  impact_level: 'MEDIUM' 
+                });
                 setIsTemplateFormOpen(true);
               }}
-              className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
             >
               <Plus size={16} />
               New Action Template
-            </button>
+            </BrandButton>
           )}
         </div>
       </div>
 
       {/* Analytics Summary */}
       {activeView === 'desk' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-              <DollarSign size={28} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <BrandCard className="p-3.5 sm:p-5 lg:p-6 flex items-center gap-3.5 sm:gap-5">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-card border border-utility text-deep rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+              <DollarSign size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Total Action Revenue</span>
-              <h3 className="text-3xl font-black text-gray-900 mt-1">${stats.revenueFulfillment.toFixed(2)}</h3>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold text-slate uppercase tracking-wider block">Total Action Revenue</span>
+              <h3 className="text-xl sm:text-2xl font-mono font-bold text-deep mt-0.5 sm:mt-1 truncate">${stats.revenueFulfillment.toFixed(2)}</h3>
             </div>
-          </div>
+          </BrandCard>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-              <Award size={28} />
+          <BrandCard className="p-3.5 sm:p-5 lg:p-6 flex items-center gap-3.5 sm:gap-5">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-confirmed/10 border border-confirmed/20 text-confirmed rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+              <Award size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Completed Actions</span>
-              <h3 className="text-3xl font-black text-gray-900 mt-1">{stats.completedCount}</h3>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold text-slate uppercase tracking-wider block">Completed Actions</span>
+              <h3 className="text-xl sm:text-2xl font-mono font-bold text-deep mt-0.5 sm:mt-1">{stats.completedCount}</h3>
             </div>
-          </div>
+          </BrandCard>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-            <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-              <ListTodo size={28} />
+          <BrandCard className="p-3.5 sm:p-5 lg:p-6 flex items-center gap-3.5 sm:gap-5 sm:col-span-2 lg:col-span-1">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-attention/10 border border-attention/20 text-attention rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+              <ListTodo size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Active Pending Desk</span>
-              <h3 className="text-3xl font-black text-gray-900 mt-1">{stats.pendingCount}</h3>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold text-slate uppercase tracking-wider block">Active Pending Desk</span>
+              <h3 className="text-xl sm:text-2xl font-mono font-bold text-deep mt-0.5 sm:mt-1">{stats.pendingCount}</h3>
             </div>
-          </div>
+          </BrandCard>
         </div>
       )}
 
@@ -556,23 +504,23 @@ export default function ActionsStrategyDesk() {
         <div className="space-y-6">
           
           {/* Status Tabs Control */}
-          <div className="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
-            <div className="flex flex-wrap p-1 bg-gray-50 rounded-2xl">
+          <div className="flex justify-between items-center bg-white p-3 rounded-2xl border border-utility">
+            <div className="flex flex-wrap gap-1 p-1 bg-canvas border border-utility rounded-xl">
               {['pending', 'proposed', 'completed', 'cancelled', 'all'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setDeskStatusFilter(status)}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                     deskStatusFilter === status 
-                      ? 'bg-white shadow-sm text-blue-600' 
-                      : 'text-gray-400 hover:text-gray-600'
+                      ? 'bg-deep text-white shadow-sm' 
+                      : 'text-slate hover:text-deep'
                   }`}
                 >
                   {status}
                 </button>
               ))}
             </div>
-            <span className="text-xs bg-gray-50 border border-gray-100 text-gray-500 font-bold px-4 py-2 rounded-full hidden md:inline-block">
+            <span className="text-xs bg-canvas border border-utility text-slate font-bold px-3 py-1.5 rounded-full hidden md:inline-block font-mono">
               {filteredActions.length} Actions matching
             </span>
           </div>
@@ -580,17 +528,17 @@ export default function ActionsStrategyDesk() {
           {/* Directory Content */}
           {loadingActions ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-              <span className="font-bold text-gray-500">Loading Strategy Desk...</span>
+              <div className="animate-spin rounded-full h-10 w-10 border-2 border-deep border-t-transparent"></div>
+              <span className="font-semibold text-slate text-sm">Loading Strategy Desk...</span>
             </div>
           ) : filteredActions.length === 0 ? (
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-gray-50 text-gray-400 rounded-[2rem] flex items-center justify-center mb-6">
-                <ListTodo size={36} />
+            <BrandCard className="p-16 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 bg-canvas border border-utility text-slate rounded-2xl flex items-center justify-center mb-4">
+                <ListTodo size={30} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Desk is empty</h3>
-              <p className="text-gray-500 mt-2">No active operations match this status filter.</p>
-            </div>
+              <h3 className="text-lg font-bold text-deep">Desk is empty</h3>
+              <p className="text-slate mt-1 text-sm">No active operations match this status filter.</p>
+            </BrandCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredActions.map((action) => {
@@ -599,49 +547,50 @@ export default function ActionsStrategyDesk() {
                 const objectiveLabel = objectiveMap[action.objective || ''] || action.objective;
                 
                 return (
-                  <div 
+                  <BrandCard 
                     key={action.id}
+                    hoverable
                     onClick={() => openResolutionDrawer(action)}
-                    className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col justify-between cursor-pointer"
+                    className="flex flex-col justify-between cursor-pointer group"
                   >
                     <div>
                       {/* Badge / Category Header */}
-                      <div className="flex justify-between items-start mb-6">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider border ${badge.color}`}>
-                          <BadgeIcon size={10} />
+                      <div className="flex justify-between items-start mb-5">
+                        <BrandBadge variant={badge.variant}>
+                          <BadgeIcon size={12} />
                           {badge.label}
-                        </span>
+                        </BrandBadge>
                         
-                        <span className="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider">
+                        <BrandBadge variant="neutral" className="uppercase text-2xs tracking-wider">
                           {action.category}
-                        </span>
+                        </BrandBadge>
                       </div>
 
                       {/* Action Title & Store */}
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Action Title</span>
-                      <h3 className="text-lg font-black text-gray-900 mt-0.5 truncate group-hover:text-blue-600 transition-colors">
+                      <span className="text-[10px] font-bold text-slate uppercase tracking-wider block">Action Title</span>
+                      <h3 className="text-base font-bold text-deep mt-0.5 truncate group-hover:text-deep transition-colors">
                         {((action.details as Record<string, unknown> | undefined)?.title as string) || action.template_name || 'Manual Audit'}
                       </h3>
 
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mt-3">Account</span>
-                      <p className="text-xs font-bold text-gray-600 mt-0.5 truncate">
+                      <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mt-3">Account</span>
+                      <p className="text-xs font-semibold text-slate mt-0.5 truncate">
                         {action.store_name || 'Unknown Account'}
                       </p>
 
                       {/* Action Specs */}
-                      <div className="mt-4 space-y-2.5 pt-4 border-t border-gray-50">
+                      <div className="mt-4 space-y-2 pt-4 border-t border-utility">
                         <div className="flex justify-between text-xs">
-                          <span className="text-gray-400 font-medium">Template</span>
-                          <span className="font-bold text-gray-700 truncate max-w-[150px]">{action.template_name || 'Manual Audit'}</span>
+                          <span className="text-slate font-medium">Template</span>
+                          <span className="font-bold text-deep truncate max-w-[150px]">{action.template_name || 'Manual Audit'}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-gray-400 font-medium">Objective</span>
-                          <span className="font-bold text-gray-700">{objectiveLabel}</span>
+                          <span className="text-slate font-medium">Objective</span>
+                          <span className="font-bold text-deep">{objectiveLabel}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-gray-400 font-medium">Assignee</span>
-                          <span className="font-bold text-gray-700 flex items-center gap-1">
-                            <User size={12} className="text-gray-300" />
+                          <span className="text-slate font-medium">Assignee</span>
+                          <span className="font-bold text-deep flex items-center gap-1">
+                            <User size={12} className="text-slate" />
                             {action.assigned_to_name || 'Unassigned'}
                           </span>
                         </div>
@@ -649,19 +598,19 @@ export default function ActionsStrategyDesk() {
                     </div>
 
                     {/* Result Reporting / Deadlines */}
-                    <div className="mt-6 pt-5 border-t border-gray-50 flex items-center justify-between">
+                    <div className="mt-6 pt-4 border-t border-utility flex items-center justify-between">
                       {action.status === 'completed' ? (
                         <div>
-                          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block">Result</span>
-                          <span className="text-base font-black text-gray-900">
-                            {action.result_value} <span className="text-2xs font-bold text-gray-400 uppercase">{action.result_unit || 'units'}</span>
+                          <span className="text-[10px] font-bold text-confirmed uppercase tracking-wider block">Result</span>
+                          <span className="text-sm font-mono font-bold text-deep">
+                            {action.result_value} <span className="text-2xs font-sans text-slate uppercase font-semibold">{action.result_unit || 'units'}</span>
                           </span>
                         </div>
                       ) : (
                         <div>
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Due Date</span>
-                          <span className="text-xs font-bold text-gray-700 flex items-center gap-1 mt-0.5">
-                            <Calendar size={12} className="text-gray-300" />
+                          <span className="text-[10px] font-bold text-slate uppercase tracking-wider block">Due Date</span>
+                          <span className="text-xs font-mono font-medium text-slate flex items-center gap-1 mt-0.5">
+                            <Calendar size={12} className="text-slate" />
                             {action.due_date ? new Date(action.due_date).toLocaleDateString() : 'No Deadline'}
                           </span>
                         </div>
@@ -669,16 +618,16 @@ export default function ActionsStrategyDesk() {
                       
                       {action.status === 'completed' && action.revenue_impact && (
                         <div className="text-right">
-                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block">Fulfillment</span>
-                          <span className="text-sm font-black text-gray-900">${Number(action.revenue_impact).toFixed(2)}</span>
+                          <span className="text-[10px] font-bold text-deep uppercase tracking-wider block">Fulfillment</span>
+                          <span className="text-sm font-mono font-bold text-deep">${Number(action.revenue_impact).toFixed(2)}</span>
                         </div>
                       )}
 
                       {action.status !== 'completed' && (
-                        <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight size={18} className="text-slate group-hover:text-deep group-hover:translate-x-1 transition-all" />
                       )}
                     </div>
-                  </div>
+                  </BrandCard>
                 );
               })}
             </div>
@@ -692,628 +641,123 @@ export default function ActionsStrategyDesk() {
         <div className="space-y-6">
           {loadingTemplates ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-              <span className="font-bold text-gray-500">Loading catalog templates...</span>
+              <div className="animate-spin rounded-full h-10 w-10 border-2 border-deep border-t-transparent"></div>
+              <span className="font-semibold text-slate text-sm">Loading catalog templates...</span>
             </div>
           ) : templates.length === 0 ? (
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-gray-50 text-gray-400 rounded-[2rem] flex items-center justify-center mb-6">
-                <Settings size={36} />
+            <BrandCard className="p-16 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 bg-canvas border border-utility text-slate rounded-2xl flex items-center justify-center mb-4">
+                <Settings size={30} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Catalog is empty</h3>
-              <p className="text-gray-500 mt-2">Define your business standard operational templates first.</p>
-            </div>
+              <h3 className="text-lg font-bold text-deep">Catalog is empty</h3>
+              <p className="text-slate mt-1 text-sm">Define your business standard operational templates first.</p>
+            </BrandCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {templates.map((tpl) => (
-                <div 
+                <BrandCard 
                   key={tpl.id}
-                  className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-between"
+                  className="flex flex-col justify-between"
                 >
                   <div className="space-y-4">
                     <div className="flex justify-between items-start">
-                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider">
+                      <BrandBadge variant="neutral" className="uppercase text-2xs tracking-wider">
                         {tpl.category}
-                      </span>
-                      <span className="text-xs text-gray-400 font-bold bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100 uppercase tracking-widest font-mono">
+                      </BrandBadge>
+                      <span className="text-xs text-slate font-bold bg-canvas px-2.5 py-1 rounded-lg border border-utility uppercase tracking-wider font-mono">
                         Unit: {tpl.default_unit}
                       </span>
                     </div>
 
                     <div>
-                      <h3 className="text-xl font-black text-gray-900">{tpl.name}</h3>
+                      <h3 className="text-lg font-bold text-deep">{tpl.name}</h3>
                       {tpl.description && (
-                        <p className="text-gray-500 text-sm mt-2 line-clamp-3 leading-relaxed font-medium">
+                        <p className="text-slate text-sm mt-2 line-clamp-3 leading-relaxed font-medium">
                           {tpl.description}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-5 border-t border-gray-50 flex justify-end gap-3">
-                    <button
+                  <div className="mt-6 pt-4 border-t border-utility flex justify-end gap-2">
+                    <BrandButton
+                      variant="secondary"
+                      size="sm"
                       onClick={() => openTemplateEdit(tpl)}
-                      className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 border border-gray-200 rounded-xl text-2xs font-bold transition-all"
                     >
                       <Edit3 size={12} /> Edit
-                    </button>
-                    <button
+                    </BrandButton>
+                    <BrandButton
+                      variant="secondary"
+                      size="sm"
                       onClick={() => handleDeleteTemplate(tpl.id)}
-                      className="flex items-center gap-1 bg-white hover:bg-red-50 text-red-600 px-4 py-2 border border-red-100 rounded-xl text-2xs font-bold transition-all"
+                      className="text-alert hover:text-alert hover:border-alert/40"
                     >
                       <Trash2 size={12} /> Delete
-                    </button>
+                    </BrandButton>
                   </div>
-                </div>
+                </BrandCard>
               ))}
             </div>
           )}
         </div>
       )}
 
-      {/* -------------------------------------------------------------
-          DRAWER: ASSIGN ACTION (DEPLOYMENT DESK)
-      ------------------------------------------------------------- */}
-      <Drawer
+      {/* MODAL DRAWERS */}
+      <AssignActionDrawer
         isOpen={isActionFormOpen}
         onClose={() => setIsActionFormOpen(false)}
-        title="Assign Action"
-        subtitle="Deploy a strategy blueprint to a store and assign it to a rep."
-        size="wide"
-        footer={
-          <div className="flex gap-4">
-            <button 
-              onClick={() => setIsActionFormOpen(false)}
-              className="flex-1 px-6 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleCreateAction}
-              disabled={loading || !actionFormData.store_id || !actionFormData.template_id || !actionFormData.target_value}
-              className="flex-1 px-6 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Dispatch Action'}
-            </button>
-          </div>
-        }
-      >
-        <form onSubmit={handleCreateAction} className="space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-bold flex items-center gap-2">
-              <AlertCircle size={18} />
-              {error}
-            </div>
-          )}
+        loading={loading}
+        error={error}
+        actionFormData={actionFormData}
+        setActionFormData={setActionFormData}
+        stores={stores}
+        assigneesList={assigneesList}
+        filteredObjectives={filteredObjectives}
+        objectiveMap={objectiveMap}
+        templates={templates}
+        handleCreateAction={handleCreateAction}
+        handleCategoryChange={handleCategoryChange}
+        onOpenCreateTemplate={({ category, objective }) => {
+          setIsActionFormOpen(false);
+          setSelectedTemplate(null);
+          setTemplateFormData({
+            name: '',
+            category,
+            objective,
+            default_unit: '',
+            description: '',
+            target_value: '',
+            impact_level: 'MEDIUM',
+          });
+          setIsTemplateFormOpen(true);
+        }}
+      />
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Target Account Location</label>
-                <select
-                  required
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                  value={actionFormData.store_id}
-                  onChange={e => setActionFormData({...actionFormData, store_id: e.target.value})}
-                >
-                  <option value="">Select Account...</option>
-                  {stores.map(s => <option key={s.id} value={s.id}>{s.name} ({s.region})</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Operational Rep (Assignee)</label>
-                <select
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                  value={actionFormData.assigned_to_id}
-                  onChange={e => setActionFormData({...actionFormData, assigned_to_id: e.target.value})}
-                >
-                  <option value="">Select Assigned Rep...</option>
-                  {assigneesList.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} {c.email ? `(${c.email})` : c.phone ? `(${c.phone})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Category</label>
-              <div className="flex gap-4 p-1 bg-gray-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleCategoryChange('COMMERCIAL');
-                    setActionFormData(prev => ({ ...prev, template_id: '', result_unit: '' }));
-                  }}
-                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
-                    actionFormData.category === 'COMMERCIAL'
-                      ? 'bg-white shadow text-gray-900'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  Commercial
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleCategoryChange('MARKETING');
-                    setActionFormData(prev => ({ ...prev, template_id: '', result_unit: '' }));
-                  }}
-                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
-                    actionFormData.category === 'MARKETING'
-                      ? 'bg-white shadow text-gray-900'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  Marketing
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Task Objective</label>
-                <select
-                  required
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                  value={actionFormData.objective}
-                  onChange={e => setActionFormData({...actionFormData, objective: e.target.value, template_id: '', result_unit: ''})}
-                >
-                  {filteredObjectives.map(o => <option key={o.name} value={o.name}>{objectiveMap[o.name] || o.label}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Select Action</label>
-                {(() => {
-                  const matchingTemplates = templates.filter(t => t.category === actionFormData.category && t.objective === actionFormData.objective);
-                  if (matchingTemplates.length === 0) {
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsActionFormOpen(false);
-                          setSelectedTemplate(null);
-                          setTemplateFormData(prev => ({
-                            ...prev,
-                            name: '',
-                            category: actionFormData.category,
-                            objective: actionFormData.objective,
-                            default_unit: '',
-                            description: '',
-                            target_value: '',
-                            impact_level: 'MEDIUM'
-                          }));
-                          setIsTemplateFormOpen(true);
-                        }}
-                        className="w-full p-4 bg-amber-50 border border-dashed border-amber-300 rounded-xl flex items-center gap-3 text-left hover:bg-amber-100 transition-all group"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-amber-200 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-300 transition-colors">
-                          <Plus size={14} className="text-amber-700" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-amber-800">No actions created yet</p>
-                          <p className="text-[10px] text-amber-600 mt-0.5">Click to create a reusable action for this objective.</p>
-                        </div>
-                      </button>
-                    );
-                  }
-                  return (
-                    <select
-                      required
-                      className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                      value={actionFormData.template_id}
-                      onChange={e => {
-                        const tplId = e.target.value;
-                        const selectedTpl = templates.find(t => t.id === tplId);
-                        setActionFormData(prev => ({
-                          ...prev,
-                          template_id: tplId,
-                          result_unit: selectedTpl ? selectedTpl.default_unit : ''
-                        }));
-                      }}
-                    >
-                      <option value="">Choose Template Blueprint...</option>
-                      {matchingTemplates.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Blueprint Preview Card */}
-            {actionFormData.template_id && (() => {
-              const selectedTpl = templates.find(t => t.id === actionFormData.template_id);
-              if (!selectedTpl) return null;
-              return (
-                <div className="p-6 bg-blue-50/40 border border-blue-100/50 rounded-2xl space-y-2 animate-in fade-in duration-300">
-                  <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest block">Blueprint Guidelines</span>
-                  <h4 className="text-sm font-bold text-gray-900">{selectedTpl.name}</h4>
-                  {selectedTpl.description && (
-                    <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{selectedTpl.description}</p>
-                  )}
-                </div>
-              );
-            })()}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">
-                  Metric Goal {actionFormData.result_unit ? `(${actionFormData.result_unit})` : ''}
-                </label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  placeholder={actionFormData.result_unit ? `Target in ${actionFormData.result_unit}` : "e.g. 150"}
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={actionFormData.target_value}
-                  onChange={e => setActionFormData({...actionFormData, target_value: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Operational Deadline</label>
-                <input
-                  type="date"
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={actionFormData.due_date}
-                  onChange={e => setActionFormData({...actionFormData, due_date: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Impact Level</label>
-              <select
-                required
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                value={actionFormData.impact_level}
-                onChange={e => setActionFormData({...actionFormData, impact_level: e.target.value})}
-              >
-                <option value="LOW">Low Priority</option>
-                <option value="MEDIUM">Medium Priority</option>
-                <option value="HIGH">High Priority</option>
-              </select>
-            </div>
-          </div>
-        </form>
-      </Drawer>
-
-      {/* -------------------------------------------------------------
-          DRAWER: RESOLUTION & ACCOUNTABILITY OUTCOME PANEL
-      ------------------------------------------------------------- */}
-      <Drawer
+      <ActionResolutionDrawer
         isOpen={isResolutionOpen}
         onClose={() => setIsResolutionOpen(false)}
-        title="Tactical Action Detail"
-        subtitle="Resolve strategies, input results, and fulfill account objectives."
-        size="wide"
-        footer={
-          <div className="flex gap-4">
-            <button 
-              onClick={() => setIsResolutionOpen(false)}
-              className="flex-1 px-6 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleResolveAction}
-              disabled={loading}
-              className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Save Desk Log'}
-            </button>
-          </div>
-        }
-      >
-        {selectedAction && (
-          <form onSubmit={handleResolveAction} className="space-y-6">
-            {error && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-bold flex items-center gap-2">
-                <AlertCircle size={18} />
-                {error}
-              </div>
-            )}
+        loading={loading}
+        error={error}
+        selectedAction={selectedAction}
+        resolutionData={resolutionData}
+        setResolutionData={setResolutionData}
+        objectiveMap={objectiveMap}
+        handleResolveAction={handleResolveAction}
+      />
 
-            {/* Quick action info */}
-            <div className="p-6 bg-gray-50 rounded-[2rem] space-y-4 border border-gray-100">
-              <div className="flex justify-between items-center">
-                <h4 className="text-base font-black text-gray-900">{selectedAction.store_name || 'Target Account'}</h4>
-                <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-2xs font-bold uppercase">
-                  {selectedAction.category}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
-                  <span className="text-gray-400 font-medium block">Objective</span>
-                  <span className="font-bold text-gray-800">{objectiveMap[selectedAction.objective] || selectedAction.objective}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 font-medium block">Template Specs</span>
-                  <span className="font-bold text-gray-800">{selectedAction.template_name || 'Manual Ingestion'}</span>
-                </div>
-              </div>
-            </div>
-
-            {!!((selectedAction.details as Record<string, unknown> | undefined)?.title || (selectedAction.details as Record<string, unknown> | undefined)?.description || (selectedAction.details as Record<string, unknown> | undefined)?.target_value) && (
-              <div className="p-6 bg-blue-50/30 rounded-[2rem] space-y-4 border border-blue-50/50">
-                {!!(selectedAction.details as Record<string, unknown> | undefined)?.title && (
-                  <div>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Main Action</span>
-                    <h4 className="text-base font-black text-gray-900 mt-0.5">{(selectedAction.details as Record<string, unknown>).title as string}</h4>
-                  </div>
-                )}
-                {!!(selectedAction.details as Record<string, unknown> | undefined)?.description && (
-                  <div>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Description / Guidelines</span>
-                    <p className="text-sm font-semibold text-gray-700 mt-1 whitespace-pre-line">{(selectedAction.details as Record<string, unknown>).description as string}</p>
-                  </div>
-                )}
-                {!!(selectedAction.details as Record<string, unknown> | undefined)?.target_value && (
-                  <div>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Goal</span>
-                    <span className="text-sm font-black text-gray-900 mt-0.5">
-                      {String((selectedAction.details as Record<string, unknown>).target_value)} <span className="text-2xs font-bold text-gray-400 uppercase">{selectedAction.result_unit || 'units'}</span>
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Status Select */}
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Execute Status</label>
-              <select
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-blue-500"
-                value={resolutionData.status}
-                onChange={e => setResolutionData({...resolutionData, status: e.target.value})}
-              >
-                <option value="pending">Pending Operational Sync</option>
-                <option value="proposed">Proposed Draft Note</option>
-                <option value="completed">Completed & Fulfill Specs</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-
-            {/* Strict outcome validation conditional inputs */}
-            {resolutionData.status === 'completed' && (
-              <div className="p-6 bg-blue-50/50 rounded-[2rem] space-y-6 border border-blue-100/50 animate-in slide-in-from-top-4 duration-300">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="text-blue-600" size={18} />
-                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Execution Metrics (Required)</h4>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest block ml-1 mb-2">
-                      Result Value ({selectedAction.result_unit || 'units'})
-                    </label>
-                    <input
-                      required
-                      type="number"
-                      step="0.01"
-                      placeholder="e.g. 5, 12.5"
-                      className="w-full p-4 bg-white border border-blue-100 rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-blue-500"
-                      value={resolutionData.result_value}
-                      onChange={e => setResolutionData({...resolutionData, result_value: e.target.value})}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest block ml-1 mb-2">
-                      Revenue Impact ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Optional revenue gen"
-                      className="w-full p-4 bg-white border border-blue-100 rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-blue-500"
-                      value={resolutionData.revenue_impact}
-                      onChange={e => setResolutionData({...resolutionData, revenue_impact: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest block ml-1 mb-2">Resolution Notes</label>
-                  <textarea
-                    required
-                    rows={4}
-                    placeholder="Rep logging details on execution outcome..."
-                    className="w-full p-4 bg-white border border-blue-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 resize-none text-sm"
-                    value={resolutionData.resolution_notes}
-                    onChange={e => setResolutionData({...resolutionData, resolution_notes: e.target.value})}
-                  />
-                </div>
-              </div>
-            )}
-          </form>
-        )}
-      </Drawer>
-
-      {/* -------------------------------------------------------------
-          DRAWER: CREATE / EDIT TEMPLATE CONFIGURATION
-      ------------------------------------------------------------- */}
-      <Drawer
+      <ActionTemplateDrawer
         isOpen={isTemplateFormOpen}
         onClose={() => setIsTemplateFormOpen(false)}
-        title={selectedTemplate ? "Edit Action Template" : "New Action Template"}
-        subtitle="Create a reusable action that you can quickly assign to stores."
-        size="wide"
-        footer={
-          <div className="flex gap-4">
-            <button 
-              onClick={() => setIsTemplateFormOpen(false)}
-              className="flex-1 px-6 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleCreateTemplate}
-              disabled={loading || !templateFormData.name || !templateFormData.default_unit}
-              className="flex-1 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : (selectedTemplate ? 'Update Template' : 'Save Template')}
-            </button>
-          </div>
-        }
-      >
-        <form onSubmit={handleCreateTemplate} className="space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-bold flex items-center gap-2">
-              <AlertCircle size={18} />
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {/* Category Toggle */}
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Category</label>
-              <div className="flex gap-4 p-1 bg-gray-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const list = objectives.length > 0 ? objectives : [
-                      { name: "THREAT_RESPONSE", category: "COMMERCIAL" },
-                      { name: "INVENTORY_VELOCITY_OOS_PREVENTION", category: "COMMERCIAL" },
-                    ];
-                    const match = list.find(o => o.category === 'COMMERCIAL');
-                    setTemplateFormData(prev => ({ ...prev, category: 'COMMERCIAL', objective: match ? match.name : 'THREAT_RESPONSE' }));
-                  }}
-                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
-                    templateFormData.category === 'COMMERCIAL'
-                      ? 'bg-white shadow text-gray-900'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  Commercial
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const list = objectives.length > 0 ? objectives : [
-                      { name: "SHARE_OF_SHELF", category: "MARKETING" },
-                      { name: "POSM_MAINTENANCE_ASSET_PURITY", category: "MARKETING" },
-                    ];
-                    const match = list.find(o => o.category === 'MARKETING');
-                    setTemplateFormData(prev => ({ ...prev, category: 'MARKETING', objective: match ? match.name : 'SHARE_OF_SHELF' }));
-                  }}
-                  className={`flex-1 py-3 rounded-lg font-bold text-xs transition-all ${
-                    templateFormData.category === 'MARKETING'
-                      ? 'bg-white shadow text-gray-900'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  Marketing
-                </button>
-              </div>
-            </div>
-
-            {/* Action Type + UOM row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Task Objective</label>
-                <select
-                  required
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-indigo-500"
-                  value={templateFormData.objective}
-                  onChange={e => setTemplateFormData({...templateFormData, objective: e.target.value})}
-                >
-                  {(objectives.length > 0 ? objectives : [
-                    { name: "THREAT_RESPONSE", label: "Competitive Response", category: "COMMERCIAL" },
-                    { name: "THREAT_RESPONSE", label: "Competitive Response", category: "MARKETING" },
-                    { name: "SHARE_OF_SHELF", label: "Shelf Presence Check", category: "MARKETING" },
-                    { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "COMMERCIAL" },
-                    { name: "NEW_PRODUCT_INTRODUCTION", label: "Launch New Product", category: "MARKETING" },
-                    { name: "INVENTORY_VELOCITY_OOS_PREVENTION", label: "Prevent Stockouts", category: "COMMERCIAL" },
-                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "COMMERCIAL" },
-                    { name: "PERFECT_STORE_ASSORTMENT_COMPLIANCE", label: 'Store Standards Check', category: "MARKETING" },
-                    { name: "SEASONAL_EVENT_ACTIVATION", label: "Seasonal Promotion", category: "MARKETING" },
-                    { name: "TRADE_LOYALTY_VOLUME_PUSHING", label: "Drive Larger Orders", category: "COMMERCIAL" },
-                    { name: "POSM_MAINTENANCE_ASSET_PURITY", label: "Maintain Promo Materials", category: "MARKETING" }
-                  ]).filter((o: StoreActionObjective) => o.category === templateFormData.category).map((o: StoreActionObjective) => (
-                    <option key={o.name} value={o.name}>{objectiveMap[o.name] || o.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Metric Unit (UOM)</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="e.g. units, boxes, displays"
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  value={templateFormData.default_unit}
-                  onChange={e => setTemplateFormData({...templateFormData, default_unit: e.target.value})}
-                />
-              </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Main Action (Title)</label>
-              <input
-                required
-                type="text"
-                maxLength={50}
-                placeholder="e.g. Permanent Asset Deployment"
-                className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                value={templateFormData.name}
-                onChange={e => setTemplateFormData({...templateFormData, name: e.target.value})}
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Description / Guidelines</label>
-              <textarea
-                rows={3}
-                placeholder="e.g. Deploy branded merchandising asset tied to exclusivity terms..."
-                className="w-full p-4 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-900 resize-none text-sm"
-                value={templateFormData.description}
-                onChange={e => setTemplateFormData({...templateFormData, description: e.target.value})}
-              />
-            </div>
-
-            {/* Metric Goal + Impact Level */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">
-                  Default Metric Goal {templateFormData.default_unit ? `(${templateFormData.default_unit})` : ''}
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder={templateFormData.default_unit ? `Target in ${templateFormData.default_unit}` : 'e.g. 150'}
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  value={templateFormData.target_value}
-                  onChange={e => setTemplateFormData({...templateFormData, target_value: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1 mb-2">Impact Level</label>
-                <select
-                  className="w-full p-4 bg-gray-50 border-none rounded-xl font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-indigo-500"
-                  value={templateFormData.impact_level}
-                  onChange={e => setTemplateFormData({...templateFormData, impact_level: e.target.value})}
-                >
-                  <option value="LOW">Low Priority</option>
-                  <option value="MEDIUM">Medium Priority</option>
-                  <option value="HIGH">High Priority</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </form>
-      </Drawer>
+        loading={loading}
+        error={error}
+        selectedTemplate={selectedTemplate}
+        templateFormData={templateFormData}
+        setTemplateFormData={setTemplateFormData}
+        objectives={objectives}
+        objectiveMap={objectiveMap}
+        handleCreateTemplate={handleCreateTemplate}
+      />
 
     </div>
   );

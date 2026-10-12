@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
 import { useDrawer } from '@/lib/store/DrawerManager';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 import Drawer from './Drawer';
 import { 
   MessageSquare, 
@@ -59,7 +60,7 @@ export default function FieldNoteDrawer() {
 
     try {
       // 1. Save the Note
-      await apiClient.post<any>(`/trade/stores/${storeId}/notes`, {
+      await apiClient.post<void>(`/trade/stores/${storeId}/notes`, {
         note: formData.note,
         note_type: formData.note_type,
         risks: formData.risks || null,
@@ -70,7 +71,7 @@ export default function FieldNoteDrawer() {
 
       // 2. Optional: Save Competitor if provided
       if (formData.competitor_name) {
-        await apiClient.post<any>('/trade/competitors', {
+        await apiClient.post<void>('/trade/competitors', {
           store_id: storeId,
           name: formData.competitor_name,
           presence_level: formData.competitor_presence,
@@ -80,6 +81,7 @@ export default function FieldNoteDrawer() {
 
       queryClient.invalidateQueries({ queryKey: ['store', storeId] });
       queryClient.invalidateQueries({ queryKey: ['competitors', storeId] });
+      toast.success('Field note saved successfully');
       onClose();
       // Reset form
       setFormData({
@@ -93,7 +95,9 @@ export default function FieldNoteDrawer() {
         competitor_presence: 'low'
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to save field note');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

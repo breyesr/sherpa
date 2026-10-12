@@ -15,17 +15,16 @@ import {
   List as ListIcon, 
   ChevronRight, 
   Edit2, 
-  LayoutGrid as CategoryIcon,
-  Trash2,
-  Layers,
-  AlertTriangle,
-  Loader2
+  Trash2, 
+  AlertTriangle, 
+  Loader2 
 } from 'lucide-react';
 import { components } from '@/types/api';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
+import { BrandCard, BrandButton, BrandBadge } from '@/components/ui/brand';
 
 type ProductResponse = components['schemas']['ProductResponse'];
 type CategoryResponse = components['schemas']['CategoryResponse'];
-import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 function ProductsPageContent() {
   const token = useAuthStore((state) => state.token);
@@ -68,7 +67,7 @@ function ProductsPageContent() {
     queryKey: ['business'],
     queryFn: async () => {
       try {
-        return await apiClient.get<any>('/business/me');
+        return await apiClient.get<{ vertical_type?: string }>('/business/me');
       } catch {
         return null;
       }
@@ -78,7 +77,7 @@ function ProductsPageContent() {
 
   const isB2C = business?.vertical_type === 'BASIC';
 
-  // Create a mapping of category ID to category Name for fast lookup
+  // Create mapping of category ID to category Name for fast lookup
   const categoryMap = useMemo(() => {
     const map: Record<string, string> = {};
     categories.forEach(cat => {
@@ -87,7 +86,7 @@ function ProductsPageContent() {
     return map;
   }, [categories]);
 
-  // Real-time product count per category based on active product inventory
+  // Real-time product count per category
   const getCategoryProductCount = (category: CategoryResponse) => {
     if (products && products.length > 0) {
       return products.filter(p => p.category_id === category.id).length;
@@ -95,7 +94,7 @@ function ProductsPageContent() {
     return (category as any).product_count ?? 0;
   };
 
-  // Search and Category Filter operations wrapped in useMemo to prevent keyboard lag
+  // Search and Category Filter operations
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchesSearch = 
@@ -109,64 +108,66 @@ function ProductsPageContent() {
     });
   }, [products, searchTerm, selectedCategory]);
 
-  const stats = [
-    { name: 'Active SKUs', value: products.length.toString(), icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { name: 'Categories', value: categories.length.toString(), icon: CategoryIcon, color: 'text-blue-600', bg: 'bg-blue-50' }
-  ];
-
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 font-sans">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-            Products
-          </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-bold text-deep tracking-tight">
+              Catalog & Inventory
+            </h1>
+            <BrandBadge variant="accent">
+              <span className="font-mono">{products.length}</span> SKUS
+            </BrandBadge>
+          </div>
+          <p className="text-slate mt-1.5 font-medium text-base max-w-2xl">
             {isB2C 
               ? "Browse and manage your retail product catalog, active categories, and catalog listings."
               : "Browse and manage your B2B product catalog, active categories, and inventory items."}
           </p>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <button 
+        <div className="flex flex-wrap items-center gap-3">
+          <BrandButton 
+            variant="secondary"
             onClick={() => openDrawer('category')}
-            className="flex items-center gap-2 bg-white text-gray-900 px-6 py-4 rounded-2xl text-sm font-bold border border-gray-200 shadow-sm hover:bg-gray-50 transition-all active:scale-95"
           >
             <Plus size={16} />
             Add Category
-          </button>
-          <button 
+          </BrandButton>
+          <BrandButton 
+            variant="primary"
             onClick={() => openDrawer('catalog', { initialMode: 'product' })}
-            className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95"
           >
             <Plus size={16} />
             Add Product
-          </button>
+          </BrandButton>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-100">
+      <div className="flex border-b border-utility">
         <button
-          onClick={() => router.push('/trade/products?tab=products')}
-          className={`px-8 py-4 font-bold text-sm transition-all border-b-2 ${
+          onClick={() => router.push('/trade/catalog/products?tab=products')}
+          className={`px-6 py-3 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'products'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
+              ? 'border-dark-accent text-deep'
+              : 'border-transparent text-slate hover:text-deep'
           }`}
         >
-          Products
+          <Package size={16} />
+          Products ({products.length})
         </button>
         <button
-          onClick={() => router.push('/trade/products?tab=categories')}
-          className={`px-8 py-4 font-bold text-sm transition-all border-b-2 ${
+          onClick={() => router.push('/trade/catalog/products?tab=categories')}
+          className={`px-6 py-3 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
             activeTab === 'categories'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
+              ? 'border-dark-accent text-deep'
+              : 'border-transparent text-slate hover:text-deep'
           }`}
         >
-          Categories
+          <Tag size={16} />
+          Categories ({categories.length})
         </button>
       </div>
 
@@ -174,35 +175,42 @@ function ProductsPageContent() {
         <>
           {/* Stats Summary */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-                <div className={`w-16 h-16 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center`}>
-                  <stat.icon size={28} />
-                </div>
-                <div>
-                  <span className="text-sm font-black text-gray-400 uppercase tracking-widest">{stat.name}</span>
-                  <h3 className="text-3xl font-black text-gray-900 mt-1">{stat.value}</h3>
-                </div>
+            <BrandCard hoverable className="p-6 flex items-center gap-6">
+              <div className="w-14 h-14 bg-ear/20 text-deep rounded-2xl flex items-center justify-center">
+                <Package size={26} />
               </div>
-            ))}
+              <div>
+                <span className="text-xs font-bold text-slate uppercase tracking-wider">Active SKUs</span>
+                <h3 className="text-3xl font-bold font-mono text-deep mt-0.5">{products.length}</h3>
+              </div>
+            </BrandCard>
+            <BrandCard hoverable className="p-6 flex items-center gap-6">
+              <div className="w-14 h-14 bg-memory/20 text-deep rounded-2xl flex items-center justify-center">
+                <Tag size={26} />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate uppercase tracking-wider">Defined Categories</span>
+                <h3 className="text-3xl font-bold font-mono text-deep mt-0.5">{categories.length}</h3>
+              </div>
+            </BrandCard>
           </div>
 
           {/* Control Bar */}
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
+          <BrandCard className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
             <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
               <div className="relative w-full md:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate" size={16} />
                 <input 
                   type="text"
-                  placeholder="Search products..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-900"
+                  placeholder="Search products by SKU, name, or brand..."
+                  className="w-full pl-11 pr-4 py-2.5 bg-surface border border-utility rounded-xl focus:outline-none focus:ring-2 focus:ring-dark-accent text-sm font-medium text-deep"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div className="relative">
                 <select
-                  className="w-full md:w-56 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-700 appearance-none cursor-pointer"
+                  className="w-full md:w-56 px-4 py-2.5 bg-surface border border-utility rounded-xl focus:outline-none focus:ring-2 focus:ring-dark-accent text-sm font-semibold text-deep appearance-none cursor-pointer"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -214,72 +222,74 @@ function ProductsPageContent() {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl">
+            <div className="flex items-center gap-1.5 bg-surface p-1 rounded-xl border border-utility">
               <button 
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-canvas shadow-sm text-deep' : 'text-slate hover:text-deep'}`}
+                title="List View"
               >
-                <ListIcon size={20} />
+                <ListIcon size={18} />
               </button>
               <button 
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-canvas shadow-sm text-deep' : 'text-slate hover:text-deep'}`}
+                title="Grid View"
               >
-                <LayoutGrid size={20} />
+                <LayoutGrid size={18} />
               </button>
             </div>
-          </div>
+          </BrandCard>
 
           {/* Directory Content */}
           {loadingProducts || loadingCategories ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-              <span className="font-bold text-gray-500">Loading catalog items...</span>
+              <div className="animate-spin rounded-full h-10 w-10 border-3 border-dark-accent border-t-transparent"></div>
+              <span className="font-semibold text-slate text-sm">Loading catalog items...</span>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-gray-50 text-gray-400 rounded-[2rem] flex items-center justify-center mb-6">
-                <Package size={36} />
+            <BrandCard className="p-16 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 bg-surface text-slate rounded-2xl flex items-center justify-center mb-4 border border-utility">
+                <Package size={32} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">No products found</h3>
-              <p className="text-gray-500 mt-2">Try adjusting your search query or category filters.</p>
-            </div>
+              <h3 className="text-lg font-bold text-deep">No products found</h3>
+              <p className="text-slate text-sm mt-1">Try adjusting your search query or category filters.</p>
+            </BrandCard>
           ) : viewMode === 'list' ? (
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-              <div className="divide-y divide-gray-50">
+            <BrandCard className="overflow-hidden">
+              <div className="divide-y divide-utility">
                 {/* Header Row */}
-                <div className="hidden md:flex items-center justify-between p-8 bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                <div className="hidden md:flex items-center justify-between p-5 bg-surface/50 text-[11px] font-bold text-slate uppercase tracking-wider border-b border-utility">
                   <div className="flex-1">Product Details</div>
                   <div className="w-48">Category</div>
                   <div className="w-32 text-right">Price</div>
                   <div className="w-32 text-right">UOM</div>
-                  <div className="w-20"></div>
+                  <div className="w-16"></div>
                 </div>
 
                 {/* Product Item List */}
                 {filteredProducts.map((product) => (
-                  <div key={product.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
+                  <div key={product.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-6 hover:bg-surface/50 transition-colors cursor-pointer">
                     <Link 
-                      href={`/trade/products/${product.id}`}
+                      href={`/trade/catalog/products/${product.id}`}
                       className="absolute inset-0 z-0"
                     />
                     
-                    <div className="relative z-10 flex items-center gap-6 pointer-events-none flex-1">
-                      <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
-                        <Package size={28} />
+                    <div className="relative z-10 flex items-center gap-5 pointer-events-none flex-1">
+                      <div className="w-12 h-12 bg-ear/20 text-deep rounded-xl flex items-center justify-center group-hover:bg-ear/40 transition-colors shadow-sm">
+                        <Package size={22} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-black text-gray-900 group-hover:text-emerald-600 transition-colors">
+                        <h3 className="text-base font-bold text-deep group-hover:text-dark-accent transition-colors">
                           {product.name}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-4 mt-1 text-gray-500 font-medium">
+                        <div className="flex flex-wrap items-center gap-3 mt-1 text-slate text-xs font-medium">
                           {!isB2C && product.brand && (
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-semibold">
+                            <span className="bg-surface text-slate border border-utility px-2 py-0.5 rounded font-medium">
                               {product.brand}
                             </span>
                           )}
                           {product.sku && (
-                            <span className="text-xs font-mono text-gray-400">
+                            <span className="font-mono text-slate">
                               SKU: {product.sku}
                             </span>
                           )}
@@ -287,73 +297,74 @@ function ProductsPageContent() {
                       </div>
                     </div>
 
-                    <div className="relative z-10 flex items-center justify-between md:justify-end gap-12 mt-6 md:mt-0 w-full md:w-auto">
+                    <div className="relative z-10 flex items-center justify-between md:justify-end gap-8 mt-4 md:mt-0 w-full md:w-auto">
                       <div className="w-48 pointer-events-none flex items-center">
-                        <span className="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold">
+                        <BrandBadge variant="neutral">
                           {categoryMap[product.category_id] || 'General'}
-                        </span>
+                        </BrandBadge>
                       </div>
-                      <div className="w-32 md:text-right font-black text-gray-900 text-lg pointer-events-none">
+                      <div className="w-32 md:text-right font-bold font-mono text-deep text-base pointer-events-none">
                         ${(product.price ?? 0).toFixed(2)}
                       </div>
-                      <div className="w-32 md:text-right font-semibold text-gray-500 text-sm pointer-events-none uppercase">
+                      <div className="w-32 md:text-right font-medium text-slate text-xs pointer-events-none uppercase">
                         {product.unit_of_measure || 'unit'}
                       </div>
-                      <div className="w-20 flex justify-end">
-                        <ChevronRight size={20} className="text-gray-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all pointer-events-none" />
+                      <div className="w-16 flex justify-end">
+                        <ChevronRight size={18} className="text-slate group-hover:text-deep group-hover:translate-x-1 transition-all pointer-events-none" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </BrandCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((product) => (
-                <div 
+                <BrandCard 
                   key={product.id} 
-                  className="group relative bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all flex flex-col justify-between cursor-pointer"
+                  hoverable
+                  className="p-6 flex flex-col justify-between cursor-pointer relative group"
                 >
                   <Link 
-                    href={`/trade/products/${product.id}`}
+                    href={`/trade/catalog/products/${product.id}`}
                     className="absolute inset-0 z-0"
                   />
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
-                        <Package size={24} />
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-12 h-12 bg-ear/20 text-deep rounded-xl flex items-center justify-center group-hover:bg-ear/40 transition-colors shadow-sm">
+                        <Package size={22} />
                       </div>
-                      <span className="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider">
+                      <BrandBadge variant="neutral">
                         {categoryMap[product.category_id] || 'General'}
-                      </span>
+                      </BrandBadge>
                     </div>
                     
-                    <h3 className="text-2xl font-black text-gray-900 group-hover:text-emerald-600 transition-all leading-tight truncate">
+                    <h3 className="text-lg font-bold text-deep group-hover:text-dark-accent transition-colors truncate">
                       {product.name}
                     </h3>
                     {!isB2C && (
-                      <p className="text-gray-400 font-bold text-xs mt-1 uppercase tracking-widest">{product.brand || 'No Brand'}</p>
+                      <p className="text-slate font-medium text-xs mt-1 uppercase tracking-wider">{product.brand || 'No Brand'}</p>
                     )}
                     
                     {product.sku && (
-                      <p className="text-gray-400 text-xs font-mono mt-3">SKU: {product.sku}</p>
+                      <p className="text-slate text-xs font-mono mt-2">SKU: {product.sku}</p>
                     )}
                     
                     {product.description && (
-                      <p className="text-gray-500 text-sm mt-4 line-clamp-2">{product.description}</p>
+                      <p className="text-slate text-sm mt-3 line-clamp-2">{product.description}</p>
                     )}
                   </div>
 
-                  <div className="relative z-10 flex items-center justify-between mt-8 pt-6 border-t border-gray-50">
+                  <div className="relative z-10 flex items-center justify-between mt-6 pt-4 border-t border-utility">
                     <div>
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Unit Price</span>
-                      <span className="text-2xl font-black text-gray-900">${(product.price ?? 0).toFixed(2)}</span>
+                      <span className="text-[10px] font-bold text-slate uppercase tracking-wider block">Price</span>
+                      <span className="text-xl font-bold font-mono text-deep">${(product.price ?? 0).toFixed(2)}</span>
                     </div>
-                    <span className="text-xs font-bold text-gray-400 uppercase bg-gray-50 border border-gray-100 px-3 py-1 rounded-lg">
+                    <span className="text-xs font-semibold text-slate uppercase bg-surface border border-utility px-2.5 py-1 rounded-lg">
                       {product.unit_of_measure || 'unit'}
                     </span>
                   </div>
-                </div>
+                </BrandCard>
               ))}
             </div>
           )}
@@ -362,25 +373,25 @@ function ProductsPageContent() {
         /* Categories View */
         loadingCategories ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-            <span className="font-bold text-gray-500">Loading categories...</span>
+            <div className="animate-spin rounded-full h-10 w-10 border-3 border-dark-accent border-t-transparent"></div>
+            <span className="font-semibold text-slate text-sm">Loading categories...</span>
           </div>
         ) : categories.length === 0 ? (
-          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-gray-50 text-gray-400 rounded-[2rem] flex items-center justify-center mb-6">
-              <Tag size={36} />
+          <BrandCard className="p-16 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-surface text-slate rounded-2xl flex items-center justify-center mb-4 border border-utility">
+              <Tag size={32} />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">No categories found</h3>
-            <p className="text-gray-500 mt-2">Create your first product category to get started.</p>
-          </div>
+            <h3 className="text-lg font-bold text-deep">No categories found</h3>
+            <p className="text-slate text-sm mt-1">Create your first product category to get started.</p>
+          </BrandCard>
         ) : (
           <div className="space-y-4">
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-              <div className="divide-y divide-gray-50">
-                <div className="hidden md:flex items-center justify-between p-8 bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+            <BrandCard className="overflow-hidden">
+              <div className="divide-y divide-utility">
+                <div className="hidden md:flex items-center justify-between p-5 bg-surface/50 text-[11px] font-bold text-slate uppercase tracking-wider border-b border-utility">
                   <div className="flex-1">Category & Details</div>
                   <div className="w-48 text-center">Products</div>
-                  <div className="w-80">Product Attributes Template</div>
+                  <div className="w-80">Attributes Schema</div>
                   <div className="w-32 text-right">Actions</div>
                 </div>
                 {categories.map((cat) => {
@@ -388,23 +399,23 @@ function ProductsPageContent() {
                   const pCount = getCategoryProductCount(cat);
 
                   return (
-                    <div key={cat.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all gap-6">
+                    <div key={cat.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 hover:bg-surface/50 transition-colors gap-6">
                       {/* Name, Type & Description */}
-                      <div className="flex items-start gap-5 flex-1">
-                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0 mt-0.5">
-                          <Tag size={20} />
+                      <div className="flex items-start gap-4 flex-1">
+                        <div className="w-11 h-11 bg-memory/20 text-deep rounded-xl flex items-center justify-center shadow-sm shrink-0 mt-0.5">
+                          <Tag size={18} />
                         </div>
                         <div>
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-black text-gray-900">
+                            <h3 className="text-base font-bold text-deep">
                               {cat.name}
                             </h3>
-                            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-2xs font-bold uppercase tracking-wider">
+                            <BrandBadge variant="neutral">
                               {(cat as any).category_type || 'General'}
-                            </span>
+                            </BrandBadge>
                           </div>
                           {cat.description && (
-                            <p className="text-sm font-medium text-gray-500 mt-1 line-clamp-2">
+                            <p className="text-xs font-medium text-slate mt-1 line-clamp-2">
                               {cat.description}
                             </p>
                           )}
@@ -413,8 +424,8 @@ function ProductsPageContent() {
 
                       {/* Products Count */}
                       <div className="w-48 text-center">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold">
-                          <Package size={14} className="text-gray-400" />
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface border border-utility text-deep rounded-lg text-xs font-semibold font-mono">
+                          <Package size={13} className="text-slate" />
                           {pCount} {pCount === 1 ? 'Product' : 'Products'}
                         </span>
                       </div>
@@ -422,7 +433,7 @@ function ProductsPageContent() {
                       {/* Custom Specifications Chips */}
                       <div className="w-80">
                         {fields.length === 0 ? (
-                          <span className="text-xs text-gray-400 font-medium italic">
+                          <span className="text-xs text-slate font-medium italic">
                             No custom attributes
                           </span>
                         ) : (
@@ -430,9 +441,9 @@ function ProductsPageContent() {
                             {fields.map((f: any, idx: number) => (
                               <span 
                                 key={f.key || idx} 
-                                className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-2xs font-bold flex items-center gap-1"
+                                className="px-2.5 py-0.5 bg-surface text-deep border border-utility rounded-md text-2xs font-semibold flex items-center gap-1 font-mono"
                               >
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-dark-accent" />
                                 {f.label || f.key}
                               </span>
                             ))}
@@ -444,11 +455,11 @@ function ProductsPageContent() {
                       <div className="w-32 flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => openDrawer('category', { category: cat })}
-                          className="p-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition-all"
+                          onClick={() => openDrawer('catalog', { categoryId: cat.id, initialData: cat })}
+                          className="p-2 bg-surface hover:bg-canvas text-deep border border-utility rounded-lg text-xs font-semibold transition-colors"
                           title="Edit Category & Attributes"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={15} />
                         </button>
                         <button
                           type="button"
@@ -456,17 +467,17 @@ function ProductsPageContent() {
                             setCategoryToDelete(cat);
                             setDeleteError('');
                           }}
-                          className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-all"
+                          className="p-2 bg-alert/10 hover:bg-alert/20 text-alert border border-alert/20 rounded-lg text-xs font-semibold transition-colors"
                           title="Delete Category"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </BrandCard>
           </div>
         )
       )}
@@ -475,63 +486,61 @@ function ProductsPageContent() {
       {categoryToDelete && (() => {
         const catToDeleteProductCount = getCategoryProductCount(categoryToDelete);
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-150">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <BrandCard className="max-w-md w-full p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-150">
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                   catToDeleteProductCount > 0 
-                    ? 'bg-amber-50 text-amber-600' 
-                    : 'bg-red-50 text-red-600'
+                    ? 'bg-attention/20 text-attention' 
+                    : 'bg-alert/20 text-alert'
                 }`}>
                   <AlertTriangle size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-gray-900">
+                  <h3 className="text-lg font-bold text-deep">
                     {catToDeleteProductCount > 0 
                       ? 'Cannot Delete Category' 
                       : 'Delete Category'}
                   </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Category: <span className="font-bold text-gray-700">{categoryToDelete.name}</span>
+                  <p className="text-xs text-slate mt-0.5">
+                    Category: <span className="font-bold text-deep">{categoryToDelete.name}</span>
                   </p>
                 </div>
               </div>
 
               {deleteError && (
-                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-xs font-medium">
+                <div className="p-3 bg-alert/10 border border-alert/20 rounded-xl text-alert text-xs font-medium">
                   {deleteError}
                 </div>
               )}
 
               {catToDeleteProductCount > 0 ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-600 font-medium leading-relaxed">
-                    This category currently contains <strong className="text-gray-900 font-bold">{catToDeleteProductCount} product(s)</strong>. To protect catalog integrity, you must reassign or delete these products before this category can be removed.
+                  <p className="text-sm text-slate font-medium leading-relaxed">
+                    This category currently contains <strong className="text-deep font-bold">{catToDeleteProductCount} product(s)</strong>. To protect catalog integrity, you must reassign or delete these products before this category can be removed.
                   </p>
                   <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
+                    <BrandButton
+                      variant="primary"
                       onClick={() => setCategoryToDelete(null)}
-                      className="px-6 py-3 bg-gray-900 text-white rounded-2xl text-sm font-bold hover:bg-black transition-all"
                     >
                       Understood
-                    </button>
+                    </BrandButton>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <p className="text-sm text-gray-600 font-medium leading-relaxed">
+                  <p className="text-sm text-slate font-medium leading-relaxed">
                     Are you sure you want to delete this category? All category configurations and specifications will be permanently removed.
                   </p>
                   <div className="flex justify-end gap-3 pt-2">
-                    <button
-                      type="button"
+                    <BrandButton
+                      variant="secondary"
                       onClick={() => setCategoryToDelete(null)}
                       disabled={deletingCat}
-                      className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all"
                     >
                       Cancel
-                    </button>
+                    </BrandButton>
                     <button
                       type="button"
                       disabled={deletingCat}
@@ -549,7 +558,7 @@ function ProductsPageContent() {
                           setDeletingCat(false);
                         }
                       }}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-alert text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50"
                     >
                       {deletingCat ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                       Delete Category
@@ -557,7 +566,7 @@ function ProductsPageContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </BrandCard>
           </div>
         );
       })()}
@@ -570,8 +579,8 @@ export default function ProductsPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-        <span className="font-bold text-gray-500">Loading catalog...</span>
+        <div className="animate-spin rounded-full h-10 w-10 border-3 border-dark-accent border-t-transparent"></div>
+        <span className="font-semibold text-slate text-sm">Loading catalog...</span>
       </div>
     }>
       <ProductsPageContent />

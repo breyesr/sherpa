@@ -41,6 +41,8 @@ Thumbs.db
 .gemini/
 GEMINI.md
 .geminiignore
+*.code-workspace
+temp/brand_kit/
 
 # Build
 dist/

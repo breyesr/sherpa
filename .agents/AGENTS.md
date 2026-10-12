@@ -97,6 +97,15 @@ Xerpa is a **multi-vertical platform**. It must serve construction, pet care, fo
 - **No industry-specific icons**: Icons must represent the abstract concept (e.g., `Briefcase` for services), not a specific industry (e.g., `Scissors` for salon). Only use industry-specific icons if the business dynamically configures them.
 - **Seed scripts & test fixtures**: Demo seed scripts must be clearly labeled by vertical (e.g., `seed_demo_construction.py`). Test fixtures should use neutral product names when possible. Neither should be importable by production code paths.
 
+## Frontend Verification & Hydration Guardrails (DO NOT REGRESS)
+To prevent destructive layout regressions and split-brain client/server bugs:
+- **Zero-Bypass SSR Principle**: Core layout shells (`<Sidebar />`, top `<header>`, container styling) must NEVER be conditionally gated on `isClient` or unhydrated client stores (e.g., `{showSidebar && <Sidebar />}`). Server HTML must render the full structural shell on frame 0.
+- **Mandatory Visual & Hydration Smoke Tests**: Before reporting completion or shipping any frontend changes, the agent MUST execute browser subagent verification:
+  1. Assert DOM presence of primary shell components (Micro-Rail, Sidebar, Header, `data-theme`).
+  2. Verify client JavaScript bundle execution: test at least one interactive trigger (e.g., theme switcher, modal/drawer trigger) and assert DOM/state transition.
+  3. Verify network status: ensure Next.js static chunks (`/_next/static/chunks/*`) return HTTP 200 (never 404).
+- **Anti-Destructive Auth Sync**: Client stores (`useAuthStore`) and SSR cookie headers (`sherpa_token`) must synchronize non-destructively. Never write self-clearing hooks that wipe cookies based on unhydrated client memory.
+
 ## Roles & Responsibilities
 - **Product Manager**: Owns the task breakdown (Epics/Features) and enforces MVP exclusions. Owns docs/project/BACKLOG.md and MVP scope enforcement.
 - **ScaleMaster**: Lead architect synthesizing all scale audits into `docs/scope/Sherpa_scalability_report.md.`.

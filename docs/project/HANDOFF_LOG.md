@@ -1,5 +1,32 @@
 # Handoff Log
 
+- **2026-10-12 (Project Monet: Mobile Hardening, Micro-Rail Persistence & Tablet Responsiveness)**:
+  - **Fixed Micro-Rail Persistence**: Eliminated viewport scroll leakage by replacing `min-h-screen` in `DashboardLayout.tsx` with `h-screen h-[100dvh] overflow-hidden` and setting `<Sidebar />` as `sticky top-0 h-screen h-[100dvh]`. Content scrolling is strictly confined to `<main className="overflow-y-auto">`, ensuring the Micro-Rail and Top Brand Switcher remain 100% persistent on screen during vertical scrolling on all devices.
+  - **Mobile Canvas Optimization**: Narrowed mobile Micro-Rail from 78px to 64px (`w-16 sm:w-[78px]`), tuned brand bubble to 40px (`w-10 h-10`), and trimmed canvas padding (`p-3 sm:p-6 lg:p-8`), restoring breathing room for 375px–440px mobile viewports.
+  - **Stat Cards & Filter Bar Decompression**: Rescaled stat cards on `/orders`, `/actions`, and `/` dashboard (`p-3.5 sm:p-5 lg:p-6`, `w-11 h-11 sm:w-14 sm:h-14` icons, `text-xl sm:text-2xl lg:text-3xl` numbers). Converted filter tabs into a smooth horizontally scrollable segmented pill bar (`overflow-x-auto no-scrollbar`), eliminating clumsy multi-line tab wrapping.
+  - **Responsive Dual-Rail Adaptive Architecture**: Workspace Drawer (240px) collapses on `< lg` (< 1024px) viewports. Pinned Micro-Rail includes an `Ops` trigger to open the Workspace Drawer as an off-canvas overlay with backdrop (`left-16 sm:left-[78px]`).
+  - **CSS Grid Ledger Alignment**: Refactored Orders table into strict CSS Grid (`grid-cols-[minmax(220px,1.5fr)_140px_130px_90px_140px_120px_40px]`) within `overflow-x-auto` (min 880px floor), eliminating column collisions and text truncation.
+  - **Visual Verification**: Verified across 390px mobile, 440px embedded panel, 768px tablet, and 1440px desktop via autonomous browser subagents (`mobile_390px_orders_scrolled_1791835415910.png`, `scrolled_in_panel_1791835662264.png`, `ops_drawer_opened_in_panel_1791835668882.png`).
+  - **TypeScript Zero-Error Validation**: Verified clean TypeScript compilation (`npx tsc --noEmit` exits code 0).
+  - **PR Readiness**: Feature branch `feature/day1-ux-refactoring` is fully verified. Awaiting human confirmation before initiating merge to `staging`.
+
+- **2026-10-11 (App Shell & Palette Switcher Continuity Hardening + Failsafe Architecture)**:
+  - **Root Cause Resolution**: Resolved layout bypass and missing dual-pane sidebar (`Sidebar.tsx`) / top palette switcher (`header`). Fixed SSR suppression where `{showSidebar && <Sidebar />}` evaluated to `false` on the server, and bridged client-side authentication split-brain.
+  - **SSR Unconditional Rendering**: Removed `{showSidebar && ...}` guard in `DashboardLayout.tsx` so that `<Sidebar />` and `<header>` are pre-rendered directly into Frame 0 server HTML.
+  - **Synchronous Token Bridge**: Added `getClientCookieToken()` to `DashboardLayout.tsx`, added `export const dynamic = 'force-dynamic'` and `cookies()` reading in `app/layout.tsx`, added `GET /api/auth`, and bridged the `token` prop in `DashboardHome.tsx`. Deleted legacy destructive cookie-clearing hook.
+  - **Chunk Hydration Fix**: Cleared stale `.next` cache and cleanly restarted dev server to fix chunk hash 404s.
+  - **Live Verification**: Verified in live Chrome subagent that the 78px Micro-Rail, 240px Workspace Drawer, and Top Palette Switcher (Trailhead × Spectrum vs Block × Clarity) render cleanly on `http://localhost:3000` and correctly toggle color themes on click.
+  - **Failsafe & Redundancy Enshrinement**: Formalized 5 mandatory verification gates in `MONET_REVAMP_PLAN.md`, `HANDOFF_STATE.md`, and `.agents/AGENTS.md` (SSR Invariant, Chunk Parity, Browser Subagent Verification Gate, Scope Lock, and Staging Interlock). Detailed Phase 5 QA execution sequence for tomorrow's resumption.
+
+
+- **2026-10-11 (Project Monet: Phase 4 In-App UI Cascade & Epic 205 Complete)**:
+  - **In-App Cascade across Core Screens**: Applied Xerpa Brand Kit tokens (`BrandCard`, `BrandButton`, `BrandBadge`, tokens, and Google Fonts `Manrope` + `IBM Plex Mono`) across Store Detail Dossier (`stores/[id]`), Prospect Contacts Directory (`prospects/contacts`), Prospect Detail Page (`prospects/[id]`), Field Notes Pulse (`operations/notes`), and Actions Strategy Desk (`operations/actions`).
+  - **Strategy Desk Modularization**: Extracted 3 inline modal drawers from `frontend/app/trade/operations/actions/page.tsx` into modular components (`AssignActionDrawer.tsx`, `ActionResolutionDrawer.tsx`, `ActionTemplateDrawer.tsx`), shrinking `page.tsx` from 1321 lines to 765 lines to respect the strict frontend file size limit (<800 lines).
+  - **Legacy Route Purge**: Updated remaining legacy navigation links and delete redirects (`/trade/products/*`, `/trade/stores/*`, `/trade/retailers/*`, `/trade/prospects/*`, `/trade/notes/*`) to consolidated routes (`/trade/catalog/*`, `/trade/entities/*`, `/trade/operations/*`).
+  - **Type Safety**: Eliminated all `<any>` types from API mutations across `frontend/app`. Verified zero TypeScript errors with `npx tsc --noEmit`.
+  - **Epic 205 Closure**: Verified and marked Tasks 205.3, 205.4, and 205.5 as complete in `docs/project/BACKLOG.md`.
+
+
 - **2026-09-22 (Epic 227: Ingestion-Time Product Summarization)**: Implemented ingestion-time product summarization to eliminate raw catalog data dumps from LLM contexts. Generates a compact ~250-char structured `ai_summary` per product, reducing context token overhead by ~92% while preserving raw user data.
   - **Database & Schema**:
     - Added `ai_summary = Column(Text, nullable=True)` to `Product` model in `backend/app/models/trade/catalog.py`.

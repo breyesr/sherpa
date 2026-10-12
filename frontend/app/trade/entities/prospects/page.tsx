@@ -7,7 +7,7 @@ export default function ProspectsRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/trade/prospects/accounts');
+    router.replace('/trade/entities/prospects/accounts');
   }, [router]);
 
   return (

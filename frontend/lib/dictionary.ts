@@ -49,5 +49,29 @@ export const dictionary: Record<string, Record<Language, string>> = {
   STORE: {
     en: 'Account',
     es: 'Cuenta'
+  },
+  RETAILERS: {
+    en: 'Clients',
+    es: 'Clientes'
+  },
+  RETAILER: {
+    en: 'Client',
+    es: 'Cliente'
+  },
+  PRODUCTS: {
+    en: 'Products',
+    es: 'Productos'
+  },
+  PRODUCT: {
+    en: 'Product',
+    es: 'Producto'
+  },
+  ORDERS: {
+    en: 'Orders',
+    es: 'Pedidos'
+  },
+  ORDER: {
+    en: 'Order',
+    es: 'Pedido'
   }
 };

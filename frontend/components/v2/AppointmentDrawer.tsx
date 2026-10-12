@@ -9,6 +9,7 @@ import { useDrawer } from '@/lib/store/DrawerManager';
 import Drawer from './Drawer';
 import { components } from '@/types/api';
 import { useTerminology } from '@/hooks/useTerminology';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 
 type ClientResponse = components['schemas']['ClientResponse'];
 
@@ -77,9 +78,13 @@ export default function AppointmentDrawer() {
       // Invalidate both daily and weekly calendar queries
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointments', 'week'] });
+      toast.success('Action completed successfully');
+
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to schedule appointment');
+      const msg = errorMessage(err, 'Operation failed');
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   };

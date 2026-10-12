@@ -13,6 +13,15 @@ interface DrawerProps {
   size?: 'standard' | 'wide' | 'full';
 }
 
+/**
+ * Number of drawers currently open (store-driven or local).
+ * Drives both scroll locking and stacking order: a drawer opened while N others are open
+ * renders at depth N, above all of them.
+ */
+let openDepth = 0;
+const BASE_Z = 40;
+const Z_STEP = 20;
+
 export default function Drawer({ 
   isOpen, 
   onClose, 
@@ -23,16 +32,21 @@ export default function Drawer({
   size = 'standard' 
 }: DrawerProps) {
   const [mounted, setMounted] = useState(false);
+  // Retained after close so the exit animation stays at the same layer.
+  const [depth, setDepth] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setDepth(openDepth);
+    openDepth += 1;
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = 'unset';
+      openDepth = Math.max(0, openDepth - 1);
+      if (openDepth === 0) document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
@@ -44,21 +58,26 @@ export default function Drawer({
     full: 'md:w-[90vw]'
   };
 
+  const backdropZ = BASE_Z + depth * Z_STEP;
+  const panelZ = backdropZ + 10;
+
   return (
     <>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-500 ease-in-out ${
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-500 ease-in-out ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
+        style={{ zIndex: backdropZ }}
         onClick={onClose}
       />
       
       {/* Drawer Panel */}
       <div 
-        className={`fixed top-0 right-0 h-full w-full ${sizeClasses[size]} bg-white z-50 shadow-2xl transition-transform duration-500 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full ${sizeClasses[size]} bg-white shadow-2xl transition-transform duration-500 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         } flex flex-col`}
+        style={{ zIndex: panelZ }}
       >
         {/* Header */}
         <div className="p-8 md:p-10 border-b border-gray-50 bg-gray-50/30 shrink-0">

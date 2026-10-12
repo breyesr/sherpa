@@ -18,6 +18,7 @@ import { Store as StoreModel, Client as ClientModel, Business as BusinessModel }
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { accountFormSchema, AccountFormValues } from '@/lib/schemas/account';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 
 interface PostalCode {
   zip_code: string;
@@ -545,9 +546,12 @@ export default function AccountDrawer() {
       if (storeId) queryClient.invalidateQueries({ queryKey: ['store', storeId] });
       
       setInitialSnapshot('');
+      toast.success(isEditing ? 'Account updated successfully' : 'Account created successfully');
       onClose();
     } catch (err: unknown) {
-      setError((err as Error).message);
+      const msg = errorMessage(err, 'Failed to save account');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

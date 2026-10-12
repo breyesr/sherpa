@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 import OrderDrawer from './OrderDrawer';
@@ -33,6 +34,12 @@ export default function DrawerHost() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Drawers are global; close them on navigation so no stale form follows the user.
+  const pathname = usePathname();
+  useEffect(() => {
+    useDrawerStore.getState().closeAll();
+  }, [pathname]);
 
   return (
     <>

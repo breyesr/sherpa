@@ -1,3 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Manrope:wght@400;450;600;650;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root,
+[data-theme="trailhead"] {
+  --deep: #173d35;
+  --deep-2: #102d27;
+  --lime: #c9f04a;
+  --dark-accent: #c9f04a;
+  --accent-ink: #173d35;
+  --field: #f5f1e8;
+  --white: #ffffff;
+  --utility: #dde5df;
+  --muted: #74847e;
+  --slate: #34534c;
+  --success: #167052;
+  --warning: #a96608;
+  --alert: #b23b34;
+  --ear: #d9eef2;
+  --ear-ink: #185462;
+  --memory: #e8e0f4;
+  --memory-ink: #57406e;
+  --brain: #f4e6bd;
+  --brain-ink: #604812;
+  --hands: #f5ddd5;
+  --hands-ink: #753b2d;
+  --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+[data-theme="block"] {
+  --deep: #101f3d;
+  --deep-2: #09152c;
+  --lime: #3156d9;
+  --dark-accent: #6f9bff;
+  --accent-ink: #ffffff;
+  --field: #f7f9fc;
+  --white: #ffffff;
+  --utility: #dde3ec;
+  --muted: #748096;
+  --slate: #34435e;
+  --success: #13705a;
+  --warning: #a85d00;
+  --alert: #b23842;
+  --ear: #d9e4ff;
+  --ear-ink: #2e4da7;
+  --memory: #ddeef2;
+  --memory-ink: #285764;
+  --brain: #e8e1f5;
+  --brain-ink: #554272;
+  --hands: #f5e4d0;
+  --hands-ink: #70451e;
+  --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--field);
+  color: var(--deep);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}

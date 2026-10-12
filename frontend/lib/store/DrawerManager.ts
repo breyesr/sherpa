@@ -24,7 +24,8 @@ export interface DrawerPayloads {
     | {
         initialMode?: 'product' | 'category';
         productId?: string | null;
-        initialData?: Partial<Product>;
+        categoryId?: string | null;
+        initialData?: Partial<Product> | Partial<CategoryResponse> | null;
       }
     | undefined;
   account: 
@@ -55,6 +56,8 @@ interface DrawerState {
   openDrawer: <K extends DrawerType>(type: K, ...args: OpenArgs<K>) => void;
   /** Closes the given drawer, or the top-most drawer if omitted. */
   closeDrawer: (type?: DrawerType) => void;
+  /** Closes every open drawer (e.g., on route change). */
+  closeAll: () => void;
 }
 
 export const useDrawerStore = create<DrawerState>((set) => ({
@@ -71,6 +74,7 @@ export const useDrawerStore = create<DrawerState>((set) => ({
       if (!target) return state;
       return { stack: state.stack.filter((t) => t !== target) };
     }),
+  closeAll: () => set((state) => (state.stack.length ? { stack: [] } : state)),
 }));
 
 /** Per-drawer accessor: open state, typed payload, and close handler. */

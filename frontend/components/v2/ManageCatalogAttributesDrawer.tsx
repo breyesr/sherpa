@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDrawer } from '@/lib/store/DrawerManager';
 import { useAuthStore } from '@/store/authStore';
 import Drawer from './Drawer';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 
 export default function ManageCatalogAttributesDrawer() {
   const { isOpen, close: onClose } = useDrawer('manageCatalogAttributes');
@@ -60,9 +61,13 @@ export default function ManageCatalogAttributesDrawer() {
       await apiClient.patch<any>('/business/me', { catalog_config: fields });
       
       await queryClient.invalidateQueries({ queryKey: ['business'] });
+      toast.success('Action completed successfully');
+
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving.');
+      const msg = errorMessage(err, 'Operation failed');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -82,7 +87,9 @@ export default function ManageCatalogAttributesDrawer() {
       setFields(updatedFields);
       setFieldToDelete(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred while deleting.');
+      const msg = errorMessage(err, 'Operation failed');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

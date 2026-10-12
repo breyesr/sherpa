@@ -103,7 +103,7 @@
 ## Epic 205: Trade CRM & Messaging Feedback Actions (🔴 IMMEDIATE — Next Sprint)
 **Objective**: Fix critical UX friction and functional gaps identified during active operations, including B2C audit visibility, order status regression, category editing, and product metadata.
 
-- [ ] Task 205.1 (BE/FE): **Inbox Audit Tracing for All Use Cases**
+- [x] Task 205.1 (BE/FE): **Inbox Audit Tracing for All Use Cases**
   - **Acceptance Criteria**:
     - **Given** an admin is viewing a conversation in the Inbox,
     - **When** they toggle the "Audit: ON" mode,
@@ -111,26 +111,26 @@
     - **Given** a message is being processed through the B2C / Basic Scheduler flow,
     - **When** the AI Service runs Jinja template generation and tool-calling completions,
     - **Then** it must accumulate a structured log of thoughts (e.g., prompt selected, tool executions, and final text formulation) and persist it to the message's `reasoning_trace` field in the database.
-- [ ] Task 205.2 (FE): **Orders Ledger Status Backwards Progression**
+- [x] Task 205.2 (FE): **Orders Ledger Status Backwards Progression**
   - **Acceptance Criteria**:
     - **Given** a user is viewing an individual order details page at `/trade/orders/[id]`,
     - **When** the current status of the order is `CONFIRMED`, `SHIPPED`, or `DELIVERED`,
     - **Then** the page must present a secondary action button to revert the status to the previous step (e.g., "Revert to Pending" when `CONFIRMED`, "Revert to Confirmed" when `SHIPPED`, "Revert to Shipped" when `DELIVERED`).
     - **When** the user clicks this revert button,
     - **Then** the app must trigger a PATCH call to `/trade/orders/[id]` with the previous status, invalidate React Query caches, and update the status timeline accordingly.
-- [ ] Task 205.3 (BE): **API Endpoint to Edit Categories**
+- [x] Task 205.3 (BE): **API Endpoint to Edit Categories**
   - **Acceptance Criteria**:
     - **Given** an authenticated user with active features for products,
     - **When** they perform a PATCH request to `/api/v1/trade/categories/{category_id}` with a JSON payload containing `name`, `description`, and/or `category_type`,
     - **Then** the backend must update the matching `Category` in the database and return the updated `CategoryResponse`.
-- [ ] Task 205.4 (FE): **Edit Category Action and Form Integration**
+- [x] Task 205.4 (FE): **Edit Category Action and Form Integration**
   - **Acceptance Criteria**:
     - **Given** a user is on `/trade/products?tab=categories` viewing the categories list,
     - **When** they click the "Edit" action button next to a category,
     - **Then** the `CatalogDrawer` must slide open in category mode with the selected category's fields pre-populated.
     - **When** they click "Update Category",
     - **Then** it must perform a PATCH call to `/trade/categories/{id}` and refresh the active categories list upon success.
-- [ ] Task 205.5 (FE): **Edit Product Unit of Measure in Catalog Drawer**
+- [x] Task 205.5 (FE): **Edit Product Unit of Measure in Catalog Drawer**
   - **Acceptance Criteria**:
     - **Given** a user is creating or editing a product using the `CatalogDrawer`,
     - **When** they view the form,
@@ -143,23 +143,23 @@
 ## Epic 227: Day 1 UX Refactor — Drawer System Hardening (🔴 ACTIVE — `feature/day1-ux-refactoring`)
 **Objective**: Finish the strictly UX/UI refactor. Drawer migration to `DrawerManager` + `DrawerHost` is complete (commit `a7ba796`); these tasks close remaining gaps.
 
-- [ ] Task 227.1 (FE): **OrderDrawer Reset-on-Open**
+- [x] Task 227.1 (FE): **OrderDrawer Reset-on-Open**
   - **Given** the OrderDrawer was previously opened for Store A,
   - **When** it is reopened without `preselectedStoreId`,
   - **Then** the form (incl. `headerData.store_id`, line items) must reset to empty defaults.
-- [ ] Task 227.2 (FE): **Drawer z-index by Stack Position**
+- [x] Task 227.2 (FE): **Drawer z-index by Stack Position**
   - **Given** nested drawers (e.g., ClientDrawer -> ManageFieldsDrawer),
   - **When** a child drawer opens,
   - **Then** `Drawer.tsx` must derive z-index (panel + backdrop) from stack index so the child always renders above its parent.
-- [ ] Task 227.3 (FE): **Global Toast Notification System**
+- [x] Task 227.3 (FE): **Global Toast Notification System**
   - **Context**: Drawers are global (mounted in `DrawerHost`) and cannot call page-level callbacks. `/services` lost its success toast in `a7ba796`.
   - **Given** any drawer or page completes a mutation,
   - **When** it succeeds or fails,
   - **Then** a global toast (Zustand store + single `ToastHost` in `app/layout.tsx`) must display a short success/error message and auto-dismiss (~3s).
   - **And** all v2 drawers must call it on success and error paths; remove ad-hoc per-page toast state.
-- [ ] Task 227.4 (FE): **Dashboard Terminology Mapping**
+- [x] Task 227.4 (FE): **Dashboard Terminology Mapping**
   - **Then** all hardcoded entity labels on the Dashboard must resolve via `useTerminology`.
-- [ ] Task 227.5 (FE): **Drawer Form Reset on Route Change (Review)**
+- [x] Task 227.5 (FE): **Drawer Form Reset on Route Change (Review)**
   - **Context**: Drawers persist across navigation; decide whether to close all drawers on route change or keep state, and implement consistently.
 
 ---

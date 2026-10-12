@@ -13,19 +13,18 @@ import {
   Calendar, 
   DollarSign, 
   Layers, 
-  TrendingUp, 
-  MapPin, 
-  AlertCircle,
-  Truck,
+  Clock,
   CheckCircle,
+  Truck,
   XCircle,
   Hourglass
 } from 'lucide-react';
 import { components } from '@/types/api';
+import { useDrawerStore } from '@/lib/store/DrawerManager';
+import { BrandButton, BrandBadge, BrandCard } from '@/components/ui/brand';
 
 type OrderResponse = components['schemas']['OrderResponse'];
 type StoreResponse = components['schemas']['StoreResponse'];
-import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 export default function OrdersPage() {
   const token = useAuthStore((state) => state.token);
@@ -78,7 +77,6 @@ export default function OrdersPage() {
         notes.includes(searchTerm.toLowerCase()) ||
         orderId.includes(searchTerm.toLowerCase());
 
-      // API statuses are case insensitive or lowercase, let's normalize
       const orderStatus = (order.status || '').toLowerCase();
       const matchesStatus = selectedStatus === 'all' || orderStatus === selectedStatus.toLowerCase();
 
@@ -100,205 +98,230 @@ export default function OrdersPage() {
     };
   }, [orders]);
 
-  const getStatusStyle = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return { bg: 'bg-amber-50 text-amber-700 border-amber-100', icon: Hourglass };
+        return { variant: 'attention' as const, icon: Hourglass, label: 'Pending' };
       case 'confirmed':
-        return { bg: 'bg-blue-50 text-blue-700 border-blue-100', icon: CheckCircle };
+        return { variant: 'accent' as const, icon: CheckCircle, label: 'Confirmed' };
       case 'shipped':
-        return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-100', icon: Truck };
+        return { variant: 'neutral' as const, icon: Truck, label: 'Shipped' };
       case 'delivered':
-        return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle };
+        return { variant: 'confirmed' as const, icon: CheckCircle, label: 'Delivered' };
       case 'cancelled':
-        return { bg: 'bg-red-50 text-red-700 border-red-100', icon: XCircle };
+        return { variant: 'alert' as const, icon: XCircle, label: 'Cancelled' };
       default:
-        return { bg: 'bg-gray-50 text-gray-700 border-gray-100', icon: Hourglass };
+        return { variant: 'neutral' as const, icon: Clock, label: status };
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8 pb-12 sm:pb-20">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
+          <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+            <BrandBadge variant="accent" className="text-[10px] uppercase tracking-widest font-black">
+              Operations
+            </BrandBadge>
+          </div>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-deep tracking-tight">
             Orders Ledger
           </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
-            Monitor accounts, order values, shipment timelines, and sales fulfillment metrics.
+          <p className="text-slate mt-1 sm:mt-2 font-medium text-xs sm:text-base md:text-lg max-w-2xl">
+            Monitor store accounts, order values, shipment timelines, and sales fulfillment metrics.
           </p>
         </div>
-        <button 
+        <BrandButton 
+          variant="primary"
+          size="md"
           onClick={() => openDrawer('order')}
-          className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:bg-black transition-all active:scale-95 shrink-0"
+          className="shadow-brand-subtle sm:h-12 w-full sm:w-auto justify-center"
         >
-          <Plus size={16} />
+          <Plus size={18} />
           Create Order
-        </button>
+        </BrandButton>
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-            <DollarSign size={28} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        <BrandCard className="flex items-center gap-3.5 sm:gap-5 p-3.5 sm:p-5 lg:p-6">
+          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-deep/5 text-deep border border-utility flex items-center justify-center shrink-0">
+            <DollarSign size={20} className="sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Gross Revenue</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-1">${stats.totalRevenue.toFixed(2)}</h3>
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate/60 uppercase tracking-widest">Gross Revenue</span>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-deep mt-0.5 font-mono truncate">
+              ${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h3>
           </div>
-        </div>
+        </BrandCard>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-          <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-            <ShoppingBag size={28} />
+        <BrandCard className="flex items-center gap-3.5 sm:gap-5 p-3.5 sm:p-5 lg:p-6">
+          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-700 border border-amber-100 flex items-center justify-center shrink-0">
+            <ShoppingBag size={20} className="sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Active Orders</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-1">{stats.activeCount}</h3>
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate/60 uppercase tracking-widest">Active Orders</span>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-deep mt-0.5 font-mono">{stats.activeCount}</h3>
           </div>
-        </div>
+        </BrandCard>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6">
-          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-            <Layers size={28} />
+        <BrandCard className="flex items-center gap-3.5 sm:gap-5 p-3.5 sm:p-5 lg:p-6 sm:col-span-2 lg:col-span-1">
+          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-deep/5 text-deep border border-utility flex items-center justify-center shrink-0">
+            <Layers size={20} className="sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Total Orders Ledger</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-1">{stats.totalCount}</h3>
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate/60 uppercase tracking-widest">Total Orders Ledger</span>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-deep mt-0.5 font-mono">{stats.totalCount}</h3>
           </div>
-        </div>
+        </BrandCard>
       </div>
 
       {/* Control Bar & Filter Tabs */}
-      <div className="flex flex-col md:flex-row gap-6 justify-between items-center bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+      <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 justify-between items-stretch lg:items-center bg-white p-3 sm:p-4 rounded-2xl border border-utility shadow-brand-subtle">
+        <div className="relative w-full lg:w-96">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate/50" size={16} />
           <input 
             type="text"
             placeholder="Search accounts, notes, ID..."
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-900"
+            className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-black/[0.02] border border-utility rounded-xl focus:border-deep focus:ring-2 focus:ring-deep/10 outline-none transition-all font-medium text-deep placeholder:text-slate/50 text-xs sm:text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* Filter Status Tabs */}
-        <div className="flex flex-wrap p-1.5 bg-gray-50 rounded-2xl w-full md:w-auto overflow-x-auto">
-          {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'].map((status) => (
-            <button 
-              key={status}
-              onClick={() => setSelectedStatus(status.toLowerCase())}
-              className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-                (selectedStatus === 'all' && status === 'All') || selectedStatus === status.toLowerCase()
-                  ? 'bg-white shadow-sm text-blue-600' 
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+        {/* Filter Status Tabs (Smooth Horizontal Swipe on Mobile) */}
+        <div className="flex overflow-x-auto no-scrollbar p-1 bg-black/[0.02] rounded-xl border border-utility w-full lg:w-auto gap-1">
+          {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'].map((status) => {
+            const isActive = (selectedStatus === 'all' && status === 'All') || selectedStatus === status.toLowerCase();
+            return (
+              <button 
+                key={status}
+                onClick={() => setSelectedStatus(status.toLowerCase())}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-deep text-white shadow-brand-subtle' 
+                    : 'text-slate/70 hover:text-deep hover:bg-black/5'
+                }`}
+              >
+                {status}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Orders Directory Content */}
       {loadingOrders ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-          <span className="font-bold text-gray-500">Loading orders...</span>
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-deep border-t-transparent"></div>
+          <span className="font-bold text-slate/60 text-sm">Loading orders...</span>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 bg-gray-50 text-gray-400 rounded-[2rem] flex items-center justify-center mb-6">
-            <ShoppingBag size={36} />
+        <div className="bg-white rounded-3xl border border-dashed border-utility shadow-brand-subtle p-10 sm:p-16 flex flex-col items-center justify-center text-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-black/[0.03] text-slate/40 rounded-2xl flex items-center justify-center mb-4 border border-utility">
+            <ShoppingBag size={24} className="sm:w-7 sm:h-7" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">No orders found</h3>
-          <p className="text-gray-500 mt-2">Try adjusting your search query or status filters.</p>
+          <h3 className="text-base sm:text-lg font-black text-deep">No orders found</h3>
+          <p className="text-slate text-xs sm:text-sm mt-1">Try adjusting your search query or status filters.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-50">
-            {/* Header Row */}
-            <div className="hidden md:flex items-center justify-between p-8 bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-              <div className="flex-1">Account & Invoice ID</div>
-              <div className="w-40">Order Date</div>
-              <div className="w-32">Status</div>
-              <div className="w-32 text-right">Items</div>
-              <div className="w-40">Payment Method</div>
-              <div className="w-36 text-right">Total Amount</div>
-              <div className="w-16"></div>
-            </div>
+        <div className="bg-white rounded-2xl border border-utility shadow-brand-subtle overflow-hidden">
+          <div className="overflow-x-auto">
+            <div className="min-w-[880px] divide-y divide-utility">
+              {/* Header Row */}
+              <div className="grid grid-cols-[minmax(220px,1.5fr)_140px_130px_90px_140px_120px_40px] items-center p-3.5 sm:p-4 lg:p-6 bg-black/[0.02] text-[10px] font-black text-slate/60 uppercase tracking-widest border-b border-utility font-mono">
+                <div>Account & Invoice ID</div>
+                <div>Order Date</div>
+                <div>Status</div>
+                <div className="text-right pr-2">Items</div>
+                <div className="pl-2">Payment Method</div>
+                <div className="text-right">Total Amount</div>
+                <div></div>
+              </div>
 
-            {/* Order Item list */}
-            {filteredOrders.map((order) => {
-              const store = storeMap[order.store_id];
-              const totalItems = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
-              const statusStyle = getStatusStyle(order.status || 'pending');
-              const StatusIcon = statusStyle.icon;
-              
-              return (
-                <div key={order.id} className="group relative flex flex-col md:flex-row md:items-center justify-between p-8 hover:bg-gray-50/50 transition-all cursor-pointer">
-                  <Link 
-                    href={`/trade/operations/orders/${order.id}`}
-                    className="absolute inset-0 z-0"
-                  />
-                  
-                  <div className="relative z-10 flex items-center gap-6 pointer-events-none flex-1">
-                    <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm shrink-0">
-                      <ShoppingBag size={28} />
-                    </div>
-                    <div className="min-w-0 pr-4">
-                      <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors truncate">
-                        {store ? (
-                          (() => {
-                            const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
-                            const hasClientName = store.clients && store.clients[0]?.name;
-                            let resolved = isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name;
-                            resolved = resolved.replace(/^prospect\s+/i, '');
-                            resolved = resolved.replace(/\s*\([^)]*\)\s*$/, '');
-                            return resolved.trim();
-                          })()
-                        ) : 'Unknown Account'}
-                      </h3>
-                      <p className="text-xs font-mono text-gray-400 mt-1 max-w-sm truncate">
-                        ID: {order.id}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 flex flex-wrap items-center justify-between md:justify-end gap-6 mt-6 md:mt-0 w-full md:w-auto">
-                    <div className="w-40 pointer-events-none flex items-center gap-2 text-gray-500 font-bold text-sm">
-                      <Calendar size={14} className="text-gray-300" />
-                      {new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {/* Order Item list */}
+              {filteredOrders.map((order) => {
+                const store = storeMap[order.store_id];
+                const totalItems = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+                const statusBadge = getStatusBadge(order.status || 'pending');
+                const StatusIcon = statusBadge.icon;
+                
+                return (
+                  <div 
+                    key={order.id} 
+                    className="group relative grid grid-cols-[minmax(220px,1.5fr)_140px_130px_90px_140px_120px_40px] items-center p-3.5 sm:p-4 lg:p-6 hover:bg-black/[0.015] transition-all cursor-pointer"
+                  >
+                    <Link 
+                      href={`/trade/operations/orders/${order.id}`}
+                      className="absolute inset-0 z-0"
+                    />
+                    
+                    {/* Account & ID */}
+                    <div className="relative z-10 flex items-center gap-3 sm:gap-4 pointer-events-none min-w-0 pr-4">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-deep/5 text-deep border border-utility flex items-center justify-center group-hover:bg-deep group-hover:text-white transition-all shadow-brand-subtle shrink-0">
+                        <ShoppingBag size={18} className="sm:w-5 sm:h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-black text-deep group-hover:text-deep/80 transition-colors truncate">
+                          {store ? (
+                            (() => {
+                              const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
+                              const hasClientName = store.clients && store.clients[0]?.name;
+                              let resolved = isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name;
+                              resolved = resolved.replace(/^prospect\s+/i, '');
+                              resolved = resolved.replace(/\s*\([^)]*\)\s*$/, '');
+                              return resolved.trim();
+                            })()
+                          ) : 'Unknown Account'}
+                        </h3>
+                        <p className="text-xs font-mono text-slate/60 mt-0.5 truncate">
+                          #{order.id.slice(0, 8)}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="w-32 pointer-events-none">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider border ${statusStyle.bg}`}>
+                    {/* Order Date */}
+                    <div className="relative z-10 pointer-events-none flex items-center gap-1.5 text-slate font-medium text-xs">
+                      <Calendar size={13} className="text-slate/50" />
+                      <span>{new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="relative z-10 pointer-events-none">
+                      <BrandBadge 
+                        variant={statusBadge.variant} 
+                        className="text-[10px] uppercase font-bold tracking-wider py-0 px-2"
+                      >
                         <StatusIcon size={10} />
-                        {order.status}
-                      </span>
+                        {statusBadge.label}
+                      </BrandBadge>
                     </div>
 
-                    <div className="w-32 md:text-right font-bold text-gray-500 text-sm pointer-events-none">
-                      {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                    {/* Items */}
+                    <div className="relative z-10 text-right font-medium text-slate text-xs pointer-events-none pr-2">
+                      <span className="font-mono font-bold text-deep">{totalItems}</span> {totalItems === 1 ? 'item' : 'items'}
                     </div>
 
-                    <div className="w-40 pointer-events-none text-gray-500 font-bold text-sm capitalize">
+                    {/* Payment Method */}
+                    <div className="relative z-10 pointer-events-none text-slate font-medium text-xs capitalize pl-2">
                       {order.payment_method || 'Cash'}
                     </div>
 
-                    <div className="w-36 md:text-right font-black text-gray-900 text-lg pointer-events-none">
+                    {/* Total Amount */}
+                    <div className="relative z-10 text-right font-black text-deep text-base font-mono pointer-events-none">
                       ${(order.total_amount ?? 0).toFixed(2)}
                     </div>
 
-                    <div className="w-16 flex justify-end">
-                      <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all pointer-events-none" />
+                    {/* Chevron */}
+                    <div className="relative z-10 flex justify-end">
+                      <ChevronRight size={18} className="text-slate/40 group-hover:text-deep group-hover:translate-x-1 transition-all pointer-events-none" />
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -306,3 +329,4 @@ export default function OrdersPage() {
     </div>
   );
 }
+

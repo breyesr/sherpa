@@ -22,6 +22,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { components } from '@/types/api';
+import { BrandCard, BrandButton, BrandBadge } from '@/components/ui/brand';
 
 type StoreResponse = components['schemas']['StoreResponse'];
 type OrderResponse = components['schemas']['OrderResponse'];
@@ -78,14 +79,14 @@ export default function ProspectDetailPage() {
     setIsVerifying(true);
     try {
       // 1. Verify store
-      await apiClient.patch<any>(`/trade/stores/${id}`, { is_verified: true });
+      await apiClient.patch<void>(`/trade/stores/${id}`, { is_verified: true });
 
       // 2. Verify all unverified orders in parallel
       const unverifiedOrders = orders.filter(o => !o.is_verified);
       await Promise.all(
         unverifiedOrders.map(async (order) => {
           try {
-            await apiClient.patch<any>(`/trade/orders/${order.id}`, { is_verified: true });
+            await apiClient.patch<void>(`/trade/orders/${order.id}`, { is_verified: true });
           } catch (orderErr) {
             console.error(`Failed to verify order ${order.id}`, orderErr);
           }
@@ -105,8 +106,8 @@ export default function ProspectDetailPage() {
     }
   };
 
-  if (isLoading || !token) return <div className="p-20 text-center font-bold text-gray-400">Loading Prospect Intelligence...</div>;
-  if (!store) return <div className="p-20 text-center font-bold text-red-500">Prospect not found or connection error.</div>;
+  if (isLoading || !token) return <div className="p-20 text-center font-bold text-slate">Loading Prospect Intelligence...</div>;
+  if (!store) return <div className="p-20 text-center font-bold text-alert">Prospect not found or connection error.</div>;
 
   const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
   const clientName = store.clients?.[0]?.name;
@@ -149,88 +150,81 @@ export default function ProspectDetailPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div id="v2-prospect-detail-container" className="max-w-7xl mx-auto space-y-8 pb-20 font-sans">
       {/* Navigation */}
       <div className="flex justify-between items-center">
         <Link
-          href={store.prospect_segment === 'retail' ? '/trade/prospects/accounts?segment=retail' : '/trade/prospects/accounts?segment=wholesale'}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-all group"
+          href={store.prospect_segment === 'retail' ? '/trade/entities/prospects/accounts?segment=retail' : '/trade/entities/prospects/accounts?segment=wholesale'}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate hover:text-deep transition-colors"
         >
-          <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-all" />
+          <ChevronLeft size={16} />
           Back to Prospects
         </Link>
         <div className="flex items-center gap-3">
           {!store.is_verified && (
-            <button
+            <BrandButton
               onClick={handleVerify}
               disabled={isVerifying}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all px-4 py-2 rounded-xl text-sm shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              size="sm"
             >
-              <CheckCircle size={16} />
+              <CheckCircle size={15} className="mr-1.5" />
               {isVerifying ? 'Verifying...' : 'Verify Prospect & Orders'}
-            </button>
+            </BrandButton>
           )}
           <button
             onClick={async () => {
               if (confirm(`Are you sure you want to delete prospect account ${store.name}?`)) {
                 try {
                   const clientId = store.clients?.[0]?.id;
-                  await apiClient.delete<any>(`/trade/stores/${store.id}`);
+                  await apiClient.delete<void>(`/trade/stores/${store.id}`);
                   if (clientId) {
                     try {
-                      await apiClient.delete<any>(`/crm/clients/${clientId}`);
+                      await apiClient.delete<void>(`/crm/clients/${clientId}`);
                     } catch (clientErr) {
                       console.error('Error deleting client contact:', clientErr);
                     }
                   }
-                  router.push(store.prospect_segment === 'retail' ? '/trade/prospects/accounts?segment=retail' : '/trade/prospects/accounts?segment=wholesale');
-                } catch (err) {
+                  router.push(store.prospect_segment === 'retail' ? '/trade/entities/prospects/accounts?segment=retail' : '/trade/entities/prospects/accounts?segment=wholesale');
+                } catch {
                   alert('Failed to delete prospect account');
                 }
               }
             }}
-            className="flex items-center gap-2 text-red-600 hover:text-red-800 font-bold transition-all bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl text-sm"
+            className="flex items-center gap-2 text-alert hover:bg-alert/10 font-bold transition-all px-3.5 py-2 rounded-xl text-xs border border-alert/20"
           >
-            <Trash2 size={16} />
+            <Trash2 size={14} />
             Delete Prospect Account
           </button>
         </div>
       </div>
 
       {/* Header Card */}
-      <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm relative overflow-hidden">
-        {/* Background Decoration */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl -mr-32 -mt-32" />
-        
-        <div className="relative flex flex-col lg:flex-row justify-between gap-12">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="w-24 h-24 bg-blue-600 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-blue-200 shrink-0">
-              <StoreIcon size={48} />
+      <BrandCard className="p-8 md:p-10 relative overflow-hidden">
+        <div className="relative flex flex-col lg:flex-row justify-between gap-8">
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="w-20 h-20 bg-ear/20 text-deep rounded-2xl flex items-center justify-center border border-utility shadow-sm shrink-0">
+              <StoreIcon size={36} />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-3 mb-3">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
-                  store.is_verified
-                    ? 'bg-green-50 border-green-100 text-green-700'
-                    : 'bg-amber-50 border-amber-100 text-amber-700'
-                }`}>
-                  {store.is_verified ? 'VERIFIED PROSPECT' : 'UNVERIFIED PROSPECT'}
-                </span>
-                <span className="bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-gray-200">
+              <div className="flex flex-wrap items-center gap-2.5 mb-2">
+                <BrandBadge variant={store.is_verified ? 'confirmed' : 'pending'}>
+                  {store.is_verified ? 'Verified Prospect' : 'Unverified Prospect'}
+                </BrandBadge>
+                <BrandBadge variant="neutral">
                   {store.segment || 'General'}
-                </span>
+                </BrandBadge>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">
+              <h1 className="text-3xl md:text-4xl font-bold text-deep tracking-tight mb-3">
                 {displayTitle}
               </h1>
-              <div className="flex flex-col md:flex-row md:items-center gap-6 text-gray-500 font-medium">
+              <div className="flex flex-col md:flex-row md:items-center gap-5 text-slate text-sm font-medium">
                 <div className="flex items-center gap-2">
-                  <MapPin size={18} className="text-blue-500" />
+                  <MapPin size={15} className="text-slate" />
                   <span>{store.address || 'No address registered'}</span>
                 </div>
                 {store.region && (
-                  <div className="flex items-center gap-2">
-                    <Target size={18} className="text-orange-500" />
+                  <div className="flex items-center gap-2 font-mono">
+                    <Target size={15} className="text-dark-accent" />
                     <span>Region: {store.region}</span>
                   </div>
                 )}
@@ -240,51 +234,51 @@ export default function ProspectDetailPage() {
 
           {/* Quick Metrics */}
           <div className="grid grid-cols-2 md:flex gap-4 items-center flex-wrap">
-            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Total Value</span>
-              <span className="text-2xl font-black text-gray-900">${totalOrderValue.toLocaleString()}</span>
-              <div className="flex items-center gap-1 text-green-600 text-[10px] font-bold mt-1">
+            <div className="bg-surface p-5 rounded-2xl border border-utility min-w-[140px]">
+              <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mb-1">Total Value</span>
+              <span className="text-2xl font-bold font-mono text-deep">${totalOrderValue.toLocaleString()}</span>
+              <div className="flex items-center gap-1 text-confirmed text-[10px] font-bold mt-1 uppercase">
                 <TrendingUp size={12} /> {orders.length} Orders
               </div>
             </div>
-            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 min-w-[140px]">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Avg. Ticket</span>
-              <span className="text-2xl font-black text-gray-900">
+            <div className="bg-surface p-5 rounded-2xl border border-utility min-w-[140px]">
+              <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mb-1">Avg. Ticket</span>
+              <span className="text-2xl font-bold font-mono text-deep">
                 ${orders.length > 0 ? (totalOrderValue / orders.length).toFixed(0) : '0'}
               </span>
-              <div className="flex items-center gap-1 text-blue-600 text-[10px] font-bold mt-1">
+              <div className="flex items-center gap-1 text-dark-accent text-[10px] font-bold mt-1 uppercase">
                 <ShoppingBag size={12} /> Per Order
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </BrandCard>
 
       {/* Main Content Area */}
       <div className="space-y-6">
-        <div className="bg-white p-2 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div className="bg-surface p-1.5 rounded-2xl border border-utility flex items-center gap-1 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
-              className={`flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === tab.id 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-canvas text-deep shadow-sm border border-utility' 
+                  : 'text-slate hover:text-deep hover:bg-canvas/50'
               }`}
             >
-              <tab.icon size={18} />
+              <tab.icon size={15} />
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 min-h-[400px]">
+        <BrandCard className="p-8 min-h-[460px]">
           {activeTab === 'details' && (
-            <div className="space-y-12">
+            <div className="space-y-10">
               <section>
-                <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
-                  <FileText size={20} className="text-blue-500" />
+                <h3 className="text-lg font-bold text-deep mb-6 flex items-center gap-2">
+                  <FileText size={18} className="text-dark-accent" />
                   General Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -295,23 +289,23 @@ export default function ProspectDetailPage() {
                 </div>
               </section>
 
-              <section className="pt-8 border-t border-gray-50">
-                <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
-                  <Target size={20} className="text-orange-500" />
+              <section className="pt-8 border-t border-utility">
+                <h3 className="text-lg font-bold text-deep mb-6 flex items-center gap-2">
+                  <Target size={18} className="text-dark-accent" />
                   Market Context
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Market</span>
-                    <span className="font-bold text-gray-400 text-lg">Unassigned</span>
+                  <div className="bg-surface p-5 rounded-2xl border border-utility">
+                    <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mb-1">Market</span>
+                    <span className="font-bold text-deep text-base">Unassigned</span>
                   </div>
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Segment</span>
-                    <span className="font-bold text-gray-900 text-lg">{store.segment || 'General'}</span>
+                  <div className="bg-surface p-5 rounded-2xl border border-utility">
+                    <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mb-1">Segment</span>
+                    <span className="font-bold text-deep text-base">{store.segment || 'General'}</span>
                   </div>
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Region</span>
-                    <span className="font-bold text-gray-900 text-lg">{store.region || 'Unknown'}</span>
+                  <div className="bg-surface p-5 rounded-2xl border border-utility">
+                    <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mb-1">Region</span>
+                    <span className="font-bold text-deep text-base">{store.region || 'Unknown'}</span>
                   </div>
                 </div>
               </section>
@@ -320,34 +314,38 @@ export default function ProspectDetailPage() {
 
           {activeTab === 'products' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-black text-gray-900 mb-4">Product Portfolio</h3>
+              <h3 className="text-lg font-bold text-deep mb-4">Product Portfolio</h3>
               {boughtProducts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {boughtProducts.map((product) => (
-                    <div key={product.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between group">
+                    <Link
+                      key={product.id}
+                      href={`/trade/catalog/products/${product.id}`}
+                      className="p-4 bg-surface rounded-2xl border border-utility flex items-center justify-between group hover:border-utility/80 transition-all"
+                    >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-gray-400 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
-                          <Package size={20} />
+                        <div className="w-11 h-11 bg-canvas rounded-xl flex items-center justify-center text-slate border border-utility shadow-sm group-hover:text-deep transition-all">
+                          <Package size={18} />
                         </div>
                         <div>
-                          <p className="font-bold text-gray-900">{product.name}</p>
-                          <p className="text-xs text-gray-400 font-bold uppercase">{product.sku || 'No SKU'}</p>
-                          <p className="text-sm text-blue-600 font-bold mt-1">
+                          <p className="font-bold text-deep group-hover:text-dark-accent transition-colors">{product.name}</p>
+                          <p className="text-xs text-slate font-mono uppercase">{product.sku || 'No SKU'}</p>
+                          <p className="text-xs text-dark-accent font-semibold mt-0.5">
                             Bought: {product.quantity} {product.unit_of_measure}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-gray-900">${(product.price).toFixed(2)}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">{product.unit_of_measure || 'unit'}</p>
+                        <p className="font-bold font-mono text-deep">${(product.price).toFixed(2)}</p>
+                        <p className="text-[10px] text-slate font-bold uppercase">{product.unit_of_measure || 'unit'}</p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <Package className="text-gray-300 mb-4" size={32} />
-                  <p className="text-gray-500 font-bold">No products purchased yet.</p>
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Package className="text-slate mb-3" size={28} />
+                  <p className="text-slate text-sm font-semibold">No products purchased yet.</p>
                 </div>
               )}
             </div>
@@ -355,45 +353,49 @@ export default function ProspectDetailPage() {
 
           {activeTab === 'orders' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-black text-gray-900 mb-4">Order History</h3>
+              <h3 className="text-lg font-bold text-deep mb-4">Order History</h3>
               {orders.length > 0 ? (
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y divide-utility">
                   {orders.map((order) => (
-                    <div key={order.id} className="py-6 flex items-center justify-between group">
+                    <Link 
+                      key={order.id} 
+                      href={`/trade/operations/orders/${order.id}`}
+                      className="py-5 flex items-center justify-between group hover:bg-surface/50 px-3 rounded-xl transition-colors"
+                    >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
-                          <ShoppingBag size={20} />
+                        <div className="w-11 h-11 bg-surface rounded-xl flex items-center justify-center text-slate border border-utility group-hover:text-dark-accent transition-all">
+                          <ShoppingBag size={18} />
                         </div>
                         <div>
-                          <p className="font-bold text-gray-900">Order #{order.id.slice(0, 8)}</p>
+                          <p className="font-bold text-deep font-mono text-sm group-hover:text-dark-accent transition-colors">Order #{order.id.slice(0, 8)}</p>
                           <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                            <p className="text-xs text-gray-400 font-bold uppercase">
+                            <p className="text-xs text-slate font-mono uppercase">
                               {new Date(order.created_at).toLocaleDateString()} • {order.status}
                             </p>
                             {!order.is_verified && (
-                              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wider">
+                              <BrandBadge variant="pending">
                                 Unverified Order
-                              </span>
+                              </BrandBadge>
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-gray-900 text-lg">${order.total_amount.toLocaleString()}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">{(order.items || []).length} items</p>
+                        <p className="font-bold font-mono text-deep text-base">${order.total_amount.toLocaleString()}</p>
+                        <p className="text-[10px] text-slate font-bold uppercase">{(order.items || []).length} items</p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <ShoppingBag className="text-gray-300 mb-4" size={32} />
-                  <p className="text-gray-500 font-bold">No orders recorded for this account.</p>
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <ShoppingBag className="text-slate mb-3" size={28} />
+                  <p className="text-slate text-sm font-semibold">No orders recorded for this account.</p>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </BrandCard>
       </div>
     </div>
   );
@@ -408,12 +410,12 @@ interface InfoItemProps {
 function InfoItem({ label, value, icon: Icon }: InfoItemProps) {
   return (
     <div className="flex gap-4">
-      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 shrink-0">
+      <div className="w-10 h-10 bg-canvas rounded-xl flex items-center justify-center text-slate border border-utility shrink-0">
         <Icon size={18} />
       </div>
       <div>
-        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">{label}</span>
-        <span className="font-bold text-gray-900">{value}</span>
+        <span className="text-[10px] font-bold text-slate uppercase tracking-wider block mb-0.5">{label}</span>
+        <span className="font-bold text-deep">{value}</span>
       </div>
     </div>
   );

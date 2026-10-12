@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { components } from '@/types/api';
 import { CatalogField } from '@/types/models';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 
 type CategoryResponse = components['schemas']['CategoryResponse'];
 
@@ -156,9 +157,12 @@ export default function CategoryDrawer() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success(isEditing ? 'Category updated successfully' : 'Category created successfully');
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving category.');
+      const msg = errorMessage(err, 'Failed to save category');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -21,14 +21,15 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
-
 import { Product, CatalogField } from '@/types/models';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 import { useDrawerStore } from '@/lib/store/DrawerManager';
 
 export default function CatalogDrawer() {
   const { isOpen, payload, close: onClose } = useDrawer('catalog');
   const initialMode = payload?.initialMode || 'product';
   const productId = payload?.productId;
+  const categoryId = payload?.categoryId;
   const initialData = payload?.initialData;
 
   const queryClient = useQueryClient();
@@ -61,7 +62,9 @@ export default function CatalogDrawer() {
 
   const isB2C = business?.vertical_type === 'BASIC';
   
-  const isEditing = !!productId;
+  const isEditingProduct = !!productId;
+  const isEditingCategory = !!categoryId;
+  const isEditing = isEditingProduct || isEditingCategory;
   
   // Categories for product selection
   const [categories, setCategories] = useState<any[]>([]);
@@ -90,23 +93,24 @@ export default function CatalogDrawer() {
 
   useEffect(() => {
     if (isOpen) {
-      setMode(productId ? 'product' : initialMode);
+      setMode(productId ? 'product' : (categoryId ? 'category' : initialMode));
       fetchCategories();
       
       if (productId) {
         if (initialData) {
+          const prod = initialData as Partial<Product>;
           setProductData({
-            name: initialData.name || '',
-            category_id: initialData.category_id || '',
-            description: initialData.description || '',
-            price: initialData.price || 0,
-            sku: initialData.sku || '',
-            brand: initialData.brand || '',
-            product_type: initialData.product_type || '',
-            unit_of_measure: initialData.unit_of_measure || 'unit',
-            wholesale_threshold: initialData.wholesale_threshold ?? ''
+            name: prod.name || '',
+            category_id: prod.category_id || '',
+            description: prod.description || '',
+            price: prod.price || 0,
+            sku: prod.sku || '',
+            brand: prod.brand || '',
+            product_type: prod.product_type || '',
+            unit_of_measure: prod.unit_of_measure || 'unit',
+            wholesale_threshold: prod.wholesale_threshold ?? ''
           });
-          setCustomFields((initialData.custom_fields as Record<string, any>) || {});
+          setCustomFields((prod.custom_fields as Record<string, any>) || {});
         } else {
           // Fetch from API
           const fetchProduct = async () => {
@@ -130,6 +134,30 @@ export default function CatalogDrawer() {
           };
           fetchProduct();
         }
+      } else if (categoryId) {
+        if (initialData) {
+          const cat = initialData as Partial<{ name?: string | null; description?: string | null; category_type?: string | null }>;
+          setCategoryData({
+            name: cat.name || '',
+            description: cat.description || '',
+            category_type: cat.category_type || ''
+          });
+        } else {
+          // Fetch category from API if needed (categories might be already loaded but fetch directly just in case)
+          const fetchCategory = async () => {
+            try {
+              const data = await apiClient.get<any>(`/trade/categories/${categoryId}`);
+              setCategoryData({
+                name: data.name || '',
+                description: data.description || '',
+                category_type: data.category_type || ''
+              });
+            } catch (err) {
+              console.error(err);
+            }
+          };
+          fetchCategory();
+        }
       } else {
         resetForms();
       }
@@ -139,7 +167,7 @@ export default function CatalogDrawer() {
       setNewFieldOptions('');
       setNewFieldErr('');
     }
-  }, [isOpen, initialMode, productId, initialData]);
+  }, [isOpen, initialMode, productId, categoryId, initialData]);
 
   async function fetchCategories() {
     setFetchingCats(true);
@@ -221,12 +249,15 @@ export default function CatalogDrawer() {
 
       await queryClient.invalidateQueries({ queryKey: ['categories'] });
       await fetchCategories();
+      toast.success('Attribute created successfully');
       setIsAddingField(false);
       setNewFieldName('');
       setNewFieldType('text');
       setNewFieldOptions('');
     } catch (err: unknown) {
-      setNewFieldErr(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to save attribute');
+      setNewFieldErr(msg);
+      toast.error(msg);
     } finally {
       setIsSavingNewField(false);
     }
@@ -250,7 +281,7 @@ export default function CatalogDrawer() {
         custom_fields: customFields
       };
 
-      if (isEditing) {
+      if (isEditingProduct) {
         await apiClient.patch<any>(path, payload);
       } else {
         await apiClient.post<any>(path, payload);
@@ -258,13 +289,16 @@ export default function CatalogDrawer() {
 
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      if (isEditing) {
+      if (isEditingProduct) {
         queryClient.invalidateQueries({ queryKey: ['product', productId] });
       }
+      toast.success(isEditingProduct ? 'Product updated successfully' : 'Product created successfully');
       onClose();
       resetForms();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to save product');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -276,14 +310,26 @@ export default function CatalogDrawer() {
     setError('');
 
     try {
-      await apiClient.post<any>('/trade/categories', categoryData);
+      if (isEditingCategory) {
+        await apiClient.patch<any>(`/trade/categories/${categoryId}`, categoryData);
+      } else {
+        await apiClient.post<any>('/trade/categories', categoryData);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       fetchCategories(); // Refresh local list
-      setMode('product'); // Switch back to product mode to add items to new category
-      setCategoryData({ name: '', description: '', category_type: '' });
+      toast.success(isEditingCategory ? 'Category updated successfully' : 'Category created successfully');
+      
+      if (isEditingCategory) {
+        onClose();
+      } else {
+        setMode('product'); // Switch back to product mode to add items to new category
+        setCategoryData({ name: '', description: '', category_type: '' });
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to save category');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -318,7 +364,7 @@ export default function CatalogDrawer() {
         disabled={loading || (mode === 'product' && (!productData.name || !productData.category_id)) || (mode === 'category' && !categoryData.name)}
         className={`flex-1 px-6 py-4 ${mode === 'product' ? 'bg-indigo-600 shadow-indigo-500/20' : 'bg-emerald-600 shadow-emerald-500/20'} text-white rounded-2xl font-bold transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
       >
-        {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? 'Update Product' : (mode === 'product' ? 'Save Product' : 'Create Category'))}
+        {loading ? <Loader2 className="animate-spin" size={20} /> : (isEditingProduct ? 'Update Product' : isEditingCategory ? 'Update Category' : (mode === 'product' ? 'Save Product' : 'Create Category'))}
       </button>
     </div>
   );
@@ -327,8 +373,8 @@ export default function CatalogDrawer() {
     <Drawer 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={isEditing ? "Edit Product" : (mode === 'product' ? "Add Product" : "New Category")} 
-      subtitle={isEditing ? "Update product specifications and pricing." : (mode === 'product' ? "Define SKU, pricing, and category." : "Group your inventory for better tracking.")}
+      title={isEditingProduct ? "Edit Product" : isEditingCategory ? "Edit Category" : (mode === 'product' ? "Add Product" : "New Category")} 
+      subtitle={isEditingProduct ? "Update product specifications and pricing." : isEditingCategory ? "Update category details." : (mode === 'product' ? "Define SKU, pricing, and category." : "Group your inventory for better tracking.")}
       footer={footer}
       size="wide"
     >
@@ -459,20 +505,37 @@ export default function CatalogDrawer() {
                 )}
               </div>
 
-              {!isB2C && (
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Wholesale Threshold (Qty)</label>
-                  <input 
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="e.g. 50 (Leave empty for none)"
-                    className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
-                    value={productData.wholesale_threshold}
-                    onChange={e => setProductData({...productData, wholesale_threshold: e.target.value ? parseInt(e.target.value, 10) : ''})}
-                  />
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Unit of Measure</label>
+                  <select 
+                    className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold appearance-none"
+                    value={productData.unit_of_measure || 'unit'}
+                    onChange={e => setProductData({...productData, unit_of_measure: e.target.value})}
+                  >
+                    <option value="unit">Unit</option>
+                    <option value="case">Case</option>
+                    <option value="kg">Kg</option>
+                    <option value="liter">Liter</option>
+                    <option value="box">Box</option>
+                    <option value="pack">Pack</option>
+                  </select>
                 </div>
-              )}
+                {!isB2C && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Wholesale Threshold (Qty)</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="e.g. 50 (Leave empty for none)"
+                      className="w-full p-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
+                      value={productData.wholesale_threshold}
+                      onChange={e => setProductData({...productData, wholesale_threshold: e.target.value ? parseInt(e.target.value, 10) : ''})}
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Description</label>

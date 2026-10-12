@@ -11,6 +11,7 @@ import { CRMField } from '@/types/models';
 
 type BusinessProfileResponse = components['schemas']['BusinessProfileResponse'];
 import Drawer from './Drawer';
+import { toast, errorMessage } from '@/lib/store/ToastManager';
 type ServiceResponse = components['schemas']['ServiceResponse'];
 
 export default function ServiceDrawer() {
@@ -165,9 +166,12 @@ export default function ServiceDrawer() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast.success(service ? 'Service updated successfully' : 'Service created successfully');
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to save service');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -183,9 +187,12 @@ export default function ServiceDrawer() {
       await apiClient.delete<any>(`/services/${service.id}`);
 
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast.success('Service deleted successfully');
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = errorMessage(err, 'Failed to delete service');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setDeleting(false);
     }

@@ -1,6 +1,12 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+export async function GET() {
+  const cookieStore = cookies();
+  const token = cookieStore.get('sherpa_token')?.value || null;
+  return NextResponse.json({ token });
+}
+
 export async function POST(request: Request) {
   try {
     const { token, action } = await request.json();

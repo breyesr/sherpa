@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import SafeDate from '@/components/SafeDate';
 import { Store as StoreModel } from '@/types/models';
+import { BrandCard, BrandBadge, BrandButton } from '@/components/ui/brand';
 
 interface FlattenedNote {
   id?: string;
@@ -73,134 +74,128 @@ export default function NotesPulsePage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div id="v2-notes-pulse-container" className="max-w-7xl mx-auto space-y-8 pb-20 font-sans">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+            <BrandBadge variant="accent">
               Intelligence Hub
-            </span>
+            </BrandBadge>
           </div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-deep tracking-tight">
             The Pulse
           </h1>
-          <p className="text-gray-500 mt-2 font-medium text-lg max-w-2xl">
+          <p className="text-slate mt-2 font-medium text-base md:text-lg max-w-2xl">
             A chronological ledger of every field observation, threat, and opportunity across your territory.
           </p>
         </div>
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-surface p-4 rounded-2xl border border-utility shadow-sm">
         <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate" size={16} />
           <input 
             type="text"
             placeholder="Search notes, stores, or insights..."
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-gray-900"
+            className="w-full pl-11 pr-4 py-2.5 bg-canvas border border-utility rounded-xl focus:border-deep outline-none transition-all font-medium text-deep placeholder:text-slate text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
-        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl">
+        <div className="flex items-center gap-2 bg-canvas p-1 rounded-xl border border-utility">
           {(['all', 'commercial', 'marketing', 'threat'] as const).map((filter) => (
             <button 
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                 activeFilter === filter 
-                  ? 'bg-white shadow-sm text-indigo-600' 
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'bg-surface shadow-sm text-deep border border-utility' 
+                  : 'text-slate hover:text-deep'
               }`}
             >
               {filter}
             </button>
           ))}
-          <div className="w-px h-6 bg-gray-200 mx-1" />
-          <button className="flex items-center gap-2 px-3 py-2 text-gray-500 font-bold text-xs uppercase tracking-wider hover:text-gray-900 transition-all">
-            <Filter size={16} />
-            Advanced
+          <div className="w-px h-5 bg-utility mx-1" />
+          <button className="flex items-center gap-2 px-3 py-1.5 text-slate font-semibold text-xs uppercase tracking-wider hover:text-deep transition-all">
+            <Filter size={14} />
+            Filter
           </button>
         </div>
       </div>
 
       {/* Intelligence Feed */}
       {isLoading ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 bg-gray-50 animate-pulse rounded-[2.5rem]" />
+            <div key={i} className="h-36 bg-surface animate-pulse rounded-2xl border border-utility" />
           ))}
         </div>
       ) : filteredNotes.length === 0 ? (
-        <div className="py-24 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
-          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-            <MessageSquare className="text-gray-300" size={32} />
+        <div className="py-20 text-center bg-surface rounded-2xl border-2 border-dashed border-utility">
+          <div className="w-16 h-16 bg-canvas rounded-2xl border border-utility flex items-center justify-center mx-auto mb-4 shadow-sm text-slate">
+            <MessageSquare size={28} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">No intelligence found</h3>
-          <p className="text-gray-500 mt-2">Intelligence recorded during visits will appear here.</p>
+          <h3 className="text-lg font-bold text-deep">No intelligence found</h3>
+          <p className="text-slate text-sm mt-1">Intelligence recorded during visits will appear here.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredNotes.map((note: FlattenedNote) => (
-            <div 
+            <BrandCard 
               key={note.id}
-              className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all"
+              className="p-6 md:p-7 hover:border-utility/80 transition-all"
             >
               <div className="flex flex-col md:flex-row justify-between gap-6">
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-3.5">
                   {/* Metadata Row */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${
-                      note.note_type === 'threat' ? 'bg-red-50 text-red-600 border-red-100' :
-                      note.note_type === 'opportunity' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      'bg-indigo-50 text-indigo-600 border-indigo-100'
-                    }`}>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <BrandBadge variant={
+                      note.note_type === 'threat' ? 'alert' :
+                      note.note_type === 'opportunity' ? 'confirmed' :
+                      'neutral'
+                    }>
                       {note.note_type}
-                    </span>
-                    <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider">
-                      <Calendar size={14} />
+                    </BrandBadge>
+                    <div className="flex items-center gap-1.5 text-slate font-mono text-xs">
+                      <Calendar size={13} />
                       <SafeDate date={note.created_at || ''} />
                     </div>
                     {note.is_actionable && (
-                      <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-lg">
-                        <AlertCircle size={12} />
+                      <BrandBadge variant="pending">
+                        <AlertCircle size={11} className="mr-1 inline" />
                         Actionable
-                      </span>
+                      </BrandBadge>
                     )}
-                    {/* Future Provenance Indicator */}
-                    <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-1 rounded-lg">
-                      <Mic size={12} />
+                    <div className="flex items-center gap-1 text-[10px] font-mono text-slate bg-surface px-2 py-0.5 rounded-md border border-utility">
+                      <Mic size={11} />
                       Audio Source
                     </div>
                   </div>
 
                   {/* Narrative Content */}
                   <div className="relative">
-                    <p className="text-xl font-medium text-gray-900 leading-relaxed italic pr-12">
+                    <p className="text-lg font-medium text-deep leading-relaxed italic pr-10">
                       &quot;{note.note}&quot;
                     </p>
-                    <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 bg-gray-50 text-gray-400 hover:text-indigo-600 rounded-xl transition-all">
-                        <ExternalLink size={18} />
-                      </button>
-                    </div>
                   </div>
 
                   {/* Extract / Summary */}
                   {(note.risks || note.opportunities) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                       {note.risks && (
-                        <div className="p-4 bg-red-50/30 rounded-2xl border border-red-50">
-                          <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Risk Extract</p>
-                          <p className="text-sm font-bold text-red-900">{note.risks}</p>
+                        <div className="p-3.5 bg-alert/5 rounded-xl border border-alert/20">
+                          <p className="text-[10px] font-bold text-alert uppercase tracking-wider mb-1">Risk Extract</p>
+                          <p className="text-xs font-semibold text-deep">{note.risks}</p>
                         </div>
                       )}
                       {note.opportunities && (
-                        <div className="p-4 bg-emerald-50/30 rounded-2xl border border-emerald-50">
-                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Opportunity Extract</p>
-                          <p className="text-sm font-bold text-emerald-900">{note.opportunities}</p>
+                        <div className="p-3.5 bg-confirmed/5 rounded-xl border border-confirmed/20">
+                          <p className="text-[10px] font-bold text-confirmed uppercase tracking-wider mb-1">Opportunity Extract</p>
+                          <p className="text-xs font-semibold text-deep">{note.opportunities}</p>
                         </div>
                       )}
                     </div>
@@ -208,39 +203,39 @@ export default function NotesPulsePage() {
                 </div>
 
                 {/* Account Sidebar */}
-                <div className="md:w-64 shrink-0 flex flex-col justify-between p-6 bg-gray-50 rounded-[2rem] border border-gray-100/50 group-hover:bg-white transition-colors">
-                  <div className="space-y-4">
+                <div className="md:w-60 shrink-0 flex flex-col justify-between p-4 bg-surface rounded-xl border border-utility group-hover:bg-canvas transition-colors">
+                  <div className="space-y-3">
                     <Link 
-                      href={`/trade/stores/${note.store_id}`}
-                      className="group/link block space-y-1"
+                      href={`/trade/entities/stores/${note.store_id}`}
+                      className="group/link block space-y-0.5"
                     >
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</span>
-                      <div className="flex items-center gap-2 text-gray-900 group-hover/link:text-indigo-600 transition-colors">
-                        <Store size={16} />
+                      <span className="text-[10px] font-bold text-slate uppercase tracking-wider">Account</span>
+                      <div className="flex items-center gap-1.5 text-deep group-hover/link:text-dark-accent transition-colors">
+                        <Store size={15} />
                         <span className="font-bold text-sm truncate">{note.store_name}</span>
                       </div>
                     </Link>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Region</span>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <TrendingUp size={16} className="text-indigo-400" />
-                        <span className="font-bold text-sm">{note.region || 'National'}</span>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate uppercase tracking-wider">Region</span>
+                      <div className="flex items-center gap-1.5 text-slate font-mono text-xs">
+                        <TrendingUp size={14} className="text-dark-accent" />
+                        <span>{note.region || 'National'}</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="pt-6 mt-6 border-t border-gray-100 flex items-center justify-between">
+                  <div className="pt-3.5 mt-3.5 border-t border-utility flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
-                        <User size={14} />
+                      <div className="w-6 h-6 bg-ear/20 rounded-md flex items-center justify-center text-deep border border-utility">
+                        <User size={12} />
                       </div>
-                      <span className="text-xs font-bold text-gray-500">Rep ID: 04</span>
+                      <span className="text-xs font-mono text-slate">Rep ID: 04</span>
                     </div>
-                    <ChevronRight size={18} className="text-gray-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={15} className="text-slate group-hover:text-deep group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </div>
               </div>
-            </div>
+            </BrandCard>
           ))}
         </div>
       )}

@@ -254,3 +254,55 @@ All forms must satisfy WCAG 2.1 Level AA conformance criteria:
 3.  **Keyboard Focus Ring**: All inputs, toggles, and buttons must display a highly visible focus indicator (e.g. `focus:ring-2 focus:ring-slate-900 focus:ring-offset-2`).
 4.  **Color Contrast**: Standard text must exceed **4.5:1** contrast ratio against the background. Disabled buttons should reflect `opacity-40` with an explicit `aria-disabled="true"` attribute rather than absolute removal from the focus flow.
 5.  **Error Announcement**: In case of dynamic validation failure, shift screen reader focus to the validation banner using `tabIndex={-1}` and set `aria-invalid="true"` on the failing form control.
+
+---
+
+## 7. Official Brand Identity & Token Specification (Project Monet)
+
+### 7.1 Dual Color Palette Matrix
+
+| Token Name | CSS Variable | Trailhead × Spectrum | Block × Clarity | Operational Role |
+| :--- | :--- | :--- | :--- | :--- |
+| **Primary Anchor** | `--deep` | `#173D35` (Pine) | `#101F3D` (Clarity Navy) | Workspace Sidebar, Headlines, Dark Surfaces |
+| **Micro-Rail Base** | `--deep-2` | `#102D27` (Deep Pine) | `#09152C` (Deep Navy) | 78px Global Micro-Rail background |
+| **Operational Accent** | `--dark-accent` | `#C9F04A` (Signal Lime) | `#6F9BFF` (Clarity Cobalt) | Active markers, focus rings, status indicators |
+| **Accent Text Ink** | `--accent-ink` | `#173D35` | `#081429` | Text placed on top of active accent fills |
+| **Canvas** | `--field` | `#F5F1E8` (Linen) | `#F7F9FC` (Clarity Canvas) | Primary application background |
+| **Structure / Borders** | `--utility` | `#DDE5DF` (Mist) | `#DDE3EC` (Cool Mist) | Dividers, table rules, input borders |
+| **Secondary Ink** | `--slate` | `#34534C` (Forest Slate) | `#34435E` (Steel) | Body copy, secondary actions, metadata |
+| **Confirmed Semantic** | `--success` | `#167052` (AA on Linen) | `#13705A` (AA on Canvas) | Completed orders, verified accounts |
+| **Attention Semantic** | `--warning` | `#A96608` | `#A85D00` | Pending verification, route warnings |
+| **Alert Semantic** | `--alert` | `#B23B34` (AA on Linen) | `#B23842` (AA on Canvas) | Blocked leads, failed actions, cancellations |
+
+### 7.2 Digital Brain Subsystem Roles
+
+| Subsystem | Token Variable | Trailhead Color | Block Color | Functional Role |
+| :--- | :--- | :--- | :--- | :--- |
+| **01 Ear** | `--ear` | `#D9EEF2` (Sky) | `#D9E4FF` (Periwinkle) | WhatsApp / Voice ingestion signals |
+| **02 Memory** | `--memory` | `#E8E0F4` (Violet) | `#DDEEF2` (Aqua) | Relational accounts + vector knowledge graph |
+| **03 Brain** | `--brain` | `#F4E6BD` (Sand) | `#E8E1F5` (Lilac) | GraphRAG strategic synthesis |
+| **04 Hands & Eyes** | `--hands` | `#F5DDD5` (Clay) | `#F5E4D0` (Apricot) | Calendar, Strategy Desk, Field execution |
+
+### 7.3 Typography Scale
+
+*   **Primary Font (`--font-sans`):** `Manrope` (weights 400, 450, 600, 650, 700)
+*   **Data Font (`--font-mono`):** `IBM Plex Mono` (weight 500)
+
+| Style | Desktop Size / Line-height | Weight | Tracking | Primary Usage |
+| :--- | :--- | :--- | :--- | :--- |
+| **Display** | `40px / 44px` | 700 | `-0.04em` | Page openers |
+| **H1** | `32px / 36px` | 700 | `-0.035em` | Primary page headers |
+| **H2** | `24px / 30px` | 700 | `-0.025em` | Section titles |
+| **H3** | `18px / 24px` | 650 | `-0.01em` | Card titles |
+| **Body** | `15px / 23px` | 450 | `0` | Interface and form text |
+| **Label** | `12px / 16px` | 700 | `0.08em` | Field labels, uppercase badges |
+| **Data** | `12px / 18px` | 500 | `0.01em` | IDs, timestamps, quantities (Mono) |
+
+### 7.4 Standardized Atomic Components
+
+Available in `@/components/ui/brand`:
+*   `BrandButton`: Standardized with `primary`, `accent`, `secondary`, `outline`, and `ghost` variants.
+*   `BrandBadge`: Auto-tinted semantic badges (`confirmed`, `attention`, `alert`, `accent`, `ear`, `memory`, `brain`, `hands`).
+*   `BrandCard`: Elevated card with `rounded-2xl`, `border-utility`, and `shadow-brand-subtle`.
+*   `BrandInput`: Accessible form input with integrated uppercase suffix chips and validation states.
+

@@ -11,21 +11,21 @@ import {
   ShoppingBag, 
   Store as StoreIcon, 
   Calendar, 
-  DollarSign, 
   Clock, 
   FileText, 
   Truck, 
   CheckCircle, 
   XCircle, 
-  User, 
   MapPin, 
   CreditCard,
   Package,
   Loader2,
   AlertCircle,
-  Trash2
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { components } from '@/types/api';
+import { BrandButton, BrandBadge, BrandCard } from '@/components/ui/brand';
 
 type OrderResponse = components['schemas']['OrderResponse'];
 type StoreResponse = components['schemas']['StoreResponse'];
@@ -81,7 +81,6 @@ export default function OrderDetailPage() {
     const isSystemGenerated = store.name.toLowerCase().startsWith('prospect');
     const hasClientName = store.clients && store.clients[0]?.name;
     let resolvedName = isSystemGenerated && hasClientName ? (store.clients?.[0]?.name || '') : store.name;
-    // Strip prospect prefix and trailing parentheses
     resolvedName = resolvedName.replace(/^prospect\s+/i, '');
     resolvedName = resolvedName.replace(/\s*\([^)]*\)\s*$/, '');
     return resolvedName.trim();
@@ -95,12 +94,12 @@ export default function OrderDetailPage() {
     return map;
   }, [products]);
 
-  // Handle status update
+  // Handle status update (both forward and backward progression - Epic 205.2)
   const handleStatusChange = async (newStatus: string) => {
     setUpdatingStatus(newStatus);
     setErrorMessage('');
     try {
-      await apiClient.patch<any>(`/trade/orders/${id}`, { status: newStatus });
+      await apiClient.patch<void>(`/trade/orders/${id}`, { status: newStatus });
       
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -123,7 +122,7 @@ export default function OrderDetailPage() {
       await apiClient.delete(`/trade/orders/${id}`);
       await queryClient.invalidateQueries({ queryKey: ['orders'] });
       await queryClient.invalidateQueries({ queryKey: ['products'] });
-      router.push('/trade/orders');
+      router.push('/trade/operations/orders');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Error deleting order');
       setDeleteLoading(false);
@@ -134,42 +133,44 @@ export default function OrderDetailPage() {
   const getStatusDetails = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return { label: 'Pending Approval', color: 'text-amber-700 bg-amber-50 border-amber-100', icon: Clock, step: 0 };
+        return { label: 'Pending Approval', variant: 'attention' as const, icon: Clock, step: 0 };
       case 'confirmed':
-        return { label: 'Confirmed', color: 'text-blue-700 bg-blue-50 border-blue-100', icon: CheckCircle, step: 1 };
+        return { label: 'Confirmed', variant: 'accent' as const, icon: CheckCircle, step: 1 };
       case 'shipped':
-        return { label: 'Shipped', color: 'text-indigo-700 bg-indigo-50 border-indigo-100', icon: Truck, step: 2 };
+        return { label: 'Shipped', variant: 'neutral' as const, icon: Truck, step: 2 };
       case 'delivered':
-        return { label: 'Delivered', color: 'text-emerald-700 bg-emerald-50 border-emerald-100', icon: CheckCircle, step: 3 };
+        return { label: 'Delivered', variant: 'confirmed' as const, icon: CheckCircle, step: 3 };
       case 'cancelled':
-        return { label: 'Cancelled', color: 'text-red-700 bg-red-50 border-red-100', icon: XCircle, step: -1 };
+        return { label: 'Cancelled', variant: 'alert' as const, icon: XCircle, step: -1 };
       default:
-        return { label: 'Unknown', color: 'text-gray-700 bg-gray-50 border-gray-100', icon: Clock, step: 0 };
+        return { label: status, variant: 'neutral' as const, icon: Clock, step: 0 };
     }
   };
 
   if (loadingOrder) {
     return (
       <div className="flex flex-col items-center justify-center py-40 gap-4">
-        <Loader2 className="animate-spin text-gray-900" size={48} />
-        <span className="font-bold text-gray-500">Loading Order Ledger Details...</span>
+        <Loader2 className="animate-spin text-deep" size={40} />
+        <span className="font-bold text-slate/70 text-sm">Loading Order Ledger Details...</span>
       </div>
     );
   }
 
   if (orderError || !order) {
     return (
-      <div className="max-w-4xl mx-auto p-12 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm text-center">
-        <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-900">Order not found</h3>
-        <p className="text-gray-500 mt-2">The order invoice may not exist or could be inaccessible.</p>
+      <BrandCard className="max-w-2xl mx-auto p-12 text-center">
+        <AlertCircle size={40} className="text-alert mx-auto mb-4" />
+        <h3 className="text-xl font-black text-deep">Order not found</h3>
+        <p className="text-slate text-sm mt-1">The order invoice may not exist or could be inaccessible.</p>
         <Link 
-          href="/trade/orders"
-          className="inline-flex items-center gap-2 mt-6 bg-gray-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-black transition-all"
+          href="/trade/operations/orders"
+          className="inline-flex items-center gap-2 mt-6"
         >
-          <ChevronLeft size={16} /> Back to Ledger
+          <BrandButton variant="primary">
+            <ChevronLeft size={16} /> Back to Ledger
+          </BrandButton>
         </Link>
-      </div>
+      </BrandCard>
     );
   }
 
@@ -183,40 +184,40 @@ export default function OrderDetailPage() {
       {/* Back Navigation */}
       <div>
         <Link 
-          href="/trade/orders"
-          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
+          href="/trade/operations/orders"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate hover:text-deep transition-colors"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
           Back to Orders
         </Link>
       </div>
 
       {/* Header Info */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${currentStatusInfo.color}`}>
+            <BrandBadge variant={currentStatusInfo.variant} className="text-xs uppercase tracking-wider py-0.5 px-3">
               <StatusIcon size={12} />
               {currentStatusInfo.label}
-            </span>
-            <span className="text-xs font-mono text-gray-400">Invoice ID: {order.id}</span>
+            </BrandBadge>
+            <span className="text-xs font-mono text-slate/60">Invoice ID: #{order.id.slice(0, 8)}</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-none">
+          <h1 className="text-3xl md:text-4xl font-black text-deep tracking-tight leading-tight">
             Order for {displayStoreName}
           </h1>
-          <p className="text-sm font-bold text-gray-400 flex items-center gap-2">
-            <Calendar size={14} />
+          <p className="text-xs font-bold text-slate/70 flex items-center gap-2">
+            <Calendar size={13} className="text-slate/50" />
             Placed on {new Date(order.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {order.status !== 'cancelled' && order.status !== 'delivered' && (
             <button
               onClick={() => handleStatusChange('cancelled')}
               disabled={!!updatingStatus || deleteLoading}
-              className="flex items-center gap-2 bg-white text-amber-600 px-5 py-3 border border-amber-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-amber-50 transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+              className="flex items-center gap-1.5 bg-white text-slate hover:text-alert border border-utility hover:border-alert/30 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 active:scale-95 shadow-brand-subtle"
             >
               {updatingStatus === 'cancelled' ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
               Cancel Order
@@ -227,7 +228,7 @@ export default function OrderDetailPage() {
             <button
               onClick={() => setConfirmDelete(false)}
               disabled={deleteLoading}
-              className="px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-black uppercase tracking-widest border border-gray-200 transition-all active:scale-95 shadow-sm"
+              className="px-4 py-2.5 bg-white hover:bg-black/5 text-slate rounded-xl text-xs font-black uppercase tracking-wider border border-utility transition-all active:scale-95 shadow-brand-subtle"
             >
               Keep Order
             </button>
@@ -236,10 +237,10 @@ export default function OrderDetailPage() {
           <button
             onClick={handleDeleteOrder}
             disabled={deleteLoading}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 border shadow-sm ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 border shadow-brand-subtle ${
               confirmDelete
-                ? 'bg-red-600 text-white border-red-600 animate-pulse hover:bg-red-700'
-                : 'bg-white text-red-600 border-red-100 hover:bg-red-50'
+                ? 'bg-alert text-white border-alert animate-pulse'
+                : 'bg-white text-alert border-alert/20 hover:bg-alert/5'
             }`}
           >
             {deleteLoading ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
@@ -249,7 +250,7 @@ export default function OrderDetailPage() {
       </div>
 
       {errorMessage && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-bold flex items-center gap-2">
+        <div className="p-4 bg-alert/5 text-alert rounded-2xl border border-alert/20 text-sm font-bold flex items-center gap-2">
           <AlertCircle size={18} />
           {errorMessage}
         </div>
@@ -262,44 +263,44 @@ export default function OrderDetailPage() {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Line Items Table */}
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Order Line Items</h3>
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-utility shadow-brand-subtle space-y-6">
+            <h3 className="text-xl font-black text-deep tracking-tight">Order Line Items</h3>
             
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    <th className="pb-4">Product Details</th>
-                    <th className="pb-4 text-center">SKU</th>
-                    <th className="pb-4 text-right">Unit Price</th>
-                    <th className="pb-4 text-right">Quantity</th>
-                    <th className="pb-4 text-right">Subtotal</th>
+                  <tr className="border-b border-utility text-[10px] font-black text-slate/60 uppercase tracking-widest font-mono">
+                    <th className="pb-3">Product Details</th>
+                    <th className="pb-3 text-center">SKU</th>
+                    <th className="pb-3 text-right">Unit Price</th>
+                    <th className="pb-3 text-right">Quantity</th>
+                    <th className="pb-3 text-right">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-utility text-sm">
                   {order.items?.map((item) => {
                     const prod = productMap[item.product_id];
                     return (
                       <tr key={item.id} className="group">
-                        <td className="py-5 pr-4 flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shadow-2xs">
-                            <Package size={20} />
+                        <td className="py-4 pr-4 flex items-center gap-3">
+                          <div className="w-10 h-10 bg-deep/5 text-deep border border-utility rounded-xl flex items-center justify-center shrink-0">
+                            <Package size={18} />
                           </div>
                           <div>
-                            <span className="font-black text-gray-900 block text-sm">{prod ? prod.name : 'Unknown Product'}</span>
-                            <span className="text-[10px] font-bold text-gray-400 block mt-0.5">{prod?.brand || 'No Brand'}</span>
+                            <span className="font-bold text-deep block text-sm">{prod ? prod.name : 'Unknown Product'}</span>
+                            <span className="text-[10px] font-bold text-slate/50 block mt-0.5">{prod?.brand || 'Generic'}</span>
                           </div>
                         </td>
-                        <td className="py-5 px-4 text-center font-mono font-semibold text-xs text-gray-500">
+                        <td className="py-4 px-4 text-center font-mono font-medium text-xs text-slate/70">
                           {prod?.sku || '-'}
                         </td>
-                        <td className="py-5 px-4 text-right font-bold text-gray-700 text-sm">
+                        <td className="py-4 px-4 text-right font-mono font-bold text-slate text-sm">
                           ${item.unit_price.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 text-right font-black text-gray-900 text-sm">
+                        <td className="py-4 px-4 text-right font-mono font-black text-deep text-sm">
                           {item.quantity}
                         </td>
-                        <td className="py-5 pl-4 text-right font-black text-gray-900 text-sm">
+                        <td className="py-4 pl-4 text-right font-mono font-black text-deep text-sm">
                           ${((item.quantity || 0) * item.unit_price).toFixed(2)}
                         </td>
                       </tr>
@@ -312,11 +313,11 @@ export default function OrderDetailPage() {
 
           {/* Notes Card */}
           {order.notes && (
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-              <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                <FileText size={16} className="text-gray-400" /> Notes
+            <div className="bg-white p-6 md:p-8 rounded-2xl border border-utility shadow-brand-subtle space-y-3">
+              <h3 className="text-xs font-black text-slate uppercase tracking-widest flex items-center gap-2">
+                <FileText size={14} className="text-slate/60" /> Operational Notes
               </h3>
-              <p className="text-gray-600 text-sm font-medium leading-relaxed bg-gray-50 p-6 rounded-2xl border border-gray-100">
+              <p className="text-deep text-sm font-medium leading-relaxed bg-black/[0.02] p-4 rounded-xl border border-utility">
                 {order.notes}
               </p>
             </div>
@@ -326,13 +327,13 @@ export default function OrderDetailPage() {
         {/* Right Side: Status Timeline & Summary */}
         <div className="space-y-8">
           
-          {/* Timeline & Actions */}
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-            <h3 className="text-xl font-black text-gray-900 tracking-tight">Status Timeline</h3>
+          {/* Timeline & Actions with Backward Progression (Epic 205.2) */}
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-utility shadow-brand-subtle space-y-6">
+            <h3 className="text-lg font-black text-deep tracking-tight">Status Timeline</h3>
             
             {currentStep !== -1 ? (
               /* Linear Status Process */
-              <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+              <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-utility">
                 {[
                   { statusKey: 'PENDING', label: 'Order Created', desc: 'Rep submitted order request.', stepNum: 0 },
                   { statusKey: 'CONFIRMED', label: 'Order Confirmed', desc: 'Order verified by admin.', stepNum: 1 },
@@ -345,34 +346,64 @@ export default function OrderDetailPage() {
                   return (
                     <div key={item.statusKey} className="relative">
                       {/* Timeline dot */}
-                      <span className={`absolute -left-[22px] top-1.5 w-3.5 h-3.5 rounded-full border-2 ${
+                      <span className={`absolute -left-[22px] top-1.5 w-3.5 h-3.5 rounded-full border-2 transition-all ${
                         isDone 
-                          ? 'bg-blue-600 border-blue-600 ring-4 ring-blue-50' 
-                          : 'bg-white border-gray-300'
+                          ? 'bg-deep border-deep ring-4 ring-deep/10' 
+                          : 'bg-white border-utility'
                       }`} />
                       
                       <div>
-                        <h4 className={`text-sm font-black ${isCurrent ? 'text-blue-600' : isDone ? 'text-gray-900' : 'text-gray-400'}`}>
+                        <h4 className={`text-sm font-black ${isCurrent ? 'text-deep' : isDone ? 'text-slate' : 'text-slate/40'}`}>
                           {item.label}
                         </h4>
-                        <p className="text-[11px] font-medium text-gray-400 mt-0.5">{item.desc}</p>
+                        <p className="text-[11px] font-medium text-slate/60 mt-0.5">{item.desc}</p>
                         
-                        {/* Quick state change action buttons */}
-                        {isCurrent && item.stepNum < 3 && (
-                          <button
-                            onClick={() => {
-                              const nextStatuses = ['confirmed', 'shipped', 'delivered'];
-                              handleStatusChange(nextStatuses[item.stepNum]);
-                            }}
-                            disabled={!!updatingStatus}
-                            className="mt-3 flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-xl text-2xs font-black uppercase tracking-wider hover:bg-blue-700 transition-all disabled:opacity-50"
-                          >
-                            {updatingStatus ? (
-                              <Loader2 className="animate-spin" size={12} />
-                            ) : (
-                              'Mark as ' + (item.stepNum === 0 ? 'Confirmed' : item.stepNum === 1 ? 'Shipped' : 'Delivered')
+                        {/* Quick state change action buttons (Epic 205.2) */}
+                        {isCurrent && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {/* Forward Progression */}
+                            {item.stepNum < 3 && (
+                              <BrandButton
+                                variant="primary"
+                                size="sm"
+                                onClick={() => {
+                                  const nextStatuses = ['confirmed', 'shipped', 'delivered'];
+                                  handleStatusChange(nextStatuses[item.stepNum]);
+                                }}
+                                disabled={!!updatingStatus}
+                                className="text-2xs uppercase tracking-wider"
+                              >
+                                {updatingStatus === (item.stepNum === 0 ? 'confirmed' : item.stepNum === 1 ? 'shipped' : 'delivered') ? (
+                                  <Loader2 className="animate-spin" size={12} />
+                                ) : (
+                                  'Mark as ' + (item.stepNum === 0 ? 'Confirmed' : item.stepNum === 1 ? 'Shipped' : 'Delivered')
+                                )}
+                              </BrandButton>
                             )}
-                          </button>
+
+                            {/* Backwards Progression (Epic 205.2) */}
+                            {item.stepNum > 0 && (
+                              <BrandButton
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  const prevStatuses = ['pending', 'confirmed', 'shipped'];
+                                  handleStatusChange(prevStatuses[item.stepNum - 1]);
+                                }}
+                                disabled={!!updatingStatus}
+                                className="text-2xs uppercase tracking-wider text-slate hover:text-deep"
+                              >
+                                {updatingStatus === (item.stepNum === 1 ? 'pending' : item.stepNum === 2 ? 'confirmed' : 'shipped') ? (
+                                  <Loader2 className="animate-spin" size={12} />
+                                ) : (
+                                  <span className="inline-flex items-center gap-1">
+                                    <RotateCcw size={10} />
+                                    {'Revert to ' + (item.stepNum === 1 ? 'Pending' : item.stepNum === 2 ? 'Confirmed' : 'Shipped')}
+                                  </span>
+                                )}
+                              </BrandButton>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -381,51 +412,51 @@ export default function OrderDetailPage() {
               </div>
             ) : (
               /* Cancelled Timeline */
-              <div className="flex items-center gap-4 bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100">
-                <XCircle size={28} className="shrink-0" />
+              <div className="flex items-center gap-3 bg-alert/5 text-alert p-4 rounded-xl border border-alert/20">
+                <XCircle size={22} className="shrink-0" />
                 <div>
-                  <h4 className="font-black text-sm">Order Cancelled</h4>
-                  <p className="text-2xs font-medium text-red-500 mt-0.5">This transaction has been terminated and stock was not drawn.</p>
+                  <h4 className="font-black text-xs uppercase tracking-wider">Order Cancelled</h4>
+                  <p className="text-2xs font-medium text-slate mt-0.5">This transaction has been terminated and inventory stock was not drawn.</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Delivery & Account specifications */}
-          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-            <h3 className="text-xl font-black text-gray-900 tracking-tight">Fulfillment details</h3>
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-utility shadow-brand-subtle space-y-4">
+            <h3 className="text-lg font-black text-deep tracking-tight">Fulfillment Details</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-3.5 text-sm">
               <div className="flex items-start gap-3">
-                <StoreIcon className="text-gray-400 shrink-0 mt-0.5" size={16} />
+                <StoreIcon className="text-slate/60 shrink-0 mt-0.5" size={16} />
                 <div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Account Name</span>
+                  <span className="text-[10px] font-black text-slate/60 uppercase tracking-widest block">Account Name</span>
                   {store ? (
-                    <Link href={`/trade/stores/${store.id}`} className="font-bold text-gray-800 hover:text-blue-600 text-sm">
+                    <Link href={`/trade/entities/stores/${store.id}`} className="font-bold text-deep hover:text-deep/80 text-sm">
                       {displayStoreName}
                     </Link>
                   ) : (
-                    <span className="font-bold text-gray-800 text-sm">Unknown Account</span>
+                    <span className="font-bold text-deep text-sm">Unknown Account</span>
                   )}
                 </div>
               </div>
 
               {order.shipping_address && (
                 <div className="flex items-start gap-3">
-                  <MapPin className="text-gray-400 shrink-0 mt-0.5" size={16} />
+                  <MapPin className="text-slate/60 shrink-0 mt-0.5" size={16} />
                   <div>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Shipping Address</span>
-                    <span className="font-bold text-gray-800 text-sm">{order.shipping_address}</span>
+                    <span className="text-[10px] font-black text-slate/60 uppercase tracking-widest block">Shipping Address</span>
+                    <span className="font-bold text-deep text-sm">{order.shipping_address}</span>
                   </div>
                 </div>
               )}
 
               {order.delivery_date && (
                 <div className="flex items-start gap-3">
-                  <Truck className="text-gray-400 shrink-0 mt-0.5" size={16} />
+                  <Truck className="text-slate/60 shrink-0 mt-0.5" size={16} />
                   <div>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Delivery Date</span>
-                    <span className="font-bold text-gray-800 text-sm">
+                    <span className="text-[10px] font-black text-slate/60 uppercase tracking-widest block">Delivery Date</span>
+                    <span className="font-mono font-bold text-deep text-sm">
                       {new Date(order.delivery_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   </div>
@@ -433,42 +464,38 @@ export default function OrderDetailPage() {
               )}
 
               <div className="flex items-start gap-3">
-                <CreditCard className="text-gray-400 shrink-0 mt-0.5" size={16} />
+                <CreditCard className="text-slate/60 shrink-0 mt-0.5" size={16} />
                 <div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Payment Method</span>
-                  <span className="font-bold text-gray-800 text-sm capitalize">{order.payment_method || 'Cash'}</span>
+                  <span className="text-[10px] font-black text-slate/60 uppercase tracking-widest block">Payment Method</span>
+                  <span className="font-bold text-deep text-sm capitalize">{order.payment_method || 'Cash'}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Pricing summary */}
-          <div className="bg-gray-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-            {/* Background design elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl" />
-
-            <div className="relative space-y-6">
-              <h3 className="text-lg font-black uppercase tracking-widest text-gray-400">Pricing Summary</h3>
+          <div className="bg-deep text-white p-6 md:p-8 rounded-2xl shadow-brand-card relative overflow-hidden border border-deep">
+            <div className="relative space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-white/60">Pricing Summary</h3>
               
-              <div className="space-y-3 font-medium text-sm">
+              <div className="space-y-2.5 font-medium text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Subtotal</span>
-                  <span className="font-bold">${(order.total_amount ?? 0).toFixed(2)}</span>
+                  <span className="text-white/60">Subtotal</span>
+                  <span className="font-mono font-bold">${(order.total_amount ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Shipping (Mock)</span>
-                  <span className="font-bold">$0.00</span>
+                  <span className="text-white/60">Shipping</span>
+                  <span className="font-mono font-bold">$0.00</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Taxes (Mock)</span>
-                  <span className="font-bold">$0.00</span>
+                  <span className="text-white/60">Taxes</span>
+                  <span className="font-mono font-bold">$0.00</span>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
-                <span className="text-xs font-black uppercase tracking-widest text-gray-400">Grand Total</span>
-                <span className="text-3xl font-black text-white">${(order.total_amount ?? 0).toFixed(2)}</span>
+              <div className="pt-3 border-t border-white/10 flex justify-between items-end">
+                <span className="text-xs font-black uppercase tracking-widest text-white/70">Grand Total</span>
+                <span className="text-2xl font-black text-white font-mono">${(order.total_amount ?? 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -479,3 +506,4 @@ export default function OrderDetailPage() {
     </div>
   );
 }
+
