@@ -1,13 +1,13 @@
 # Current State
-- **Branch**: `feature/day1-ux-refactoring` active. All modifications staged/local. Clean TypeScript (`npx tsc --noEmit` exits code 0).
+- **Branch**: `staging` active (local). Merged from `feature/day1-ux-refactoring` via fast-forward (`2ff25d7`). Clean TypeScript (`npx tsc --noEmit` exits code 0).
 - **Roadmap Alignment (Project Monet)**:
   - Phase 1 (UX Heuristics & Flow Refactoring): COMPLETE.
   - Phase 2 (Brand Identity & UI System): COMPLETE.
   - Phase 3 (Landing Page): EXCLUDED / UNTOUCHED.
   - Phase 4 (In-App UI Cascade & Epic 205): COMPLETE.
-  - Phase 5 (QA, Edge Cases, Polish & Smoke Validation): COMPLETE.
+  - Phase 5 (QA, Polish, Mobile Hardening & Merge): COMPLETE.
 - **Mobile & Tablet Hardening (Persistence & Decompression)**:
-  - **Micro-Rail Fixed Persistence**: Changed root wrapper in `DashboardLayout.tsx` from `min-h-screen` to `h-screen h-[100dvh] overflow-hidden` and `<Sidebar />` to `sticky top-0 h-screen h-[100dvh]`. Micro-Rail remains 100% pinned to the left viewport during vertical scrolls across all screen sizes.
+  - **Micro-Rail Fixed Persistence**: Changed root wrapper in `DashboardLayout.tsx` to `h-screen h-[100dvh] overflow-hidden` and `<Sidebar />` to `sticky top-0 h-screen h-[100dvh]`. Micro-Rail remains 100% pinned to the left viewport during vertical scrolls across all screen sizes.
   - **Mobile Canvas Optimization**: Narrowed Micro-Rail on mobile from 78px to 64px (`w-16 sm:w-[78px]`), freeing horizontal canvas for narrow mobile displays (375px–440px). Reduced canvas padding to `p-3 sm:p-6 lg:p-8`.
   - **Compact Stat Cards & Horizontal Tabs**: Resized mobile stat cards (`p-3.5 sm:p-5 lg:p-6`, `w-11 h-11 sm:w-14 sm:h-14` icons, `text-xl sm:text-2xl lg:text-3xl` numbers) and converted status filter tabs to horizontal scrollable segmented pill bar (`overflow-x-auto no-scrollbar`), eliminating clumsy multi-line tab wrapping.
   - **Sidebar Adaptive Collapse**: Workspace Drawer (240px) collapses on `< lg` viewports. Micro-Rail features tactile `Ops` button triggering Workspace Drawer as an off-canvas overlay with backdrop (`left-16 sm:left-[78px]`).
@@ -19,12 +19,10 @@
 - **Infrastructure & Dev Server**:
   - Local Docker active (Postgres 15, Redis 7). Seed user: `agrivera@gmail.com`.
   - Dev server running on `http://localhost:3000` (`task-2709`).
-- **Local Uncommitted Exclusion**: `backend/scripts/data_ops/seed_demo_construction.py` (checkpoint cleanup removed for empty local DB, keep uncommitted).
 
-# Next Steps & Staging Merge Interlock
-- **Status**: Feature branch `feature/day1-ux-refactoring` is fully responsive across mobile, tablet, and desktop, typecheck clean (0 errors), and ready for integration.
-- **Safety Protocol**: Per `.agents/AGENTS.md` and Monet Failsafe Gate 5, merging into `staging` requires explicit human approval.
-- **Action Required**: Await user permission to merge `feature/day1-ux-refactoring` into `staging`.
+# Remote Publication Interlock
+- **Status**: Local `staging` branch is fully up to date and verified.
+- **Git Remote**: Remote repository (`origin`) remains untouched. Pushing to GitHub requires explicit instruction.
 
 
 
