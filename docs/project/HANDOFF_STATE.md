@@ -20,9 +20,10 @@
   - Local Docker active (Postgres 15, Redis 7). Seed user: `agrivera@gmail.com`.
   - Dev server running on `http://localhost:3000` (`task-2709`).
 
-# Remote Publication Interlock
-- **Status**: Local `staging` branch is fully up to date and verified.
-- **Git Remote**: Remote repository (`origin`) remains untouched. Pushing to GitHub requires explicit instruction.
+# Remote Publication Status
+- **Status**: Local `staging` branch is fully up to date and pushed to `origin/staging` (`3da2632`).
+- **Git Remote**: `breyesr/sherpa:staging` synchronized.
+- **Local Isolation**: `monet/` excluded locally via `.git/info/exclude`.
 
 
 
